@@ -3,6 +3,7 @@ import MainLayout from "@/components/layout/MainLayout";
 import Dashboard from "@/pages/Dashboard";
 import Users from "@/pages/Users";
 import Documents from "@/pages/Documents";
+import Mediators from "@/pages/Mediators";
 
 const Leads = () => (
   <div className="p-6">
@@ -12,11 +13,6 @@ const Leads = () => (
 const Owners = () => (
   <div className="p-6">
     <h1 className="text-2xl font-bold">Owners</h1>
-  </div>
-);
-const Mediators = () => (
-  <div className="p-6">
-    <h1 className="text-2xl font-bold">Mediators</h1>
   </div>
 );
 const Masters = () => (
