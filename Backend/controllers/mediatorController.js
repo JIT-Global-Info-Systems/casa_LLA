@@ -45,7 +45,7 @@ exports.createMediator = async (req, res) => {
       location,
       linked_executive,
       mediator_type,
-      address: address ? (typeof address === 'string' ? JSON.parse(address) : address) : {}
+      address
     });
 
     return res.status(201).json({

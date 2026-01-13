@@ -58,7 +58,7 @@ const mediatorSchema = new mongoose.Schema({
 
   mediator_type: {
     type: String,
-    enum: ["office", "individual"],
+    // enum: ["office", "individual"],
     required: true
   },
 
