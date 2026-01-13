@@ -60,7 +60,7 @@ function Topbar() {
                   Casa LLA
                 </Link>
               </div>
-              <nav className="px-3 py-4" aria-label="Primary">
+              <nav className=" ms-5 px-3 py-4" aria-label="Primary">
                 <div className="space-y-1">
                   {navItems.map((item) => {
                     const active = isItemActive(item.path);

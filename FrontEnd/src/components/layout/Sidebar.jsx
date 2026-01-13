@@ -18,11 +18,11 @@ export const navItems = [
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { path: "/leads", label: "Leads", icon: Users },
   { path: "/users", label: "Users", icon: UserRound },
-  { path: "/documents", label: "Documents", icon: FileText },
-  { path: "/owners", label: "Owners", icon: Users },
+  // { path: "/documents", label: "Documents", icon: FileText },
+  { path: "/owners", label: "Approval", icon: Users },
   { path: "/mediators", label: "Mediators", icon: Handshake },
   { path: "/masters", label: "Masters", icon: Settings },
-  { path: "/reports", label: "Reports", icon: BarChart3 },
+  // { path: "/reports", label: "Reports", icon: BarChart3 },
 ];
 
 const documentsItems = [
@@ -41,7 +41,7 @@ function Sidebar() {
     <aside className="hidden md:fixed md:inset-y-0 md:flex md:w-52 md:flex-col md:border-r md:border-indigo-700 md:bg-indigo-700">
       <div className="flex h-16 items-center border-b border-indigo-600/60 px-4">
         <div className="text-sm font-semibold tracking-tight text-white">
-          Casa LLA
+          Land Lead Aggregation
         </div>
       </div>
       <div className="flex-1 overflow-y-auto">
