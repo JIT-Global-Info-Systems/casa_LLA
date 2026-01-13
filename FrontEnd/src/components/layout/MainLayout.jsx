@@ -6,7 +6,7 @@ function MainLayout() {
   return (
     <div className="h-screen overflow-hidden bg-background">
       <Sidebar />
-      <div className="flex h-screen flex-col overflow-hidden md:pl-64">
+      <div className="flex h-screen flex-col overflow-hidden md:pl-52">
         <Topbar />
         <main className="flex-1 overflow-y-auto">
           <Outlet />
