@@ -1,12 +1,9 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
+import Dashboard from "@/pages/Dashboard";
+import Users from "@/pages/Users";
+import Documents from "@/pages/Documents";
 
-// Placeholder pages - replace with actual imports when pages are created
-const Dashboard = () => (
-  <div className="p-6">
-    <h1 className="text-2xl font-bold">Dashboard</h1>
-  </div>
-);
 const Leads = () => (
   <div className="p-6">
     <h1 className="text-2xl font-bold">Leads</h1>
@@ -41,6 +38,8 @@ function AppRoutes() {
           <Route index element={<Dashboard />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="leads" element={<Leads />} />
+          <Route path="users" element={<Users />} />
+          <Route path="documents" element={<Documents />} />
           <Route path="owners" element={<Owners />} />
           <Route path="mediators" element={<Mediators />} />
           <Route path="masters" element={<Masters />} />
