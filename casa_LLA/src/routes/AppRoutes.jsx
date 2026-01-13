@@ -1,0 +1,54 @@
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import MainLayout from "@/components/layout/MainLayout";
+
+// Placeholder pages - replace with actual imports when pages are created
+const Dashboard = () => (
+  <div className="p-6">
+    <h1 className="text-2xl font-bold">Dashboard</h1>
+  </div>
+);
+const Leads = () => (
+  <div className="p-6">
+    <h1 className="text-2xl font-bold">Leads</h1>
+  </div>
+);
+const Owners = () => (
+  <div className="p-6">
+    <h1 className="text-2xl font-bold">Owners</h1>
+  </div>
+);
+const Mediators = () => (
+  <div className="p-6">
+    <h1 className="text-2xl font-bold">Mediators</h1>
+  </div>
+);
+const Masters = () => (
+  <div className="p-6">
+    <h1 className="text-2xl font-bold">Masters</h1>
+  </div>
+);
+const Reports = () => (
+  <div className="p-6">
+    <h1 className="text-2xl font-bold">Reports</h1>
+  </div>
+);
+
+function AppRoutes() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<MainLayout />}>
+          <Route index element={<Dashboard />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="leads" element={<Leads />} />
+          <Route path="owners" element={<Owners />} />
+          <Route path="mediators" element={<Mediators />} />
+          <Route path="masters" element={<Masters />} />
+          <Route path="reports" element={<Reports />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+export default AppRoutes;
