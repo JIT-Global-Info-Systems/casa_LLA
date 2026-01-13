@@ -114,6 +114,30 @@ function Mediators() {
     address: "",
   });
 
+  // Filter mediators based on search and filter criteria
+  const filteredMediators = mediators.filter((mediator) => {
+    // Search filter
+    const matchesSearch = searchTerm === "" ||
+      mediator.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      mediator.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      mediator.phone.includes(searchTerm) ||
+      mediator.id.toLowerCase().includes(searchTerm.toLowerCase());
+
+    // Executive filter (simulating createdBy as executive assignment)
+    const matchesExecutive = selectedExecutive === "" || mediator.createdBy === selectedExecutive;
+
+    // Date range filter
+    const matchesDateRange = (() => {
+      if (!dateFrom && !dateTo) return true;
+      const mediatorDate = new Date(mediator.registeredDate);
+      const fromDate = dateFrom ? new Date(dateFrom) : new Date('1900-01-01');
+      const toDate = dateTo ? new Date(dateTo) : new Date('2100-12-31');
+      return mediatorDate >= fromDate && mediatorDate <= toDate;
+    })();
+
+    return matchesSearch && matchesExecutive && matchesDateRange;
+  });
+
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
@@ -141,16 +165,26 @@ function Mediators() {
     });
   };
 
+  const handleRefresh = () => {
+    // Reset all filters
+    setSearchTerm("");
+    setSelectedExecutive("");
+    setDateFrom("");
+    setDateTo("");
+  };
+
   return (
     <div className="flex-1 space-y-6 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Mediator</h1>
-          <p className="text-sm text-slate-500 mt-1">MEDIATOR: {mediators.length}</p>
+          <p className="text-sm text-slate-500 mt-1">
+            MEDIATOR: {filteredMediators.length} {filteredMediators.length !== mediators.length && `(${mediators.length} total)`}
+          </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={handleRefresh}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
           </Button>
@@ -262,7 +296,7 @@ function Mediators() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-slate-200">
-                {mediators.map((mediator) => (
+                {filteredMediators.map((mediator) => (
                   <tr key={mediator.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-3 text-sm text-slate-900">
                       {mediator.id}
@@ -317,7 +351,7 @@ function Mediators() {
           {/* Pagination */}
           <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200">
             <div className="text-sm text-slate-600">
-              Showing {mediators.length} results
+              Showing {filteredMediators.length} results {filteredMediators.length !== mediators.length && `(of ${mediators.length} total)`}
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" disabled>
