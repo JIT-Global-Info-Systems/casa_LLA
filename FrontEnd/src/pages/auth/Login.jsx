@@ -10,18 +10,55 @@ function Login() {
   const [password, setPassword] = useState('')
   const navigate = useNavigate()
 
-  const handleLogin = (e) => {
+  const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+
+  const handleLogin = async (e) => {
     e.preventDefault()
-    // Add your login logic here
-    console.log('Login attempt:', { email, password })
-    navigate('/pages/dashboard')
+    setError('')
+    setIsLoading(true)
+
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed')
+      }
+
+      // Store user data in localStorage
+      localStorage.setItem('token', data.token)
+      localStorage.setItem('user_id', data.user.user_id)
+      localStorage.setItem('email', data.user.email)
+      localStorage.setItem('role', data.user.role)
+
+      // Redirect to dashboard on successful login
+      navigate('/pages/dashboard')
+    } catch (err) {
+      setError(err.message || 'An error occurred during login')
+      console.error('Login error:', err)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
     <div 
-      className="min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat relative pt-20 overflow-hidden"
-      style={{ backgroundImage: `url(${loginBg})` }}
-    >
+  className="min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat relative pt-20 overflow-hidden"
+  style={{ 
+    backgroundImage: "url('https://images.pexels.com/photos/323705/pexels-photo-323705.jpeg')" 
+  }}
+>
       <div className="absolute inset-0 bg-black opacity-20"></div>
       
       {/* Animated Clouds */}
@@ -57,7 +94,7 @@ function Login() {
       {/* Test animaton */}
         
 
-      <Card className="w-full max-w-md shadow-2xl border-0 overflow-hidden relative z-10 bg-white">
+      <Card className="w-full max-w-md shadow-2xl border-0 overflow-hidden relative z-10" style={{backgroundColor: '#99b1cef5'}}>
         <div className="flex">
           {/* Login Form */}
           <div className="w-full p-6 lg:p-8">
@@ -77,7 +114,7 @@ function Login() {
                   type="email"
                   placeholder="Enter your email"
                   value={email}
-                  onChange={setEmail}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                 />
                 
@@ -86,7 +123,7 @@ function Login() {
                   type="password"
                   placeholder="Enter your password"
                   value={password}
-                  onChange={setPassword}
+                  onChange={(e) => setPassword(e.target.value)}
                   required
                 />
 
@@ -103,11 +140,17 @@ function Login() {
                   </a>
                 </div>
 
+                {error && (
+                  <div className="text-red-500 text-xs mb-2">
+                    {error}
+                  </div>
+                )}
                 <Button 
                   type="submit" 
                   className="w-full py-2 text-xs font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  disabled={isLoading}
                 >
-                  Sign In
+                  {isLoading ? 'Signing in...' : 'Sign In'}
                 </Button>
               </form>
 

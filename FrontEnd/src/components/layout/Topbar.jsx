@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Bell, Menu } from "lucide-react";
 
 import { navItems } from "./Sidebar";
@@ -29,6 +29,7 @@ const pageTitles = {
 
 function Topbar() {
   const location = useLocation();
+  const navigate = useNavigate()
   const title = pageTitles[location.pathname] || "Dashboard";
   const [mobileNavOpen, setMobileNavOpen] = React.useState(false);
 
@@ -130,17 +131,17 @@ function Topbar() {
                 aria-label="Open user menu"
               >
                 <Avatar className="h-9 w-9">
-                  <AvatarFallback>ZA</AvatarFallback>
+                  <AvatarFallback className="bg-indigo-600 text-white">ZA</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Account</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>Profile</DropdownMenuItem>
-              <DropdownMenuItem>Settings</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>Logout</DropdownMenuItem>
+            <DropdownMenuContent align="end" className="bg-white border border-gray-200 shadow-lg">
+              <DropdownMenuLabel className="text-slate-900">Account</DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-gray-200" />
+              <DropdownMenuItem className="text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 cursor-pointer">Profile</DropdownMenuItem>
+              <DropdownMenuItem className="text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 cursor-pointer">Settings</DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-gray-200" />
+              <DropdownMenuItem className="text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 cursor-pointer" onClick={() => navigate('/')}>Logout</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
