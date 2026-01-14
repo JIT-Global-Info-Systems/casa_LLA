@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -10,218 +10,206 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+import Modal from '@/components/ui/modal';
 import { Edit, Plus, Trash2 } from 'lucide-react';
 
 const Masters = () => {
+  // Single source of truth for all masters data
+  const [masters, setMasters] = useState({
+    locations: [
+      { id: crypto.randomUUID(), name: 'Mumbai' },
+      { id: crypto.randomUUID(), name: 'Delhi' },
+      { id: crypto.randomUUID(), name: 'Bangalore' },
+    ],
+    regions: [
+      { id: crypto.randomUUID(), location: 'Mumbai', region: 'North Mumbai' },
+      { id: crypto.randomUUID(), location: 'Delhi', region: 'Central Delhi' },
+    ],
+    zones: [
+      { id: crypto.randomUUID(), location: 'Mumbai', region: 'North Mumbai', zone: 'Andheri' },
+      { id: crypto.randomUUID(), location: 'Delhi', region: 'Central Delhi', zone: 'Connaught Place' },
+    ],
+  });
+
   const [activeTab, setActiveTab] = useState('location');
-  const [locations, setLocations] = useState([
-    { id: 1, name: 'Mumbai' },
-    { id: 2, name: 'Delhi' },
-    { id: 3, name: 'Bangalore' },
-  ]);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [newLocation, setNewLocation] = useState('');
-  const [editingLocation, setEditingLocation] = useState(null);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [locationToDelete, setLocationToDelete] = useState(null);
-  const [regions, setRegions] = useState([
-    { id: 1, location: 'Mumbai', region: 'North Mumbai' },
-    { id: 2, location: 'Delhi', region: 'Central Delhi' },
-  ]);
-  const [isRegionDialogOpen, setIsRegionDialogOpen] = useState(false);
-  const [newRegion, setNewRegion] = useState('');
-  const [selectedLocation, setSelectedLocation] = useState('');
-  const [editingRegion, setEditingRegion] = useState(null);
-  const [isDeleteRegionDialogOpen, setIsDeleteRegionDialogOpen] = useState(false);
-  const [regionToDelete, setRegionToDelete] = useState(null);
-  const [zones, setZones] = useState([
-    { id: 1, location: 'Mumbai', region: 'North Mumbai', zone: 'Andheri' },
-    { id: 2, location: 'Delhi', region: 'Central Delhi', zone: 'Connaught Place' },
-  ]);
-  const [isZoneDialogOpen, setIsZoneDialogOpen] = useState(false);
-  const [newZone, setNewZone] = useState('');
-  const [selectedZoneLocation, setSelectedZoneLocation] = useState('');
-  const [selectedZoneRegion, setSelectedZoneRegion] = useState('');
-  const [editingZone, setEditingZone] = useState(null);
-  const [isDeleteZoneDialogOpen, setIsDeleteZoneDialogOpen] = useState(false);
-  const [zoneToDelete, setZoneToDelete] = useState(null);
+  const [form, setForm] = useState({ open: false, type: '', data: {}, editing: null });
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, type: '', item: null });
+
+  const formatName = useCallback((value) => 
+    value.charAt(0).toUpperCase() + value.slice(1).toLowerCase()
+  , []);
+
+  // Generic CRUD handlers
+  const getList = useCallback((type) => {
+    const keyMap = {
+      'location': 'locations',
+      'region': 'regions', 
+      'zone': 'zones'
+    };
+    return masters[keyMap[type]] || [];
+  }, [masters]);
+  const setList = useCallback((type, newList) => {
+    const keyMap = {
+      'location': 'locations',
+      'region': 'regions', 
+      'zone': 'zones'
+    };
+    setMasters(prev => ({ ...prev, [keyMap[type]]: newList }));
+  }, []);
+
+  const addItem = useCallback((type, data) => {
+    setList(type, [...getList(type), { id: crypto.randomUUID(), ...data }]);
+    closeForm();
+  }, [getList, setList]);
+
+  const updateItem = useCallback((type, itemId, data) => {
+    setList(type, getList(type).map(item => 
+      item.id === itemId ? { ...item, ...data } : item
+    ));
+    closeForm();
+  }, [getList, setList]);
+
+  const deleteItem = useCallback((type, itemId) => {
+    // Dependency cleanup
+    if (type === 'locations') {
+      setList('regions', masters.regions.filter(r => r.location !== masters.locations.find(l => l.id === itemId)?.name));
+      setList('zones', masters.zones.filter(z => z.location !== masters.locations.find(l => l.id === itemId)?.name));
+    } else if (type === 'regions') {
+      setList('zones', masters.zones.filter(z => z.region !== masters.regions.find(r => r.id === itemId)?.region));
+    }
+    
+    setList(type, getList(type).filter(item => item.id !== itemId));
+    setDeleteDialog({ open: false, type: '', item: null });
+  }, [masters, getList, setList]);
+
+  const openForm = useCallback((type, editing = null) => {
+    setForm({ open: true, type, editing, data: editing || getDefaultData(type) });
+  }, [getList]);
+
+  const getDefaultData = useCallback((type) => {
+    const data = {};
+    if (type === 'region') data.location = '';
+    if (['region', 'zone'].includes(type)) data.location = '';
+    if (type === 'zone') data.region = '';
+    return data;
+  }, []);
+
+  const closeForm = useCallback(() => {
+    setForm({ open: false, type: '', data: {}, editing: null });
+  }, []);
+
+  const openDelete = useCallback((type, item) => {
+    setDeleteDialog({ open: true, type, item });
+  }, []);
+
+  const handleSubmit = useCallback(() => {
+    const { type, data, editing } = form;
+    const formattedData = { ...data };
+    
+    if ('name' in formattedData) formattedData.name = formatName(formattedData.name);
+    if ('region' in formattedData) formattedData.region = formatName(formattedData.region);
+    if ('zone' in formattedData) formattedData.zone = formatName(formattedData.zone);
+
+    if (editing) {
+      updateItem(type, editing.id, formattedData);
+    } else {
+      addItem(type, formattedData);
+    }
+  }, [form, addItem, updateItem, formatName]);
 
   const sidebarTabs = [
-    { id: 'location', label: 'Location' },
-    { id: 'region', label: 'Region' },
-    { id: 'zone', label: 'Zone' },
+    { id: 'location', label: 'Location', columns: ['S.No', 'Location', 'Action'] },
+    { id: 'region', label: 'Region', columns: ['S.No', 'Location', 'Region', 'Action'] },
+    { id: 'zone', label: 'Zone', columns: ['S.No', 'Location', 'Region', 'Zone', 'Action'] },
   ];
 
-  const handleAddLocation = () => {
-    if (newLocation.trim()) {
-      const formattedLocation = newLocation.charAt(0).toUpperCase() + newLocation.slice(1).toLowerCase();
-      setLocations([...locations, { id: Date.now(), name: formattedLocation }]);
-      setNewLocation('');
-      setIsDialogOpen(false);
-    }
+  const getOptions = useCallback((type) => {
+    if (type === 'location') return masters.locations.map(l => ({ value: l.name, label: l.name }));
+    if (type === 'region') return masters.regions.map(r => ({ value: r.region, label: r.region }));
+    return [];
+  }, [masters]);
+
+  const renderFormFields = () => {
+    const { type, data } = form;
+    return (
+      <>
+        {type === 'region' && (
+          <Select 
+            value={data.location || ''}
+            onChange={(value) => setForm(prev => ({ ...prev, data: { ...prev.data, location: value } }))}
+            options={getOptions('location')}
+            placeholder="Select location"
+          />
+        )}
+        {type === 'zone' && (
+          <>
+            <Select 
+              value={data.location || ''}
+              onChange={(value) => setForm(prev => ({ ...prev, data: { ...prev.data, location: value } }))}
+              options={getOptions('location')}
+              placeholder="Select location"
+            />
+            <Select 
+              value={data.region || ''}
+              onChange={(value) => setForm(prev => ({ ...prev, data: { ...prev.data, region: value } }))}
+              options={getOptions('region')}
+              placeholder="Select region"
+            />
+          </>
+        )}
+        <Input
+          value={data.name || data.region || data.zone || ''}
+          onChange={(value) => {
+            const key = type === 'region' ? 'region' : type === 'zone' ? 'zone' : 'name';
+            setForm(prev => ({ ...prev, data: { ...prev.data, [key]: value } }));
+          }}
+          placeholder={`Enter ${type} name`}
+        />
+      </>
+    );
   };
 
-  const handleEditLocation = (location) => {
-    setEditingLocation(location);
-    setNewLocation(location.name);
-    setIsDialogOpen(true);
-  };
-
-  const handleUpdateLocation = () => {
-    if (newLocation.trim() && editingLocation) {
-      const formattedLocation = newLocation.charAt(0).toUpperCase() + newLocation.slice(1).toLowerCase();
-      setLocations(locations.map(loc => 
-        loc.id === editingLocation.id ? { ...loc, name: formattedLocation } : loc
-      ));
-      setNewLocation('');
-      setEditingLocation(null);
-      setIsDialogOpen(false);
-    }
-  };
-
-  const handleCloseDialog = () => {
-    setNewLocation('');
-    setEditingLocation(null);
-    setIsDialogOpen(false);
-  };
-
-  const handleDeleteClick = (location) => {
-    setLocationToDelete(location);
-    setIsDeleteDialogOpen(true);
-  };
-
-  const handleDeleteConfirm = () => {
-    if (locationToDelete) {
-      setLocations(locations.filter(loc => loc.id !== locationToDelete.id));
-      setLocationToDelete(null);
-      setIsDeleteDialogOpen(false);
-    }
-  };
-
-  const handleDeleteCancel = () => {
-    setLocationToDelete(null);
-    setIsDeleteDialogOpen(false);
-  };
-
-  const handleAddRegion = () => {
-    if (newRegion.trim() && selectedLocation) {
-      const formattedRegion = newRegion.charAt(0).toUpperCase() + newRegion.slice(1).toLowerCase();
-      setRegions([...regions, { id: Date.now(), location: selectedLocation, region: formattedRegion }]);
-      setNewRegion('');
-      setSelectedLocation('');
-      setIsRegionDialogOpen(false);
-    }
-  };
-
-  const handleEditRegion = (region) => {
-    setEditingRegion(region);
-    setSelectedLocation(region.location);
-    setNewRegion(region.region);
-    setIsRegionDialogOpen(true);
-  };
-
-  const handleUpdateRegion = () => {
-    if (newRegion.trim() && selectedLocation && editingRegion) {
-      const formattedRegion = newRegion.charAt(0).toUpperCase() + newRegion.slice(1).toLowerCase();
-      setRegions(regions.map(reg => 
-        reg.id === editingRegion.id ? { ...reg, location: selectedLocation, region: formattedRegion } : reg
-      ));
-      setNewRegion('');
-      setSelectedLocation('');
-      setEditingRegion(null);
-      setIsRegionDialogOpen(false);
-    }
-  };
-
-  const handleCloseRegionDialog = () => {
-    setNewRegion('');
-    setSelectedLocation('');
-    setEditingRegion(null);
-    setIsRegionDialogOpen(false);
-  };
-
-  const handleDeleteRegionClick = (region) => {
-    setRegionToDelete(region);
-    setIsDeleteRegionDialogOpen(true);
-  };
-
-  const handleDeleteRegionConfirm = () => {
-    if (regionToDelete) {
-      setRegions(regions.filter(reg => reg.id !== regionToDelete.id));
-      setRegionToDelete(null);
-      setIsDeleteRegionDialogOpen(false);
-    }
-  };
-
-  const handleDeleteRegionCancel = () => {
-    setRegionToDelete(null);
-    setIsDeleteRegionDialogOpen(false);
-  };
-
-  const handleAddZone = () => {
-    if (newZone.trim() && selectedZoneLocation && selectedZoneRegion) {
-      const formattedZone = newZone.charAt(0).toUpperCase() + newZone.slice(1).toLowerCase();
-      setZones([...zones, { id: Date.now(), location: selectedZoneLocation, region: selectedZoneRegion, zone: formattedZone }]);
-      setNewZone('');
-      setSelectedZoneLocation('');
-      setSelectedZoneRegion('');
-      setIsZoneDialogOpen(false);
-    }
-  };
-
-  const handleEditZone = (zone) => {
-    setEditingZone(zone);
-    setSelectedZoneLocation(zone.location);
-    setSelectedZoneRegion(zone.region);
-    setNewZone(zone.zone);
-    setIsZoneDialogOpen(true);
-  };
-
-  const handleUpdateZone = () => {
-    if (newZone.trim() && selectedZoneLocation && selectedZoneRegion && editingZone) {
-      const formattedZone = newZone.charAt(0).toUpperCase() + newZone.slice(1).toLowerCase();
-      setZones(zones.map(z => 
-        z.id === editingZone.id ? { ...z, location: selectedZoneLocation, region: selectedZoneRegion, zone: formattedZone } : z
-      ));
-      setNewZone('');
-      setSelectedZoneLocation('');
-      setSelectedZoneRegion('');
-      setEditingZone(null);
-      setIsZoneDialogOpen(false);
-    }
-  };
-
-  const handleCloseZoneDialog = () => {
-    setNewZone('');
-    setSelectedZoneLocation('');
-    setSelectedZoneRegion('');
-    setEditingZone(null);
-    setIsZoneDialogOpen(false);
-  };
-
-  const handleDeleteZoneClick = (zone) => {
-    setZoneToDelete(zone);
-    setIsDeleteZoneDialogOpen(true);
-  };
-
-  const handleDeleteZoneConfirm = () => {
-    if (zoneToDelete) {
-      setZones(zones.filter(z => z.id !== zoneToDelete.id));
-      setZoneToDelete(null);
-      setIsDeleteZoneDialogOpen(false);
-    }
-  };
-
-  const handleDeleteZoneCancel = () => {
-    setZoneToDelete(null);
-    setIsDeleteZoneDialogOpen(false);
+  const renderTable = (type) => {
+    const items = getList(type);
+    const tabConfig = sidebarTabs.find(t => t.id === type);
+    
+    return (
+      <div className="bg-white rounded-lg shadow">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              {tabConfig.columns.map((col, idx) => (
+                <TableHead key={idx} className={col === 'Action' ? 'w-24' : col === 'S.No' ? 'w-16' : 'text-center'}>
+                  {col}
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {items.map((item, index) => (
+              <TableRow key={item.id}>
+                <TableCell>{index + 1}</TableCell>
+                {type === 'location' && <TableCell className="text-center">{item.name}</TableCell>}
+                {type !== 'location' && <TableCell className="text-center">{item.location}</TableCell>}
+                {type === 'region' && <TableCell className="text-center">{item.region}</TableCell>}
+                {type === 'zone' && (
+                  <>
+                    <TableCell className="text-center">{item.region}</TableCell>
+                    <TableCell className="text-center">{item.zone}</TableCell>
+                  </>
+                )}
+                <TableCell>
+                  <ActionButtons
+                    onEdit={() => openForm(type, item)}
+                    onDelete={() => openDelete(type, item)}
+                  />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    );
   };
 
   return (
@@ -229,7 +217,7 @@ const Masters = () => {
       {/* Sidebar */}
       <div className="w-64 bg-white shadow-md">
         <div className="p-6">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">Masters</h2>
+          <h2 className="text-xl font-bold text-indigo-700 mb-2">Masters</h2>
           <nav className="space-y-2">
             {sidebarTabs.map((tab) => (
               <button
@@ -250,328 +238,78 @@ const Masters = () => {
 
       {/* Main Content */}
       <div className="flex-1 p-8">
-        {activeTab === 'location' && (
-          <div>
+        {sidebarTabs.map((tab) => activeTab === tab.id && (
+          <div key={tab.id}>
             <div className="flex justify-between items-center mb-6">
-              <h1 className="text-3xl font-bold text-gray-800">Location Management</h1>
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button className="flex items-center gap-2">
-                    <Plus className="h-4 w-4" />
-                    Add Location
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>
-                      {editingLocation ? 'Edit Location' : 'Add New Location'}
-                    </DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <Input
-                      label="Location Name"
-                      value={newLocation}
-                      onChange={setNewLocation}
-                      placeholder="Enter location name"
-                      required
-                    />
-                    <div className="flex justify-end space-x-2">
-                      <Button variant="outline" onClick={handleCloseDialog}>
-                        Cancel
-                      </Button>
-                      <Button onClick={editingLocation ? handleUpdateLocation : handleAddLocation}>
-                        {editingLocation ? 'Update' : 'Add'}
-                      </Button>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
+              <h1 className="text-xl font-bold text-indigo-700">{tab.label} Management</h1>
+              <Button 
+                className="flex items-center gap-2"
+                onClick={() => openForm(tab.id)}
+              >
+                <Plus className="h-4 w-4" />
+                Add {tab.label}
+              </Button>
             </div>
+            {renderTable(tab.id)}
+          </div>
+        ))}
 
-            <div className="bg-white rounded-lg shadow">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-16">S.No</TableHead>
-                    <TableHead className="text-center">Location</TableHead>
-                    <TableHead className="w-24">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {locations.map((location, index) => (
-                    <TableRow key={location.id}>
-                      <TableCell>{index + 1}</TableCell>
-                      <TableCell className="text-center">{location.name}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditLocation(location)}
-                            className="p-2"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteClick(location)}
-                            className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+        {/* Generic Add/Edit Modal */}
+        <Modal open={form.open} onClose={closeForm}>
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-indigo-700">
+              {form.editing ? `Edit ${form.type}` : `Add New ${form.type}`}
+            </h2>
+            {renderFormFields()}
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={closeForm}>Cancel</Button>
+              <Button onClick={handleSubmit}>
+                {form.editing ? 'Update' : 'Add'}
+              </Button>
             </div>
           </div>
-        )}
+        </Modal>
 
-        {activeTab === 'region' && (
-          <div>
-            <div className="flex justify-between items-center mb-6">
-              <h1 className="text-3xl font-bold text-gray-800">Region Management</h1>
-              <Dialog open={isRegionDialogOpen} onOpenChange={setIsRegionDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button className="flex items-center gap-2">
-                    <Plus className="h-4 w-4" />
-                    Add Region
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>
-                      {editingRegion ? 'Edit Region' : 'Add New Region'}
-                    </DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <Select
-                      label="Location"
-                      value={selectedLocation}
-                      onChange={setSelectedLocation}
-                      options={locations.map(loc => ({ value: loc.name, label: loc.name }))}
-                      placeholder="Select location"
-                      required
-                    />
-                    <Input
-                      label="Region Name"
-                      value={newRegion}
-                      onChange={setNewRegion}
-                      placeholder="Enter region name"
-                      required
-                    />
-                    <div className="flex justify-end space-x-2">
-                      <Button variant="outline" onClick={handleCloseRegionDialog}>
-                        Cancel
-                      </Button>
-                      <Button onClick={editingRegion ? handleUpdateRegion : handleAddRegion}>
-                        {editingRegion ? 'Update' : 'Add'}
-                      </Button>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-
-            <div className="bg-white rounded-lg shadow">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-16">S.No</TableHead>
-                    <TableHead className="text-center">Location</TableHead>
-                    <TableHead className="text-center">Region</TableHead>
-                    <TableHead className="w-24">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {regions.map((region, index) => (
-                    <TableRow key={region.id}>
-                      <TableCell>{index + 1}</TableCell>
-                      <TableCell className="text-center">{region.location}</TableCell>
-                      <TableCell className="text-center">{region.region}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditRegion(region)}
-                            className="p-2"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteRegionClick(region)}
-                            className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+        {/* Generic Delete Modal */}
+        <Modal open={deleteDialog.open} onClose={() => setDeleteDialog({ open: false, type: '', item: null })}>
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-red-600">Delete {activeTab}</h2>
+            <p className="text-gray-700">
+              Are you sure you want to delete <strong>"{deleteDialog.item?.name || deleteDialog.item?.region || deleteDialog.item?.zone || ''}"</strong>?
+            </p>
+            <p className="text-sm text-gray-500">This action cannot be undone.</p>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setDeleteDialog({ open: false, type: '', item: null })}>Cancel</Button>
+              <Button 
+                variant="destructive" 
+                className="bg-red-600 hover:bg-red-700 text-white" 
+                onClick={() => deleteItem(deleteDialog.type, deleteDialog.item?.id)}
+              >
+                Delete
+              </Button>
             </div>
           </div>
-        )}
-
-        {/* Delete Confirmation Dialog */}
-        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle className="text-red-600">Delete Location</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <p className="text-gray-700">
-                Are you sure you want to delete the location "<strong>{locationToDelete?.name}</strong>"?
-              </p>
-              <p className="text-sm text-gray-500">
-                This action cannot be undone.
-              </p>
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={handleDeleteCancel}>
-                  Cancel
-                </Button>
-                <Button variant="destructive" className="bg-red-600 hover:bg-red-700 text-white" onClick={handleDeleteConfirm}>
-                  Delete
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Region Delete Confirmation Dialog */}
-        <Dialog open={isDeleteRegionDialogOpen} onOpenChange={setIsDeleteRegionDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle className="text-red-600">Delete Region</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <p className="text-gray-700">
-                Are you sure you want to delete the region "<strong>{regionToDelete?.region}</strong>"?
-              </p>
-              <p className="text-sm text-gray-500">
-                This action cannot be undone.
-              </p>
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={handleDeleteRegionCancel}>
-                  Cancel
-                </Button>
-                <Button variant="destructive" className="bg-red-600 hover:bg-red-700 text-white" onClick={handleDeleteRegionConfirm}>
-                  Delete
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {activeTab === 'zone' && (
-          <div>
-            <div className="flex justify-between items-center mb-6">
-              <h1 className="text-3xl font-bold text-gray-800">Zone Management</h1>
-              <Dialog open={isZoneDialogOpen} onOpenChange={setIsZoneDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button className="flex items-center gap-2">
-                    <Plus className="h-4 w-4" />
-                    Add Zone
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>
-                      {editingZone ? 'Edit Zone' : 'Add New Zone'}
-                    </DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <Select
-                      label="Location"
-                      value={selectedZoneLocation}
-                      onChange={setSelectedZoneLocation}
-                      options={locations.map(loc => ({ value: loc.name, label: loc.name }))}
-                      placeholder="Select location"
-                      required
-                    />
-                    <Select
-                      label="Region"
-                      value={selectedZoneRegion}
-                      onChange={setSelectedZoneRegion}
-                      options={regions.map(reg => ({ value: reg.region, label: reg.region }))}
-                      placeholder="Select region"
-                      required
-                    />
-                    <Input
-                      label="Zone Name"
-                      value={newZone}
-                      onChange={setNewZone}
-                      placeholder="Enter zone name"
-                      required
-                    />
-                    <div className="flex justify-end space-x-2">
-                      <Button variant="outline" onClick={handleCloseZoneDialog}>
-                        Cancel
-                      </Button>
-                      <Button onClick={editingZone ? handleUpdateZone : handleAddZone}>
-                        {editingZone ? 'Update' : 'Add'}
-                      </Button>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-
-            <div className="bg-white rounded-lg shadow">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-16">S.No</TableHead>
-                    <TableHead className="text-center">Location</TableHead>
-                    <TableHead className="text-center">Region</TableHead>
-                    <TableHead className="text-center">Zone</TableHead>
-                    <TableHead className="w-24">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {zones.map((zone, index) => (
-                    <TableRow key={zone.id}>
-                      <TableCell>{index + 1}</TableCell>
-                      <TableCell className="text-center">{zone.location}</TableCell>
-                      <TableCell className="text-center">{zone.region}</TableCell>
-                      <TableCell className="text-center">{zone.zone}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditZone(zone)}
-                            className="p-2"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteZoneClick(zone)}
-                            className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-        )}
+        </Modal>
       </div>
     </div>
   );
 };
+
+// Reusable Components
+const ActionButtons = ({ onEdit, onDelete }) => (
+  <div className="flex gap-1">
+    <Button variant="ghost" size="sm" className="p-2" onClick={onEdit}>
+      <Edit className="h-4 w-4" />
+    </Button>
+    <Button
+      variant="ghost"
+      size="sm"
+      className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+      onClick={onDelete}
+    >
+      <Trash2 className="h-4 w-4" />
+    </Button>
+  </div>
+);
 
 export default Masters;
