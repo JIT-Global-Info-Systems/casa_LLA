@@ -16,11 +16,7 @@ const Owners = () => (
     <h1 className="text-2xl font-bold">Owners</h1>
   </div>
 );
-const Masters = () => (
-  <div className="p-6">
-    <h1 className="text-2xl font-bold">Masters</h1>
-  </div>
-);
+import Masters from "@/pages/Masters";
 const Reports = () => (
   <div className="p-6">
     <h1 className="text-2xl font-bold">Reports</h1>
