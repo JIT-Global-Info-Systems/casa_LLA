@@ -208,22 +208,22 @@ const Masters = () => {
             ))}
           </TableBody>
         </Table>
-      </div>
-    );
+      </div>);
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Sidebar */}
-      <div className="w-64 bg-white shadow-md">
-        <div className="p-6">
-          <h2 className="text-xl font-bold text-indigo-700 mb-2">Masters</h2>
-          <nav className="space-y-2">
+    <div className="min-h-screen bg-gray-50 p-8">
+      <h1 className="text-2xl font-bold text-indigo-700 mb-6">Masters</h1>
+      
+      <div className="flex gap-8">
+        {/* Tab Navigation */}
+        <div className="bg-white rounded-lg shadow p-2 h-fit">
+          <div className="flex flex-col gap-2">
             {sidebarTabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
+                className={`px-6 py-3 rounded-md font-medium text-left transition-colors whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'bg-blue-600 text-white'
                     : 'text-gray-700 hover:bg-gray-100'
@@ -232,65 +232,65 @@ const Masters = () => {
                 {tab.label}
               </button>
             ))}
-          </nav>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1">
+          {sidebarTabs.map((tab) => activeTab === tab.id && (
+            <div key={tab.id}>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold text-indigo-700">{tab.label} Management</h2>
+                <Button 
+                  className="flex items-center gap-2"
+                  onClick={() => openForm(tab.id)}
+                >
+                  <Plus className="h-4 w-4" />
+                  Add {tab.label}
+                </Button>
+              </div>
+              {renderTable(tab.id)}
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 p-8">
-        {sidebarTabs.map((tab) => activeTab === tab.id && (
-          <div key={tab.id}>
-            <div className="flex justify-between items-center mb-6">
-              <h1 className="text-xl font-bold text-indigo-700">{tab.label} Management</h1>
-              <Button 
-                className="flex items-center gap-2"
-                onClick={() => openForm(tab.id)}
-              >
-                <Plus className="h-4 w-4" />
-                Add {tab.label}
-              </Button>
-            </div>
-            {renderTable(tab.id)}
+      {/* Generic Add/Edit Modal */}
+      <Modal open={form.open} onClose={closeForm}>
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold text-indigo-700">
+            {form.editing ? `Edit ${form.type}` : `Add New ${form.type}`}
+          </h2>
+          {renderFormFields()}
+          <div className="flex justify-end space-x-2">
+            <Button variant="outline" onClick={closeForm}>Cancel</Button>
+            <Button onClick={handleSubmit}>
+              {form.editing ? 'Update' : 'Add'}
+            </Button>
           </div>
-        ))}
+        </div>
+      </Modal>
 
-        {/* Generic Add/Edit Modal */}
-        <Modal open={form.open} onClose={closeForm}>
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold text-indigo-700">
-              {form.editing ? `Edit ${form.type}` : `Add New ${form.type}`}
-            </h2>
-            {renderFormFields()}
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={closeForm}>Cancel</Button>
-              <Button onClick={handleSubmit}>
-                {form.editing ? 'Update' : 'Add'}
-              </Button>
-            </div>
+      {/* Generic Delete Modal */}
+      <Modal open={deleteDialog.open} onClose={() => setDeleteDialog({ open: false, type: '', item: null })}>
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold text-red-600">Delete {activeTab}</h2>
+          <p className="text-gray-700">
+            Are you sure you want to delete <strong>"{deleteDialog.item?.name || deleteDialog.item?.region || deleteDialog.item?.zone || ''}"</strong>?
+          </p>
+          <p className="text-sm text-gray-500">This action cannot be undone.</p>
+          <div className="flex justify-end space-x-2">
+            <Button variant="outline" onClick={() => setDeleteDialog({ open: false, type: '', item: null })}>Cancel</Button>
+            <Button 
+              variant="destructive" 
+              className="bg-red-600 hover:bg-red-700 text-white" 
+              onClick={() => deleteItem(deleteDialog.type, deleteDialog.item?.id)}
+            >
+              Delete
+            </Button>
           </div>
-        </Modal>
-
-        {/* Generic Delete Modal */}
-        <Modal open={deleteDialog.open} onClose={() => setDeleteDialog({ open: false, type: '', item: null })}>
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold text-red-600">Delete {activeTab}</h2>
-            <p className="text-gray-700">
-              Are you sure you want to delete <strong>"{deleteDialog.item?.name || deleteDialog.item?.region || deleteDialog.item?.zone || ''}"</strong>?
-            </p>
-            <p className="text-sm text-gray-500">This action cannot be undone.</p>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setDeleteDialog({ open: false, type: '', item: null })}>Cancel</Button>
-              <Button 
-                variant="destructive" 
-                className="bg-red-600 hover:bg-red-700 text-white" 
-                onClick={() => deleteItem(deleteDialog.type, deleteDialog.item?.id)}
-              >
-                Delete
-              </Button>
-            </div>
-          </div>
-        </Modal>
-      </div>
+        </div>
+      </Modal>
     </div>
   );
 };
