@@ -1,22 +1,19 @@
-import express from "express";
-import Mediator from "../models/Mediator.js";
-
+const express = require("express");
 const router = express.Router();
+const upload = require("../middleware/uploadMiddleware");
+const mediatorController = require("../controllers/MediatorController");
 
-// Create mediator
-router.post("/", async (req, res) => {
-  try {
-    const mediator = await Mediator.create(req.body);
-    res.json(mediator);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+router.post(
+  "/create",
+  upload.fields([
+    { name: "pan_upload", maxCount: 1 },
+    { name: "aadhar_upload", maxCount: 1 }
+  ]),
+  mediatorController.createMediator
+);
 
-// Get all mediators
-router.get("/", async (req, res) => {
-  const data = await Mediator.find();
-  res.json(data);
-});
+router.put("/update/:mediatorId", mediatorController.updateMediator);
+router.delete("/delete/:mediatorId", mediatorController.softDeleteMediator);
+router.get("/all", mediatorController.getAllMediators);
 
-export default router;
+module.exports = router;
