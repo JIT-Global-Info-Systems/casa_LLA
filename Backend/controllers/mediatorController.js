@@ -164,3 +164,20 @@ exports.softDeleteMediator = async (req, res) => {
     });
   }
 };
+
+exports.getAllMediators = async (req, res) => {
+  try {
+    const mediators = await Mediator.find({ status: "active" })
+      .sort({ created_at: -1 });
+
+    return res.status(200).json({
+      count: mediators.length,
+      data: mediators
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Server error",
+      error: error.message
+    });
+  }
+};

@@ -14,5 +14,6 @@ router.post(
 
 router.put("/update/:mediatorId", mediatorController.updateMediator);
 router.delete("/delete/:mediatorId", mediatorController.softDeleteMediator);
+router.get("/all", mediatorController.getAllMediators);
 
 module.exports = router;
