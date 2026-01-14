@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { usersAPI } from '../services/api';
 
-const UsersContext = createContext();
+const UsersContext = createContext(null);
 
 export const useUsers = () => {
   const context = useContext(UsersContext);
@@ -21,7 +21,7 @@ export const UsersProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       const response = await usersAPI.getAll();
-      setUsers(response.data || response);
+      setUsers(response.data ?? response);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -34,7 +34,7 @@ export const UsersProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       const response = await usersAPI.getById(id);
-      return response.data || response;
+      return response.data ?? response;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -48,7 +48,7 @@ export const UsersProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       const response = await usersAPI.create(userData);
-      setUsers(prev => [...prev, response.data || response]);
+      setUsers(prev => [...prev, response.data ?? response]);
       return response;
     } catch (err) {
       setError(err.message);
@@ -63,13 +63,16 @@ export const UsersProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       const response = await usersAPI.update(id, userData);
-      setUsers(prev => 
-        prev.map(user => 
-          user._id === id || user.id === id 
-            ? { ...user, ...(response.data || response) }
+      const updated = response.data ?? response;
+
+      setUsers(prev =>
+        prev.map(user =>
+          user._id === id || user.id === id
+            ? { ...user, ...updated }
             : user
         )
       );
+
       return response;
     } catch (err) {
       setError(err.message);
@@ -84,7 +87,9 @@ export const UsersProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       await usersAPI.delete(id);
-      setUsers(prev => prev.filter(user => user._id !== id && user.id !== id));
+      setUsers(prev =>
+        prev.filter(user => user._id !== id && user.id !== id)
+      );
     } catch (err) {
       setError(err.message);
       throw err;
@@ -95,20 +100,20 @@ export const UsersProvider = ({ children }) => {
 
   const clearError = () => setError(null);
 
-  const value = {
-    users,
-    loading,
-    error,
-    fetchUsers,
-    getUserById,
-    createUser,
-    updateUser,
-    deleteUser,
-    clearError,
-  };
-
   return (
-    <UsersContext.Provider value={value}>
+    <UsersContext.Provider
+      value={{
+        users,
+        loading,
+        error,
+        fetchUsers,
+        getUserById,
+        createUser,
+        updateUser,
+        deleteUser,
+        clearError,
+      }}
+    >
       {children}
     </UsersContext.Provider>
   );

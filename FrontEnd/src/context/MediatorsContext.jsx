@@ -42,13 +42,13 @@ export const MediatorsProvider = ({ children }) => {
     }
   };
 
-  const createMediator = async (mediatorData) => {
+  const createMediator = async (mediatorData, files = {}) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await mediatorsAPI.create(mediatorData);
-      setMediators(prev => [...prev, response]);
-      return response;
+      const response = await mediatorsAPI.create(mediatorData, files);
+      setMediators(prev => [...prev, response.data]);
+      return response.data;
     } catch (err) {
       setError(err.message);
       throw err;

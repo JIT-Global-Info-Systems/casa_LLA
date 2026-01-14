@@ -58,6 +58,12 @@ function Mediators() {
     address: "",
   });
 
+  // File state for uploads
+  const [files, setFiles] = useState({
+    pan_upload: null,
+    aadhar_upload: null,
+  });
+
   // Filter mediators based on search and filter criteria
   const filteredMediators = mediators.filter((mediator) => {
     // Search filter - using actual field names from API response
@@ -91,6 +97,13 @@ function Mediators() {
     }));
   };
 
+  const handleFileChange = (field, file) => {
+    setFiles((prev) => ({
+      ...prev,
+      [field]: file,
+    }));
+  };
+
   const handleSave = async () => {
     try {
       // Map form data to API field names
@@ -108,7 +121,7 @@ function Mediators() {
         address: formData.address,
       };
 
-      await createMediator(apiData);
+      await createMediator(apiData, files);
       setIsAddModalOpen(false);
       
       // Reset form
@@ -124,6 +137,12 @@ function Mediators() {
         linkedExecutive: "",
         officeIndividual: "",
         address: "",
+      });
+      
+      // Reset files
+      setFiles({
+        pan_upload: null,
+        aadhar_upload: null,
       });
     } catch (error) {
       console.error("Error creating mediator:", error);
@@ -618,6 +637,44 @@ function Mediators() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+            </div>
+
+            <div className="space-y-2">
+              <Label
+                htmlFor="panUpload"
+                className="text-sm font-medium text-slate-700"
+              >
+                PAN Upload
+              </Label>
+              <Input
+                id="panUpload"
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleFileChange("pan_upload", e.target.files[0])}
+                className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-slate-50 file:text-slate-700 hover:file:bg-slate-100"
+              />
+              {files.pan_upload && (
+                <p className="text-xs text-slate-500">Selected: {files.pan_upload.name}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label
+                htmlFor="aadharUpload"
+                className="text-sm font-medium text-slate-700"
+              >
+                Aadhaar Upload
+              </Label>
+              <Input
+                id="aadharUpload"
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleFileChange("aadhar_upload", e.target.files[0])}
+                className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-slate-50 file:text-slate-700 hover:file:bg-slate-100"
+              />
+              {files.aadhar_upload && (
+                <p className="text-xs text-slate-500">Selected: {files.aadhar_upload.name}</p>
+              )}
             </div>
 
             <div className="col-span-2 space-y-2">

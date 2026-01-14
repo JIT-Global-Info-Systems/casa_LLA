@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { leadsAPI } from '../services/api';
 
-const LeadsContext = createContext();
+const LeadsContext = createContext(null);
 
 export const useLeads = () => {
   const context = useContext(LeadsContext);
@@ -21,7 +21,7 @@ export const LeadsProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       const response = await leadsAPI.getAll();
-      setLeads(response.data || response);
+      setLeads(response.data ?? response);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -34,7 +34,7 @@ export const LeadsProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       const response = await leadsAPI.getById(id);
-      return response.data || response;
+      return response.data ?? response;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -48,7 +48,7 @@ export const LeadsProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       const response = await leadsAPI.create(leadData);
-      setLeads(prev => [...prev, response.data || response]);
+      setLeads(prev => [...prev, response.data ?? response]);
       return response;
     } catch (err) {
       setError(err.message);
@@ -63,13 +63,16 @@ export const LeadsProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       const response = await leadsAPI.update(id, leadData);
-      setLeads(prev => 
-        prev.map(lead => 
-          lead._id === id || lead.id === id 
-            ? { ...lead, ...(response.data || response) }
+      const updated = response.data ?? response;
+
+      setLeads(prev =>
+        prev.map(lead =>
+          lead._id === id || lead.id === id
+            ? { ...lead, ...updated }
             : lead
         )
       );
+
       return response;
     } catch (err) {
       setError(err.message);
@@ -84,7 +87,9 @@ export const LeadsProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       await leadsAPI.delete(id);
-      setLeads(prev => prev.filter(lead => lead._id !== id && lead.id !== id));
+      setLeads(prev =>
+        prev.filter(lead => lead._id !== id && lead.id !== id)
+      );
     } catch (err) {
       setError(err.message);
       throw err;
@@ -95,20 +100,20 @@ export const LeadsProvider = ({ children }) => {
 
   const clearError = () => setError(null);
 
-  const value = {
-    leads,
-    loading,
-    error,
-    fetchLeads,
-    getLeadById,
-    createLead,
-    updateLead,
-    deleteLead,
-    clearError,
-  };
-
   return (
-    <LeadsContext.Provider value={value}>
+    <LeadsContext.Provider
+      value={{
+        leads,
+        loading,
+        error,
+        fetchLeads,
+        getLeadById,
+        createLead,
+        updateLead,
+        deleteLead,
+        clearError,
+      }}
+    >
       {children}
     </LeadsContext.Provider>
   );

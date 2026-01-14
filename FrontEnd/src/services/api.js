@@ -42,11 +42,29 @@ export const mediatorsAPI = {
     return await apiRequest(`/mediators/${id}`);
   },
 
-  // Create new mediator
-  create: async (mediatorData) => {
+  // Create new mediator with file uploads
+  create: async (mediatorData, files = {}) => {
+    const formData = new FormData();
+    
+    // Add all text fields
+    Object.keys(mediatorData).forEach(key => {
+      if (mediatorData[key] !== null && mediatorData[key] !== undefined) {
+        formData.append(key, mediatorData[key]);
+      }
+    });
+    
+    // Add file uploads if present
+    if (files.pan_upload) {
+      formData.append('pan_upload', files.pan_upload);
+    }
+    if (files.aadhar_upload) {
+      formData.append('aadhar_upload', files.aadhar_upload);
+    }
+    
     return await apiRequest('/mediators/create', {
       method: 'POST',
-      body: JSON.stringify(mediatorData),
+      body: formData,
+      headers: {}, // Remove Content-Type to let browser set it with boundary
     });
   },
 
@@ -61,6 +79,83 @@ export const mediatorsAPI = {
   // Delete mediator
   delete: async (id) => {
     return await apiRequest(`/mediators/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+// Leads API
+export const leadsAPI = {
+  // Get all leads
+  getAll: async () => {
+    const response = await apiRequest('/leads/all');
+    // The API returns { count: number, data: [...] }
+    // We want to return the data array
+    return response.data || [];
+  },
+
+  // Get lead by ID
+  getById: async (id) => {
+    return await apiRequest(`/leads/${id}`);
+  },
+
+  // Create new lead
+  create: async (leadData) => {
+    return await apiRequest('/leads/create', {
+      method: 'POST',
+      body: JSON.stringify(leadData),
+    });
+  },
+
+  // Update lead
+  update: async (id, leadData) => {
+    return await apiRequest(`/leads/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(leadData),
+    });
+  },
+
+  // Delete lead
+  delete: async (id) => {
+    return await apiRequest(`/leads/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+// Users API
+export const usersAPI = {
+  // Get all users
+  getAll: async () => {
+    const response = await apiRequest('/users/');
+    // The API returns a direct array of users
+    return response || [];
+  },
+
+  // Get user by ID
+  getById: async (id) => {
+    return await apiRequest(`/users/${id}`);
+  },
+
+  // Create new user
+  create: async (userData) => {
+    return await apiRequest('/users/create', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+  },
+
+  // Update user
+  update: async (id, userData) => {
+    return await apiRequest(`/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(userData),
+    });
+  },
+
+  // Delete user
+  delete: async (id) => {
+    return await apiRequest(`/users/${id}`, {
       method: 'DELETE',
     });
   },
@@ -85,5 +180,7 @@ export const authAPI = {
 
 export default {
   mediatorsAPI,
+  leadsAPI,
+  usersAPI,
   authAPI,
 };

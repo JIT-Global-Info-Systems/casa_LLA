@@ -79,11 +79,12 @@
 //     </div>
 //   )
 // }
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import Modal from "@/components/ui/modal"
 import LeadStepper from "@/components/ui/LeadStepper"
 import Leads from "./Leads"
+import { useLeads } from "../context/LeadsContext.jsx"
 
 import {
   Table,
@@ -96,28 +97,16 @@ import {
 
 import { Edit } from "lucide-react" // ← Import Edit Icon
 
-const leadsData = [
-    {
-      id: 1,
-      name: "Ravi",
-      location: "Chennai",
-      zone: "North",
-      status: "Pending",
-      stageName: "Feasibility Team",
-    },
-    {
-      id: 2,
-      name: "Kumar",
-      location: "Bangalore",
-      zone: "East",
-      status: "Approved",
-      stageName: "Legal",
-    },
-  ]
 
 export default function LeadsPage() {
+  const { leads, loading, error, fetchLeads } = useLeads()
   const [open, setOpen] = useState(false)
   const [selectedLead, setSelectedLead] = useState(null)
+
+  // Fetch leads on component mount
+  useEffect(() => {
+    fetchLeads()
+  }, [])
 
   
   const handleCreate = () => {
@@ -144,28 +133,44 @@ export default function LeadsPage() {
         <Button onClick={handleCreate}>+ Create Lead</Button>
       </div>
 
+      {/* Loading and Error States */}
+      {loading && (
+        <div className="text-center py-8">
+          <p className="text-slate-600">Loading leads...</p>
+        </div>
+      )}
+      
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
+          <p className="text-red-600">Error: {error}</p>
+        </div>
+      )}
+
       {/* Table */}
+      {!loading && !error && (
       <div className="bg-white rounded-lg border">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>ID</TableHead>
-              <TableHead>Name</TableHead>
+              <TableHead>Contact Number</TableHead>
+              <TableHead>Lead Type</TableHead>
               <TableHead>Location</TableHead>
-              <TableHead>Zone</TableHead>
+              <TableHead>Transaction Type</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Action</TableHead>
             </TableRow>
           </TableHeader>
 
           <TableBody>
-            {leadsData.map((lead) => (
-              <TableRow key={lead.id}>
-                <TableCell>{lead.id}</TableCell>
-                <TableCell>{lead.name}</TableCell>
-                <TableCell>{lead.location}</TableCell>
-                <TableCell>{lead.zone}</TableCell>
-                <TableCell>{lead.status}</TableCell>
+            {leads.map((lead) => (
+              <TableRow key={lead._id}>
+                <TableCell>{lead._id}</TableCell>
+                <TableCell>{lead.contactNumber}</TableCell>
+                <TableCell>{lead.leadType}</TableCell>
+                <TableCell>{lead.location || 'N/A'}</TableCell>
+                <TableCell>{lead.transactionType}</TableCell>
+                <TableCell>{lead.lead_status}</TableCell>
                 <TableCell>
                   {/* Edit Icon Button */}
                   <Button
@@ -181,6 +186,7 @@ export default function LeadsPage() {
           </TableBody>
         </Table>
       </div>
+      )}
 
       {/* Modal */}
       <Modal open={open} onClose={() => setOpen(false)}>
@@ -192,7 +198,7 @@ export default function LeadsPage() {
     )}
 
     {/* Always show form */}
-    <Leads data={selectedLead} />
+    <Leads data={selectedLead} onClose={() => setOpen(false)} />
 
   </div>
 </Modal>
