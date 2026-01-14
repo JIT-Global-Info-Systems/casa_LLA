@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const upload = require("../middleware/uploadMiddleware");
-const { createMediator } = require("../controllers/MediatorController");
+const { createMediator, updateMediator } = require("../controllers/MediatorController");
 
 router.post(
   "/create",
@@ -11,5 +11,7 @@ router.post(
   ]),
   createMediator
 );
+
+router.put("/update/:mediatorId", updateMediator);
 
 module.exports = router;

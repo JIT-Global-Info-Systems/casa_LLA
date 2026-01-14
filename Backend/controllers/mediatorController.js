@@ -59,3 +59,76 @@ exports.createMediator = async (req, res) => {
     });
   }
 };
+
+
+
+const fs = require("fs");
+const path = require("path");
+
+
+exports.updateMediator = async (req, res) => {
+  try {
+    const { mediatorId } = req.params;
+
+    const mediator = await Mediator.findById(mediatorId);
+    if (!mediator) {
+      return res.status(404).json({
+        message: "Mediator not found"
+      });
+    }
+
+    // Handle PAN upload update
+    if (req.files?.pan_upload) {
+      if (mediator.pan_upload && fs.existsSync(mediator.pan_upload)) {
+        fs.unlinkSync(mediator.pan_upload);
+      }
+      mediator.pan_upload = req.files.pan_upload[0].path;
+    }
+
+    // Handle Aadhar upload update
+    if (req.files?.aadhar_upload) {
+      if (mediator.aadhar_upload && fs.existsSync(mediator.aadhar_upload)) {
+        fs.unlinkSync(mediator.aadhar_upload);
+      }
+      mediator.aadhar_upload = req.files.aadhar_upload[0].path;
+    }
+
+    // Update other fields
+    const editableFields = [
+      "name",
+      "email",
+      "phone_primary",
+      "phone_secondary",
+      "category",
+      "pan_number",
+      "aadhar_number",
+      "location",
+      "linked_executive",
+      "mediator_type",
+      "status"
+    ];
+
+    editableFields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        mediator[field] = req.body[field];
+      }
+    });
+
+    // Address update (JSON string)
+    if (req.body.address) {
+      mediator.address = JSON.parse(req.body.address);
+    }
+
+    await mediator.save();
+
+    return res.status(200).json({
+      message: "Mediator updated successfully",
+      data: mediator
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Server error",
+      error: error.message
+    });
+  }
+};
