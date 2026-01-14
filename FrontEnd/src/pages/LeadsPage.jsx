@@ -152,12 +152,12 @@ export default function LeadsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>Contact Number</TableHead>
-              <TableHead>Lead Type</TableHead>
+              <TableHead>Name</TableHead>
               <TableHead>Location</TableHead>
-              <TableHead>Transaction Type</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>Region</TableHead>
+              <TableHead>Zone</TableHead>
+              <TableHead>Lead Type</TableHead>
+              {/* <TableHead>Status</TableHead> */}
               <TableHead>Action</TableHead>
             </TableRow>
           </TableHeader>
@@ -165,12 +165,11 @@ export default function LeadsPage() {
           <TableBody>
             {leads.map((lead) => (
               <TableRow key={lead._id}>
-                <TableCell>{lead._id}</TableCell>
-                <TableCell>{lead.contactNumber}</TableCell>
-                <TableCell>{lead.leadType}</TableCell>
+                <TableCell>{lead.mediatorName || 'N/A'}</TableCell>
                 <TableCell>{lead.location || 'N/A'}</TableCell>
-                <TableCell>{lead.transactionType}</TableCell>
-                <TableCell>{lead.lead_status}</TableCell>
+                <TableCell>{lead.source || 'N/A'}</TableCell>
+                <TableCell>{lead.zone || 'N/A'}</TableCell>
+                <TableCell>{lead.leadType || 'N/A'}</TableCell>
                 <TableCell>
                   {/* Edit Icon Button */}
                   <Button

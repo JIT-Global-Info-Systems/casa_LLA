@@ -113,7 +113,7 @@ export const leadsAPI = {
 
   // Update lead
   update: async (id, leadData) => {
-    return await apiRequest(`/leads/${id}`, {
+    return await apiRequest(`/leads/update/${id}`, {
       method: 'PUT',
       body: JSON.stringify(leadData),
     });
