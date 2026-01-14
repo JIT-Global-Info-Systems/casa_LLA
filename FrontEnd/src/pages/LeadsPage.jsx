@@ -82,6 +82,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import Modal from "@/components/ui/modal"
+import LeadStepper from "@/components/ui/LeadStepper"
 import Leads from "./Leads"
 
 import {
@@ -96,14 +97,29 @@ import {
 import { Edit } from "lucide-react" // ← Import Edit Icon
 
 const leadsData = [
-  { id: 1, name: "Ravi", location: "Chennai", zone: "North", status: "Pending" },
-  { id: 2, name: "Kumar", location: "Bangalore", zone: "East", status: "Approved" },
-]
+    {
+      id: 1,
+      name: "Ravi",
+      location: "Chennai",
+      zone: "North",
+      status: "Pending",
+      stageName: "Feasibility Team",
+    },
+    {
+      id: 2,
+      name: "Kumar",
+      location: "Bangalore",
+      zone: "East",
+      status: "Approved",
+      stageName: "Legal",
+    },
+  ]
 
 export default function LeadsPage() {
   const [open, setOpen] = useState(false)
   const [selectedLead, setSelectedLead] = useState(null)
 
+  
   const handleCreate = () => {
     setSelectedLead(null)
     setOpen(true)
@@ -125,7 +141,7 @@ export default function LeadsPage() {
             </div>
             </div>
           
-        <Button onClick={handleCreate}>+ Create Lead</Button>
+        <Button onClick={handleCreate}>+ Create</Button>
       </div>
 
       {/* Table */}
@@ -168,8 +184,21 @@ export default function LeadsPage() {
 
       {/* Modal */}
       <Modal open={open} onClose={() => setOpen(false)}>
-        <Leads data={selectedLead} />
-      </Modal>
+  <div className="p-4 space-y-4">
+
+    {/* Show stepper only when editing/viewing */}
+    {selectedLead && (
+      <LeadStepper stageName={selectedLead.stageName} />
+    )}
+
+    {/* Always show form */}
+    <Leads data={selectedLead} />
+
+  </div>
+</Modal>
+
+
+
     </div>
   )
 }

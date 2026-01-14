@@ -15,14 +15,14 @@ import {
 } from "lucide-react";
 
 export const navItems = [
-  { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/leads", label: "Leads", icon: Users },
-  { path: "/users", label: "Users", icon: UserRound },
-  // { path: "/documents", label: "Documents", icon: FileText },
-  { path: "/owners", label: "Approval", icon: Users },
-  { path: "/mediators", label: "Mediators", icon: Handshake },
-  { path: "/masters", label: "Masters", icon: Settings },
-  // { path: "/reports", label: "Reports", icon: BarChart3 },
+  { path: "/pages/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { path: "/pages/leads", label: "Leads", icon: Users },
+  { path: "/pages/users", label: "Users", icon: UserRound },
+  // { path: "/pages/documents", label: "Documents", icon: FileText },
+  { path: "/pages/owners", label: "Approval", icon: Users },
+  { path: "/pages/mediators", label: "Mediators", icon: Handshake },
+  { path: "/pages/masters", label: "Masters", icon: Settings },
+  // { path: "/pages/reports", label: "Reports", icon: BarChart3 },
 ];
 
 const documentsItems = [
@@ -35,7 +35,7 @@ const documentsItems = [
 function Sidebar() {
   const location = useLocation();
   const activeDocHash =
-    location.pathname === "/documents" ? location.hash || "#policies" : "";
+    location.pathname === "/pages/documents" ? location.hash || "#policies" : "";
 
   return (
     <aside className="hidden md:fixed md:inset-y-0 md:flex md:w-52 md:flex-col md:border-r md:border-indigo-700 md:bg-indigo-700">
@@ -53,7 +53,7 @@ function Sidebar() {
             <div className="mt-2 space-y-1">
               {documentsItems.map((item) => {
                 const Icon = item.icon;
-                const to = `/documents${item.hash}`;
+                const to = `/pages/documents${item.hash}`;
                 const isActive = activeDocHash === item.hash;
 
                 return (
@@ -78,7 +78,7 @@ function Sidebar() {
       </div>
       <div className="border-t border-indigo-600/60 p-3">
         <div className="rounded-lg bg-white/10 px-3 py-2 text-xs text-white/80">
-          Enterprise CRM
+          Land Lead Aggregation
         </div>
       </div>
     </aside>

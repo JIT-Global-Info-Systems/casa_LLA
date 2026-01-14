@@ -17,7 +17,7 @@ export function Input({
         <input
           type={type}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={onChange}
           placeholder={placeholder}
           className="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black"
         />
