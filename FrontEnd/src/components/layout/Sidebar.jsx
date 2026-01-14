@@ -78,7 +78,7 @@ function Sidebar() {
       </div>
       <div className="border-t border-indigo-600/60 p-3">
         <div className="rounded-lg bg-white/10 px-3 py-2 text-xs text-white/80">
-          Enterprise CRM
+          Land Lead Aggregation
         </div>
       </div>
     </aside>
