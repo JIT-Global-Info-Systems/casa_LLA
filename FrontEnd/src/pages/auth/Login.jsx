@@ -19,9 +19,11 @@ function Login() {
 
   return (
     <div 
-      className="min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat relative pt-20 overflow-hidden"
-      style={{ backgroundImage: `url(${loginBg})` }}
-    >
+  className="min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat relative pt-20 overflow-hidden"
+  style={{ 
+    backgroundImage: "url('https://images.pexels.com/photos/323705/pexels-photo-323705.jpeg')" 
+  }}
+>
       <div className="absolute inset-0 bg-black opacity-20"></div>
       
       {/* Animated Clouds */}
@@ -57,7 +59,7 @@ function Login() {
       {/* Test animaton */}
         
 
-      <Card className="w-full max-w-md shadow-2xl border-0 overflow-hidden relative z-10 bg-white">
+      <Card className="w-full max-w-md shadow-2xl border-0 overflow-hidden relative z-10" style={{backgroundColor: '#99b1cef5'}}>
         <div className="flex">
           {/* Login Form */}
           <div className="w-full p-6 lg:p-8">
@@ -77,7 +79,7 @@ function Login() {
                   type="email"
                   placeholder="Enter your email"
                   value={email}
-                  onChange={setEmail}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                 />
                 
@@ -86,7 +88,7 @@ function Login() {
                   type="password"
                   placeholder="Enter your password"
                   value={password}
-                  onChange={setPassword}
+                  onChange={(e) => setPassword(e.target.value)}
                   required
                 />
 

@@ -1,20 +1,9 @@
 import React, { useState } from "react";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
-import {
-  Button,
-} from "@/components/ui/button";
-import {
-  Input,
-} from "@/components/ui/input";
-import {
-  Label,
-} from "@/components/ui/label";
-import {
-  Textarea,
-} from "@/components/ui/textarea";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -175,20 +164,22 @@ function Mediators() {
 
   // Generate new mediator ID
   const generateId = () => {
-    const ids = mediators.map(m => parseInt(m.id.replace('MED', '')));
+    const ids = mediators.map((m) => parseInt(m.id.replace("MED", "")));
     const maxId = Math.max(...ids, 0);
-    return `MED${String(maxId + 1).padStart(3, '0')}`;
+    return `MED${String(maxId + 1).padStart(3, "0")}`;
   };
 
   // Filter mediators
   const filteredMediators = mediators.filter((mediator) => {
-    const matchesSearch = searchTerm === "" ||
+    const matchesSearch =
+      searchTerm === "" ||
       mediator.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       mediator.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       mediator.phone.includes(searchTerm) ||
       mediator.id.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesExecutive = selectedExecutive === "" || mediator.createdBy === selectedExecutive;
+    const matchesExecutive =
+      selectedExecutive === "" || mediator.createdBy === selectedExecutive;
 
     const matchesDateRange = (() => {
       if (!dateFrom && !dateTo) return true;
@@ -255,7 +246,7 @@ function Mediators() {
 
   const confirmDelete = () => {
     if (mediatorToDelete) {
-      setMediators(prev => prev.filter(m => m.id !== mediatorToDelete.id));
+      setMediators((prev) => prev.filter((m) => m.id !== mediatorToDelete.id));
       setIsDeleteConfirmOpen(false);
       setMediatorToDelete(null);
     }
@@ -264,25 +255,27 @@ function Mediators() {
   const handleSave = () => {
     if (selectedMediator) {
       // Edit existing mediator
-      setMediators(prev => prev.map(m =>
-        m.id === selectedMediator.id
-          ? {
-              ...m,
-              name: formData.mediatorName,
-              email: formData.email,
-              phone: formData.phonePrimary,
-              phonePrimary: formData.phonePrimary,
-              phoneSecondary: formData.phoneSecondary,
-              category: formData.category,
-              panNumber: formData.panNumber,
-              aadhaarNumber: formData.aadhaarNumber,
-              location: formData.location,
-              linkedExecutive: formData.linkedExecutive,
-              officeIndividual: formData.officeIndividual,
-              address: formData.address,
-            }
-          : m
-      ));
+      setMediators((prev) =>
+        prev.map((m) =>
+          m.id === selectedMediator.id
+            ? {
+                ...m,
+                name: formData.mediatorName,
+                email: formData.email,
+                phone: formData.phonePrimary,
+                phonePrimary: formData.phonePrimary,
+                phoneSecondary: formData.phoneSecondary,
+                category: formData.category,
+                panNumber: formData.panNumber,
+                aadhaarNumber: formData.aadhaarNumber,
+                location: formData.location,
+                linkedExecutive: formData.linkedExecutive,
+                officeIndividual: formData.officeIndividual,
+                address: formData.address,
+              }
+            : m
+        )
+      );
     } else {
       // Add new mediator
       const newMediator = {
@@ -299,10 +292,10 @@ function Mediators() {
         linkedExecutive: formData.linkedExecutive,
         officeIndividual: formData.officeIndividual,
         address: formData.address,
-        registeredDate: new Date().toISOString().split('T')[0],
+        registeredDate: new Date().toISOString().split("T")[0],
         createdBy: "Admin",
       };
-      setMediators(prev => [...prev, newMediator]);
+      setMediators((prev) => [...prev, newMediator]);
     }
 
     setIsAddEditModalOpen(false);
@@ -320,18 +313,22 @@ function Mediators() {
     <div className="flex-1 space-y-6 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-      <div className="text-xl font-bold text-indigo-700">
-      Mediators
-              <div className="text-sm text-slate-500">
-              Mediator list · Last updated today
-            </div>
-            </div>
+        <div className="text-xl font-bold text-indigo-700">
+          Mediators
+          <div className="text-sm text-slate-500">
+            Mediator list · Last updated today
+          </div>
+        </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleRefresh}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
           </Button>
-          <Button onClick={handleAdd} size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white">
+          <Button
+            onClick={handleAdd}
+            size="sm"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white"
+          >
             <Plus className="h-4 w-4 mr-2" />
             Add
           </Button>
@@ -344,7 +341,7 @@ function Mediators() {
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex-1 min-w-[200px]">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                {/* <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" /> */}
                 <Input
                   placeholder="Search mediators..."
                   value={searchTerm}
@@ -355,11 +352,19 @@ function Mediators() {
             </div>
 
             <div className="flex items-center gap-2">
-              <Label className="text-sm text-slate-600 whitespace-nowrap">Executive:</Label>
+              <Label className="text-sm text-slate-600 whitespace-nowrap">
+                Executive:
+              </Label>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="w-[140px] justify-between bg-white">
-                    <span className="truncate">{selectedExecutive || "Select"}</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-[140px] justify-between bg-white"
+                  >
+                    <span className="truncate">
+                      {selectedExecutive || "Select"}
+                    </span>
                     <ChevronDown className="h-4 w-4 ml-2 flex-shrink-0" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -367,13 +372,19 @@ function Mediators() {
                   <DropdownMenuItem onClick={() => setSelectedExecutive("")}>
                     All
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setSelectedExecutive("Admin")}>
+                  <DropdownMenuItem
+                    onClick={() => setSelectedExecutive("Admin")}
+                  >
                     Admin
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setSelectedExecutive("Manager")}>
+                  <DropdownMenuItem
+                    onClick={() => setSelectedExecutive("Manager")}
+                  >
                     Manager
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setSelectedExecutive("Executive")}>
+                  <DropdownMenuItem
+                    onClick={() => setSelectedExecutive("Executive")}
+                  >
                     Executive
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -381,7 +392,9 @@ function Mediators() {
             </div>
 
             <div className="flex items-center gap-2">
-              <Label className="text-sm text-slate-600 whitespace-nowrap">From:</Label>
+              <Label className="text-sm text-slate-600 whitespace-nowrap">
+                From:
+              </Label>
               <Input
                 type="date"
                 value={dateFrom}
@@ -392,7 +405,9 @@ function Mediators() {
             </div>
 
             <div className="flex items-center gap-2">
-              <Label className="text-sm text-slate-600 whitespace-nowrap">To:</Label>
+              <Label className="text-sm text-slate-600 whitespace-nowrap">
+                To:
+              </Label>
               <Input
                 type="date"
                 value={dateTo}
@@ -424,47 +439,72 @@ function Mediators() {
                   <TableHead className="font-medium">Email</TableHead>
                   <TableHead className="font-medium">Registered Date</TableHead>
                   <TableHead className="font-medium">Created By</TableHead>
-                  <TableHead className="text-right font-medium">Action</TableHead>
+                  <TableHead className="text-right font-medium">
+                    Action
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredMediators.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-slate-500">
+                    <TableCell
+                      colSpan={8}
+                      className="text-center py-8 text-slate-500"
+                    >
                       No mediators found
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredMediators.map((mediator) => (
                     <TableRow key={mediator.id}>
-                      <TableCell className="font-medium">{mediator.id}</TableCell>
+                      <TableCell className="font-medium">
+                        {mediator.id}
+                      </TableCell>
                       <TableCell>{mediator.name}</TableCell>
                       <TableCell>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          mediator.category === 'Individual'
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-purple-100 text-purple-800'
-                        }`}>
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            mediator.category === "Individual"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-purple-100 text-purple-800"
+                          }`}
+                        >
                           {mediator.category}
                         </span>
                       </TableCell>
-                      <TableCell className="text-slate-600">{mediator.phone}</TableCell>
-                      <TableCell className="text-slate-600">{mediator.email}</TableCell>
-                      <TableCell className="text-slate-600">{mediator.registeredDate}</TableCell>
-                      <TableCell className="text-slate-600">{mediator.createdBy}</TableCell>
+                      <TableCell className="text-slate-600">
+                        {mediator.phone}
+                      </TableCell>
+                      <TableCell className="text-slate-600">
+                        {mediator.email}
+                      </TableCell>
+                      <TableCell className="text-slate-600">
+                        {mediator.registeredDate}
+                      </TableCell>
+                      <TableCell className="text-slate-600">
+                        {mediator.createdBy}
+                      </TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                            >
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="bg-white">
-                            <DropdownMenuItem onClick={() => alert(`View ${mediator.name}`)}>
+                            <DropdownMenuItem
+                              onClick={() => alert(`View ${mediator.name}`)}
+                            >
                               <Eye className="h-4 w-4 mr-2" />
                               View
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleEdit(mediator)}>
+                            <DropdownMenuItem
+                              onClick={() => handleEdit(mediator)}
+                            >
                               <Edit className="h-4 w-4 mr-2" />
                               Edit
                             </DropdownMenuItem>
@@ -488,8 +528,10 @@ function Mediators() {
           {/* Pagination */}
           <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200">
             <div className="text-sm text-slate-600">
-              Showing {filteredMediators.length} result{filteredMediators.length !== 1 ? 's' : ''}
-              {filteredMediators.length !== mediators.length && ` (of ${mediators.length} total)`}
+              Showing {filteredMediators.length} result
+              {filteredMediators.length !== 1 ? "s" : ""}
+              {filteredMediators.length !== mediators.length &&
+                ` (of ${mediators.length} total)`}
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" disabled>
@@ -517,7 +559,10 @@ function Mediators() {
 
           <div className="grid grid-cols-2 gap-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="mediatorName" className="text-sm font-medium text-slate-700">
+              <Label
+                htmlFor="mediatorName"
+                className="text-sm font-medium text-slate-700"
+              >
                 Mediator Name <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -531,7 +576,10 @@ function Mediators() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium text-slate-700">
+              <Label
+                htmlFor="email"
+                className="text-sm font-medium text-slate-700"
+              >
                 Email <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -544,7 +592,10 @@ function Mediators() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="phonePrimary" className="text-sm font-medium text-slate-700">
+              <Label
+                htmlFor="phonePrimary"
+                className="text-sm font-medium text-slate-700"
+              >
                 Phone Primary <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -575,18 +626,26 @@ function Mediators() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="category" className="text-sm font-medium text-slate-700">
+              <Label
+                htmlFor="category"
+                className="text-sm font-medium text-slate-700"
+              >
                 Category <span className="text-red-500">*</span>
               </Label>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between bg-white">
+                  <Button
+                    variant="outline"
+                    className="w-full justify-between bg-white"
+                  >
                     {formData.category || "Select category"}
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-full bg-white">
-                  <DropdownMenuItem onClick={() => handleInputChange("category", "Individual")}>
+                  <DropdownMenuItem
+                    onClick={() => handleInputChange("category", "Individual")}
+                  >
                     Individual
                   </DropdownMenuItem>
                   <DropdownMenuItem
@@ -639,13 +698,18 @@ function Mediators() {
               </Label>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between bg-white">
+                  <Button
+                    variant="outline"
+                    className="w-full justify-between bg-white"
+                  >
                     {formData.location || "Select location"}
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-full bg-white">
-                  <DropdownMenuItem onClick={() => handleInputChange("location", "Mumbai")}>
+                  <DropdownMenuItem
+                    onClick={() => handleInputChange("location", "Mumbai")}
+                  >
                     Mumbai
                   </DropdownMenuItem>
                   <DropdownMenuItem
@@ -676,13 +740,20 @@ function Mediators() {
               </Label>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between bg-white">
+                  <Button
+                    variant="outline"
+                    className="w-full justify-between bg-white"
+                  >
                     {formData.linkedExecutive || "Select executive"}
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-full bg-white">
-                  <DropdownMenuItem onClick={() => handleInputChange("linkedExecutive", "Executive 1")}>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      handleInputChange("linkedExecutive", "Executive 1")
+                    }
+                  >
                     Executive 1
                   </DropdownMenuItem>
                   <DropdownMenuItem
@@ -712,13 +783,20 @@ function Mediators() {
               </Label>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between bg-white">
+                  <Button
+                    variant="outline"
+                    className="w-full justify-between bg-white"
+                  >
                     {formData.officeIndividual || "Select type"}
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-full bg-white">
-                  <DropdownMenuItem onClick={() => handleInputChange("officeIndividual", "Office")}>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      handleInputChange("officeIndividual", "Office")
+                    }
+                  >
                     Office
                   </DropdownMenuItem>
                   <DropdownMenuItem
@@ -750,13 +828,19 @@ function Mediators() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setIsAddEditModalOpen(false);
-              resetForm();
-            }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsAddEditModalOpen(false);
+                resetForm();
+              }}
+            >
               Cancel
             </Button>
-            <Button onClick={handleSave} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+            <Button
+              onClick={handleSave}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+            >
               {selectedMediator ? "Update" : "Save"}
             </Button>
           </DialogFooter>
@@ -764,22 +848,32 @@ function Mediators() {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+      <AlertDialog
+        open={isDeleteConfirmOpen}
+        onOpenChange={setIsDeleteConfirmOpen}
+      >
         <AlertDialogContent className="bg-white">
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the mediator <strong>{mediatorToDelete?.name}</strong> (ID: {mediatorToDelete?.id}). This action cannot be undone.
+              This will permanently delete the mediator{" "}
+              <strong>{mediatorToDelete?.name}</strong> (ID:{" "}
+              {mediatorToDelete?.id}). This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => {
-              setIsDeleteConfirmOpen(false);
-              setMediatorToDelete(null);
-            }}>
+            <AlertDialogCancel
+              onClick={() => {
+                setIsDeleteConfirmOpen(false);
+                setMediatorToDelete(null);
+              }}
+            >
               Cancel
             </AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700 text-white">
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
