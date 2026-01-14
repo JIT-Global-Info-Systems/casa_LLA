@@ -1,109 +1,89 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const API_BASE_URL = 'http://localhost:5000/api';
 
-class ApiService {
-  constructor() {
-    this.baseURL = API_BASE_URL;
-  }
+// Generic API request helper
+const apiRequest = async (endpoint, options = {}) => {
+  const url = `${API_BASE_URL}${endpoint}`;
+  
+  const config = {
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+    ...options,
+  };
 
-  async request(endpoint, options = {}) {
-    const url = `${this.baseURL}${endpoint}`;
+  try {
+    const response = await fetch(url, config);
     
-    const config = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-      ...options,
-    };
-
-    try {
-      const response = await fetch(url, config);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('API request failed:', error);
-      throw error;
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
     }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('API Request Error:', error);
+    throw error;
   }
-
-  // GET request
-  async get(endpoint) {
-    return this.request(endpoint, { method: 'GET' });
-  }
-
-  // POST request
-  async post(endpoint, data) {
-    return this.request(endpoint, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
-
-  // PUT request
-  async put(endpoint, data) {
-    return this.request(endpoint, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  }
-
-  // DELETE request
-  async delete(endpoint) {
-    return this.request(endpoint, { method: 'DELETE' });
-  }
-}
-
-// API endpoints for different resources
-export const api = new ApiService();
-
-// Leads API
-export const leadsAPI = {
-  getAll: () => api.get('/leads/'),
-  getById: (id) => api.get(`/leads/${id}`),
-  create: (data) => api.post('/leads/', data),
-  update: (id, data) => api.put(`/leads/${id}`, data),
-  delete: (id) => api.delete(`/leads/${id}`),
 };
 
-// Mediators API - Updated based on actual response structure
+// Mediators API
 export const mediatorsAPI = {
-  getAll: () => api.get('/mediators/'),
-  getById: (id) => api.get(`/mediators/${id}`),
-  create: (data) => api.post('/mediators/', data),
-  update: (id, data) => api.put(`/mediators/${id}`, data),
-  delete: (id) => api.delete(`/mediators/${id}`),
+  // Get all mediators
+  getAll: async () => {
+    const response = await apiRequest('/mediators/all');
+    // The API returns { count: number, data: [...] }
+    // We want to return the data array
+    return response.data || [];
+  },
+
+  // Get mediator by ID
+  getById: async (id) => {
+    return await apiRequest(`/mediators/${id}`);
+  },
+
+  // Create new mediator
+  create: async (mediatorData) => {
+    return await apiRequest('/mediators/create', {
+      method: 'POST',
+      body: JSON.stringify(mediatorData),
+    });
+  },
+
+  // Update mediator
+  update: async (id, mediatorData) => {
+    return await apiRequest(`/mediators/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(mediatorData),
+    });
+  },
+
+  // Delete mediator
+  delete: async (id) => {
+    return await apiRequest(`/mediators/${id}`, {
+      method: 'DELETE',
+    });
+  },
 };
 
-// Users API
-export const usersAPI = {
-  getAll: () => api.get('/users/'),
-  getById: (id) => api.get(`/users/${id}`),
-  create: (data) => api.post('/users/', data),
-  update: (id, data) => api.put(`/users/${id}`, data),
-  delete: (id) => api.delete(`/users/${id}`),
-  login: (data) => api.post('/users/login', data),
-  register: (data) => api.post('/users/register', data),
+// Export other API modules as needed
+export const authAPI = {
+  login: async (credentials) => {
+    return await apiRequest('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(credentials),
+    });
+  },
+  
+  register: async (userData) => {
+    return await apiRequest('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+  },
 };
 
-// Documents API
-export const documentsAPI = {
-  getAll: () => api.get('/documents/'),
-  getById: (id) => api.get(`/documents/${id}`),
-  create: (data) => api.post('/documents/', data),
-  update: (id, data) => api.put(`/documents/${id}`, data),
-  delete: (id) => api.delete(`/documents/${id}`),
+export default {
+  mediatorsAPI,
+  authAPI,
 };
-
-// Dashboard API
-export const dashboardAPI = {
-  getStats: () => api.get('/dashboard/stats'),
-  getCharts: () => api.get('/dashboard/charts'),
-  getRecentActivity: () => api.get('/dashboard/activity'),
-};
-
-export default api;

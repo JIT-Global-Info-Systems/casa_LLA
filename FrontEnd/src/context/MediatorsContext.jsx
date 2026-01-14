@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { mediatorsAPI } from '../services/api';
 
-const MediatorsContext = createContext();
+const MediatorsContext = createContext(null);
 
 export const useMediators = () => {
   const context = useContext(MediatorsContext);
@@ -16,25 +16,24 @@ export const MediatorsProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetchMediators = useCallback(async () => {
+  const fetchMediators = async () => {
     try {
       setLoading(true);
       setError(null);
       const response = await mediatorsAPI.getAll();
-      setMediators(response); // Response is already an array
+      setMediators(response);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
   const getMediatorById = async (id) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await mediatorsAPI.getById(id);
-      return response; // Response is already mediator object
+      return await mediatorsAPI.getById(id);
     } catch (err) {
       setError(err.message);
       throw err;
@@ -48,7 +47,7 @@ export const MediatorsProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       const response = await mediatorsAPI.create(mediatorData);
-      setMediators(prev => [...prev, response]); // Response is already mediator object
+      setMediators(prev => [...prev, response]);
       return response;
     } catch (err) {
       setError(err.message);
@@ -63,11 +62,9 @@ export const MediatorsProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       const response = await mediatorsAPI.update(id, mediatorData);
-      setMediators(prev => 
-        prev.map(mediator => 
-          mediator._id === id 
-            ? { ...mediator, ...response } // Response is already updated mediator object
-            : mediator
+      setMediators(prev =>
+        prev.map(m =>
+          m._id === id ? { ...m, ...response } : m
         )
       );
       return response;
@@ -84,7 +81,7 @@ export const MediatorsProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       await mediatorsAPI.delete(id);
-      setMediators(prev => prev.filter(mediator => mediator._id !== id));
+      setMediators(prev => prev.filter(m => m._id !== id));
     } catch (err) {
       setError(err.message);
       throw err;
@@ -95,20 +92,20 @@ export const MediatorsProvider = ({ children }) => {
 
   const clearError = () => setError(null);
 
-  const value = {
-    mediators,
-    loading,
-    error,
-    fetchMediators,
-    getMediatorById,
-    createMediator,
-    updateMediator,
-    deleteMediator,
-    clearError,
-  };
-
   return (
-    <MediatorsContext.Provider value={value}>
+    <MediatorsContext.Provider
+      value={{
+        mediators,
+        loading,
+        error,
+        fetchMediators,
+        getMediatorById,
+        createMediator,
+        updateMediator,
+        deleteMediator,
+        clearError,
+      }}
+    >
       {children}
     </MediatorsContext.Provider>
   );
