@@ -51,6 +51,7 @@ import {
 function Mediators() {
   const { mediators, loading, error, fetchMediators, createMediator } = useMediators();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [selectedMediator, setSelectedMediator] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedExecutive, setSelectedExecutive] = useState("");
   const [dateFrom, setDateFrom] = useState("");
@@ -174,6 +175,27 @@ function Mediators() {
     setDateFrom("");
     setDateTo("");
     fetchMediators();
+  };
+
+  const resetForm = () => {
+    setFormData({
+      mediatorName: "",
+      email: "",
+      phonePrimary: "",
+      phoneSecondary: "",
+      category: "",
+      panNumber: "",
+      aadhaarNumber: "",
+      location: "",
+      linkedExecutive: "",
+      officeIndividual: "",
+      address: "",
+    });
+    setFiles({
+      pan_upload: null,
+      aadhar_upload: null,
+    });
+    setSelectedMediator(null);
   };
 
   return (
@@ -403,7 +425,7 @@ function Mediators() {
       </Card>
 
       {/* Add/Edit Mediator Modal */}
-      <Dialog open={isAddEditModalOpen} onOpenChange={setIsAddEditModalOpen}>
+      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold text-slate-900">
@@ -685,7 +707,7 @@ function Mediators() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => {
-              setIsAddEditModalOpen(false);
+              setIsAddModalOpen(false);
               resetForm();
             }}>
               Cancel
