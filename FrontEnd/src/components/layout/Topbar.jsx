@@ -16,15 +16,15 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 const pageTitles = {
-  "/": "Dashboard",
-  "/dashboard": "Dashboard",
-  "/leads": "Leads",
-  "/users": "Users",
-  "/documents": "Documents",
-  "/owners": "Owners",
-  "/mediators": "Mediators",
-  "/masters": "Masters",
-  "/reports": "Reports",
+  "/pages": "Dashboard",
+  "/pages/dashboard": "Dashboard",
+  "/pages/leads": "Leads",
+  "/pages/users": "Users",
+  "/pages/documents": "Documents",
+  "/pages/owners": "Owners",
+  "/pages/mediators": "Mediators",
+  "/pages/masters": "Masters",
+  "/pages/reports": "Reports",
 };
 
 function Topbar() {
@@ -35,7 +35,7 @@ function Topbar() {
   const isItemActive = (path) => {
     return (
       location.pathname === path ||
-      (path === "/dashboard" && location.pathname === "/")
+      (path === "/pages/dashboard" && location.pathname === "/pages")
     );
   };
 

@@ -14,7 +14,7 @@ function Login() {
     e.preventDefault()
     // Add your login logic here
     console.log('Login attempt:', { email, password })
-    // navigate('/dashboard')
+    navigate('/pages/dashboard')
   }
 
   return (

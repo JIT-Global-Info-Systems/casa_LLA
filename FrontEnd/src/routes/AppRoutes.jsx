@@ -32,8 +32,8 @@ function AppRoutes() {
 
     <BrowserRouter>
       <Routes>
-        <Route path="login" element={<Login/>}/>
-        <Route path="/" element={<MainLayout />}>
+        <Route path="/" element={<Login/>}/>
+        <Route path="/pages" element={<MainLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="leads" element={<LeadsPage />} />
