@@ -5,7 +5,7 @@ import Users from "@/pages/Users";
 import LeadsPage from "@/pages/LeadsPage";
 import Documents from "@/pages/Documents";
 import Mediators from "@/pages/Mediators";
-
+import Login from "@/pages/auth/Login";
 // const Leads = () => (
 //   <div className="p-6">
 //     <h1 className="text-2xl font-bold">Leads</h1>
@@ -29,9 +29,11 @@ const Reports = () => (
 
 function AppRoutes() {
   return (
+
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<MainLayout />}>
+        <Route path="/" element={<Login/>}/>
+        <Route path="/pages" element={<MainLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="leads" element={<LeadsPage />} />

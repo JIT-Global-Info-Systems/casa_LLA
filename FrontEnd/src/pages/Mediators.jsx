@@ -19,6 +19,24 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Plus,
   Search,
   RefreshCw,
@@ -215,54 +233,50 @@ function Mediators() {
             </div>
 
             <div className="flex items-center gap-2">
-              <Label className="text-sm text-slate-600">Executive:</Label>
+              <Label className="text-sm text-slate-600 whitespace-nowrap">Executive:</Label>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-[140px] justify-between"
-                  >
-                    {selectedExecutive || "Select"}
-                    <ChevronDown className="h-4 w-4" />
+                  <Button variant="outline" size="sm" className="w-[140px] justify-between bg-white">
+                    <span className="truncate">{selectedExecutive || "Select"}</span>
+                    <ChevronDown className="h-4 w-4 ml-2 flex-shrink-0" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem
-                    onClick={() => setSelectedExecutive("Executive 1")}
-                  >
-                    Executive 1
+                <DropdownMenuContent className="bg-white">
+                  <DropdownMenuItem onClick={() => setSelectedExecutive("")}>
+                    All
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => setSelectedExecutive("Executive 2")}
-                  >
-                    Executive 2
+                  <DropdownMenuItem onClick={() => setSelectedExecutive("Admin")}>
+                    Admin
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => setSelectedExecutive("Executive 3")}
-                  >
-                    Executive 3
+                  <DropdownMenuItem onClick={() => setSelectedExecutive("Manager")}>
+                    Manager
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSelectedExecutive("Executive")}>
+                    Executive
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
 
             <div className="flex items-center gap-2">
-              <Label className="text-sm text-slate-600">From:</Label>
+              <Label className="text-sm text-slate-600 whitespace-nowrap">From:</Label>
               <Input
                 type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
                 className="w-[140px]"
+                size="sm"
               />
             </div>
 
             <div className="flex items-center gap-2">
-              <Label className="text-sm text-slate-600">To:</Label>
+              <Label className="text-sm text-slate-600 whitespace-nowrap">To:</Label>
               <Input
                 type="date"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
                 className="w-[140px]"
+                size="sm"
               />
             </div>
 
@@ -370,9 +384,8 @@ function Mediators() {
           {/* Pagination */}
           <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200">
             <div className="text-sm text-slate-600">
-              Showing {filteredMediators.length} results{" "}
-              {filteredMediators.length !== mediators.length &&
-                `(of ${mediators.length} total)`}
+              Showing {filteredMediators.length} result{filteredMediators.length !== 1 ? 's' : ''}
+              {filteredMediators.length !== mediators.length && ` (of ${mediators.length} total)`}
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" disabled>
@@ -389,22 +402,19 @@ function Mediators() {
         </CardContent>
       </Card>
 
-      {/* Add Mediator Modal */}
-      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      {/* Add/Edit Mediator Modal */}
+      <Dialog open={isAddEditModalOpen} onOpenChange={setIsAddEditModalOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold text-slate-900">
-              Add Mediator
+              {selectedMediator ? "Edit Mediator" : "Add Mediator"}
             </DialogTitle>
           </DialogHeader>
 
           <div className="grid grid-cols-2 gap-4 py-4">
             <div className="space-y-2">
-              <Label
-                htmlFor="mediatorName"
-                className="text-sm font-medium text-slate-700"
-              >
-                Mediator Name
+              <Label htmlFor="mediatorName" className="text-sm font-medium text-slate-700">
+                Mediator Name <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="mediatorName"
@@ -417,11 +427,8 @@ function Mediators() {
             </div>
 
             <div className="space-y-2">
-              <Label
-                htmlFor="email"
-                className="text-sm font-medium text-slate-700"
-              >
-                Email
+              <Label htmlFor="email" className="text-sm font-medium text-slate-700">
+                Email <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="email"
@@ -433,11 +440,8 @@ function Mediators() {
             </div>
 
             <div className="space-y-2">
-              <Label
-                htmlFor="phonePrimary"
-                className="text-sm font-medium text-slate-700"
-              >
-                Phone Primary
+              <Label htmlFor="phonePrimary" className="text-sm font-medium text-slate-700">
+                Phone Primary <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="phonePrimary"
@@ -467,23 +471,18 @@ function Mediators() {
             </div>
 
             <div className="space-y-2">
-              <Label
-                htmlFor="category"
-                className="text-sm font-medium text-slate-700"
-              >
-                Category
+              <Label htmlFor="category" className="text-sm font-medium text-slate-700">
+                Category <span className="text-red-500">*</span>
               </Label>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between">
+                  <Button variant="outline" className="w-full justify-between bg-white">
                     {formData.category || "Select category"}
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-full">
-                  <DropdownMenuItem
-                    onClick={() => handleInputChange("category", "Individual")}
-                  >
+                <DropdownMenuContent className="w-full bg-white">
+                  <DropdownMenuItem onClick={() => handleInputChange("category", "Individual")}>
                     Individual
                   </DropdownMenuItem>
                   <DropdownMenuItem
@@ -536,15 +535,13 @@ function Mediators() {
               </Label>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between">
+                  <Button variant="outline" className="w-full justify-between bg-white">
                     {formData.location || "Select location"}
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-full">
-                  <DropdownMenuItem
-                    onClick={() => handleInputChange("location", "Mumbai")}
-                  >
+                <DropdownMenuContent className="w-full bg-white">
+                  <DropdownMenuItem onClick={() => handleInputChange("location", "Mumbai")}>
                     Mumbai
                   </DropdownMenuItem>
                   <DropdownMenuItem
@@ -575,17 +572,13 @@ function Mediators() {
               </Label>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between">
+                  <Button variant="outline" className="w-full justify-between bg-white">
                     {formData.linkedExecutive || "Select executive"}
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-full">
-                  <DropdownMenuItem
-                    onClick={() =>
-                      handleInputChange("linkedExecutive", "Executive 1")
-                    }
-                  >
+                <DropdownMenuContent className="w-full bg-white">
+                  <DropdownMenuItem onClick={() => handleInputChange("linkedExecutive", "Executive 1")}>
                     Executive 1
                   </DropdownMenuItem>
                   <DropdownMenuItem
@@ -615,17 +608,13 @@ function Mediators() {
               </Label>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between">
+                  <Button variant="outline" className="w-full justify-between bg-white">
                     {formData.officeIndividual || "Select type"}
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-full">
-                  <DropdownMenuItem
-                    onClick={() =>
-                      handleInputChange("officeIndividual", "Office")
-                    }
-                  >
+                <DropdownMenuContent className="w-full bg-white">
+                  <DropdownMenuItem onClick={() => handleInputChange("officeIndividual", "Office")}>
                     Office
                   </DropdownMenuItem>
                   <DropdownMenuItem
@@ -695,10 +684,15 @@ function Mediators() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>
+            <Button variant="outline" onClick={() => {
+              setIsAddEditModalOpen(false);
+              resetForm();
+            }}>
               Cancel
             </Button>
-            <Button onClick={handleSave}>Save</Button>
+            <Button onClick={handleSave} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+              {selectedMediator ? "Update" : "Save"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
