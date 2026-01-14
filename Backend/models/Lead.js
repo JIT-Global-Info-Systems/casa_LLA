@@ -15,6 +15,10 @@ const leadSchema = new mongoose.Schema({
     type: String
   },
 
+  mediatorId: {
+    type: String
+  },
+
   date: {
     type: Date,
     required: true
@@ -113,7 +117,10 @@ const leadSchema = new mongoose.Schema({
     enum: ["active", "inactive"],
     default: "active"
   },
-  
+
+  lead_status: {
+    type: String,
+  },
   created_at: {
     type: Date,
     default: Date.now

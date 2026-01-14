@@ -5,6 +5,7 @@ import connectDB from "./config/db.js";
 import userRoutes from "./routes/user.js";
 import leadRoutes from "./routes/lead.js";
 import mediatorRoutes from "./routes/mediator.js";
+import authRoutes from "./routes/auth.js";
 dotenv.config();
 connectDB();
 
@@ -16,6 +17,7 @@ app.use(express.json());
 app.use("/api/users", userRoutes);
 app.use("/api/leads", leadRoutes);
 app.use("/api/mediators", mediatorRoutes);
+app.use("/api/auth", authRoutes);
 app.get("/", (req, res) => {
   res.send("Casagrand Backend Running");
 });
