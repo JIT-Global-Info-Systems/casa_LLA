@@ -49,7 +49,7 @@ import {
 } from "lucide-react";
 
 function Mediators() {
-  const { mediators, loading, error, fetchMediators, createMediator } = useMediators();
+  const { mediators, loading, error, fetchMediators, createMediator, updateMediator, deleteMediator } = useMediators();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedMediator, setSelectedMediator] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -140,31 +140,18 @@ function Mediators() {
         address: formData.address,
       };
 
-      await createMediator(apiData, files);
+      if (selectedMediator) {
+        // Update existing mediator
+        await updateMediator(selectedMediator._id, apiData);
+      } else {
+        // Create new mediator
+        await createMediator(apiData, files);
+      }
+      
       setIsAddModalOpen(false);
-      
-      // Reset form
-      setFormData({
-        mediatorName: "",
-        email: "",
-        phonePrimary: "",
-        phoneSecondary: "",
-        category: "",
-        panNumber: "",
-        aadhaarNumber: "",
-        location: "",
-        linkedExecutive: "",
-        officeIndividual: "",
-        address: "",
-      });
-      
-      // Reset files
-      setFiles({
-        pan_upload: null,
-        aadhar_upload: null,
-      });
+      resetForm();
     } catch (error) {
-      console.error("Error creating mediator:", error);
+      console.error("Error saving mediator:", error);
     }
   };
 
@@ -196,6 +183,41 @@ function Mediators() {
       aadhar_upload: null,
     });
     setSelectedMediator(null);
+  };
+
+  const handleEdit = (mediator) => {
+    setSelectedMediator(mediator);
+    // Populate form with mediator data
+    setFormData({
+      mediatorName: mediator.name || "",
+      email: mediator.email || "",
+      phonePrimary: mediator.phone_primary || "",
+      phoneSecondary: mediator.phone_secondary || "",
+      category: mediator.category || "",
+      panNumber: mediator.pan_number || "",
+      aadhaarNumber: mediator.aadhar_number || "",
+      location: mediator.location || "",
+      linkedExecutive: mediator.linked_executive || "",
+      officeIndividual: mediator.mediator_type || "",
+      address: mediator.address || "",
+    });
+    setIsAddModalOpen(true);
+  };
+
+  const handleView = (mediator) => {
+    // You can implement view functionality here
+    console.log("View mediator:", mediator);
+  };
+
+  const handleDelete = async (mediator) => {
+    if (window.confirm(`Are you sure you want to delete ${mediator.name}?`)) {
+      try {
+        await deleteMediator(mediator._id);
+        // The UI will update automatically through the context
+      } catch (error) {
+        console.error("Error deleting mediator:", error);
+      }
+    }
   };
 
   return (
@@ -388,7 +410,7 @@ function Mediators() {
                     <td className="px-4 py-3 text-sm text-slate-600">
                       {mediator.linked_executive || 'N/A'}
                     </td>
-                    <td className="px-4 py-3 text-sm text-slate-600 text-right">
+                    <td className="px-4 py-3 text-sm text-slate-600 text-right relative">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
@@ -399,16 +421,19 @@ function Mediators() {
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
+                        <DropdownMenuContent 
+                          align="end" 
+                          className="z-50 bg-white border border-slate-200 shadow-lg"
+                        >
+                          <DropdownMenuItem onClick={() => handleView(mediator)}>
                             <Eye className="h-4 w-4 mr-2" />
                             View
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleEdit(mediator)}>
                             <Edit className="h-4 w-4 mr-2" />
                             Edit
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-600">
+                          <DropdownMenuItem className="text-red-600" onClick={() => handleDelete(mediator)}>
                             <Trash2 className="h-4 w-4 mr-2" />
                             Delete
                           </DropdownMenuItem>
