@@ -141,7 +141,7 @@ export default function LeadsPage() {
             </div>
             </div>
           
-        <Button onClick={handleCreate}>+ Create Lead</Button>
+        <Button onClick={handleCreate}>+ Create</Button>
       </div>
 
       {/* Table */}

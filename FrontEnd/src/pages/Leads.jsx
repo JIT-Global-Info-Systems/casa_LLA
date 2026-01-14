@@ -439,7 +439,8 @@ export default function Leads({ data = null, onSubmit }) {
   }
 
   return (
-    <Card className="p-6">
+    // <Card className="p-2">
+    <>
       <h2 className="text-xl font-semibold mb-4">
         {data ? "Edit Lead" : "Create Lead"}
       </h2>
@@ -643,6 +644,7 @@ export default function Leads({ data = null, onSubmit }) {
         </div>
 
       </CardContent>
-    </Card>
+    {/* // </Card> */}
+    </>
   )
 }

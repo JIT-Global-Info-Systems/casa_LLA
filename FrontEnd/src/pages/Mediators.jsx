@@ -136,7 +136,6 @@ function Mediators() {
 
   const handleSave = () => {
     // Placeholder for save logic
-    console.log("Saving mediator:", formData);
     setIsAddModalOpen(false);
     // Reset form
     setFormData({
@@ -166,14 +165,12 @@ function Mediators() {
     <div className="flex-1 space-y-6 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Mediator</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            MEDIATOR: {filteredMediators.length}{" "}
-            {filteredMediators.length !== mediators.length &&
-              `(${mediators.length} total)`}
-          </p>
-        </div>
+      <div className="text-xl font-bold text-indigo-700">
+      Mediators
+              <div className="text-sm text-slate-500">
+              Mediator list · Last updated today
+            </div>
+            </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleRefresh}>
             <RefreshCw className="h-4 w-4 mr-2" />
