@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useMediators } from "../context/MediatorsContext.jsx";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,62 +30,18 @@ import {
   MoreVertical,
 } from "lucide-react";
 
-// Mock data
-const mockMediators = [
-  {
-    id: "MED001",
-    name: "Rajesh Kumar",
-    category: "Individual",
-    phone: "+91 98765 43210",
-    email: "rajesh.kumar@email.com",
-    registeredDate: "2024-01-15",
-    createdBy: "Admin",
-  },
-  {
-    id: "MED002",
-    name: "Priya Sharma",
-    category: "Office",
-    phone: "+91 87654 32109",
-    email: "priya.sharma@email.com",
-    registeredDate: "2024-01-14",
-    createdBy: "Manager",
-  },
-  {
-    id: "MED003",
-    name: "Amit Patel",
-    category: "Individual",
-    phone: "+91 76543 21098",
-    email: "amit.patel@email.com",
-    registeredDate: "2024-01-13",
-    createdBy: "Admin",
-  },
-  {
-    id: "MED004",
-    name: "Sneha Reddy",
-    category: "Office",
-    phone: "+91 65432 10987",
-    email: "sneha.reddy@email.com",
-    registeredDate: "2024-01-12",
-    createdBy: "Executive",
-  },
-  {
-    id: "MED005",
-    name: "Vikram Singh",
-    category: "Individual",
-    phone: "+91 54321 09876",
-    email: "vikram.singh@email.com",
-    registeredDate: "2024-01-11",
-    createdBy: "Admin",
-  },
-];
-
 function Mediators() {
-  const [mediators] = useState(mockMediators);
+  const { mediators, loading, error, fetchMediators, createMediator } = useMediators();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedExecutive, setSelectedExecutive] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+
+  // Fetch mediators on component mount
+  useEffect(() => {
+    fetchMediators();
+  }, []); // Empty dependency array to run only once
 
   // Form state for Add Mediator
   const [formData, setFormData] = useState({
@@ -103,22 +60,22 @@ function Mediators() {
 
   // Filter mediators based on search and filter criteria
   const filteredMediators = mediators.filter((mediator) => {
-    // Search filter
+    // Search filter - using actual field names from API response
     const matchesSearch =
       searchTerm === "" ||
-      mediator.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      mediator.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      mediator.phone.includes(searchTerm) ||
-      mediator.id.toLowerCase().includes(searchTerm.toLowerCase());
+      mediator.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      mediator.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      mediator.phone_primary?.includes(searchTerm) ||
+      mediator._id?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    // Executive filter (simulating createdBy as executive assignment)
+    // Executive filter (using linked_executive from API response)
     const matchesExecutive =
-      selectedExecutive === "" || mediator.createdBy === selectedExecutive;
+      selectedExecutive === "" || mediator.linked_executive === selectedExecutive;
 
-    // Date range filter
+    // Date range filter (using created_at from API response)
     const matchesDateRange = (() => {
       if (!dateFrom && !dateTo) return true;
-      const mediatorDate = new Date(mediator.registeredDate);
+      const mediatorDate = new Date(mediator.created_at);
       const fromDate = dateFrom ? new Date(dateFrom) : new Date("1900-01-01");
       const toDate = dateTo ? new Date(dateTo) : new Date("2100-12-31");
       return mediatorDate >= fromDate && mediatorDate <= toDate;
@@ -134,57 +91,93 @@ function Mediators() {
     }));
   };
 
-  const handleSave = () => {
-    // Placeholder for save logic
-    console.log("Saving mediator:", formData);
-    setIsAddModalOpen(false);
-    // Reset form
-    setFormData({
-      mediatorName: "",
-      email: "",
-      phonePrimary: "",
-      phoneSecondary: "",
-      category: "",
-      panNumber: "",
-      aadhaarNumber: "",
-      location: "",
-      linkedExecutive: "",
-      officeIndividual: "",
-      address: "",
-    });
+  const handleSave = async () => {
+    try {
+      // Map form data to API field names
+      const apiData = {
+        name: formData.mediatorName,
+        email: formData.email,
+        phone_primary: formData.phonePrimary,
+        phone_secondary: formData.phoneSecondary,
+        category: formData.category,
+        pan_number: formData.panNumber,
+        aadhar_number: formData.aadhaarNumber,
+        location: formData.location,
+        linked_executive: formData.linkedExecutive,
+        mediator_type: formData.officeIndividual,
+        address: formData.address,
+      };
+
+      await createMediator(apiData);
+      setIsAddModalOpen(false);
+      
+      // Reset form
+      setFormData({
+        mediatorName: "",
+        email: "",
+        phonePrimary: "",
+        phoneSecondary: "",
+        category: "",
+        panNumber: "",
+        aadhaarNumber: "",
+        location: "",
+        linkedExecutive: "",
+        officeIndividual: "",
+        address: "",
+      });
+    } catch (error) {
+      console.error("Error creating mediator:", error);
+    }
   };
 
   const handleRefresh = () => {
-    // Reset all filters
+    // Reset all filters and fetch fresh data
     setSearchTerm("");
     setSelectedExecutive("");
     setDateFrom("");
     setDateTo("");
+    fetchMediators();
   };
 
   return (
     <div className="flex-1 space-y-6 p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Mediator</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            MEDIATOR: {filteredMediators.length}{" "}
-            {filteredMediators.length !== mediators.length &&
-              `(${mediators.length} total)`}
-          </p>
+      {/* Loading and Error States */}
+      {loading && (
+        <div className="text-center py-8">
+          <p className="text-slate-600">Loading mediators...</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleRefresh}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
-          <Button onClick={() => setIsAddModalOpen(true)} size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Add
-          </Button>
+      )}
+      
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <p className="text-red-600">Error: {error}</p>
         </div>
-      </div>
+      )}
+
+      {/* Main Content */}
+      {!loading && !error && (
+        <>
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900">Mediator</h1>
+              <p className="text-sm text-slate-500 mt-1">
+                MEDIATOR: {filteredMediators.length}{" "}
+                {filteredMediators.length !== mediators.length &&
+                  `(${mediators.length} total)`}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={handleRefresh}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh
+              </Button>
+              <Button onClick={() => setIsAddModalOpen(true)} size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Add
+              </Button>
+            </div>
+          </div>
 
       {/* Filters */}
       <Card>
@@ -298,11 +291,11 @@ function Mediators() {
               <tbody className="bg-white divide-y divide-slate-200">
                 {filteredMediators.map((mediator) => (
                   <tr
-                    key={mediator.id}
+                    key={mediator._id}
                     className="hover:bg-slate-50 transition-colors"
                   >
                     <td className="px-4 py-3 text-sm text-slate-900">
-                      {mediator.id}
+                      {mediator._id}
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-900">
                       {mediator.name}
@@ -311,16 +304,16 @@ function Mediators() {
                       {mediator.category}
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-600">
-                      {mediator.phone}
+                      {mediator.phone_primary}
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-600">
                       {mediator.email}
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-600">
-                      {mediator.registeredDate}
+                      {new Date(mediator.created_at).toLocaleDateString()}
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-600">
-                      {mediator.createdBy}
+                      {mediator.linked_executive || 'N/A'}
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-600 text-right">
                       <DropdownMenu>
@@ -652,6 +645,8 @@ function Mediators() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+        </>
+      )}
     </div>
   );
 }
