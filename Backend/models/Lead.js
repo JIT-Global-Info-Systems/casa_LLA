@@ -107,7 +107,13 @@ const leadSchema = new mongoose.Schema({
   remark: {
     type: String
   },
-
+  
+  status: {
+    type: String,
+    enum: ["active", "inactive"],
+    default: "active"
+  },
+  
   created_at: {
     type: Date,
     default: Date.now

@@ -4,5 +4,6 @@ const leadController = require("../controllers/leadController");
 
 router.post("/create", leadController.createLead);
 router.put("/update/:leadId", leadController.updateLead);
+router.delete("/delete/:leadId", leadController.softDeleteLead);
 
 module.exports = router;

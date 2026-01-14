@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const upload = require("../middleware/uploadMiddleware");
-const { createMediator, updateMediator } = require("../controllers/MediatorController");
+const mediatorController = require("../controllers/MediatorController");
 
 router.post(
   "/create",
@@ -9,9 +9,10 @@ router.post(
     { name: "pan_upload", maxCount: 1 },
     { name: "aadhar_upload", maxCount: 1 }
   ]),
-  createMediator
+  mediatorController.createMediator
 );
 
-router.put("/update/:mediatorId", updateMediator);
+router.put("/update/:mediatorId", mediatorController.updateMediator);
+router.delete("/delete/:mediatorId", mediatorController.softDeleteMediator);
 
 module.exports = router;

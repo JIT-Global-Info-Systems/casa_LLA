@@ -132,3 +132,35 @@ exports.updateMediator = async (req, res) => {
     });
   }
 };
+
+exports.softDeleteMediator = async (req, res) => {
+  try {
+    const { mediatorId } = req.params;
+
+    const mediator = await Mediator.findById(mediatorId);
+    if (!mediator) {
+      return res.status(404).json({
+        message: "Mediator not found"
+      });
+    }
+
+    if (mediator.status === "inactive") {
+      return res.status(400).json({
+        message: "Mediator already inactive"
+      });
+    }
+
+    mediator.status = "inactive";
+    await mediator.save();
+
+    return res.status(200).json({
+      message: "Mediator soft deleted successfully",
+      data: mediator
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Server error",
+      error: error.message
+    });
+  }
+};
