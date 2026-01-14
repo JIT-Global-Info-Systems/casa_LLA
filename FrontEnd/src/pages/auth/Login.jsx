@@ -10,11 +10,46 @@ function Login() {
   const [password, setPassword] = useState('')
   const navigate = useNavigate()
 
-  const handleLogin = (e) => {
+  const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+
+  const handleLogin = async (e) => {
     e.preventDefault()
-    // Add your login logic here
-    console.log('Login attempt:', { email, password })
-    navigate('/pages/dashboard')
+    setError('')
+    setIsLoading(true)
+
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed')
+      }
+
+      // Store user data in localStorage
+      localStorage.setItem('token', data.token)
+      localStorage.setItem('user_id', data.user.user_id)
+      localStorage.setItem('email', data.user.email)
+      localStorage.setItem('role', data.user.role)
+
+      // Redirect to dashboard on successful login
+      navigate('/pages/dashboard')
+    } catch (err) {
+      setError(err.message || 'An error occurred during login')
+      console.error('Login error:', err)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -105,11 +140,17 @@ function Login() {
                   </a>
                 </div>
 
+                {error && (
+                  <div className="text-red-500 text-xs mb-2">
+                    {error}
+                  </div>
+                )}
                 <Button 
                   type="submit" 
                   className="w-full py-2 text-xs font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  disabled={isLoading}
                 >
-                  Sign In
+                  {isLoading ? 'Signing in...' : 'Sign In'}
                 </Button>
               </form>
 
