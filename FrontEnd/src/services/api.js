@@ -4,9 +4,13 @@ const API_BASE_URL = 'http://localhost:5000/api';
 const apiRequest = async (endpoint, options = {}) => {
   const url = `${API_BASE_URL}${endpoint}`;
   
+  // Get token from localStorage
+  const token = localStorage.getItem('token');
+  
   const config = {
     headers: {
       'Content-Type': 'application/json',
+      ...(token && { 'Authorization': `Bearer ${token}` }),
       ...options.headers,
     },
     ...options,
@@ -125,9 +129,9 @@ export const leadsAPI = {
 
 // Users API
 export const usersAPI = {
-  // Get all users
+  // Get all users (requires authentication)
   getAll: async () => {
-    const response = await apiRequest('/users/');
+    const response = await apiRequest('/users/all');
     // The API returns a direct array of users
     return response || [];
   },
@@ -137,7 +141,7 @@ export const usersAPI = {
     return await apiRequest(`/users/${id}`);
   },
 
-  // Create new user
+  // Create new user (no auth required)
   create: async (userData) => {
     return await apiRequest('/users/create', {
       method: 'POST',
@@ -145,17 +149,17 @@ export const usersAPI = {
     });
   },
 
-  // Update user
+  // Update user (requires authentication)
   update: async (id, userData) => {
-    return await apiRequest(`/users/${id}`, {
+    return await apiRequest(`/users/update/${id}`, {
       method: 'PUT',
       body: JSON.stringify(userData),
     });
   },
 
-  // Delete user
+  // Delete user (requires authentication)
   delete: async (id) => {
-    return await apiRequest(`/users/${id}`, {
+    return await apiRequest(`/users/delete/${id}`, {
       method: 'DELETE',
     });
   },
