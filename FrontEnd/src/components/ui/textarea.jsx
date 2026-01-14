@@ -11,7 +11,7 @@ export  function Textarea({
   
         <textarea
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={onChange}
           rows={rows}
           placeholder={placeholder}
           className="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black resize-none"
