@@ -165,6 +165,87 @@ export const usersAPI = {
   },
 };
 
+// Locations API
+export const locationsAPI = {
+  // Get all locations
+  getAll: async () => {
+    const response = await apiRequest('/locations/all');
+    // The API returns { message: string, locations: [...] }
+    // We want to return the locations array
+    return response.locations || [];
+  },
+
+  // Get location by ID
+  getById: async (id) => {
+    return await apiRequest(`/locations/${id}`);
+  },
+
+  // Create new location
+  create: async (locationData) => {
+    return await apiRequest('/locations/create', {
+      method: 'POST',
+      body: JSON.stringify(locationData),
+    });
+  },
+
+  // Update location
+  update: async (id, locationData) => {
+    return await apiRequest(`/locations/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(locationData),
+    });
+  },
+
+  // Delete location
+  delete: async (id) => {
+    return await apiRequest(`/locations/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Region operations
+  addRegion: async (locationId, regionData) => {
+    return await apiRequest(`/locations/${locationId}/regions`, {
+      method: 'POST',
+      body: JSON.stringify(regionData),
+    });
+  },
+
+  updateRegion: async (locationId, regionId, regionData) => {
+    return await apiRequest(`/locations/${locationId}/regions/${regionId}`, {
+      method: 'PUT',
+      body: JSON.stringify(regionData),
+    });
+  },
+
+  deleteRegion: async (locationId, regionId) => {
+    return await apiRequest(`/locations/${locationId}/regions/${regionId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Zone operations
+  addZone: async (locationId, regionId, zoneData) => {
+    return await apiRequest(`/locations/${locationId}/regions/${regionId}/zones`, {
+      method: 'POST',
+      body: JSON.stringify(zoneData),
+    });
+  },
+
+  updateZone: async (locationId, regionId, zoneId, zoneData) => {
+    return await apiRequest(`/locations/${locationId}/regions/${regionId}/zones/${zoneId}`, {
+      method: 'PUT',
+      body: JSON.stringify(zoneData),
+    });
+  },
+
+  deleteZone: async (locationId, regionId, zoneId) => {
+    return await apiRequest(`/locations/${locationId}/regions/${regionId}/zones/${zoneId}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
 // Export other API modules as needed
 export const authAPI = {
   login: async (credentials) => {
@@ -186,5 +267,6 @@ export default {
   mediatorsAPI,
   leadsAPI,
   usersAPI,
+  locationsAPI,
   authAPI,
 };

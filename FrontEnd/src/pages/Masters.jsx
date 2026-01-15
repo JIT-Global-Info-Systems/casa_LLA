@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -12,32 +12,266 @@ import {
 } from '@/components/ui/table';
 import Modal from '@/components/ui/modal';
 import { Edit, Plus, Trash2 } from 'lucide-react';
+import { locationsAPI } from '@/services/api';
 
 const Masters = () => {
   // Single source of truth for all masters data
   const [masters, setMasters] = useState({
-    locations: [
-      { id: crypto.randomUUID(), name: 'Mumbai' },
-      { id: crypto.randomUUID(), name: 'Delhi' },
-      { id: crypto.randomUUID(), name: 'Bangalore' },
-    ],
-    regions: [
-      { id: crypto.randomUUID(), location: 'Mumbai', region: 'North Mumbai' },
-      { id: crypto.randomUUID(), location: 'Delhi', region: 'Central Delhi' },
-    ],
-    zones: [
-      { id: crypto.randomUUID(), location: 'Mumbai', region: 'North Mumbai', zone: 'Andheri' },
-      { id: crypto.randomUUID(), location: 'Delhi', region: 'Central Delhi', zone: 'Connaught Place' },
-    ],
+    locations: [],
+    regions: [],
+    zones: [],
   });
+  const [loading, setLoading] = useState({ locations: false, regions: false, zones: false });
+  const [error, setError] = useState({ locations: null, regions: null, zones: null });
 
   const [activeTab, setActiveTab] = useState('location');
   const [form, setForm] = useState({ open: false, type: '', data: {}, editing: null });
   const [deleteDialog, setDeleteDialog] = useState({ open: false, type: '', item: null });
 
+  // Fetch locations from API
+  const fetchLocations = useCallback(async () => {
+    setLoading(prev => ({ ...prev, locations: true, regions: true, zones: true }));
+    setError(prev => ({ ...prev, locations: null, regions: null, zones: null }));
+    try {
+      const locationsData = await locationsAPI.getAll();
+      // Transform API data to match component structure
+      const transformedLocations = locationsData.map(loc => ({
+        id: loc._id,
+        name: loc.location,
+        status: loc.status,
+        regions: loc.regions || [],
+        created_by: loc.created_by,
+        created_at: loc.created_at,
+        updated_at: loc.updated_at,
+        updated_by: loc.updated_by
+      }));
+      
+      // Extract regions and zones from locations data
+      const transformedRegions = [];
+      const transformedZones = [];
+      
+      locationsData.forEach(location => {
+        if (location.regions && location.regions.length > 0) {
+          location.regions.forEach(region => {
+            transformedRegions.push({
+              id: region._id,
+              location: location.location,
+              region: region.region,
+              zones: region.zones || []
+            });
+            
+            if (region.zones && region.zones.length > 0) {
+              region.zones.forEach(zone => {
+                transformedZones.push({
+                  id: zone._id,
+                  location: location.location,
+                  region: region.region,
+                  zone: zone.zone
+                });
+              });
+            }
+          });
+        }
+      });
+      
+      setMasters(prev => ({ 
+        ...prev, 
+        locations: transformedLocations,
+        regions: transformedRegions,
+        zones: transformedZones
+      }));
+    } catch (err) {
+      setError(prev => ({ 
+        ...prev, 
+        locations: err.message, 
+        regions: err.message, 
+        zones: err.message 
+      }));
+      console.error('Failed to fetch locations:', err);
+    } finally {
+      setLoading(prev => ({ ...prev, locations: false, regions: false, zones: false }));
+    }
+  }, []);
+
+  // Fetch locations on component mount
+  useEffect(() => {
+    fetchLocations();
+  }, [fetchLocations]);
+
   const formatName = useCallback((value) => 
     value.charAt(0).toUpperCase() + value.slice(1).toLowerCase()
   , []);
+
+  // API-based CRUD operations for locations
+  const addLocation = useCallback(async (data) => {
+    try {
+      const locationData = { location: data.name };
+      const response = await locationsAPI.create(locationData);
+      console.log('Location created successfully:', response);
+      // Refresh locations after successful creation
+      await fetchLocations();
+      closeForm();
+    } catch (err) {
+      console.error('Failed to create location:', err);
+      setError(prev => ({ ...prev, locations: err.message }));
+    }
+  }, [fetchLocations]);
+
+  const updateLocation = useCallback(async (itemId, data) => {
+    try {
+      const locationData = { location: data.name };
+      await locationsAPI.update(itemId, locationData);
+      // Refresh locations after successful update
+      await fetchLocations();
+      closeForm();
+    } catch (err) {
+      console.error('Failed to update location:', err);
+      setError(prev => ({ ...prev, locations: err.message }));
+    }
+  }, [fetchLocations]);
+
+  const deleteLocation = useCallback(async (itemId) => {
+    try {
+      await locationsAPI.delete(itemId);
+      // Refresh locations after successful deletion
+      await fetchLocations();
+      setDeleteDialog({ open: false, type: '', item: null });
+    } catch (err) {
+      console.error('Failed to delete location:', err);
+      setError(prev => ({ ...prev, locations: err.message }));
+    }
+  }, [fetchLocations]);
+
+  // API-based CRUD operations for regions
+  const addRegion = useCallback(async (data) => {
+    try {
+      // Find the location ID from the location name
+      const location = masters.locations.find(loc => loc.name === data.location);
+      if (!location) {
+        throw new Error('Location not found');
+      }
+      
+      const regionData = { region: data.region };
+      const response = await locationsAPI.addRegion(location.id, regionData);
+      console.log('Region created successfully:', response);
+      // Refresh data after successful creation
+      await fetchLocations();
+      closeForm();
+    } catch (err) {
+      console.error('Failed to create region:', err);
+      setError(prev => ({ ...prev, regions: err.message }));
+    }
+  }, [masters.locations, fetchLocations]);
+
+  const updateRegion = useCallback(async (itemId, data) => {
+    try {
+      // Find the location and region IDs
+      const location = masters.locations.find(loc => loc.name === data.location);
+      const region = masters.regions.find(r => r.id === itemId);
+      
+      if (!location || !region) {
+        throw new Error('Location or region not found');
+      }
+      
+      const regionData = { region: data.region };
+      await locationsAPI.updateRegion(location.id, region.id, regionData);
+      // Refresh data after successful update
+      await fetchLocations();
+      closeForm();
+    } catch (err) {
+      console.error('Failed to update region:', err);
+      setError(prev => ({ ...prev, regions: err.message }));
+    }
+  }, [masters.locations, masters.regions, fetchLocations]);
+
+  const deleteRegion = useCallback(async (itemId) => {
+    try {
+      // Find the location and region IDs
+      const region = masters.regions.find(r => r.id === itemId);
+      const location = masters.locations.find(loc => loc.name === region.location);
+      
+      if (!location || !region) {
+        throw new Error('Location or region not found');
+      }
+      
+      await locationsAPI.deleteRegion(location.id, region.id);
+      // Refresh data after successful deletion
+      await fetchLocations();
+      setDeleteDialog({ open: false, type: '', item: null });
+    } catch (err) {
+      console.error('Failed to delete region:', err);
+      setError(prev => ({ ...prev, regions: err.message }));
+    }
+  }, [masters.regions, masters.locations, fetchLocations]);
+
+  // API-based CRUD operations for zones
+  const addZone = useCallback(async (data) => {
+    try {
+      // Find the location and region IDs
+      const location = masters.locations.find(loc => loc.name === data.location);
+      const region = masters.regions.find(r => r.region === data.region && r.location === data.location);
+      
+      if (!location) {
+        throw new Error('Location not found');
+      }
+      if (!region) {
+        throw new Error('Region not found');
+      }
+      
+      const zoneData = { zone: data.zone };
+      const response = await locationsAPI.addZone(location.id, region.id, zoneData);
+      console.log('Zone created successfully:', response);
+      // Refresh data after successful creation
+      await fetchLocations();
+      closeForm();
+    } catch (err) {
+      console.error('Failed to create zone:', err);
+      setError(prev => ({ ...prev, zones: err.message }));
+    }
+  }, [masters.locations, masters.regions, fetchLocations]);
+
+  const updateZone = useCallback(async (itemId, data) => {
+    try {
+      // Find the location, region, and zone IDs
+      const location = masters.locations.find(loc => loc.name === data.location);
+      const region = masters.regions.find(r => r.region === data.region && r.location === data.location);
+      const zone = masters.zones.find(z => z.id === itemId);
+      
+      if (!location || !region || !zone) {
+        throw new Error('Location, region, or zone not found');
+      }
+      
+      const zoneData = { zone: data.zone };
+      await locationsAPI.updateZone(location.id, region.id, zone.id, zoneData);
+      // Refresh data after successful update
+      await fetchLocations();
+      closeForm();
+    } catch (err) {
+      console.error('Failed to update zone:', err);
+      setError(prev => ({ ...prev, zones: err.message }));
+    }
+  }, [masters.locations, masters.regions, masters.zones, fetchLocations]);
+
+  const deleteZone = useCallback(async (itemId) => {
+    try {
+      // Find the location, region, and zone IDs
+      const zone = masters.zones.find(z => z.id === itemId);
+      const region = masters.regions.find(r => r.region === zone.region && r.location === zone.location);
+      const location = masters.locations.find(loc => loc.name === zone.location);
+      
+      if (!location || !region || !zone) {
+        throw new Error('Location, region, or zone not found');
+      }
+      
+      await locationsAPI.deleteZone(location.id, region.id, zone.id);
+      // Refresh data after successful deletion
+      await fetchLocations();
+      setDeleteDialog({ open: false, type: '', item: null });
+    } catch (err) {
+      console.error('Failed to delete zone:', err);
+      setError(prev => ({ ...prev, zones: err.message }));
+    }
+  }, [masters.zones, masters.regions, masters.locations, fetchLocations]);
 
   // Generic CRUD handlers
   const getList = useCallback((type) => {
@@ -70,17 +304,17 @@ const Masters = () => {
   }, [getList, setList]);
 
   const deleteItem = useCallback((type, itemId) => {
-    // Dependency cleanup
-    if (type === 'locations') {
-      setList('regions', masters.regions.filter(r => r.location !== masters.locations.find(l => l.id === itemId)?.name));
-      setList('zones', masters.zones.filter(z => z.location !== masters.locations.find(l => l.id === itemId)?.name));
-    } else if (type === 'regions') {
-      setList('zones', masters.zones.filter(z => z.region !== masters.regions.find(r => r.id === itemId)?.region));
+    if (type === 'location') {
+      // Use API-based deletion for locations
+      deleteLocation(itemId);
+    } else if (type === 'region') {
+      // Use API-based deletion for regions
+      deleteRegion(itemId);
+    } else if (type === 'zone') {
+      // Use API-based deletion for zones
+      deleteZone(itemId);
     }
-    
-    setList(type, getList(type).filter(item => item.id !== itemId));
-    setDeleteDialog({ open: false, type: '', item: null });
-  }, [masters, getList, setList]);
+  }, [deleteLocation, deleteRegion, deleteZone]);
 
   const openForm = useCallback((type, editing = null) => {
     setForm({ open: true, type, editing, data: editing || getDefaultData(type) });
@@ -110,15 +344,32 @@ const Masters = () => {
     if ('region' in formattedData) formattedData.region = formatName(formattedData.region);
     if ('zone' in formattedData) formattedData.zone = formatName(formattedData.zone);
 
-    if (editing) {
-      updateItem(type, editing.id, formattedData);
-    } else {
-      addItem(type, formattedData);
+    if (type === 'location') {
+      // Use API-based operations for locations
+      if (editing) {
+        updateLocation(editing.id, formattedData);
+      } else {
+        addLocation(formattedData);
+      }
+    } else if (type === 'region') {
+      // Use API-based operations for regions
+      if (editing) {
+        updateRegion(editing.id, formattedData);
+      } else {
+        addRegion(formattedData);
+      }
+    } else if (type === 'zone') {
+      // Use API-based operations for zones
+      if (editing) {
+        updateZone(editing.id, formattedData);
+      } else {
+        addZone(formattedData);
+      }
     }
-  }, [form, addItem, updateItem, formatName]);
+  }, [form, addItem, updateItem, formatName, addLocation, updateLocation, addRegion, updateRegion, addZone, updateZone]);
 
   const sidebarTabs = [
-    { id: 'location', label: 'Location', columns: ['S.No', 'Location', 'Action'] },
+    { id: 'location', label: 'Location', columns: ['S.No', 'Location', 'Status', 'Action'] },
     { id: 'region', label: 'Region', columns: ['S.No', 'Location', 'Region', 'Action'] },
     { id: 'zone', label: 'Zone', columns: ['S.No', 'Location', 'Region', 'Zone', 'Action'] },
   ];
@@ -158,8 +409,9 @@ const Masters = () => {
           </>
         )}
         <Input
-          value={data.name || data.region || data.zone || ''}
-          onChange={(value) => {
+          value={type === 'region' ? (data.region || '') : type === 'zone' ? (data.zone || '') : (data.name || '')}
+          onChange={(e) => {
+            const value = e.target.value;
             const key = type === 'region' ? 'region' : type === 'zone' ? 'zone' : 'name';
             setForm(prev => ({ ...prev, data: { ...prev.data, [key]: value } }));
           }}
@@ -172,6 +424,27 @@ const Masters = () => {
   const renderTable = (type) => {
     const items = getList(type);
     const tabConfig = sidebarTabs.find(t => t.id === type);
+    
+    // Show loading state
+    if (loading[type]) {
+      return (
+        <div className="bg-white rounded-lg shadow p-8">
+          <div className="text-center text-gray-500">Loading {type}s...</div>
+        </div>
+      );
+    }
+
+    // Show error state
+    if (error[type]) {
+      return (
+        <div className="bg-white rounded-lg shadow p-8">
+          <div className="text-center text-red-500">Error: {error[type]}</div>
+          <div className="text-center mt-4">
+            <Button onClick={fetchLocations} variant="outline">Retry</Button>
+          </div>
+        </div>
+      );
+    }
     
     return (
       <div className="bg-white rounded-lg shadow">
@@ -189,7 +462,20 @@ const Masters = () => {
             {items.map((item, index) => (
               <TableRow key={item.id}>
                 <TableCell>{index + 1}</TableCell>
-                {type === 'location' && <TableCell className="text-center">{item.name}</TableCell>}
+                {type === 'location' && (
+                  <>
+                    <TableCell className="text-center">{item.name}</TableCell>
+                    <TableCell className="text-center">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        item.status === 'active' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {item.status || 'active'}
+                      </span>
+                    </TableCell>
+                  </>
+                )}
                 {type !== 'location' && <TableCell className="text-center">{item.location}</TableCell>}
                 {type === 'region' && <TableCell className="text-center">{item.region}</TableCell>}
                 {type === 'zone' && (
