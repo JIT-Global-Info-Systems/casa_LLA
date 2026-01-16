@@ -17,6 +17,7 @@ const Owners = () => (
   </div>
 );
 import Masters from "@/pages/Masters";
+import Profile from "@/pages/Profile";
 const Reports = () => (
   <div className="p-6">
     <h1 className="text-2xl font-bold">Reports</h1>
@@ -38,6 +39,7 @@ function AppRoutes() {
           <Route path="owners" element={<Owners />} />
           <Route path="mediators" element={<Mediators />} />
           <Route path="masters" element={<Masters />} />
+          <Route path="profile" element={<Profile />} />
           <Route path="reports" element={<Reports />} />
         </Route>
       </Routes>
