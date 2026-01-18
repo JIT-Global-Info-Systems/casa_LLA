@@ -64,10 +64,10 @@ export const MediatorsProvider = ({ children }) => {
       const response = await mediatorsAPI.update(id, mediatorData);
       setMediators(prev =>
         prev.map(m =>
-          m._id === id ? { ...m, ...response } : m
+          m._id === id ? { ...m, ...response.data } : m
         )
       );
-      return response;
+      return response.data;
     } catch (err) {
       setError(err.message);
       throw err;

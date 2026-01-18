@@ -74,7 +74,7 @@ export const mediatorsAPI = {
 
   // Update mediator
   update: async (id, mediatorData) => {
-    return await apiRequest(`/mediators/${id}`, {
+    return await apiRequest(`/mediators/update/${id}`, {
       method: 'PUT',
       body: JSON.stringify(mediatorData),
     });
@@ -82,7 +82,7 @@ export const mediatorsAPI = {
 
   // Delete mediator
   delete: async (id) => {
-    return await apiRequest(`/mediators/${id}`, {
+    return await apiRequest(`/mediators/delete/${id}`, {
       method: 'DELETE',
     });
   },
