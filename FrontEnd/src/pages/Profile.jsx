@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { Edit, Lock, Eye, EyeOff, Mail, Phone, Calendar, Shield, CheckCircle2, Camera } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { usersAPI } from "../services/api";
 
 function Profile() {
   const { user, loading } = useAuth();
@@ -41,9 +42,26 @@ function Profile() {
     confirm: false
   });
 
-  const handleEditProfile = () => {
-    setProfile({ ...profile, name: editForm.name, phone_number: editForm.phone });
-    setIsEditDialogOpen(false);
+  const handleEditProfile = async () => {
+    try {
+      console.log('Updating profile with:', editForm);
+      const response = await usersAPI.update(profile._id, editForm);
+      console.log('Profile update response:', response);
+      
+      // Update local state with the response data
+      if (response.user) {
+        setProfile({ ...profile, ...response.user });
+      } else {
+        // Fallback: update local state with form data
+        setProfile({ ...profile, name: editForm.name, phone_number: editForm.phone });
+      }
+      
+      setIsEditDialogOpen(false);
+      alert("Profile updated successfully!");
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      alert("Failed to update profile: " + error.message);
+    }
   };
 
   const handlePasswordChange = () => {
