@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -8,16 +8,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Label } from "@/components/ui/label";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Search, Plus, Edit, Trash2, Eye, MoreVertical, RefreshCw } from "lucide-react";
-
+import { useUsers } from "../context/UsersContext";
+ 
 function Users() {
-  const [users, setUsers] = useState([
-    { _id: "USR001", name: "John Doe", email: "john.doe@example.com", password: "password123", role: "admin", phone: "+1234567890", status: "active", createdAt: "2024-01-15T10:30:00Z", createdBy: "Admin" },
-    { _id: "USR002", name: "Jane Smith", email: "jane.smith@example.com", password: "password456", role: "manager", phone: "+1234567891", status: "active", createdAt: "2024-01-16T14:20:00Z", createdBy: "Manager" },
-    { _id: "USR003", name: "Bob Johnson", email: "bob.johnson@example.com", password: "password789", role: "telecaller", phone: "+1234567892", status: "inactive", createdAt: "2024-01-17T09:15:00Z", createdBy: "Admin" },
-    { _id: "USR004", name: "Alice Brown", email: "alice.brown@example.com", password: "password012", role: "executive", phone: "+1234567893", status: "active", createdAt: "2024-01-18T16:45:00Z", createdBy: "Executive" },
-    { _id: "USR005", name: "Charlie Wilson", email: "charlie.wilson@example.com", password: "password345", role: "telecaller", phone: "+1234567894", status: "active", createdAt: "2024-01-19T11:30:00Z", createdBy: "Admin" }
-  ]);
-
+  const { users, loading, error, fetchUsers, createUser, updateUser, deleteUser } = useUsers();
   const [filteredUsers, setFilteredUsers] = useState(users);
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
@@ -33,101 +27,113 @@ function Users() {
     email: "",
     password: "",
     role: "telecaller",
-    phone: "",
+    phone_number: "",
     status: "active"
   });
-
+ 
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+ 
+  useEffect(() => {
+    setFilteredUsers(users);
+  }, [users]);
+ 
   useEffect(() => {
     filterUsers();
   }, [users, searchTerm, roleFilter, statusFilter, fromDate, toDate]);
-
+ 
   const filterUsers = () => {
     let filtered = users;
-
+ 
     if (searchTerm) {
       filtered = filtered.filter(user =>
         user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.phone.toLowerCase().includes(searchTerm.toLowerCase())
+        user.phone_number.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-
+ 
     if (roleFilter !== "all") {
       filtered = filtered.filter(user => user.role === roleFilter);
     }
-
+ 
     if (statusFilter !== "all") {
       filtered = filtered.filter(user => user.status === statusFilter);
     }
-
+ 
     if (fromDate) {
-      filtered = filtered.filter(user => new Date(user.createdAt) >= new Date(fromDate));
+      filtered = filtered.filter(user => new Date(user.created_at) >= new Date(fromDate));
     }
-
+ 
     if (toDate) {
-      filtered = filtered.filter(user => new Date(user.createdAt) <= new Date(toDate));
+      filtered = filtered.filter(user => new Date(user.created_at) <= new Date(toDate));
     }
-
+ 
     setFilteredUsers(filtered);
   };
-
-  const handleAddUser = () => {
-    const newUser = {
-      _id: `USR${String(users.length + 1).padStart(3, '0')}`,
-      ...formData,
-      createdAt: new Date().toISOString(),
-      createdBy: "Admin"
-    };
-    setUsers([...users, newUser]);
-    setIsAddDialogOpen(false);
-    setFormData({
-      name: "",
-      email: "",
-      password: "",
-      role: "telecaller",
-      phone: "",
-      status: "active"
-    });
+ 
+  const handleAddUser = async () => {
+    try {
+      await createUser(formData);
+      setIsAddDialogOpen(false);
+      setFormData({
+        name: "",
+        email: "",
+        password: "",
+        role: "telecaller",
+        phone_number: "",
+        status: "active"
+      });
+    } catch (err) {
+      // Error is handled by the context
+    }
   };
-
-  const handleEditUser = () => {
-    setUsers(users.map(user =>
-      user._id === selectedUser._id ? { ...user, ...formData } : user
-    ));
-    setIsEditDialogOpen(false);
-    setSelectedUser(null);
-    setFormData({
-      name: "",
-      email: "",
-      password: "",
-      role: "telecaller",
-      phone: "",
-      status: "active"
-    });
+ 
+  const handleEditUser = async () => {
+    try {
+      await updateUser(selectedUser.user_id, formData);
+      setIsEditDialogOpen(false);
+      setSelectedUser(null);
+      setFormData({
+        name: "",
+        email: "",
+        password: "",
+        role: "telecaller",
+        phone_number: "",
+        status: "active"
+      });
+    } catch (err) {
+      // Error is handled by the context
+    }
   };
-
-  const handleDeleteUser = (userId) => {
-    setUsers(users.filter(user => user._id !== userId));
+ 
+  const handleDeleteUser = async (userId) => {
+    try {
+      await deleteUser(userId);
+    } catch (err) {
+      // Error is handled by the context
+    }
   };
-
+ 
   const openEditDialog = (user) => {
     setSelectedUser(user);
     setFormData({
       name: user.name,
       email: user.email,
-      password: user.password || "",
+      password: "",
       role: user.role,
-      phone: user.phone,
+      phone_number: user.phone_number,
       status: user.status
     });
     setIsEditDialogOpen(true);
   };
-
+ 
   const openViewDialog = (user) => {
     setSelectedUser(user);
     setIsViewDialogOpen(true);
   };
-
+ 
   const getCategoryColor = (role) => {
     const colors = {
       admin: "bg-red-100 text-red-700",
@@ -137,7 +143,7 @@ function Users() {
     };
     return colors[role] || "bg-blue-100 text-blue-700";
   };
-
+ 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -148,8 +154,8 @@ function Users() {
             <p className="text-sm text-gray-500 mt-1">User list · Last updated today</p>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="ghost" className="text-gray-700">
-              <RefreshCw className="h-4 w-4 mr-2" />
+            <Button variant="ghost" className="text-gray-700" onClick={fetchUsers} disabled={loading}>
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -197,8 +203,8 @@ function Users() {
                     <Label htmlFor="phone">Phone</Label>
                     <Input
                       id="phone"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      value={formData.phone_number}
+                      onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
                       placeholder="Enter phone number"
                     />
                   </div>
@@ -258,7 +264,7 @@ function Users() {
           </div>
         </div>
       </div>
-
+ 
       {/* Main Content */}
       <div className="max-w-[1600px] mx-auto px-8 py-6">
         <Card className="bg-white shadow-sm">
@@ -273,7 +279,7 @@ function Users() {
                 className="pl-10 border-gray-300"
               />
             </div>
-
+ 
             <div className="flex items-center gap-2">
               <Label className="text-sm text-gray-600 whitespace-nowrap">Role:</Label>
               <DropdownMenu>
@@ -301,7 +307,7 @@ function Users() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-
+ 
             <div className="flex items-center gap-2">
               <Label className="text-sm text-gray-600 whitespace-nowrap">From:</Label>
               <Input
@@ -311,7 +317,7 @@ function Users() {
                 className="w-[150px] border-gray-300"
               />
             </div>
-
+ 
             <div className="flex items-center gap-2">
               <Label className="text-sm text-gray-600 whitespace-nowrap">To:</Label>
               <Input
@@ -321,7 +327,7 @@ function Users() {
                 className="w-[150px] border-gray-300"
               />
             </div>
-
+ 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="border-gray-300 capitalize">
@@ -341,7 +347,7 @@ function Users() {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-
+ 
           {/* Table */}
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -353,15 +359,14 @@ function Users() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Registered Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredUsers.map((user) => (
-                  <tr key={user._id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={user.user_id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {user._id}
+                      {user.user_id}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {user.name}
@@ -372,16 +377,13 @@ function Users() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {user.phone}
+                      {user.phone_number}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {user.email}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {new Date(user.createdAt).toISOString().split('T')[0]}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {user.createdBy}
+                      {new Date(user.created_at).toISOString().split('T')[0]}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <DropdownMenu>
@@ -416,7 +418,7 @@ function Users() {
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                                 <AlertDialogAction
-                                  onClick={() => handleDeleteUser(user._id)}
+                                  onClick={() => handleDeleteUser(user.user_id)}
                                   className="bg-red-600 hover:bg-red-700"
                                 >
                                   Delete
@@ -432,13 +434,25 @@ function Users() {
               </tbody>
             </table>
           </div>
-
-          {filteredUsers.length === 0 && (
+ 
+          {loading && (
+            <div className="text-center py-12 text-gray-500">
+              <p>Loading users...</p>
+            </div>
+          )}
+         
+          {error && (
+            <div className="text-center py-12 text-red-500">
+              <p>Error: {error}</p>
+            </div>
+          )}
+         
+          {!loading && !error && filteredUsers.length === 0 && (
             <div className="text-center py-12 text-gray-500">
               <p>No users found matching your criteria.</p>
             </div>
           )}
-
+ 
           {/* Footer */}
           <div className="px-6 py-4 border-t flex items-center justify-between">
             <p className="text-sm text-gray-600">Showing {filteredUsers.length} results</p>
@@ -456,7 +470,7 @@ function Users() {
           </div>
         </Card>
       </div>
-
+ 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[500px] bg-white">
@@ -497,8 +511,8 @@ function Users() {
               <Label htmlFor="edit-phone">Phone</Label>
               <Input
                 id="edit-phone"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                value={formData.phone_number}
+                onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
                 placeholder="Enter phone number"
               />
             </div>
@@ -537,7 +551,7 @@ function Users() {
           </div>
         </DialogContent>
       </Dialog>
-
+ 
       {/* View Dialog */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
         <DialogContent className="sm:max-w-[500px] bg-white">
@@ -548,7 +562,7 @@ function Users() {
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-3 gap-4">
                 <Label className="font-medium text-gray-700">ID:</Label>
-                <div className="col-span-2 text-gray-900">{selectedUser._id}</div>
+                <div className="col-span-2 text-gray-900">{selectedUser.user_id}</div>
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <Label className="font-medium text-gray-700">Name:</Label>
@@ -560,7 +574,7 @@ function Users() {
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <Label className="font-medium text-gray-700">Phone:</Label>
-                <div className="col-span-2 text-gray-900">{selectedUser.phone}</div>
+                <div className="col-span-2 text-gray-900">{selectedUser.phone_number}</div>
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <Label className="font-medium text-gray-700">Role:</Label>
@@ -577,12 +591,8 @@ function Users() {
               <div className="grid grid-cols-3 gap-4">
                 <Label className="font-medium text-gray-700">Created:</Label>
                 <div className="col-span-2 text-gray-900">
-                  {new Date(selectedUser.createdAt).toLocaleString()}
+                  {new Date(selectedUser.created_at).toLocaleString()}
                 </div>
-              </div>
-              <div className="grid grid-cols-3 gap-4">
-                <Label className="font-medium text-gray-700">Created By:</Label>
-                <div className="col-span-2 text-gray-900">{selectedUser.createdBy}</div>
               </div>
             </div>
           )}
@@ -596,5 +606,7 @@ function Users() {
     </div>
   );
 }
-
+ 
 export default Users;
+ 
+ 
