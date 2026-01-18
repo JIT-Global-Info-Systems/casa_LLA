@@ -25,6 +25,7 @@ const pageTitles = {
   "/pages/mediators": "Mediators",
   "/pages/masters": "Masters",
   "/pages/reports": "Reports",
+  "/pages/profile": "Profile",
 };
 
 function Topbar() {
@@ -138,7 +139,7 @@ function Topbar() {
             <DropdownMenuContent align="end" className="bg-white border border-gray-200 shadow-lg">
               <DropdownMenuLabel className="text-slate-900">Account</DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-gray-200" />
-              <DropdownMenuItem className="text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 cursor-pointer">Profile</DropdownMenuItem>
+              <DropdownMenuItem className="text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 cursor-pointer" onClick={() => navigate('/pages/profile')}>Profile</DropdownMenuItem>
               <DropdownMenuItem className="text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 cursor-pointer">Settings</DropdownMenuItem>
               <DropdownMenuSeparator className="bg-gray-200" />
               <DropdownMenuItem className="text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 cursor-pointer" onClick={() => navigate('/')}>Logout</DropdownMenuItem>
