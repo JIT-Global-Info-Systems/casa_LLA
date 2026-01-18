@@ -94,7 +94,7 @@ exports.softDeleteLead = async (req, res) => {
 
 exports.getAllLeads = async (req, res) => {
   try {
-    const leads = await Lead.find({ status: "active" })
+    const leads = await Lead.find({ lead_status: "pending" })
       .sort({ created_at: -1 });
 
     return res.status(200).json({
@@ -104,6 +104,29 @@ exports.getAllLeads = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       message: "Server error",
+      error: error.message
+    });
+  }
+};
+
+
+exports.getApprovedLeads = async (req, res) => {
+  try {
+    const leads = await Lead.find({
+      lead_status: "APPROVED",
+      status: "active"
+    }).sort({ created_at: -1 });
+
+    return res.status(200).json({
+      message: "Approved leads fetched successfully",
+      count: leads.length,
+      data: leads
+    });
+
+  } catch (error) {
+    console.error("Get Approved Leads Error:", error);
+    return res.status(500).json({
+      message: "Failed to fetch approved leads",
       error: error.message
     });
   }

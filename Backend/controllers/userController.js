@@ -182,3 +182,40 @@ exports.deleteUser = async (req, res) => {
   }
 };
 
+const mongoose = require("mongoose");
+
+exports.getUserById = async (req, res) => {
+  try {
+    const { id: user_id } = req.params;
+
+    // Validate Mongo ID
+    if (!mongoose.Types.ObjectId.isValid(user_id)) {
+      return res.status(400).json({
+        message: "Invalid user id"
+      });
+    }
+
+    const user = await User.findOne({
+      _id: user_id,
+      status: "active"
+    }).select("-password");
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found"
+      });
+    }
+
+    return res.status(200).json({
+      message: "User fetched successfully",
+      data: user
+    });
+
+  } catch (error) {
+    console.error("Get User By ID Error:", error);
+    return res.status(500).json({
+      message: "Failed to fetch user",
+      error: error.message
+    });
+  }
+};
