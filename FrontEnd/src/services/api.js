@@ -155,10 +155,13 @@ export const usersAPI = {
  
   // Update user (requires authentication)
   update: async (id, userData) => {
-    return await apiRequest(`/users/update/${id}`, {
+    const response = await apiRequest(`/users/update/${id}`, {
       method: 'PUT',
       body: JSON.stringify(userData),
     });
+    // The API returns { message: string, user: {...} }
+    // We want to return the user object
+    return response.user || response;
   },
  
   // Delete user (requires authentication)
