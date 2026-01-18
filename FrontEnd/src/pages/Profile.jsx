@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,26 +6,28 @@ import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Edit, Lock, Eye, EyeOff, Mail, Phone, Calendar, Shield, CheckCircle2, Camera } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 function Profile() {
-  const [profile, setProfile] = useState({
-    name: "Zulaikha Ashiq",
-    email: "zulaikha.a@jitglobalinfosystems.com",
-    phone: "+91 9876543210",
-    role: "Admin",
-    status: "Active",
-    avatar: null,
-    joinedAt: "2024-01-10",
-    department: "Engineering",
-    location: "Chennai, India"
-  });
+  const { user, loading } = useAuth();
+  const [profile, setProfile] = useState(user || {});
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [editForm, setEditForm] = useState({
-    name: profile.name,
-    phone: profile.phone
+    name: profile.name || '',
+    phone: profile.phone_number || ''
   });
+
+  useEffect(() => {
+    if (user) {
+      setProfile(user);
+      setEditForm({
+        name: user.name || '',
+        phone: user.phone_number || ''
+      });
+    }
+  }, [user]);
 
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
@@ -40,7 +42,7 @@ function Profile() {
   });
 
   const handleEditProfile = () => {
-    setProfile({ ...profile, name: editForm.name, phone: editForm.phone });
+    setProfile({ ...profile, name: editForm.name, phone_number: editForm.phone });
     setIsEditDialogOpen(false);
   };
 
@@ -82,6 +84,18 @@ function Profile() {
     };
     return colors[role.toLowerCase()] || "bg-blue-100 text-blue-700 border-blue-200";
   };
+
+  // Show loading state
+  if (loading || !profile || !profile._id) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -311,7 +325,7 @@ function Profile() {
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-500">Phone Number</p>
-                  <p className="text-sm text-gray-900 mt-1">{profile.phone}</p>
+                  <p className="text-sm text-gray-900 mt-1">{profile.phone_number}</p>
                 </div>
               </div>
               <div className="flex items-start gap-4">
@@ -320,7 +334,7 @@ function Profile() {
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-500">Joined Date</p>
-                  <p className="text-sm text-gray-900 mt-1">{new Date(profile.joinedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                  <p className="text-sm text-gray-900 mt-1">{new Date(profile.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
                 </div>
               </div>
             </div>

@@ -139,7 +139,10 @@ export const usersAPI = {
  
   // Get user by ID
   getById: async (id) => {
-    return await apiRequest(`/users/${id}`);
+    const response = await apiRequest(`/users/${id}`);
+    // The API returns { message: string, data: {...} }
+    // We want to return the data object
+    return response.data || response;
   },
  
   // Create new user (no auth required)
