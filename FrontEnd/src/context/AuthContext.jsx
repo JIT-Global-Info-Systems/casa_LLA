@@ -18,13 +18,31 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
+    const userId = localStorage.getItem('user_id');
 
-    if (token) {
-      // Ideally validate token via backend
+    if (token && userId) {
+      // Fetch user profile using token and user ID
+      const fetchUserProfile = async () => {
+        try {
+          console.log('Fetching user profile for ID:', userId);
+          const response = await usersAPI.getById(userId);
+          console.log('User profile response:', response);
+          setUser({ ...response, token });
+        } catch (error) {
+          console.error('Failed to fetch user profile:', error);
+          setUser({ token }); // Fallback to token only
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchUserProfile();
+    } else if (token) {
       setUser({ token });
+      setLoading(false);
+    } else {
+      setLoading(false);
     }
-
-    setLoading(false);
   }, []);
 
   const login = async (credentials) => {
