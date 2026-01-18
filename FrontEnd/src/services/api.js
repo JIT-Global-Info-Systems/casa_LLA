@@ -190,7 +190,7 @@ export const locationsAPI = {
 
   // Update location
   update: async (id, locationData) => {
-    return await apiRequest(`/locations/${id}`, {
+    return await apiRequest(`/locations/update/${id}`, {
       method: 'PUT',
       body: JSON.stringify(locationData),
     });
@@ -212,7 +212,7 @@ export const locationsAPI = {
   },
 
   updateRegion: async (locationId, regionId, regionData) => {
-    return await apiRequest(`/locations/${locationId}/regions/${regionId}`, {
+    return await apiRequest(`/locations/update/${locationId}/regions/${regionId}`, {
       method: 'PUT',
       body: JSON.stringify(regionData),
     });
@@ -233,7 +233,7 @@ export const locationsAPI = {
   },
 
   updateZone: async (locationId, regionId, zoneId, zoneData) => {
-    return await apiRequest(`/locations/${locationId}/regions/${regionId}/zones/${zoneId}`, {
+    return await apiRequest(`/locations/update/${locationId}/regions/${regionId}/zones/${zoneId}`, {
       method: 'PUT',
       body: JSON.stringify(zoneData),
     });

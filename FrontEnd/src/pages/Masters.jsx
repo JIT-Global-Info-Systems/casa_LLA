@@ -374,9 +374,17 @@ const Masters = () => {
     { id: 'zone', label: 'Zone', columns: ['S.No', 'Location', 'Region', 'Zone', 'Action'] },
   ];
 
-  const getOptions = useCallback((type) => {
+  const getOptions = useCallback((type, selectedLocation = null) => {
     if (type === 'location') return masters.locations.map(l => ({ value: l.name, label: l.name }));
-    if (type === 'region') return masters.regions.map(r => ({ value: r.region, label: r.region }));
+    if (type === 'region') {
+      if (selectedLocation) {
+        // Filter regions by selected location
+        return masters.regions
+          .filter(r => r.location === selectedLocation)
+          .map(r => ({ value: r.region, label: r.region }));
+      }
+      return masters.regions.map(r => ({ value: r.region, label: r.region }));
+    }
     return [];
   }, [masters]);
 
@@ -390,21 +398,27 @@ const Masters = () => {
             onChange={(value) => setForm(prev => ({ ...prev, data: { ...prev.data, location: value } }))}
             options={getOptions('location')}
             placeholder="Select location"
+            disabled={!!form.editing}
           />
         )}
         {type === 'zone' && (
           <>
             <Select 
               value={data.location || ''}
-              onChange={(value) => setForm(prev => ({ ...prev, data: { ...prev.data, location: value } }))}
+              onChange={(value) => setForm(prev => ({ 
+                ...prev, 
+                data: { ...prev.data, location: value, region: '' } // Clear region when location changes
+              }))}
               options={getOptions('location')}
               placeholder="Select location"
+              disabled={!!form.editing}
             />
             <Select 
               value={data.region || ''}
               onChange={(value) => setForm(prev => ({ ...prev, data: { ...prev.data, region: value } }))}
-              options={getOptions('region')}
+              options={getOptions('region', data.location)}
               placeholder="Select region"
+              disabled={!!form.editing}
             />
           </>
         )}

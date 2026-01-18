@@ -4,6 +4,7 @@ export function Select({
     onChange,
     options = [],
     placeholder = "Select option",
+    disabled = false,
   }) {
     return (
       <div className="flex flex-col gap-1">
@@ -12,7 +13,10 @@ export function Select({
         <select
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="border rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-black"
+          disabled={disabled}
+          className={`border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-black ${
+            disabled ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'bg-white'
+          }`}
         >
           <option value="">{placeholder}</option>
   
@@ -25,4 +29,3 @@ export function Select({
       </div>
     )
   }
-  
