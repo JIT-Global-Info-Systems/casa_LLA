@@ -1514,10 +1514,15 @@ function Mediators() {
               {/* Header */}
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-2xl font-bold text-slate-900">Mediator</h1>
-                  <div className="text-sm text-slate-500">
-                    Mediator list · Last updated today
-                  </div>
+                 
+                  
+                  {/* <div className="flex justify-between items-center mb-4"> */}
+            <div className="text-xl font-bold text-indigo-700">
+            Mediator
+              <div className="text-sm text-slate-500">
+              Mediator list · Last updated today
+              </div>
+            </div>
 
                 </div>
                 <div className="flex items-center gap-2">

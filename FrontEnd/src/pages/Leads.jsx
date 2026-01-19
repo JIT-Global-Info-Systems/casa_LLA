@@ -2,7 +2,13 @@ import { useState, useEffect } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { Select } from "@/components/ui/select"
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from "@/components/ui/select"
 import { Card, CardContent } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { useLeads } from "../context/LeadsContext.jsx"
@@ -135,12 +141,16 @@ export default function Leads({ data = null, onClose }) {
           <Label>Location</Label>
           <Select
             value={formData.location}
-            onChange={v => handleChange("location", v)}
-            options={[
-              { value: "chennai", label: "Chennai" },
-              { value: "blr", label: "Bangalore" },
-            ]}
-          />
+            onValueChange={v => handleChange("location", v)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select location" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="chennai">Chennai</SelectItem>
+              <SelectItem value="blr">Bangalore</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Land Name */}
@@ -157,12 +167,16 @@ export default function Leads({ data = null, onClose }) {
           <Label>Source Category</Label>
           <Select
             value={formData.sourceCategory}
-            onChange={v => handleChange("sourceCategory", v)}
-            options={[
-              { value: "online", label: "Online" },
-              { value: "reference", label: "Reference" },
-            ]}
-          />
+            onValueChange={v => handleChange("sourceCategory", v)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select source category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="online">Online</SelectItem>
+              <SelectItem value="reference">Reference</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Source */}
@@ -170,12 +184,16 @@ export default function Leads({ data = null, onClose }) {
           <Label>Source</Label>
           <Select
             value={formData.source}
-            onChange={v => handleChange("source", v)}
-            options={[
-              { value: "facebook", label: "Facebook" },
-              { value: "google", label: "Google" },
-            ]}
-          />
+            onValueChange={v => handleChange("source", v)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select source" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="facebook">Facebook</SelectItem>
+              <SelectItem value="google">Google</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Zone */}
@@ -195,12 +213,16 @@ export default function Leads({ data = null, onClose }) {
           <Label>Unit</Label>
           <Select
             value={formData.unit}
-            onChange={v => handleChange("unit", v)}
-            options={[
-              { value: "Acre", label: "Acre" },
-              { value: "Sqft", label: "Sqft" },
-            ]}
-          />
+            onValueChange={v => handleChange("unit", v)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select unit" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Acre">Acre</SelectItem>
+              <SelectItem value="Sqft">Sqft</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Property Type */}
@@ -208,12 +230,16 @@ export default function Leads({ data = null, onClose }) {
           <Label>Property Type</Label>
           <Select
             value={formData.propertyType}
-            onChange={v => handleChange("propertyType", v)}
-            options={[
-              { value: "residential", label: "Residential" },
-              { value: "commercial", label: "Commercial" },
-            ]}
-          />
+            onValueChange={v => handleChange("propertyType", v)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select property type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="residential">Residential</SelectItem>
+              <SelectItem value="commercial">Commercial</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* FSI, ASP, Revenue */}
@@ -226,12 +252,16 @@ export default function Leads({ data = null, onClose }) {
           <Label>Transaction Type</Label>
           <Select
             value={formData.transactionType}
-            onChange={v => handleChange("transactionType", v)}
-            options={[
-              { value: "JV", label: "JV" },
-              { value: "Sale", label: "Sale" },
-            ]}
-          />
+            onValueChange={v => handleChange("transactionType", v)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select transaction type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="JV">JV</SelectItem>
+              <SelectItem value="Sale">Sale</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Rate, Builder Share, Refundable, Non-Refundable */}
@@ -250,28 +280,36 @@ export default function Leads({ data = null, onClose }) {
           <Label>SSPDE</Label>
           <Select
             value={formData.sspde}
-            onChange={v => handleChange("sspde", v)}
-            options={[
-              { value: "Yes", label: "Yes" },
-              { value: "No", label: "No" },
-            ]}
-          />
+            onValueChange={v => handleChange("sspde", v)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select SSPDE" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Yes">Yes</SelectItem>
+              <SelectItem value="No">No</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label>Lead Status</Label>
           <Select
             value={formData.leadStatus}
-            onChange={v => handleChange("leadStatus", v)}
-            options={[
-              { value: "Pending", label: "Pending" },
-              { value: "Approved", label: "Approved" },
-              { value: "Rejected", label: "Rejected" },
-              { value: "Cancelled", label: "Cancelled" },
-              { value: "Lost", label: "Lost" },
-              { value: "Won", label: "Won" },
-              { value: "Purchased", label: "Purchased" }
-            ]}
-          />
+            onValueChange={v => handleChange("leadStatus", v)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select lead status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Pending">Pending</SelectItem>
+              <SelectItem value="Approved">Approved</SelectItem>
+              <SelectItem value="Rejected">Rejected</SelectItem>
+              <SelectItem value="Cancelled">Cancelled</SelectItem>
+              <SelectItem value="Lost">Lost</SelectItem>
+              <SelectItem value="Won">Won</SelectItem>
+              <SelectItem value="Purchased">Purchased</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Remark */}
