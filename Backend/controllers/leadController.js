@@ -15,7 +15,8 @@ exports.createLead = async (req, res) => {
       leadType: leadData.leadType || "mediator",
       unit: leadData.unit || "Acre",
       transactionType: leadData.transactionType || "JV",
-      sspde: leadData.sspde || "No"
+      sspde: leadData.sspde || "No",
+      lead_status: "PENDINGG"
     });
 
     return res.status(201).json({
@@ -94,7 +95,7 @@ exports.softDeleteLead = async (req, res) => {
 
 exports.getAllLeads = async (req, res) => {
   try {
-    const leads = await Lead.find({ lead_status: "pending" })
+    const leads = await Lead.find({ lead_status: "PENDING" })
       .sort({ created_at: -1 });
 
     return res.status(200).json({
