@@ -38,6 +38,7 @@ export default function Leads({ data = null, onClose }) {
     sspde: "No",
     leadStatus: "Pending",
     remark: "",
+    comment: "",
   })
 
   // If `data` changes (i.e., editing), update formData
@@ -279,6 +280,15 @@ export default function Leads({ data = null, onClose }) {
           <Textarea
             value={formData.remark}
             onChange={e => handleChange("remark", e.target.value)}
+          />
+        </div>
+
+        {/* Comment */}
+        <div className="md:col-span-3">
+          <Label>Comment</Label>
+          <Textarea
+            value={formData.comment}
+            onChange={e => handleChange("comment", e.target.value)}
           />
         </div>
 
