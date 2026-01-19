@@ -124,7 +124,113 @@ const leadSchema = new mongoose.Schema({
   created_at: {
     type: Date,
     default: Date.now
-  }
+  },
+  
+  
+  
+  calls: [{
+    userId: {
+      type: String,
+      required: true
+    },
+    note: {
+      type: String,
+      required: true
+    },
+    timestamp: {
+      type: Date,
+      default: Date.now
+    },
+    role: {
+      type: String,
+      required: true
+    }
+  }],
+
+  competitorAnalysis: [{
+    developerName: {
+      type: String
+    },
+    projectName: {
+      type: String
+    },
+    productType: {
+      type: String
+    },
+    location: {
+      type: String
+    },
+    plotUnitSize: {
+      type: String
+    },
+    landExtent: {
+      type: String
+    },
+    priceRange: {
+      type: String
+    },
+    approxPrice: {
+      type: String
+    },
+    approxPriceCent: {
+      type: String
+    },
+    totalPlotsUnits: {
+      type: String
+    },
+    keyAmenities: {
+      type: [String]
+    },
+    uspPositioning: {
+      type: String
+    },
+    timestamp: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  checkListPage: [{
+  landLocation: { type: String },
+  landExtent: { type: String },
+  landZone: { type: String },
+  classificationOfLand: { type: String },
+  googlePin: { type: String },
+  approachRoadWidth: { type: String },
+  ebLine: { type: String },
+  soilType: { type: String },
+  quarryCrusher: { type: String },
+  sellingPrice: { type: String },
+  guidelineValue: { type: String },
+  locationSellingPrice: { type: String },
+  marketingPrice: { type: String },
+
+  // File paths
+  fmbSketchPath: { type: String },
+  pattaChittaPath: { type: String },
+
+  roadWidth: { type: String },
+  govtLandAcquisition: { type: String },
+  railwayTrackNoc: { type: String },
+  bankIssues: { type: String },
+  dumpyardQuarryCheck: { type: String },
+  waterbodyNearby: { type: String },
+  nearbyHtLine: { type: String },
+  templeLand: { type: String },
+  futureGovtProjects: { type: String },
+  farmLand: { type: String },
+  totalSaleableArea: { type: String },
+  landCleaning: { type: String },
+  subDivision: { type: String },
+  soilTest: { type: String },
+  waterList: { type: String },
+  ownerName: { type: String },
+  consultantName: { type: String },
+  notes: { type: String },
+
+  projects: { type: String },
+  googleLocation: { type: String }
+}]
+
 });
 
 module.exports = mongoose.model("Lead", leadSchema);
