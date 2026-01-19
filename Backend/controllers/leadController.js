@@ -163,10 +163,27 @@ exports.createLead = async (req, res) => {
           pattaChittaPath
         }))
       : [];
-
+     const formattedCompetitorAnalysis = Array.isArray(competitorAnalysis) 
+      ? competitorAnalysis.map(comp => ({
+          developerName: comp.developerName || '',
+          projectName: comp.projectName || '',
+          productType: comp.productType || '',
+          location: comp.location || '',
+          plotUnitSize: comp.plotUnitSize || '',
+          landExtent: comp.landExtent || '',
+          priceRange: comp.priceRange || '',
+          approxPrice: comp.approxPrice || '',
+          approxPriceCent: comp.approxPriceCent || '',
+          totalPlotsUnits: comp.totalPlotsUnits || '',
+          keyAmenities: Array.isArray(comp.keyAmenities) ? comp.keyAmenities : [],
+          uspPositioning: comp.uspPositioning || '',
+          timestamp: new Date()
+        }))
+      : [];
     const lead = await Lead.create({
       ...restLeadData,
       checkListPage: formattedCheckListPage,
+      competitorAnalysis: formattedCompetitorAnalysis,
       lead_status: "PENDINGG",
       calls: userId
         ? [{
@@ -194,7 +211,7 @@ exports.createLead = async (req, res) => {
 exports.updateLead = async (req, res) => {
   try {
     const { leadId } = req.params;
-    const { userId, note, notes, role, competitorAnalysis, ...updateData } = req.body;
+    const { userId, note, notes, role, competitorAnalysis, checkListPage, ...updateData } = req.body;
 
     const update = { ...updateData };
     
@@ -222,6 +239,23 @@ exports.updateLead = async (req, res) => {
         : [];
       
       update.competitorAnalysis = formattedCompetitorAnalysis;
+    }
+    
+    // If checkListPage is provided, format and update it
+    if (checkListPage !== undefined) {
+      // Get file paths if files were uploaded
+      const fmbSketchPath = req.files?.fmb_sketch?.[0]?.path || '';
+      const pattaChittaPath = req.files?.patta_chitta?.[0]?.path || '';
+      
+      const formattedCheckListPage = Array.isArray(checkListPage)
+        ? checkListPage.map(item => ({
+            ...item,
+            ...(fmbSketchPath && { fmbSketchPath }),
+            ...(pattaChittaPath && { pattaChittaPath })
+          }))
+        : [];
+      
+      update.checkListPage = formattedCheckListPage;
     }
     
     // If notes is being updated, add a call entry
