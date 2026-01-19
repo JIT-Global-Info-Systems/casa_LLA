@@ -20,11 +20,10 @@ const pageTitles = {
   "/pages/dashboard": "Dashboard",
   "/pages/leads": "Leads",
   "/pages/users": "Users",
-  "/pages/documents": "Documents",
-  "/pages/owners": "Owners",
+  "/pages/approvedleads": "Approval",
   "/pages/mediators": "Mediators",
   "/pages/masters": "Masters",
-  "/pages/reports": "Reports",
+  "/pages/documents": "Documents",
   "/pages/profile": "Profile",
 };
 
