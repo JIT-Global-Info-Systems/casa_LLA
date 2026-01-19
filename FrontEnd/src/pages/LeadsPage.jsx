@@ -147,8 +147,6 @@ export default function LeadsPage() {
     .filter((text) => {
       if (!text) return false
       const lower = text.toLowerCase()
-      // Treat known placeholders as empty
-      return lower !== "just to chekc" && lower !== "just to check"
     })
 
   // Fetch leads on component mount
@@ -166,26 +164,6 @@ export default function LeadsPage() {
     setSelectedLead(lead);
     setOpen(true);
   };
- 
-  const filteredLeads = leadsData.filter((leads) => {
-    const matchesSearch =
-      searchTerm === "" ||
-      leads.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      leads.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      leads.phone.includes(searchTerm) ||
-      leads.id.toLowerCase().includes(searchTerm.toLowerCase());
- 
-    const matchesDateRange = (() => {
-      if (!dateFrom && !dateTo) return true;
-      const leadsDate = new Date(leads.registeredDate);
-      const fromDate = dateFrom ? new Date(dateFrom) : new Date("1900-01-01");
-      const toDate = dateTo ? new Date(dateTo) : new Date("2100-12-31");
-      return leadsDate >= fromDate && leadsDate <= toDate;
-    })();
- 
-    return matchesSearch && matchesDateRange;
-  });
- 
   return (
     <div>
       {open ? (
