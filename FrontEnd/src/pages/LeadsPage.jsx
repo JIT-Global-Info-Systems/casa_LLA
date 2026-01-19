@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
+ 
 import {
   Plus,
   Search,
@@ -26,7 +26,7 @@ import {
   Trash2,
   MoreVertical,
 } from "lucide-react"; // ← Import Edit Icon
-
+ 
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,24 +53,24 @@ const leadsData = [
     stageName: "Legal",
   },
 ];
-
+ 
 export default function LeadsPage() {
   const [open, setOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-
+ 
   const handleCreate = () => {
     setSelectedLead(null);
     setOpen(true);
   };
-
+ 
   const handleEdit = (lead) => {
     setSelectedLead(lead);
     setOpen(true);
   };
-
+ 
   const filteredLeads = leadsData.filter((leads) => {
     const matchesSearch =
       searchTerm === "" ||
@@ -78,7 +78,7 @@ export default function LeadsPage() {
       leads.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       leads.phone.includes(searchTerm) ||
       leads.id.toLowerCase().includes(searchTerm.toLowerCase());
-
+ 
     const matchesDateRange = (() => {
       if (!dateFrom && !dateTo) return true;
       const leadsDate = new Date(leads.registeredDate);
@@ -86,17 +86,17 @@ export default function LeadsPage() {
       const toDate = dateTo ? new Date(dateTo) : new Date("2100-12-31");
       return leadsDate >= fromDate && leadsDate <= toDate;
     })();
-
+ 
     return matchesSearch && matchesDateRange;
   });
-
+ 
   return (
     <div className=" flex-1 space-y-6 p-6">
       {/* Top Bar */}
       {/* <div className="flex justify-between items-center mb-4">
-      
+     
             </div>
-          
+         
         <Button onClick={handleCreate}>+ Create</Button>
       </div> */}
       <div className="flex items-center justify-between">
@@ -121,7 +121,7 @@ export default function LeadsPage() {
           </Button>
         </div>
       </div>
-
+ 
       <Card>
         <CardContent className="p-4">
           <div className="flex flex-wrap items-center gap-4">
@@ -136,7 +136,7 @@ export default function LeadsPage() {
                 />
               </div>
             </div>
-
+ 
             <div className="flex items-center gap-2">
               <Label className="text-sm text-slate-600 whitespace-nowrap">
                 From:
@@ -149,7 +149,7 @@ export default function LeadsPage() {
                 size="sm"
               />
             </div>
-
+ 
             <div className="flex items-center gap-2">
               <Label className="text-sm text-slate-600 whitespace-nowrap">
                 To:
@@ -162,7 +162,7 @@ export default function LeadsPage() {
                 size="sm"
               />
             </div>
-
+ 
             <Button variant="outline" size="sm">
               <Filter className="h-4 w-4 mr-2" />
               Filter
@@ -170,7 +170,7 @@ export default function LeadsPage() {
           </div>
         </CardContent>
       </Card>
-
+ 
       {/* Table */}
       <Card>
         <CardContent className="p-0">
@@ -264,7 +264,7 @@ export default function LeadsPage() {
               </TableBody>
             </Table>
           </div>
-
+ 
           {/* Pagination */}
           <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200">
             <div className="text-sm text-slate-600">
@@ -299,7 +299,7 @@ export default function LeadsPage() {
               <TableHead>Action</TableHead>
             </TableRow>
           </TableHeader>
-
+ 
           <TableBody>
             {leadsData.map((lead) => (
               <TableRow key={lead.id}>
@@ -323,13 +323,13 @@ export default function LeadsPage() {
           </TableBody>
         </Table>
       </div> */}
-
+ 
       {/* Modal */}
       <Modal open={open} onClose={() => setOpen(false)}>
         <div className="p-4 space-y-4">
           {/* Show stepper only when editing/viewing */}
           {selectedLead && <LeadStepper stageName={selectedLead.stageName} />}
-
+ 
           {/* Always show form */}
           <Leads data={selectedLead} />
         </div>

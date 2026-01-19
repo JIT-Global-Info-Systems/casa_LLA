@@ -5,8 +5,11 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select } from "@/components/ui/select"
 import { Card, CardContent } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
+import { useLeads } from "../context/LeadsContext.jsx"
 
-export default function Leads({ data = null, onSubmit }) {
+export default function Leads({ data = null, onClose }) {
+  const { createLead, updateLead, loading } = useLeads()
+  
   // Initialize form with either incoming data (edit) or default values (create)
   const [formData, setFormData] = useState({
     leadType: "mediator",
@@ -48,9 +51,21 @@ export default function Leads({ data = null, onSubmit }) {
     setFormData(prev => ({ ...prev, [key]: value }))
   }
 
-  const handleSubmit = () => {
-    console.log("Submitting Lead:", formData)
-    if (onSubmit) onSubmit(formData)
+  const handleSubmit = async () => {
+    try {
+      if (data) {
+        // Update existing lead
+        await updateLead(data._id, formData)
+      } else {
+        // Create new lead
+        await createLead(formData)
+      }
+      
+      // Close modal on successful submission
+      if (onClose) onClose()
+    } catch (error) {
+      console.error("Error saving lead:", error)
+    }
   }
 
   return (
@@ -268,9 +283,12 @@ export default function Leads({ data = null, onSubmit }) {
         </div>
 
         {/* Submit Button */}
-        <div className="md:col-span-3 flex justify-end">
-          <Button onClick={handleSubmit}>
-            {data ? "Update Lead" : "Submit Lead"}
+        <div className="md:col-span-3 flex justify-end gap-2">
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit} disabled={loading}>
+            {loading ? "Saving..." : (data ? "Update Lead" : "Submit Lead")}
           </Button>
         </div>
 

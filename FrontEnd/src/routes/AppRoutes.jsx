@@ -16,11 +16,8 @@ const Owners = () => (
     <h1 className="text-2xl font-bold">Owners</h1>
   </div>
 );
-const Masters = () => (
-  <div className="p-6">
-    <h1 className="text-2xl font-bold">Masters</h1>
-  </div>
-);
+import Masters from "@/pages/Masters";
+import Profile from "@/pages/Profile";
 const Reports = () => (
   <div className="p-6">
     <h1 className="text-2xl font-bold">Reports</h1>
@@ -32,7 +29,7 @@ function AppRoutes() {
 
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<Login/>}/>
+        <Route path="/" element={<Login/>}/>
         <Route path="/pages" element={<MainLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="dashboard" element={<Dashboard />} />
@@ -42,6 +39,7 @@ function AppRoutes() {
           <Route path="owners" element={<Owners />} />
           <Route path="mediators" element={<Mediators />} />
           <Route path="masters" element={<Masters />} />
+          <Route path="profile" element={<Profile />} />
           <Route path="reports" element={<Reports />} />
         </Route>
       </Routes>
