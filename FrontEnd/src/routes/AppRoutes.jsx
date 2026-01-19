@@ -6,6 +6,8 @@ import LeadsPage from "@/pages/LeadsPage";
 import Documents from "@/pages/Documents";
 import Mediators from "@/pages/Mediators";
 import Login from "@/pages/auth/Login";
+import ApprovedLeads from "@/pages/ApprovedLeads";
+import PurchasedLeads from "@/pages/PurchasedLeads";
 // const Leads = () => (
 //   <div className="p-6">
 //     <h1 className="text-2xl font-bold">Leads</h1>
@@ -34,6 +36,8 @@ function AppRoutes() {
           <Route index element={<Dashboard />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="leads" element={<LeadsPage />} />
+          <Route path="approvedLeads" element={<ApprovedLeads />} />
+          <Route path="purchasedLeads" element={<PurchasedLeads />} />
           <Route path="users" element={<Users />} />
           <Route path="documents" element={<Documents />} />
           <Route path="owners" element={<Owners />} />
