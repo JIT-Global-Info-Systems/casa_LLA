@@ -213,7 +213,7 @@ exports.updateLead = async (req, res) => {
     const { leadId } = req.params;
     const { userId, note, notes, role, competitorAnalysis, checkListPage, ...updateData } = req.body;
 
-    const update = { ...updateData };
+    const update = { ...updateData }; //test
     
     // Initialize $push if not already set
     update.$push = update.$push || {};
