@@ -37,7 +37,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   Plus,
-  Search,
   RefreshCw,
   Filter,
   ChevronDown,
@@ -67,7 +66,7 @@ const initialMediators = [
     address: "123 Main Street, Mumbai, Maharashtra",
   },
   {
-    id: "MED002",
+    id: "MED005",
     name: "Priya Sharma",
     category: "Office",
     phone: "+91 87654 32109",
@@ -313,11 +312,13 @@ function Mediators() {
     <div className="flex-1 space-y-6 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="text-xl font-bold text-indigo-700">
-          Mediators
-          <div className="text-sm text-slate-500">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-bold tracking-tight text-indigo-700">
+            Mediators
+          </h2>
+          <p className="text-sm text-muted-foreground">
             Mediator list · Last updated today
-          </div>
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleRefresh}>
@@ -340,19 +341,15 @@ function Mediators() {
         <CardContent className="p-4">
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex-1 min-w-[200px]">
-              <div className="relative">
-                {/* <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" /> */}
-                <Input
-                  placeholder="Search mediators..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+              <Input
+                placeholder="Search mediators..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
 
             <div className="flex items-center gap-2">
-              <Label className="text-sm text-slate-600 whitespace-nowrap">
+              <Label className="text-sm text-muted-foreground whitespace-nowrap">
                 Executive:
               </Label>
               <DropdownMenu>
@@ -360,7 +357,7 @@ function Mediators() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="w-[140px] justify-between bg-white"
+                    className="w-[140px] justify-between"
                   >
                     <span className="truncate">
                       {selectedExecutive || "Select"}
@@ -368,7 +365,7 @@ function Mediators() {
                     <ChevronDown className="h-4 w-4 ml-2 flex-shrink-0" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="bg-white">
+                <DropdownMenuContent>
                   <DropdownMenuItem onClick={() => setSelectedExecutive("")}>
                     All
                   </DropdownMenuItem>
@@ -392,7 +389,7 @@ function Mediators() {
             </div>
 
             <div className="flex items-center gap-2">
-              <Label className="text-sm text-slate-600 whitespace-nowrap">
+              <Label className="text-sm text-muted-foreground whitespace-nowrap">
                 From:
               </Label>
               <Input
@@ -400,12 +397,11 @@ function Mediators() {
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
                 className="w-[140px]"
-                size="sm"
               />
             </div>
 
             <div className="flex items-center gap-2">
-              <Label className="text-sm text-slate-600 whitespace-nowrap">
+              <Label className="text-sm text-muted-foreground whitespace-nowrap">
                 To:
               </Label>
               <Input
@@ -413,7 +409,6 @@ function Mediators() {
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
                 className="w-[140px]"
-                size="sm"
               />
             </div>
 
@@ -425,144 +420,123 @@ function Mediators() {
         </CardContent>
       </Card>
 
-      {/* Table */}
-      <Card>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-slate-50 hover:bg-slate-50">
-                  <TableHead className="font-medium">ID</TableHead>
-                  <TableHead className="font-medium">Name</TableHead>
-                  <TableHead className="font-medium">Category</TableHead>
-                  <TableHead className="font-medium">Phone</TableHead>
-                  <TableHead className="font-medium">Email</TableHead>
-                  <TableHead className="font-medium">Registered Date</TableHead>
-                  <TableHead className="font-medium">Created By</TableHead>
-                  <TableHead className="text-right font-medium">
-                    Action
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredMediators.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={8}
-                      className="text-center py-8 text-slate-500"
+      {/* Table Section */}
+      <div className="rounded-md border bg-white">
+        <Table>
+          <TableHeader className="bg-gray-50">
+            <TableRow>
+              <TableHead className="w-[100px] text-xs uppercase tracking-wider text-gray-500 font-medium">ID</TableHead>
+              <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">Name</TableHead>
+              <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">Category</TableHead>
+              <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">Phone</TableHead>
+              <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">Email</TableHead>
+              <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">Registered Date</TableHead>
+              <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">Created By</TableHead>
+              <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium text-right">Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredMediators.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={8}
+                  className="h-24 text-center text-muted-foreground"
+                >
+                  No mediators found
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredMediators.map((mediator) => (
+                <TableRow key={mediator.id} className="hover:bg-gray-50">
+                  <TableCell className="font-medium text-gray-900">{mediator.id}</TableCell>
+                  <TableCell className="text-gray-900">{mediator.name}</TableCell>
+                  <TableCell>
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        mediator.category === "Individual"
+                          ? "bg-blue-100 text-blue-800"
+                          : "bg-purple-100 text-purple-800"
+                      }`}
                     >
-                      No mediators found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredMediators.map((mediator) => (
-                    <TableRow key={mediator.id}>
-                      <TableCell className="font-medium">
-                        {mediator.id}
-                      </TableCell>
-                      <TableCell>{mediator.name}</TableCell>
-                      <TableCell>
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            mediator.category === "Individual"
-                              ? "bg-blue-100 text-blue-800"
-                              : "bg-purple-100 text-purple-800"
-                          }`}
+                      {mediator.category}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-gray-600">{mediator.phone}</TableCell>
+                  <TableCell className="text-gray-600">{mediator.email}</TableCell>
+                  <TableCell className="text-gray-600">{mediator.registeredDate}</TableCell>
+                  <TableCell className="text-gray-600">{mediator.createdBy}</TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
                         >
-                          {mediator.category}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-slate-600">
-                        {mediator.phone}
-                      </TableCell>
-                      <TableCell className="text-slate-600">
-                        {mediator.email}
-                      </TableCell>
-                      <TableCell className="text-slate-600">
-                        {mediator.registeredDate}
-                      </TableCell>
-                      <TableCell className="text-slate-600">
-                        {mediator.createdBy}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                            >
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="bg-white">
-                            <DropdownMenuItem
-                              onClick={() => alert(`View ${mediator.name}`)}
-                            >
-                              <Eye className="h-4 w-4 mr-2" />
-                              View
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleEdit(mediator)}
-                            >
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="text-red-600 focus:text-red-600"
-                              onClick={() => handleDelete(mediator)}
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => alert(`View ${mediator.name}`)}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          View
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEdit(mediator)}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-red-600 focus:text-red-600"
+                          onClick={() => handleDelete(mediator)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
-          {/* Pagination */}
-          <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200">
-            <div className="text-sm text-slate-600">
-              Showing {filteredMediators.length} result
-              {filteredMediators.length !== 1 ? "s" : ""}
-              {filteredMediators.length !== mediators.length &&
-                ` (of ${mediators.length} total)`}
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" disabled>
-                Previous
-              </Button>
-              <Button variant="outline" size="sm">
-                Next
-              </Button>
-              <Button variant="outline" size="sm">
-                Last
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Pagination */}
+      <div className="flex items-center justify-between px-2">
+        <div className="text-sm text-muted-foreground">
+          Showing {filteredMediators.length} result
+          {filteredMediators.length !== 1 ? "s" : ""}
+          {filteredMediators.length !== mediators.length &&
+            ` (of ${mediators.length} total)`}
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" disabled>
+            Previous
+          </Button>
+          <Button variant="outline" size="sm">
+            Next
+          </Button>
+        </div>
+      </div>
 
       {/* Add/Edit Mediator Modal */}
-      <Dialog open={isAddEditModalOpen} onOpenChange={setIsAddEditModalOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white">
+      <Dialog
+        open={isAddEditModalOpen}
+        onOpenChange={setIsAddEditModalOpen}
+      >
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-xl font-semibold text-slate-900">
+            <DialogTitle>
               {selectedMediator ? "Edit Mediator" : "Add Mediator"}
             </DialogTitle>
           </DialogHeader>
 
           <div className="grid grid-cols-2 gap-4 py-4">
             <div className="space-y-2">
-              <Label
-                htmlFor="mediatorName"
-                className="text-sm font-medium text-slate-700"
-              >
+              <Label htmlFor="mediatorName">
                 Mediator Name <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -576,10 +550,7 @@ function Mediators() {
             </div>
 
             <div className="space-y-2">
-              <Label
-                htmlFor="email"
-                className="text-sm font-medium text-slate-700"
-              >
+              <Label htmlFor="email">
                 Email <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -592,10 +563,7 @@ function Mediators() {
             </div>
 
             <div className="space-y-2">
-              <Label
-                htmlFor="phonePrimary"
-                className="text-sm font-medium text-slate-700"
-              >
+              <Label htmlFor="phonePrimary">
                 Phone Primary <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -609,12 +577,7 @@ function Mediators() {
             </div>
 
             <div className="space-y-2">
-              <Label
-                htmlFor="phoneSecondary"
-                className="text-sm font-medium text-slate-700"
-              >
-                Phone Secondary
-              </Label>
+              <Label htmlFor="phoneSecondary">Phone Secondary</Label>
               <Input
                 id="phoneSecondary"
                 value={formData.phoneSecondary}
@@ -626,23 +589,20 @@ function Mediators() {
             </div>
 
             <div className="space-y-2">
-              <Label
-                htmlFor="category"
-                className="text-sm font-medium text-slate-700"
-              >
+              <Label htmlFor="category">
                 Category <span className="text-red-500">*</span>
               </Label>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="outline"
-                    className="w-full justify-between bg-white"
+                    className="w-full justify-between"
                   >
                     {formData.category || "Select category"}
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-full bg-white">
+                <DropdownMenuContent className="w-full">
                   <DropdownMenuItem
                     onClick={() => handleInputChange("category", "Individual")}
                   >
@@ -658,12 +618,7 @@ function Mediators() {
             </div>
 
             <div className="space-y-2">
-              <Label
-                htmlFor="panNumber"
-                className="text-sm font-medium text-slate-700"
-              >
-                PAN Number
-              </Label>
+              <Label htmlFor="panNumber">PAN Number</Label>
               <Input
                 id="panNumber"
                 value={formData.panNumber}
@@ -673,12 +628,7 @@ function Mediators() {
             </div>
 
             <div className="space-y-2">
-              <Label
-                htmlFor="aadhaarNumber"
-                className="text-sm font-medium text-slate-700"
-              >
-                Aadhaar Number
-              </Label>
+              <Label htmlFor="aadhaarNumber">Aadhaar Number</Label>
               <Input
                 id="aadhaarNumber"
                 value={formData.aadhaarNumber}
@@ -690,23 +640,18 @@ function Mediators() {
             </div>
 
             <div className="space-y-2">
-              <Label
-                htmlFor="location"
-                className="text-sm font-medium text-slate-700"
-              >
-                Location
-              </Label>
+              <Label htmlFor="location">Location</Label>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="outline"
-                    className="w-full justify-between bg-white"
+                    className="w-full justify-between"
                   >
                     {formData.location || "Select location"}
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-full bg-white">
+                <DropdownMenuContent className="w-full">
                   <DropdownMenuItem
                     onClick={() => handleInputChange("location", "Mumbai")}
                   >
@@ -732,23 +677,18 @@ function Mediators() {
             </div>
 
             <div className="space-y-2">
-              <Label
-                htmlFor="linkedExecutive"
-                className="text-sm font-medium text-slate-700"
-              >
-                Link an Executive
-              </Label>
+              <Label htmlFor="linkedExecutive">Link an Executive</Label>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="outline"
-                    className="w-full justify-between bg-white"
+                    className="w-full justify-between"
                   >
                     {formData.linkedExecutive || "Select executive"}
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-full bg-white">
+                <DropdownMenuContent className="w-full">
                   <DropdownMenuItem
                     onClick={() =>
                       handleInputChange("linkedExecutive", "Executive 1")
@@ -775,23 +715,18 @@ function Mediators() {
             </div>
 
             <div className="space-y-2">
-              <Label
-                htmlFor="officeIndividual"
-                className="text-sm font-medium text-slate-700"
-              >
-                Office / Individual
-              </Label>
+              <Label htmlFor="officeIndividual">Office / Individual</Label>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="outline"
-                    className="w-full justify-between bg-white"
+                    className="w-full justify-between"
                   >
                     {formData.officeIndividual || "Select type"}
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-full bg-white">
+                <DropdownMenuContent className="w-full">
                   <DropdownMenuItem
                     onClick={() =>
                       handleInputChange("officeIndividual", "Office")
@@ -811,12 +746,7 @@ function Mediators() {
             </div>
 
             <div className="col-span-2 space-y-2">
-              <Label
-                htmlFor="address"
-                className="text-sm font-medium text-slate-700"
-              >
-                Address
-              </Label>
+              <Label htmlFor="address">Address</Label>
               <Textarea
                 id="address"
                 value={formData.address}
@@ -852,7 +782,7 @@ function Mediators() {
         open={isDeleteConfirmOpen}
         onOpenChange={setIsDeleteConfirmOpen}
       >
-        <AlertDialogContent className="bg-white">
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
