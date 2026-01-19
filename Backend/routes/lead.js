@@ -14,6 +14,8 @@ router.put("/update/:leadId", upload.fields([
 router.delete("/delete/:leadId", leadController.softDeleteLead);
 router.get("/all", leadController.getAllLeads);
 router.get("/approved", leadController.getApprovedLeads);
+router.get("/purchased", leadController.getPurchasedLeads);
 router.get("/:leadId", leadController.getLeadById);
+
 
 module.exports = router;

@@ -184,7 +184,7 @@ exports.createLead = async (req, res) => {
       ...restLeadData,
       checkListPage: formattedCheckListPage,
       competitorAnalysis: formattedCompetitorAnalysis,
-      lead_status: "PENDINGG",
+      lead_status: "PENDING",
       calls: userId
         ? [{
             userId,
@@ -375,6 +375,28 @@ exports.getApprovedLeads = async (req, res) => {
     console.error("Get Approved Leads Error:", error);
     return res.status(500).json({
       message: "Failed to fetch approved leads",
+      error: error.message
+    });
+  }
+};
+
+exports.getPurchasedLeads = async (req, res) => {
+  try {
+    const leads = await Lead.find({
+      lead_status: "PURCHASED",
+      status: "active"
+    }).sort({ created_at: -1 });
+
+    return res.status(200).json({
+      message: "Purchased leads fetched successfully",
+      count: leads.length,
+      data: leads
+    });
+
+  } catch (error) {
+    console.error("Get Purchased Leads Error:", error);
+    return res.status(500).json({
+      message: "Failed to fetch purchased leads",
       error: error.message
     });
   }
