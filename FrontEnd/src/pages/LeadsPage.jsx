@@ -93,11 +93,47 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-
-import { Edit } from "lucide-react" // ← Import Edit Icon
-
-
+} from "@/components/ui/table";
+ 
+import {
+  Plus,
+  Search,
+  RefreshCw,
+  Filter,
+  ChevronDown,
+  Eye,
+  Edit,
+  Trash2,
+  MoreVertical,
+} from "lucide-react"; // ← Import Edit Icon
+ 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+const leadsData = [
+  {
+    id: 1,
+    name: "Ravi",
+    location: "Chennai",
+    region: "North",
+    zone:"alandur",
+    status: "Pending",
+    stageName: "Feasibility Team",
+  },
+  {
+    id: 2,
+    name: "Kumar",
+    location: "Bangalore",
+    region: "East",
+    zone: "electricCity",
+    status: "Approved",
+    stageName: "Legal",
+  },
+];
+ 
 export default function LeadsPage() {
   const { leads, loading, error, fetchLeads } = useLeads()
   const [open, setOpen] = useState(false)
@@ -122,15 +158,34 @@ export default function LeadsPage() {
 
 
   const handleCreate = () => {
-    setSelectedLead(null)
-    setOpen(true)
-  }
-
+    setSelectedLead(null);
+    setOpen(true);
+  };
+ 
   const handleEdit = (lead) => {
-    setSelectedLead(lead)
-    setOpen(true)
-  }
-
+    setSelectedLead(lead);
+    setOpen(true);
+  };
+ 
+  const filteredLeads = leadsData.filter((leads) => {
+    const matchesSearch =
+      searchTerm === "" ||
+      leads.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      leads.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      leads.phone.includes(searchTerm) ||
+      leads.id.toLowerCase().includes(searchTerm.toLowerCase());
+ 
+    const matchesDateRange = (() => {
+      if (!dateFrom && !dateTo) return true;
+      const leadsDate = new Date(leads.registeredDate);
+      const fromDate = dateFrom ? new Date(dateFrom) : new Date("1900-01-01");
+      const toDate = dateTo ? new Date(dateTo) : new Date("2100-12-31");
+      return leadsDate >= fromDate && leadsDate <= toDate;
+    })();
+ 
+    return matchesSearch && matchesDateRange;
+  });
+ 
   return (
     <div>
       {open ? (
@@ -254,5 +309,5 @@ export default function LeadsPage() {
         </div>
       )}
     </div>
-  )
+  );
 }
