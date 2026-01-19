@@ -370,8 +370,9 @@ const Masters = () => {
 
   const sidebarTabs = [
     { id: 'location', label: 'Location', columns: ['S.No', 'Location', 'Status', 'Action'] },
-    { id: 'region', label: 'Region', columns: ['S.No', 'Location', 'Region', 'Action'] },
-    { id: 'zone', label: 'Zone', columns: ['S.No', 'Location', 'Region', 'Zone', 'Action'] },
+    { id: 'region', label: 'Zone', columns: ['S.No', 'Location', 'Region', 'Action'] },
+    { id: 'zone', label: 'Area', columns: ['S.No', 'Location', 'Region', 'Zone', 'Action'] },
+    { id: 'type', label: 'Type', columns: ['S.No', 'Location', 'Region', 'Zone', 'Action'] },
   ];
 
   const getOptions = useCallback((type, selectedLocation = null) => {
@@ -417,7 +418,7 @@ const Masters = () => {
               value={data.region || ''}
               onChange={(value) => setForm(prev => ({ ...prev, data: { ...prev.data, region: value } }))}
               options={getOptions('region', data.location)}
-              placeholder="Select region"
+              placeholder="Select zone"
               disabled={!!form.editing}
             />
           </>
@@ -502,6 +503,7 @@ const Masters = () => {
                   <ActionButtons
                     onEdit={() => openForm(type, item)}
                     onDelete={() => openDelete(type, item)}
+                    showDelete={type !== 'location'}
                   />
                 </TableCell>
               </TableRow>
@@ -596,11 +598,12 @@ const Masters = () => {
 };
 
 // Reusable Components
-const ActionButtons = ({ onEdit, onDelete }) => (
+const ActionButtons = ({ onEdit, onDelete,showDelete }) => (
   <div className="flex gap-1">
     <Button variant="ghost" size="sm" className="p-2" onClick={onEdit}>
       <Edit className="h-4 w-4" />
     </Button>
+    {showDelete && (
     <Button
       variant="ghost"
       size="sm"
@@ -609,6 +612,7 @@ const ActionButtons = ({ onEdit, onDelete }) => (
     >
       <Trash2 className="h-4 w-4" />
     </Button>
+    )}
   </div>
 );
 
