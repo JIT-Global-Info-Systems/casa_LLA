@@ -136,7 +136,7 @@ const leadsData = [
 ];
 
 export default function LeadsPage() {
-  const { leads, loading, error, fetchLeads } = useLeads()
+  const { leads, loading, error, fetchLeads, createLead, updateLead } = useLeads()
   const [open, setOpen] = useState(false)
   const [selectedLead, setSelectedLead] = useState(null)
   const [currentStep, setCurrentStep] = useState(1)
@@ -166,6 +166,21 @@ export default function LeadsPage() {
     setSelectedLead(lead);
     setCurrentStep(null); // Reset so Stepper derives step from lead status
     setOpen(true);
+  };
+
+  const handleLeadSubmit = async (formData) => {
+    try {
+      if (selectedLead) {
+        await updateLead(selectedLead._id || selectedLead.id, formData);
+      } else {
+        await createLead(formData);
+      }
+      setOpen(false);
+      fetchLeads(); // Refresh list
+    } catch (err) {
+      console.error("Failed to submit lead:", err);
+      // Optionally handle error state here
+    }
   };
 
   return (
@@ -199,6 +214,7 @@ export default function LeadsPage() {
 
                   <Leads
                     data={selectedLead}
+                    onSubmit={handleLeadSubmit}
                     onClose={() => setOpen(false)}
                     currentStep={currentStep}
                     onStepChange={setCurrentStep}

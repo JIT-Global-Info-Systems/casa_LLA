@@ -360,7 +360,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
-import { locationsAPI } from "@/services/api"
+import { locationsAPI, mediatorsAPI } from "@/services/api"
 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react"
@@ -449,15 +449,16 @@ export default function Leads({ data = null, onSubmit, onClose, currentStep = 1,
     checkRequests: "",
   })
 
-  // State for locations, regions, and zones
+  // State for locations, regions, zones, and mediators
   const [masters, setMasters] = useState({
     locations: [],
     regions: [],
     zones: [],
+    mediators: [],
   })
-  const [loading, setLoading] = useState({ locations: false, regions: false, zones: false })
+  const [loading, setLoading] = useState({ locations: false, regions: false, zones: false, mediators: false })
 
-  // Fetch locations from API
+  // Fetch locations and mediators from API
   const fetchLocations = useCallback(async () => {
     setLoading(prev => ({ ...prev, locations: true, regions: true, zones: true }));
     try {
@@ -515,10 +516,35 @@ export default function Leads({ data = null, onSubmit, onClose, currentStep = 1,
     }
   }, []);
 
-  // Fetch locations on component mount
+  const fetchMediators = useCallback(async () => {
+    setLoading(prev => ({ ...prev, mediators: true }));
+    try {
+      const mediatorsData = await mediatorsAPI.getAll();
+      // Transform API data to match component structure
+      const transformedMediators = mediatorsData.map(mediator => ({
+        id: mediator._id,
+        name: mediator.name,
+        email: mediator.email,
+        phone: mediator.phone_number,
+        status: mediator.status
+      }));
+      
+      setMasters(prev => ({ 
+        ...prev, 
+        mediators: transformedMediators
+      }));
+    } catch (err) {
+      console.error('Failed to fetch mediators:', err);
+    } finally {
+      setLoading(prev => ({ ...prev, mediators: false }));
+    }
+  }, []);
+
+  // Fetch locations and mediators on component mount
   useEffect(() => {
     fetchLocations();
-  }, [fetchLocations]);
+    fetchMediators();
+  }, [fetchLocations, fetchMediators]);
 
   useEffect(() => {
     if (data) {
@@ -540,6 +566,7 @@ export default function Leads({ data = null, onSubmit, onClose, currentStep = 1,
 
   const getOptions = useCallback((type, selectedLocation = null) => {
     if (type === 'location') return masters.locations.map(l => ({ value: l.name, label: l.name }));
+    if (type === 'mediator') return masters.mediators.map(m => ({ value: m.name, label: m.name }));
     if (type === 'region') {
       if (selectedLocation) {
         // Filter regions by selected location
@@ -616,12 +643,22 @@ export default function Leads({ data = null, onSubmit, onClose, currentStep = 1,
 
           <div className="space-y-2">
             <Label>Mediator Name</Label>
-            <Input
-              value={formData.mediatorName}
-              onChange={e => handleChange("mediatorName", e.target.value)}
-              placeholder="Enter mediator name"
-              className="border-gray-300"
-            />
+            <Select
+              value={formData.mediatorName || ''}
+              onValueChange={(value) => handleChange("mediatorName", value)}
+              disabled={loading.mediators}
+            >
+              <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                <SelectValue placeholder="Select mediator" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-200 shadow-lg">
+                {getOptions('mediator').map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
@@ -731,14 +768,17 @@ export default function Leads({ data = null, onSubmit, onClose, currentStep = 1,
           <div className="space-y-2">
             <Label>Source</Label>
             <Select
-              value={formData.source}
-              onChange={v => handleChange("source", v)}
-              options={[
-                { value: "", label: "Select Source" },
-                { value: "facebook", label: "Facebook" },
-                { value: "google", label: "Google" },
-              ]}
-            />
+              value={formData.source || ''}
+              onValueChange={(value) => handleChange("source", value)}
+            >
+              <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                <SelectValue placeholder="Select source" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-200 shadow-lg">
+                <SelectItem value="facebook">Facebook</SelectItem>
+                <SelectItem value="google">Google</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
 
@@ -755,26 +795,33 @@ export default function Leads({ data = null, onSubmit, onClose, currentStep = 1,
           <div className="space-y-2">
             <Label>Unit</Label>
             <Select
-              value={formData.unit}
-              onChange={v => handleChange("unit", v)}
-              options={[
-                { value: "Acre", label: "Acre" },
-                { value: "Sqft", label: "Sqft" },
-              ]}
-            />
+              value={formData.unit || ''}
+              onValueChange={(value) => handleChange("unit", value)}
+            >
+              <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                <SelectValue placeholder="Select unit" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-200 shadow-lg">
+                <SelectItem value="Acre">Acre</SelectItem>
+                <SelectItem value="Sqft">Sqft</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
             <Label>Property Type</Label>
             <Select
-              value={formData.propertyType}
-              onChange={v => handleChange("propertyType", v)}
-              options={[
-                { value: "", label: "Select Type" },
-                { value: "residential", label: "Residential" },
-                { value: "commercial", label: "Commercial" },
-              ]}
-            />
+              value={formData.propertyType || ''}
+              onValueChange={(value) => handleChange("propertyType", value)}
+            >
+              <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                <SelectValue placeholder="Select property type" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-200 shadow-lg">
+                <SelectItem value="residential">Residential</SelectItem>
+                <SelectItem value="commercial">Commercial</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2"><Label>FSI</Label><Input
@@ -799,13 +846,17 @@ export default function Leads({ data = null, onSubmit, onClose, currentStep = 1,
           <div className="space-y-2">
             <Label>Transaction Type</Label>
             <Select
-              value={formData.transactionType}
-              onChange={v => handleChange("transactionType", v)}
-              options={[
-                { value: "JV", label: "JV" },
-                { value: "Sale", label: "Sale" },
-              ]}
-            />
+              value={formData.transactionType || ''}
+              onValueChange={(value) => handleChange("transactionType", value)}
+            >
+              <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                <SelectValue placeholder="Select transaction type" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-200 shadow-lg">
+                <SelectItem value="JV">JV</SelectItem>
+                <SelectItem value="Sale">Sale</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2"><Label>Rate</Label><Input
@@ -861,30 +912,38 @@ export default function Leads({ data = null, onSubmit, onClose, currentStep = 1,
           <div className="space-y-2">
             <Label>SSPDE</Label>
             <Select
-              value={formData.sspde}
-              onChange={v => handleChange("sspde", v)}
-              options={[
-                { value: "Yes", label: "Yes" },
-                { value: "No", label: "No" },
-              ]}
-            />
+              value={formData.sspde || ''}
+              onValueChange={(value) => handleChange("sspde", value)}
+            >
+              <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                <SelectValue placeholder="Select SSPDE" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-200 shadow-lg">
+                <SelectItem value="Yes">Yes</SelectItem>
+                <SelectItem value="No">No</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
             <Label>Lead Status</Label>
             <Select
-              value={formData.leadStatus}
-              onChange={v => handleChange("leadStatus", v)}
-              options={[
-                { value: "Pending", label: "Pending" },
-                { value: "Approved", label: "Approved" },
-                { value: "Rejected", label: "Rejected" },
-                { value: "Cancelled", label: "Cancelled" },
-                { value: "Lost", label: "Lost" },
-                { value: "Won", label: "Won" },
-                { value: "Purchased", label: "Purchased" }
-              ]}
-            />
+              value={formData.leadStatus || ''}
+              onValueChange={(value) => handleChange("leadStatus", value)}
+            >
+              <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                <SelectValue placeholder="Select lead status" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-200 shadow-lg">
+                <SelectItem value="Pending">Pending</SelectItem>
+                <SelectItem value="Approved">Approved</SelectItem>
+                <SelectItem value="Rejected">Rejected</SelectItem>
+                <SelectItem value="Cancelled">Cancelled</SelectItem>
+                <SelectItem value="Lost">Lost</SelectItem>
+                <SelectItem value="Won">Won</SelectItem>
+                <SelectItem value="Purchased">Purchased</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="md:col-span-3 space-y-2">
