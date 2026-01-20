@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -370,8 +370,9 @@ const Masters = () => {
 
   const sidebarTabs = [
     { id: 'location', label: 'Location', columns: ['S.No', 'Location', 'Status', 'Action'] },
-    { id: 'region', label: 'Region', columns: ['S.No', 'Location', 'Region', 'Action'] },
-    { id: 'zone', label: 'Zone', columns: ['S.No', 'Location', 'Region', 'Zone', 'Action'] },
+    { id: 'region', label: 'Zone', columns: ['S.No', 'Location', 'Zone', 'Action'] },
+    { id: 'zone', label: 'Area', columns: ['S.No', 'Location', 'Zone', 'Area', 'Action'] },
+    { id: 'type', label: 'Type', columns: ['S.No', 'Location', 'Zone', 'Area', 'Action'] },
   ];
 
   const getOptions = useCallback((type, selectedLocation = null) => {
@@ -395,31 +396,58 @@ const Masters = () => {
         {type === 'region' && (
           <Select 
             value={data.location || ''}
-            onChange={(value) => setForm(prev => ({ ...prev, data: { ...prev.data, location: value } }))}
-            options={getOptions('location')}
-            placeholder="Select location"
+            onValueChange={(value) => setForm(prev => ({ ...prev, data: { ...prev.data, location: value } }))}
             disabled={!!form.editing}
-          />
+          >
+            <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+              <SelectValue placeholder="Select location" />
+            </SelectTrigger>
+            <SelectContent className="bg-white border-gray-200 shadow-lg">
+              {getOptions('location').map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         )}
         {type === 'zone' && (
           <>
             <Select 
               value={data.location || ''}
-              onChange={(value) => setForm(prev => ({ 
+              onValueChange={(value) => setForm(prev => ({ 
                 ...prev, 
                 data: { ...prev.data, location: value, region: '' } // Clear region when location changes
               }))}
-              options={getOptions('location')}
-              placeholder="Select location"
               disabled={!!form.editing}
-            />
+            >
+              <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                <SelectValue placeholder="Select location" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-200 shadow-lg">
+                {getOptions('location').map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Select 
               value={data.region || ''}
-              onChange={(value) => setForm(prev => ({ ...prev, data: { ...prev.data, region: value } }))}
-              options={getOptions('region', data.location)}
-              placeholder="Select region"
+              onValueChange={(value) => setForm(prev => ({ ...prev, data: { ...prev.data, region: value } }))}
               disabled={!!form.editing}
-            />
+            >
+              <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                <SelectValue placeholder="Select Zone" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-200 shadow-lg">
+                {getOptions('region', data.location).map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </>
         )}
         <Input
@@ -429,7 +457,7 @@ const Masters = () => {
             const key = type === 'region' ? 'region' : type === 'zone' ? 'zone' : 'name';
             setForm(prev => ({ ...prev, data: { ...prev.data, [key]: value } }));
           }}
-          placeholder={`Enter ${type} name`}
+          placeholder={`Enter ${type === 'region' ? 'zone' : type === 'zone' ? 'area' : type} name`}
         />
       </>
     );
@@ -502,6 +530,7 @@ const Masters = () => {
                   <ActionButtons
                     onEdit={() => openForm(type, item)}
                     onDelete={() => openDelete(type, item)}
+                    showDelete={type !== 'location'}
                   />
                 </TableCell>
               </TableRow>
@@ -513,17 +542,17 @@ const Masters = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
-      <h1 className="text-2xl font-bold text-indigo-700 mb-6">Masters</h1>
+      <h1 className="text-2xl font-bold text-indigo-600 mb-3">Masters</h1>
       
       <div className="flex gap-8">
         {/* Tab Navigation */}
-        <div className="bg-white rounded-lg shadow p-2 h-fit">
+        <div className="bg-white rounded-lg shadow p-1 h-fit">
           <div className="flex flex-col gap-2">
             {sidebarTabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-6 py-3 rounded-md font-medium text-left transition-colors whitespace-nowrap ${
+                className={`px-3 py-2 rounded-md font-medium text-left transition-colors whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'bg-blue-600 text-white'
                     : 'text-gray-700 hover:bg-gray-100'
@@ -540,7 +569,7 @@ const Masters = () => {
           {sidebarTabs.map((tab) => activeTab === tab.id && (
             <div key={tab.id}>
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-indigo-700">{tab.label} Management</h2>
+                <h2 className="text-l font-bold text-indigo-700">{tab.label} Management</h2>
                 <Button 
                   className="flex items-center gap-2"
                   onClick={() => openForm(tab.id)}
@@ -559,7 +588,7 @@ const Masters = () => {
       <Modal open={form.open} onClose={closeForm}>
         <div className="space-y-4">
           <h2 className="text-xl font-bold text-indigo-700">
-            {form.editing ? `Edit ${form.type}` : `Add New ${form.type}`}
+            {form.editing ? `Edit ${form.type === 'region' ? 'Zone' : form.type === 'zone' ? 'Area' : form.type}` : `Add New ${form.type === 'region' ? 'Zone' : form.type === 'zone' ? 'Area' : form.type}`}
           </h2>
           {renderFormFields()}
           <div className="flex justify-end space-x-2">
@@ -574,7 +603,7 @@ const Masters = () => {
       {/* Generic Delete Modal */}
       <Modal open={deleteDialog.open} onClose={() => setDeleteDialog({ open: false, type: '', item: null })}>
         <div className="space-y-4">
-          <h2 className="text-xl font-bold text-red-600">Delete {activeTab}</h2>
+          <h2 className="text-xl font-bold text-red-600">Delete {activeTab === 'region' ? 'Zone' : activeTab === 'zone' ? 'Area' : activeTab}</h2>
           <p className="text-gray-700">
             Are you sure you want to delete <strong>"{deleteDialog.item?.name || deleteDialog.item?.region || deleteDialog.item?.zone || ''}"</strong>?
           </p>
@@ -596,11 +625,12 @@ const Masters = () => {
 };
 
 // Reusable Components
-const ActionButtons = ({ onEdit, onDelete }) => (
+const ActionButtons = ({ onEdit, onDelete,showDelete }) => (
   <div className="flex gap-1">
     <Button variant="ghost" size="sm" className="p-2" onClick={onEdit}>
       <Edit className="h-4 w-4" />
     </Button>
+    {showDelete && (
     <Button
       variant="ghost"
       size="sm"
@@ -609,6 +639,7 @@ const ActionButtons = ({ onEdit, onDelete }) => (
     >
       <Trash2 className="h-4 w-4" />
     </Button>
+    )}
   </div>
 );
 

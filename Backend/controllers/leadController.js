@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
-const Lead = require("../models/Lead");
+const Lead = require("../models/lead");
+const LeadHistory = require("../models/LeadHistory");
 
 // exports.createLead = async (req, res) => {
 //   try {
@@ -121,6 +122,14 @@ exports.createLead = async (req, res) => {
       typeof req.body.data === "string"
         ? JSON.parse(req.body.data)
         : req.body;
+        
+    // Get user ID from JWT token
+    if (!req.user || !req.user.user_id) {
+      return res.status(401).json({
+        message: "Authentication required. Please log in."
+      });
+    }
+    const createdBy = req.user.user_id;
 
     if (!leadData.contactNumber || !leadData.date) {
       return res.status(400).json({
@@ -185,6 +194,7 @@ exports.createLead = async (req, res) => {
       checkListPage: formattedCheckListPage,
       competitorAnalysis: formattedCompetitorAnalysis,
       lead_status: "PENDING",
+      created_by: createdBy, // Set created_by field with user ID from JWT token
       calls: userId
         ? [{
             userId,
@@ -210,10 +220,21 @@ exports.createLead = async (req, res) => {
 
 exports.updateLead = async (req, res) => {
   try {
+    // Check if user is authenticated
+    if (!req.user || !req.user.user_id) {
+      return res.status(401).json({
+        message: "Authentication required. Please log in."
+      });
+    }
+
     const { leadId } = req.params;
     const { userId, note, notes, role, competitorAnalysis, checkListPage, ...updateData } = req.body;
 
-    const update = { ...updateData }; //test
+    const update = { 
+      ...updateData,
+      updated_by: req.user.user_id, // Set updated_by with user ID from JWT token
+      updated_at: new Date() // Set updated_at timestamp
+    };
     
     // Initialize $push if not already set
     update.$push = update.$push || {};
@@ -280,8 +301,25 @@ exports.updateLead = async (req, res) => {
     }
 
     // If no $push operations were set, remove the empty $push
-    if (Object.keys(update.$push).length === 0) {
+    if (update.$push && Object.keys(update.$push).length === 0) {
       delete update.$push;
+    }
+
+    // Track changes to currentRole and assignedTo in LeadHistory
+    if (update.currentRole || update.assignedTo) {
+      const existingLead = await Lead.findById(leadId);
+      
+      if (existingLead) {
+        // Create a new history entry if either field is being updated
+        const historyEntry = {
+          leadId: existingLead._id,
+          currentRole: update.currentRole || existingLead.currentRole,
+          assignedTo: update.assignedTo || existingLead.assignedTo,
+          createdBy: req.user.user_id
+        };
+        
+        await LeadHistory.create(historyEntry);
+      }
     }
 
     const updatedLead = await Lead.findByIdAndUpdate(
@@ -413,7 +451,11 @@ exports.getLeadById = async (req, res) => {
       });
     }
 
-    const lead = await Lead.findById(leadId);
+    // Find the lead and populate any referenced fields if needed
+    const [lead, history] = await Promise.all([
+      Lead.findById(leadId),
+      LeadHistory.find({ leadId }).sort({ createdAt: -1 }) // Get history sorted by creation date (newest first)
+    ]);
 
     if (!lead) {
       return res.status(404).json({
@@ -424,7 +466,10 @@ exports.getLeadById = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      data: lead
+      data: {
+        ...lead.toObject(),
+        history: history || []
+      }
     });
   } catch (error) {
     return res.status(500).json({

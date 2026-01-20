@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
+ 
 import {
   AlertTriangle,
   BadgeCheck,
@@ -19,26 +19,25 @@ import {
   Info,
   Users,
 } from "lucide-react";
-
+ 
 import {
   PieChart,
   Pie,
   Cell,
   ResponsiveContainer,
 } from "recharts";
-
+ 
 import { Select } from "@/components/ui/select";
 import DateFilter from "@/components/ui/datefilter";
-
+ 
 /* -------------------- FILTER DATA -------------------- */
-
+ 
 const locations = [
   { label: "All Locations", value: "all" },
   { label: "Chennai", value: "chennai" },
   { label: "Bangalore", value: "bangalore" },
   { label: "Hyderabad", value: "hyderabad" },
 ];
-
 // const zones = [
 //   { label: "All Zones", value: "all" },
 //   { label: "North Zone", value: "north" },
@@ -46,9 +45,8 @@ const locations = [
 //   { label: "East Zone", value: "east" },
 //   { label: "West Zone", value: "west" },
 // ];
-
 /* -------------------- FILTER BAR -------------------- */
-
+ 
 function DashboardFilters({ filters, setFilters }) {
   return (
     <div className="flex flex-wrap gap-3">
@@ -61,7 +59,6 @@ function DashboardFilters({ filters, setFilters }) {
         options={locations}
         placeholder="Location"
       /> */}
-
       {/* <Select
         label="Zone"
         value={filters.zone}
@@ -74,9 +71,9 @@ function DashboardFilters({ filters, setFilters }) {
     </div>
   );
 }
-
+ 
 /* -------------------- DONUT CHART -------------------- */
-
+ 
 function DonutChart({ title, dateRange, total, segments, tone }) {
   const toneStyles = {
     blue: "border-sky-100 bg-sky-50/80 before:bg-sky-500",
@@ -85,7 +82,7 @@ function DonutChart({ title, dateRange, total, segments, tone }) {
     purple: "border-violet-100 bg-violet-50/80 before:bg-violet-500",
     indigo: "border-indigo-100 bg-indigo-50/70 before:bg-indigo-500",
   };
-
+ 
   return (
     <Card
       className={
@@ -101,7 +98,7 @@ function DonutChart({ title, dateRange, total, segments, tone }) {
           {dateRange}
         </CardDescription>
       </CardHeader>
-
+ 
       <CardContent>
         <div className="relative h-40">
           <ResponsiveContainer width="100%" height="100%">
@@ -120,7 +117,7 @@ function DonutChart({ title, dateRange, total, segments, tone }) {
               </Pie>
             </PieChart>
           </ResponsiveContainer>
-
+ 
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <div className="text-2xl font-bold text-slate-900">
               {total}
@@ -130,7 +127,7 @@ function DonutChart({ title, dateRange, total, segments, tone }) {
             </div>
           </div>
         </div>
-
+ 
         <div className="mt-4 grid grid-cols-2 gap-2">
           {segments.map((s) => (
             <div key={s.label} className="flex items-center gap-2">
@@ -151,9 +148,9 @@ function DonutChart({ title, dateRange, total, segments, tone }) {
     </Card>
   );
 }
-
+ 
 /* -------------------- STATUS CARD -------------------- */
-
+ 
 function StatusCard({ icon: Icon, label, value, tone }) {
   const toneStyles = {
     success: "border-emerald-100 bg-emerald-50/80 before:bg-emerald-500",
@@ -161,7 +158,7 @@ function StatusCard({ icon: Icon, label, value, tone }) {
     destructive: "border-rose-100 bg-rose-50/80 before:bg-rose-500",
     info: "border-sky-100 bg-sky-50/80 before:bg-sky-500",
   };
-
+ 
   return (
     <Card
       className={
@@ -185,9 +182,9 @@ function StatusCard({ icon: Icon, label, value, tone }) {
     </Card>
   );
 }
-
+ 
 /* -------------------- WIDE CARD -------------------- */
-
+ 
 function WideMetricCard({ icon: Icon, label, value }) {
   return (
     <Card>
@@ -205,9 +202,9 @@ function WideMetricCard({ icon: Icon, label, value }) {
     </Card>
   );
 }
-
+ 
 /* -------------------- DASHBOARD -------------------- */
-
+ 
 function Dashboard() {
   const { leads, approvedLeads, purchasedLeads, fetchAllLeadStatuses, loading } = useLeads();
   const [filters, setFilters] = useState({
@@ -272,11 +269,11 @@ function Dashboard() {
       ],
     },
   ];
-
+ 
   return (
     <div className="min-h-full bg-background">
       <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6">
-
+ 
         {/* HEADER + FILTERS */}
         <div className="relative mb-4">
           <div>
@@ -298,7 +295,6 @@ function Dashboard() {
             />
           </div>
         </div>
-
         {/* FILTERS */}
         <div className="flex flex-col gap-4">
           <DashboardFilters
@@ -306,14 +302,13 @@ function Dashboard() {
             setFilters={setFilters}
           />
         </div>
-
         {/* DONUT CHARTS */}
         <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
           {donutCards.map((d) => (
             <DonutChart key={d.title} {...d} />
           ))}
         </section>
-
+ 
         {/* STATUS CARDS */}
         <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-4">
           <StatusCard icon={BadgeCheck} label="Active records" value={activeLeadsCount} tone="success" />
@@ -321,19 +316,19 @@ function Dashboard() {
           <StatusCard icon={CalendarClock} label="Owner meet pending" value={130} tone="warning" />
           <StatusCard icon={AlertTriangle} label="Critical overdue" value={12} tone="destructive" />
         </section>
-
+ 
         {/* WIDE CARDS */}
         <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
           <WideMetricCard icon={ClipboardList} label="Open tasks" value={6} />
           <WideMetricCard icon={Bell} label="Due in 2 days" value={0} />
           <WideMetricCard icon={AlertTriangle} label="Overdue" value={4} />
         </section>
-
+ 
         <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
           <WideMetricCard icon={Users} label="Leads to allocate" value={69} />
           <WideMetricCard icon={FileCheck2} label="Leads to approve" value={20} />
         </section>
-
+ 
         {/* NOTES */}
         {/* <section className="mt-6">
           <Card>
@@ -350,10 +345,9 @@ function Dashboard() {
             </CardContent>
           </Card>
         </section> */}
-
       </div>
     </div>
   );
 }
-
+ 
 export default Dashboard;
