@@ -4,7 +4,7 @@ import { Bell, Menu } from "lucide-react";
 
 import { navItems } from "./Sidebar";
 import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -141,13 +141,18 @@ function Topbar() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Select
-            value={selectedLocation}
-            onChange={setSelectedLocation}
-            options={locations}
-            placeholder="Location"
-            className="w-[110px]"
-          />
+          <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Location" />
+            </SelectTrigger>
+            <SelectContent className="bg-white border border-gray-200 shadow-lg">
+              {locations.map((location) => (
+                <SelectItem key={location.value} value={location.value}>
+                  {location.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           
           <Button variant="ghost" size="icon" aria-label="Notifications">
             <Bell />
