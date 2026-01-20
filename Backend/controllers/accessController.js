@@ -1,4 +1,4 @@
-const Access = require("../models/Access");
+const Access = require("../models/access");
 
 exports.createOrUpdateAccess = async (req, res) => {
   try {

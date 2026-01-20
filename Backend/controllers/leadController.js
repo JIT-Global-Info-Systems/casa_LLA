@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const Lead = require("../models/Lead");
+const Lead = require("../models/lead");
 const LeadHistory = require("../models/LeadHistory");
 
 // exports.createLead = async (req, res) => {

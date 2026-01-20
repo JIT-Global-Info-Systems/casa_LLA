@@ -53,13 +53,13 @@ const PurchasedLeads = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await axios.get("http://localhost:5000/api/leads/purchased");
+      const response = await axios.get("http://13.201.132.94:5000/api/leads/purchased");
       if (response.data && response.data.data) {
         setLeads(response.data.data);
       }
     } catch (err) {
       console.error("Error fetching purchased leads:", err);
-      setError("Failed to fetch purchased leads. Please try again later.");
+      setError("Failed to fetch   . Please try again later.");
     } finally {
       setLoading(false);
     }
