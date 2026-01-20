@@ -114,7 +114,7 @@ export default function LeadsPage() {
   });
 
   return (
-    <div className="flex-1 space-y-6 p-6">
+    <div className="flex-1 space-y-6 p-6 bg-gray-50 min-h-screen">
       {open ? (
         /* Full page view when editing/creating */
         <div className="min-h-screen bg-gray-50 p-4">
@@ -180,19 +180,7 @@ export default function LeadsPage() {
         </div>
       ) : (
         /* Main page content when not editing */
-        <div className="p-6">
-          {/* Top Bar */}
-          {/* <div className="flex justify-between items-center mb-4">
-            <div className="text-xl font-bold text-indigo-700">
-              Leads
-              <div className="text-sm text-slate-500">
-                Leads list · Last updated today
-              </div>
-            </div>
-
-            <Button onClick={handleCreate}>+ Create</Button>
-          </div> */}
-
+        <>
           {/* Loading and Error States */}
           {loading && (
             <div className="text-center py-8">
@@ -219,14 +207,18 @@ export default function LeadsPage() {
                     Manage your leads pipeline · Last updated today
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={fetchLeads}>
-                    <RefreshCw className="h-4 w-4 mr-2" />
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="ghost"
+                    className="text-gray-700"
+                    onClick={fetchLeads}
+                    disabled={loading}
+                  >
+                    <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
                     Refresh
                   </Button>
                   <Button
                     onClick={handleCreate}
-                    size="sm"
                     className="bg-indigo-600 hover:bg-indigo-700 text-white"
                   >
                     <Plus className="h-4 w-4 mr-2" />
@@ -235,191 +227,212 @@ export default function LeadsPage() {
                 </div>
               </div>
 
-              {/* Filters */}
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex flex-wrap items-center gap-4">
+              {/* Main Content Card */}
+              <Card className="bg-white shadow-sm border-0 mt-6">
+                <CardContent className="p-0">
+                  {/* Filters Section */}
+                  <div className="p-4 border-b flex flex-wrap items-center gap-4">
                     <div className="flex-1 min-w-[200px]">
                       <div className="relative">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                         <Input
                           placeholder="Search leads (ID, Name, Email)..."
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
-                          className="pl-9"
+                          className="pl-10 border-gray-300"
                         />
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <Label className="text-sm text-muted-foreground whitespace-nowrap">
+                      <Label className="text-sm text-gray-600 whitespace-nowrap">
                         From:
                       </Label>
                       <Input
                         type="date"
                         value={dateFrom}
                         onChange={(e) => setDateFrom(e.target.value)}
-                        className="w-[140px]"
+                        className="w-[150px] border-gray-300"
                       />
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <Label className="text-sm text-muted-foreground whitespace-nowrap">
+                      <Label className="text-sm text-gray-600 whitespace-nowrap">
                         To:
                       </Label>
                       <Input
                         type="date"
                         value={dateTo}
                         onChange={(e) => setDateTo(e.target.value)}
-                        className="w-[140px]"
+                        className="w-[150px] border-gray-300"
                       />
                     </div>
 
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" className="border-gray-300">
                       <Filter className="h-4 w-4 mr-2" />
                       Filter
                     </Button>
                   </div>
+
+                  {/* Table Section */}
+                  <div className="rounded-md">
+                    <Table>
+                      <TableHeader className="bg-gray-50">
+                        <TableRow>
+                          <TableHead className="w-[100px] text-xs uppercase tracking-wider text-gray-500 font-medium">
+                            ID
+                          </TableHead>
+                          <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">
+                            Name
+                          </TableHead>
+                          <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">
+                            Location
+                          </TableHead>
+                          <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">
+                            Zone
+                          </TableHead>
+                          <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">
+                            Status
+                          </TableHead>
+                          <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">
+                            Current Stage
+                          </TableHead>
+                          <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">
+                            Action
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredLeads.length === 0 ? (
+                          <TableRow>
+                            <TableCell
+                              colSpan={7}
+                              className="h-24 text-center text-gray-500"
+                            >
+                              No leads found matching your criteria.
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          filteredLeads.map((lead) => (
+                            <TableRow key={lead.id} className="hover:bg-gray-50">
+                              <TableCell className="font-medium text-gray-900">
+                                {lead.id}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex flex-col">
+                                  <span className="font-medium text-gray-900">
+                                    {lead.name}
+                                  </span>
+                                  <span className="text-xs text-gray-500">
+                                    {lead.email}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-gray-900">
+                                {lead.location}
+                              </TableCell>
+                              <TableCell className="text-gray-600">
+                                {lead.zone}
+                              </TableCell>
+                              <TableCell>
+                                <span
+                                  className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
+                                    lead.status === "Approved"
+                                      ? "bg-green-100 text-green-700"
+                                      : "bg-yellow-100 text-yellow-700"
+                                  }`}
+                                >
+                                  {lead.status}
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                <span className="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-indigo-100 text-indigo-800 shadow hover:bg-indigo-200">
+                                  {lead.stageName}
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-8 w-8 p-0"
+                                    >
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent
+                                    align="end"
+                                    className="bg-white border shadow-lg"
+                                  >
+                                    <DropdownMenuItem
+                                      onClick={() => alert(`View ${lead.name}`)}
+                                      className="cursor-pointer"
+                                    >
+                                      <Eye className="h-4 w-4 mr-2" /> View Details
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() => handleEdit(lead.raw)}
+                                      className="cursor-pointer"
+                                    >
+                                      <Edit className="h-4 w-4 mr-2" /> Edit Lead
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      className="cursor-pointer text-red-600"
+                                      onClick={() => handleDelete(lead.raw)}
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" /> Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="px-6 py-4 border-t flex items-center justify-between">
+                    <p className="text-sm text-gray-600">
+                      Showing {filteredLeads.length} result
+                      {filteredLeads.length !== 1 ? "s" : ""}
+                      {filteredLeads.length !== normalizedLeads.length &&
+                        ` (of ${normalizedLeads.length} total)`}
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled
+                        className="text-gray-400"
+                      >
+                        Previous
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled
+                        className="text-gray-400"
+                      >
+                        Next
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled
+                        className="text-gray-400"
+                      >
+                        Last
+                      </Button>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-
-              {/* Table Section */}
-              <div className="rounded-md border bg-white">
-                <Table>
-                  <TableHeader className="bg-gray-50">
-                    <TableRow>
-                      <TableHead className="w-[100px] text-xs uppercase tracking-wider text-gray-500 font-medium">
-                        ID
-                      </TableHead>
-                      <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">
-                        Name
-                      </TableHead>
-                      <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">
-                        Location
-                      </TableHead>
-                      <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">
-                        Zone
-                      </TableHead>
-                      <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">
-                        Status
-                      </TableHead>
-                      <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">
-                        Current Stage
-                      </TableHead>
-                      <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium text-right">
-                        Action
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredLeads.length === 0 ? (
-                      <TableRow>
-                        <TableCell
-                          colSpan={7}
-                          className="h-24 text-center text-muted-foreground"
-                        >
-                          No leads found matching your criteria.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredLeads.map((lead) => (
-                        <TableRow key={lead.id} className="hover:bg-gray-50">
-                          <TableCell className="font-medium text-gray-900">
-                            {lead.id}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-col">
-                              <span className="font-medium text-gray-900">
-                                {lead.name}
-                              </span>
-                              <span className="text-xs text-gray-500">
-                                {lead.email}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-gray-900">
-                            {lead.location}
-                          </TableCell>
-                          <TableCell className="text-gray-600">
-                            {lead.zone}
-                          </TableCell>
-                          <TableCell>
-                            <span
-                              className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                lead.status === "Approved"
-                                  ? "bg-green-100 text-green-800"
-                                  : "bg-yellow-100 text-yellow-800"
-                              }`}
-                            >
-                              {lead.status}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <div className="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-indigo-100 text-indigo-800 shadow hover:bg-indigo-200">
-                              {lead.stageName}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                >
-                                  <MoreVertical className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem
-                                  onClick={() => alert(`View ${lead.name}`)}
-                                >
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  View Details
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => handleEdit(lead.raw)}
-                                >
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Edit Lead
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className="text-red-600 focus:text-red-600"
-                                  onClick={() => handleDelete(lead.raw)}
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-
-              {/* Pagination */}
-              <div className="flex items-center justify-between px-2">
-                <div className="text-sm text-muted-foreground">
-                  Showing {filteredLeads.length} result
-                  {filteredLeads.length !== 1 ? "s" : ""}
-                  {filteredLeads.length !== normalizedLeads.length &&
-                    ` (of ${normalizedLeads.length} total)`}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" disabled>
-                    Previous
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    Next
-                  </Button>
-                </div>
-              </div>
             </>
           )}
-        </div>
+        </>
       )}
     </div>
   );

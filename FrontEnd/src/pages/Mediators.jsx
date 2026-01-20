@@ -45,6 +45,7 @@ import {
   Edit,
   Trash2,
   MoreVertical,
+  Search,
 } from "lucide-react";
 
 function Mediators() {
@@ -245,7 +246,7 @@ function Mediators() {
   });
 
   return (
-    <div className="flex-1 space-y-6 p-6">
+    <div className="flex-1 space-y-6 p-6 bg-gray-50 min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="space-y-1">
@@ -256,14 +257,18 @@ function Mediators() {
             Mediator list · Last updated today
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleRefresh}>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            className="text-gray-700"
+            onClick={handleRefresh}
+            disabled={loading}
+          >
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </Button>
           <Button
             onClick={handleAdd}
-            size="sm"
             className="bg-indigo-600 hover:bg-indigo-700 text-white"
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -272,38 +277,39 @@ function Mediators() {
         </div>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-wrap items-center gap-4">
+      {/* Main Content Card */}
+      <Card className="bg-white shadow-sm border-0">
+        <CardContent className="p-0">
+          {/* Filters Section */}
+          <div className="p-4 border-b flex flex-wrap items-center gap-4">
             <div className="flex-1 min-w-[200px]">
-              <Input
-                placeholder="Search mediators..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Search mediators..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 border-gray-300"
+                />
+              </div>
             </div>
 
             <div className="flex items-center gap-2">
-              <Label className="text-sm text-muted-foreground whitespace-nowrap">
+              <Label className="text-sm text-gray-600 whitespace-nowrap">
                 Executive:
               </Label>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="outline"
-                    size="sm"
-                    className="w-[140px] justify-between"
+                    className="min-w-[140px] justify-between border-gray-300"
                   >
-                    <span className="truncate">
-                      {selectedExecutive || "Select"}
-                    </span>
-                    <ChevronDown className="h-4 w-4 ml-2 flex-shrink-0" />
+                    {selectedExecutive || "Select"}
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent>
+                <DropdownMenuContent className="bg-white border shadow-lg">
                   <DropdownMenuItem onClick={() => setSelectedExecutive("")}>
-                    All
+                    All Executives
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setSelectedExecutive("Admin")}>
                     Admin
@@ -319,128 +325,190 @@ function Mediators() {
             </div>
 
             <div className="flex items-center gap-2">
-              <Label className="text-sm text-muted-foreground whitespace-nowrap">
+              <Label className="text-sm text-gray-600 whitespace-nowrap">
                 From:
               </Label>
               <Input
                 type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
-                className="w-[140px]"
+                className="w-[150px] border-gray-300"
               />
             </div>
 
             <div className="flex items-center gap-2">
-              <Label className="text-sm text-muted-foreground whitespace-nowrap">
+              <Label className="text-sm text-gray-600 whitespace-nowrap">
                 To:
               </Label>
               <Input
                 type="date"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
-                className="w-[140px]"
+                className="w-[150px] border-gray-300"
               />
+            </div>
+          </div>
+
+          {/* Table Section */}
+          <div className="rounded-md">
+            <Table>
+              <TableHeader className="bg-gray-50">
+                <TableRow>
+                  <TableHead className="w-[100px] text-xs uppercase tracking-wider text-gray-500 font-medium">
+                    ID
+                  </TableHead>
+                  <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">
+                    Name
+                  </TableHead>
+                  <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">
+                    Category
+                  </TableHead>
+                  <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">
+                    Phone
+                  </TableHead>
+                  <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">
+                    Email
+                  </TableHead>
+                  <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">
+                    Registered Date
+                  </TableHead>
+                  <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">
+                    Linked Exec
+                  </TableHead>
+                  <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">
+                    Action
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="h-24 text-center text-gray-500">
+                      Loading mediators...
+                    </TableCell>
+                  </TableRow>
+                ) : filteredMediators.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="h-24 text-center text-gray-500">
+                      No mediators found matching your criteria.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredMediators.map((mediator) => (
+                    <TableRow key={mediator._id} className="hover:bg-gray-50">
+                      <TableCell className="font-medium text-gray-900">
+                        {mediator._id}
+                      </TableCell>
+                      <TableCell className="text-gray-900">{mediator.name}</TableCell>
+                      <TableCell>
+                        <span
+                          className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
+                            mediator.category === "Individual"
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-purple-100 text-purple-700"
+                          }`}
+                        >
+                          {mediator.category}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-gray-600">
+                        {mediator.phone_primary}
+                      </TableCell>
+                      <TableCell className="text-gray-600">
+                        {mediator.email}
+                      </TableCell>
+                      <TableCell className="text-gray-600">
+                        {mediator.created_at
+                          ? new Date(mediator.created_at).toISOString().split("T")[0]
+                          : "N/A"}
+                      </TableCell>
+                      <TableCell className="text-gray-600">
+                        {mediator.linked_executive || "N/A"}
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent
+                            align="end"
+                            className="bg-white border shadow-lg"
+                          >
+                            <DropdownMenuItem
+                              onClick={() => handleView(mediator)}
+                              className="cursor-pointer"
+                            >
+                              <Eye className="h-4 w-4 mr-2" /> View
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleEdit(mediator)}
+                              className="cursor-pointer"
+                            >
+                              <Edit className="h-4 w-4 mr-2" /> Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="cursor-pointer text-red-600"
+                              onClick={() => handleDeleteClick(mediator)}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" /> Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          {error && (
+            <div className="text-center py-12 text-red-500">
+              <p>Error: {error}</p>
+            </div>
+          )}
+
+          {/* Footer */}
+          <div className="px-6 py-4 border-t flex items-center justify-between">
+            <p className="text-sm text-gray-600">
+              Showing {filteredMediators.length} results
+              {filteredMediators.length !== mediators.length && ` (of ${mediators.length} total)`}
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled
+                className="text-gray-400"
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled
+                className="text-gray-400"
+              >
+                Next
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled
+                className="text-gray-400"
+              >
+                Last
+              </Button>
             </div>
           </div>
         </CardContent>
       </Card>
-
-      {/* Table Section */}
-      <div className="rounded-md border bg-white">
-        <Table>
-          <TableHeader className="bg-gray-50">
-            <TableRow>
-              <TableHead className="w-[100px] text-xs uppercase tracking-wider text-gray-500 font-medium">ID</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">Name</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">Category</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">Phone</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">Email</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">Registered Date</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">Linked Exec</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium text-right">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                 <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">Loading...</TableCell>
-              </TableRow>
-            ) : filteredMediators.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
-                  No mediators found
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredMediators.map((mediator) => (
-                <TableRow key={mediator._id} className="hover:bg-gray-50">
-                  <TableCell className="font-medium text-gray-900">{mediator._id}</TableCell>
-                  <TableCell className="text-gray-900">{mediator.name}</TableCell>
-                  <TableCell>
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        mediator.category === "Individual"
-                          ? "bg-blue-100 text-blue-800"
-                          : "bg-purple-100 text-purple-800"
-                      }`}
-                    >
-                      {mediator.category}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-gray-600">{mediator.phone_primary}</TableCell>
-                  <TableCell className="text-gray-600">{mediator.email}</TableCell>
-                  <TableCell className="text-gray-600">
-                     {mediator.created_at ? new Date(mediator.created_at).toLocaleDateString() : 'N/A'}
-                  </TableCell>
-                  <TableCell className="text-gray-600">{mediator.linked_executive || 'N/A'}</TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                        >
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleView(mediator)}>
-                          <Eye className="h-4 w-4 mr-2" />
-                          View
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleEdit(mediator)}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-red-600 focus:text-red-600"
-                          onClick={() => handleDeleteClick(mediator)}
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Pagination (Visual) */}
-      <div className="flex items-center justify-between px-2">
-        <div className="text-sm text-muted-foreground">
-          Showing {filteredMediators.length} result{filteredMediators.length !== 1 ? "s" : ""}
-          {filteredMediators.length !== mediators.length && ` (of ${mediators.length} total)`}
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" disabled>Previous</Button>
-          <Button variant="outline" size="sm" disabled>Next</Button>
-        </div>
-      </div>
 
       {/* Add/Edit Dialog */}
       <Dialog open={isAddEditModalOpen} onOpenChange={setIsAddEditModalOpen}>
