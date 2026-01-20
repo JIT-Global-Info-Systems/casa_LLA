@@ -198,8 +198,6 @@ export default function LeadsPage() {
                     onStepChange={setCurrentStep}
                     className="w-full"
                   />
-
-                  {/* Header with Back button */}
                   <div className="flex justify-between items-center">
                     <h1 className="text-2xl font-bold">
                       {selectedLead ? "Edit Lead" : "Create Lead"}
