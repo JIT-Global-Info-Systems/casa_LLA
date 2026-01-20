@@ -67,7 +67,7 @@ const DateFilter = ({
             value={localStartDate}
             onChange={handleStartDateChange}
             max={localEndDate ? getMinDate(localEndDate, maxDate) : maxDate}
-            className="h-9 w-[140px] text-sm"
+            className="h-8 w-[120px] text-xs"
           />
         </div>
         {/* <span className="text-slate-400">–</span> */}
@@ -84,7 +84,7 @@ const DateFilter = ({
             onChange={handleEndDateChange}
             min={localStartDate || undefined}
             max={maxDate}
-            className="h-9 w-[140px] text-sm"
+            className="h-8 w-[120px] text-xs"
           />
         </div>
       </div>

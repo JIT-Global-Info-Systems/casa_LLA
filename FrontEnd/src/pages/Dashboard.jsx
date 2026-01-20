@@ -258,17 +258,17 @@ function Dashboard() {
       <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6">
 
         {/* HEADER + FILTERS */}
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-xl font-bold text-indigo-700">
-                Dashboard
-              </div>
-              <div className="text-sm text-slate-500">
-                CRM Analytics Overview
-              </div>
+        <div className="relative mb-4">
+          <div>
+            <div className="text-xl font-bold text-indigo-700">
+              Dashboard
             </div>
-            
+            <div className="text-sm text-slate-500">
+              CRM Analytics Overview
+            </div>
+          </div>
+          
+          <div className="absolute top-0 right-0">
             <DateFilter
               startDate={filters.startDate}
               endDate={filters.endDate}
@@ -277,7 +277,10 @@ function Dashboard() {
               }
             />
           </div>
+        </div>
 
+        {/* FILTERS */}
+        <div className="flex flex-col gap-4">
           <DashboardFilters
             filters={filters}
             setFilters={setFilters}
