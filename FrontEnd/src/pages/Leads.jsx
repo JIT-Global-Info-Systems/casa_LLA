@@ -15,7 +15,7 @@
 
 // export default function Leads({ data = null, onClose }) {
 //   const { createLead, updateLead, loading } = useLeads()
-  
+
 //   // Initialize form with either incoming data (edit) or default values (create)
 //   const [formData, setFormData] = useState({
 //     leadType: "mediator",
@@ -81,7 +81,7 @@
 //         // Create new lead with files
 //         await createLead(submitData, files)
 //       }
-      
+
 //       // Close modal on successful submission
 //       if (onClose) onClose()
 //     } catch (error) {
@@ -353,17 +353,19 @@
 // }
 
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { Select } from "@/components/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
+import { locationsAPI } from "@/services/api"
+
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { ChevronDown } from "lucide-react"
- 
-export default function Leads({ data = null, onSubmit }) {
+import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react"
+
+export default function Leads({ data = null, onSubmit, onClose, currentStep = 1, onStepChange }) {
   const [formData, setFormData] = useState({
     // Basic Lead Information
     leadType: "mediator",
@@ -375,6 +377,7 @@ export default function Leads({ data = null, onSubmit }) {
     sourceCategory: "",
     source: "",
     zone: "",
+    area: "",
     extent: "",
     unit: "Acre",
     propertyType: "",
@@ -392,7 +395,7 @@ export default function Leads({ data = null, onSubmit }) {
     sspde: "No",
     leadStatus: "Pending",
     remark: "",
- 
+
     // Yield Calculation
     yield: "",
 
@@ -409,7 +412,7 @@ export default function Leads({ data = null, onSubmit }) {
     competitorTotalUnits: "",
     competitorKeyAmenities: "",
     competitorUSP: "",
- 
+
     // Site Checklist
     checkLandLocation: false,
     checkLandExtent: false,
@@ -445,32 +448,131 @@ export default function Leads({ data = null, onSubmit }) {
     checkNotes: "",
     checkRequests: "",
   })
- 
+
+  // State for locations, regions, and zones
+  const [masters, setMasters] = useState({
+    locations: [],
+    regions: [],
+    zones: [],
+  })
+  const [loading, setLoading] = useState({ locations: false, regions: false, zones: false })
+
+  // Fetch locations from API
+  const fetchLocations = useCallback(async () => {
+    setLoading(prev => ({ ...prev, locations: true, regions: true, zones: true }));
+    try {
+      const locationsData = await locationsAPI.getAll();
+      // Transform API data to match component structure
+      const transformedLocations = locationsData.map(loc => ({
+        id: loc._id,
+        name: loc.location,
+        status: loc.status,
+        regions: loc.regions || [],
+        created_by: loc.created_by,
+        created_at: loc.created_at,
+        updated_at: loc.updated_at,
+        updated_by: loc.updated_by
+      }));
+      
+      // Extract regions and zones from locations data
+      const transformedRegions = [];
+      const transformedZones = [];
+      
+      locationsData.forEach(location => {
+        if (location.regions && location.regions.length > 0) {
+          location.regions.forEach(region => {
+            transformedRegions.push({
+              id: region._id,
+              location: location.location,
+              region: region.region,
+              zones: region.zones || []
+            });
+            
+            if (region.zones && region.zones.length > 0) {
+              region.zones.forEach(zone => {
+                transformedZones.push({
+                  id: zone._id,
+                  location: location.location,
+                  region: region.region,
+                  zone: zone.zone
+                });
+              });
+            }
+          });
+        }
+      });
+      
+      setMasters(prev => ({ 
+        ...prev, 
+        locations: transformedLocations,
+        regions: transformedRegions,
+        zones: transformedZones
+      }));
+    } catch (err) {
+      console.error('Failed to fetch locations:', err);
+    } finally {
+      setLoading(prev => ({ ...prev, locations: false, regions: false, zones: false }));
+    }
+  }, []);
+
+  // Fetch locations on component mount
+  useEffect(() => {
+    fetchLocations();
+  }, [fetchLocations]);
+
   useEffect(() => {
     if (data) {
       setFormData(data)
     }
   }, [data])
- 
+
   const handleChange = (key, value) => {
     setFormData(prev => ({ ...prev, [key]: value }))
   }
- 
+
+  const handleLocationChange = (value) => {
+    setFormData(prev => ({ ...prev, location: value, zone: '', area: '' }));
+  };
+
+  const handleZoneChange = (value) => {
+    setFormData(prev => ({ ...prev, zone: value, area: '' }));
+  };
+
+  const getOptions = useCallback((type, selectedLocation = null) => {
+    if (type === 'location') return masters.locations.map(l => ({ value: l.name, label: l.name }));
+    if (type === 'region') {
+      if (selectedLocation) {
+        // Filter regions by selected location
+        return masters.regions
+          .filter(r => r.location === selectedLocation)
+          .map(r => ({ value: r.region, label: r.region }));
+      }
+      return masters.regions.map(r => ({ value: r.region, label: r.region }));
+    }
+    if (type === 'zone') {
+      if (selectedLocation && formData.zone) {
+        // Filter zones by selected location and region
+        return masters.zones
+          .filter(z => z.location === selectedLocation && z.region === formData.zone)
+          .map(z => ({ value: z.zone, label: z.zone }));
+      }
+      return [];
+    }
+    return [];
+  }, [masters, formData.zone]);
+
   const handleCheckboxChange = (key, checked) => {
     setFormData(prev => ({ ...prev, [key]: checked }))
   }
- 
+
   const handleSubmit = () => {
     console.log("Submitting Lead:", formData)
     if (onSubmit) onSubmit(formData)
   }
- 
+
   return (
-    <div className="flex-1 space-y-3 p-4">
-      <h1 className="text-2xl font-bold mb-4">
-        {data ? "Edit Lead" : "Create Lead"}
-      </h1>
- 
+    <div className="flex-1 space-y-2 p-2">
+      {/* Form Content */}
       {/* Section 1: Basic Lead Information */}
       <Card className="bg-white shadow-sm">
         <CardHeader>
@@ -501,7 +603,7 @@ export default function Leads({ data = null, onSubmit }) {
               </label>
             </div>
           </div>
- 
+
           <div className="space-y-2">
             <Label>Contact Number</Label>
             <Input
@@ -511,7 +613,7 @@ export default function Leads({ data = null, onSubmit }) {
               className="border-gray-300"
             />
           </div>
- 
+
           <div className="space-y-2">
             <Label>Mediator Name</Label>
             <Input
@@ -521,7 +623,7 @@ export default function Leads({ data = null, onSubmit }) {
               className="border-gray-300"
             />
           </div>
- 
+
           <div className="space-y-2">
             <Label>Date</Label>
             <Input
@@ -531,30 +633,68 @@ export default function Leads({ data = null, onSubmit }) {
               className="border-gray-300"
             />
           </div>
- 
+
+          {/* Location, Zone, Area - Full Width Fields */}
           <div className="space-y-2">
             <Label>Location</Label>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full justify-between"
-                >
-                  {formData.location ? (formData.location === "chennai" ? "Chennai" : "Bangalore") : "Select location"}
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-full">
-                <DropdownMenuItem onClick={() => handleChange("location", "chennai")}>
-                  Chennai
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleChange("location", "blr")}>
-                  Bangalore
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Select
+              value={formData.location || ''}
+              onValueChange={handleLocationChange}
+              disabled={loading.locations}
+            >
+              <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                <SelectValue placeholder="Select location" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-200 shadow-lg">
+                {getOptions('location').map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
- 
+
+          <div className="space-y-2">
+            <Label>Zone</Label>
+            <Select
+              value={formData.zone || ''}
+              onValueChange={handleZoneChange}
+              disabled={!formData.location || loading.regions}
+            >
+              <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                <SelectValue placeholder="Select zone" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-200 shadow-lg">
+                {getOptions('region', formData.location).map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Area</Label>
+            <Select
+              value={formData.area || ''}
+              onValueChange={(value) => handleChange('area', value)}
+              disabled={!formData.location || !formData.zone || loading.zones}
+            >
+              <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                <SelectValue placeholder="Select area" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-200 shadow-lg">
+                {getOptions('zone', formData.location).map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="space-y-2">
             <Label>Land Name</Label>
             <Input
@@ -564,7 +704,7 @@ export default function Leads({ data = null, onSubmit }) {
               className="border-gray-300"
             />
           </div>
- 
+
           <div className="space-y-2">
             <Label>Source Category</Label>
             <DropdownMenu>
@@ -587,7 +727,7 @@ export default function Leads({ data = null, onSubmit }) {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
- 
+
           <div className="space-y-2">
             <Label>Source</Label>
             <Select
@@ -600,17 +740,8 @@ export default function Leads({ data = null, onSubmit }) {
               ]}
             />
           </div>
- 
-          <div className="space-y-2">
-            <Label>Zone</Label>
-            <Input
-              value={formData.zone}
-              onChange={e => handleChange("zone", e.target.value)}
-              placeholder="Enter zone"
-              className="border-gray-300"
-            />
-          </div>
- 
+
+
           <div className="space-y-2">
             <Label>Extent</Label>
             <Input
@@ -620,7 +751,7 @@ export default function Leads({ data = null, onSubmit }) {
               className="border-gray-300"
             />
           </div>
- 
+
           <div className="space-y-2">
             <Label>Unit</Label>
             <Select
@@ -632,7 +763,7 @@ export default function Leads({ data = null, onSubmit }) {
               ]}
             />
           </div>
- 
+
           <div className="space-y-2">
             <Label>Property Type</Label>
             <Select
@@ -645,7 +776,7 @@ export default function Leads({ data = null, onSubmit }) {
               ]}
             />
           </div>
- 
+
           <div className="space-y-2"><Label>FSI</Label><Input
             value={formData.fsi}
             onChange={e => handleChange("fsi", e.target.value)}
@@ -664,7 +795,7 @@ export default function Leads({ data = null, onSubmit }) {
             placeholder="Enter revenue"
             className="border-gray-300"
           /></div>
- 
+
           <div className="space-y-2">
             <Label>Transaction Type</Label>
             <Select
@@ -676,7 +807,7 @@ export default function Leads({ data = null, onSubmit }) {
               ]}
             />
           </div>
- 
+
           <div className="space-y-2"><Label>Rate</Label><Input
             value={formData.rate}
             onChange={e => handleChange("rate", e.target.value)}
@@ -701,7 +832,7 @@ export default function Leads({ data = null, onSubmit }) {
             placeholder="Enter amount"
             className="border-gray-300"
           /></div>
- 
+
           <div className="space-y-2"><Label>Landmark</Label><Input
             value={formData.landmark}
             onChange={e => handleChange("landmark", e.target.value)}
@@ -720,13 +851,13 @@ export default function Leads({ data = null, onSubmit }) {
             placeholder="Enter width"
             className="border-gray-300"
           /></div>
-           <div className="space-y-2"><Label>Yield</Label><Input
+          <div className="space-y-2"><Label>Yield</Label><Input
             value={formData.yield}
             onChange={e => handleChange("yield", e.target.value)}
             placeholder="Enter width"
             className="border-gray-300"
           /></div>
- 
+
           <div className="space-y-2">
             <Label>SSPDE</Label>
             <Select
@@ -738,7 +869,7 @@ export default function Leads({ data = null, onSubmit }) {
               ]}
             />
           </div>
- 
+
           <div className="space-y-2">
             <Label>Lead Status</Label>
             <Select
@@ -755,7 +886,7 @@ export default function Leads({ data = null, onSubmit }) {
               ]}
             />
           </div>
- 
+
           <div className="md:col-span-3 space-y-2">
             <Label>Remark</Label>
             <Textarea
@@ -767,7 +898,7 @@ export default function Leads({ data = null, onSubmit }) {
           </div>
         </CardContent>
       </Card>
- 
+
       {/* Section 2: Yield Calculation */}
       {/* <Card>
         <CardHeader>
@@ -812,7 +943,7 @@ export default function Leads({ data = null, onSubmit }) {
           </div>
         </CardContent>
       </Card> */}
- 
+
       {/* Section 3: Competitor Analysis */}
       <Card>
         <CardHeader>
@@ -929,7 +1060,7 @@ export default function Leads({ data = null, onSubmit }) {
           </div>
         </CardContent>
       </Card>
- 
+
       {/* Section 4: Site Visit Checklist */}
       <Card>
         <CardHeader>
@@ -1217,35 +1348,35 @@ export default function Leads({ data = null, onSubmit }) {
               <span>Google Location</span>
             </label>
           </div>
- 
-            <div className="mt-6 space-y-4">
-              <div className="space-y-2">
-                <Label>Notes</Label>
-                <Textarea
-                  value={formData.checkNotes}
-                  onChange={e => handleChange("checkNotes", e.target.value)}
-                  placeholder="Enter additional notes"
-                  rows={3}
-                  className="border-gray-300"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Requests</Label>
-                <Textarea
-                  value={formData.checkRequests}
-                  onChange={e => handleChange("checkRequests", e.target.value)}
-                  placeholder="Enter any special requests"
-                  rows={3}
-                  className="border-gray-300"
-                />
-              </div>
+
+          <div className="mt-6 space-y-4">
+            <div className="space-y-2">
+              <Label>Notes</Label>
+              <Textarea
+                value={formData.checkNotes}
+                onChange={e => handleChange("checkNotes", e.target.value)}
+                placeholder="Enter additional notes"
+                rows={3}
+                className="border-gray-300"
+              />
             </div>
+            <div className="space-y-2">
+              <Label>Requests</Label>
+              <Textarea
+                value={formData.checkRequests}
+                onChange={e => handleChange("checkRequests", e.target.value)}
+                placeholder="Enter any special requests"
+                rows={3}
+                className="border-gray-300"
+              />
+            </div>
+          </div>
         </CardContent>
       </Card>
- 
+
       {/* Submit Button */}
       <div className="flex justify-end gap-3">
-        <Button variant="outline" onClick={() => window.history.back()} className="border-gray-300">
+        <Button variant="outline" onClick={onClose} className="border-gray-300">
           Cancel
         </Button>
         <Button onClick={handleSubmit} className="bg-indigo-600 hover:bg-indigo-700 text-white px-8">
@@ -1255,6 +1386,5 @@ export default function Leads({ data = null, onSubmit }) {
     </div>
   )
 }
- 
 
- 
+

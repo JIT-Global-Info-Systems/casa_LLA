@@ -399,10 +399,10 @@ const Masters = () => {
             onValueChange={(value) => setForm(prev => ({ ...prev, data: { ...prev.data, location: value } }))}
             disabled={!!form.editing}
           >
-            <SelectTrigger>
+            <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
               <SelectValue placeholder="Select location" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-white border-gray-200 shadow-lg">
               {getOptions('location').map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
@@ -421,10 +421,10 @@ const Masters = () => {
               }))}
               disabled={!!form.editing}
             >
-              <SelectTrigger>
+              <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                 <SelectValue placeholder="Select location" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white border-gray-200 shadow-lg">
                 {getOptions('location').map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
@@ -437,10 +437,10 @@ const Masters = () => {
               onValueChange={(value) => setForm(prev => ({ ...prev, data: { ...prev.data, region: value } }))}
               disabled={!!form.editing}
             >
-              <SelectTrigger>
+              <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                 <SelectValue placeholder="Select Zone" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white border-gray-200 shadow-lg">
                 {getOptions('region', data.location).map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
