@@ -55,12 +55,12 @@ function Sidebar() {
         </div>
       </div>
       <div className="flex-1 overflow-y-auto">
-        <div className="px-3 py-4">
-          <div className="border-t border-indigo-600/60 pt-4">
+        <div className="px-3 py-4 ">
+          <div className="border-t border-indigo-600/60 pt-4 ">
             <div className="px-3 text-[11px] font-semibold tracking-wider text-white/80">
-              USERS
+              EMPLOYEE
             </div>
-            <div className="mt-2 space-y-1">
+            <div className="mt-2 space-y-1 max-h-82 overflow-y-auto custom-scrollbar">
               {loading ? (
                 <div className="px-3 text-xs text-white/60">Loading users...</div>
               ) : users.length > 0 ? (
