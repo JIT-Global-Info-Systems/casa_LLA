@@ -78,8 +78,17 @@ export const UsersProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       const response = await usersAPI.update(id, userData);
-      const updated = response;
- 
+      
+      // Handle different response formats
+      let updated;
+      if (response.user) {
+        updated = response.user;
+      } else if (response.data) {
+        updated = response.data;
+      } else {
+        updated = response;
+      }
+
       setUsers(prev =>
         prev.map(user =>
           user.user_id === id
@@ -87,8 +96,8 @@ export const UsersProvider = ({ children }) => {
             : user
         )
       );
- 
-      return response;
+
+      return updated;
     } catch (err) {
       setError(err.message);
       throw err;

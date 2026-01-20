@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Search, Plus, Edit, Trash2, Eye, MoreVertical, RefreshCw } from "lucide-react";
 import { useUsers } from "../context/UsersContext";
 // Import the Table components
@@ -325,6 +326,9 @@ function Users() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Email
                       </th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Registered Date
                       </th>
@@ -359,6 +363,33 @@ function Users() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                           {user.email}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <div className="flex items-center justify-center gap-3">
+                            <Switch
+                              checked={user.status === "active"}
+                              onCheckedChange={async (checked) => {
+                                try {
+                                  const newStatus = checked ? "active" : "inactive";
+                                  await updateUser(user.user_id, { status: newStatus });
+                                } catch (error) {
+                                  console.error("Error updating user status:", error);
+                                }
+                              }}
+                              id={`status-toggle-${user.user_id}`}
+                              className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-gray-300"
+                            />
+                            <Label 
+                              htmlFor={`status-toggle-${user.user_id}`}
+                              className={`text-sm font-medium cursor-pointer ${
+                                user.status === "active" 
+                                  ? "text-green-700" 
+                                  : "text-gray-500"
+                              }`}
+                            >
+                              {user.status === "active" ? "Active" : "Inactive"}
+                            </Label>
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                           {new Date(user.created_at).toISOString().split("T")[0]}

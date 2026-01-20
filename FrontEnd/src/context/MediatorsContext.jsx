@@ -62,12 +62,15 @@ export const MediatorsProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       const response = await mediatorsAPI.update(id, mediatorData);
+      const updated = response.data ?? response;
+
       setMediators(prev =>
         prev.map(m =>
-          m._id === id ? { ...m, ...response.data } : m
+          m._id === id ? { ...m, ...updated } : m
         )
       );
-      return response.data;
+
+      return response;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -80,8 +83,17 @@ export const MediatorsProvider = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
-      await mediatorsAPI.delete(id);
-      setMediators(prev => prev.filter(m => m._id !== id));
+      const response = await mediatorsAPI.delete(id);
+      const deleted = response.data ?? response;
+
+      // Remove from local state or update status to inactive
+      setMediators(prev =>
+        prev.map(m =>
+          m._id === id ? { ...m, ...deleted } : m
+        )
+      );
+
+      return response;
     } catch (err) {
       setError(err.message);
       throw err;

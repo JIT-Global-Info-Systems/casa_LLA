@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useAuth } from "../../context/AuthContext";
 
 const pageTitles = {
   "/pages": "Dashboard",
@@ -28,10 +29,23 @@ const pageTitles = {
 };
 
 function Topbar() {
+  const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate()
   const title = pageTitles[location.pathname] || "Dashboard";
   const [mobileNavOpen, setMobileNavOpen] = React.useState(false);
+
+  // Function to get initials from user name
+  const getInitials = (name) => {
+    if (!name || typeof name !== 'string') {
+      return 'U'; // Default for undefined/invalid names
+    }
+    return name
+      .split(" ")
+      .map(word => word[0])
+      .join("")
+      .toUpperCase();
+  };
 
   const isItemActive = (path) => {
     return (
@@ -131,7 +145,9 @@ function Topbar() {
                 aria-label="Open user menu"
               >
                 <Avatar className="h-9 w-9">
-                  <AvatarFallback className="bg-indigo-600 text-white">ZA</AvatarFallback>
+                  <AvatarFallback className="bg-indigo-600 text-white">
+                    {getInitials(user?.name)}
+                  </AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>

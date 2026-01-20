@@ -186,37 +186,39 @@ export default function LeadsPage() {
                 </Button>
               </div>
               <div className="p-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-4">
+                <div className={`${selectedLead ? "lg:col-span-2" : "lg:col-span-3"} space-y-4`}>
                   {selectedLead && (
                     <LeadStepper stageName={selectedLead.stageName} />
                   )}
                   <Leads data={selectedLead} onClose={() => setOpen(false)} />
                 </div>
 
-                {/* Right-side message thread (static) */}
-                <div className="lg:col-span-1">
-                  <div className="h-full rounded-lg border bg-slate-50">
-                    <div className="px-4 py-3 border-b bg-white rounded-t-lg">
-                      <div className="text-sm font-semibold text-slate-800">Notes</div>
-                      <div className="text-xs text-slate-500">Message thread</div>
-                    </div>
+                {/* Right-side message thread (only show when editing) */}
+                {selectedLead && (
+                  <div className="lg:col-span-1">
+                    <div className="h-full rounded-lg border bg-slate-50">
+                      <div className="px-4 py-3 border-b bg-white rounded-t-lg">
+                        <div className="text-sm font-semibold text-slate-800">Notes</div>
+                        <div className="text-xs text-slate-500">Message thread</div>
+                      </div>
 
-                    <div className="p-4 space-y-3 max-h-[40vh] overflow-y-auto">
-                      {leadComments.length === 0 ? (
-                        <div className="text-sm text-slate-500">No comments</div>
-                      ) : (
-                        leadComments.map((text, idx) => (
-                          <div
-                            key={`${idx}-${text}`}
-                            className="w-full border bg-white px-3 py-2 text-sm text-slate-800"
-                          >
-                            {text}
-                          </div>
-                        ))
-                      )}
+                      <div className="p-4 space-y-3 max-h-[40vh] overflow-y-auto">
+                        {leadComments.length === 0 ? (
+                          <div className="text-sm text-slate-500">No comments</div>
+                        ) : (
+                          leadComments.map((text, idx) => (
+                            <div
+                              key={`${idx}-${text}`}
+                              className="w-full border bg-white px-3 py-2 text-sm text-slate-800"
+                            >
+                              {text}
+                            </div>
+                          ))
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
