@@ -82,7 +82,7 @@ const DateFilter = ({
             className="h-9 w-[140px] text-sm"
           />
         </div>
-        <span className="text-slate-400">–</span>
+        {/* <span className="text-slate-400">–</span> */}
         <div className="flex flex-col gap-1">
           {showLabels && (
             <Label htmlFor="end-date" className="text-xs text-slate-500 whitespace-nowrap">

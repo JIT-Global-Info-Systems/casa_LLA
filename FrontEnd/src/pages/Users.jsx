@@ -32,8 +32,8 @@ function Users() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    password: "",
-    role: "telecaller",
+    // password: "",
+    role: "",
     phone_number: "",
     status: "active"
   });
@@ -538,7 +538,7 @@ function Users() {
                   placeholder="Enter email address"
                 />
               </div>
-              <div className="grid gap-2">
+              {/* <div className="grid gap-2">
                 <Label htmlFor="password">Password</Label>
                 <Input
                   id="password"
@@ -549,7 +549,7 @@ function Users() {
                   }
                   placeholder="Enter password"
                 />
-              </div>
+              </div> */}
               <div className="grid gap-2">
                 <Label htmlFor="phone">Phone</Label>
                 <Input
