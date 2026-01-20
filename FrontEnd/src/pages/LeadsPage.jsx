@@ -185,7 +185,7 @@ export default function LeadsPage() {
                   ← Back to Leads
                 </Button>
               </div>
-              <div className="p-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="p-2 grid grid-cols-1 lg:grid-cols-3 gap-2">
                 <div className={`${selectedLead ? "lg:col-span-2" : "lg:col-span-3"} space-y-4`}>
                   {selectedLead && (
                     <LeadStepper stageName={selectedLead.stageName} />
