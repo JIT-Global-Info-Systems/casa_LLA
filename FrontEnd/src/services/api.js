@@ -102,7 +102,10 @@ export const leadsAPI = {
  
   // Get lead by ID
   getById: async (id) => {
-    return await apiRequest(`/leads/${id}`);
+    const response = await apiRequest(`/leads/${id}`);
+    // The API returns { success: true, data: {...} }
+    // We want to return the data object
+    return response.data || response;
   },
  
   // Create new lead

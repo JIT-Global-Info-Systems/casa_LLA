@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export default function LeadsPage() {
-  const { leads, loading, error, fetchLeads, deleteLead } = useLeads();
+  const { leads, loading, error, fetchLeads, deleteLead, getLeadById } = useLeads();
   const [open, setOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -66,6 +66,17 @@ export default function LeadsPage() {
   const handleEdit = (lead) => {
     setSelectedLead(lead);
     setOpen(true);
+  };
+
+  const handleView = async (lead) => {
+    try {
+      const leadDetails = await getLeadById(lead._id);
+      setSelectedLead(leadDetails);
+      setOpen(true);
+    } catch (error) {
+      console.error("Error fetching lead details:", error);
+      alert("Failed to load lead details. Please try again.");
+    }
   };
 
   const filteredLeads = leads.filter((lead) => {
@@ -220,7 +231,7 @@ export default function LeadsPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="bg-white">
                             <DropdownMenuItem
-                              onClick={() => alert(`View ${lead.mediatorName || 'Lead'}`)}
+                              onClick={() => handleView(lead)}
                             >
                               <Eye className="h-4 w-4 mr-2" />
                               View
