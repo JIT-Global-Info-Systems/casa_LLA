@@ -82,9 +82,11 @@ export const mediatorsAPI = {
  
   // Delete mediator
   delete: async (id) => {
-    return await apiRequest(`/mediators/delete/${id}`, {
+    const response = await apiRequest(`/mediators/delete/${id}`, {
       method: 'DELETE',
     });
+    // Return the deleted mediator data from response
+    return response.data || response;
   },
 };
  
