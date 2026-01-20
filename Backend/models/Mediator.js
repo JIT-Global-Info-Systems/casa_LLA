@@ -75,6 +75,21 @@ const mediatorSchema = new mongoose.Schema({
     default: "active"
   },
 
+  created_by: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    
+    updated_by: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    
+    updated_at: {
+      type: Date
+    },
+    
   created_at: {
     type: Date,
     default: Date.now

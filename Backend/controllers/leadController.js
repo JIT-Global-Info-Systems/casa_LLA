@@ -121,6 +121,14 @@ exports.createLead = async (req, res) => {
       typeof req.body.data === "string"
         ? JSON.parse(req.body.data)
         : req.body;
+        
+    // Get user ID from JWT token
+    if (!req.user || !req.user.user_id) {
+      return res.status(401).json({
+        message: "Authentication required. Please log in."
+      });
+    }
+    const createdBy = req.user.user_id;
 
     if (!leadData.contactNumber || !leadData.date) {
       return res.status(400).json({
@@ -185,6 +193,7 @@ exports.createLead = async (req, res) => {
       checkListPage: formattedCheckListPage,
       competitorAnalysis: formattedCompetitorAnalysis,
       lead_status: "PENDING",
+      created_by: createdBy, // Set created_by field with user ID from JWT token
       calls: userId
         ? [{
             userId,
@@ -210,10 +219,21 @@ exports.createLead = async (req, res) => {
 
 exports.updateLead = async (req, res) => {
   try {
+    // Check if user is authenticated
+    if (!req.user || !req.user.user_id) {
+      return res.status(401).json({
+        message: "Authentication required. Please log in."
+      });
+    }
+
     const { leadId } = req.params;
     const { userId, note, notes, role, competitorAnalysis, checkListPage, ...updateData } = req.body;
 
-    const update = { ...updateData }; //test
+    const update = { 
+      ...updateData,
+      updated_by: req.user.user_id, // Set updated_by with user ID from JWT token
+      updated_at: new Date() // Set updated_at timestamp
+    };
     
     // Initialize $push if not already set
     update.$push = update.$push || {};

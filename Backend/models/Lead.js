@@ -126,7 +126,20 @@ const leadSchema = new mongoose.Schema({
     default: Date.now
   },
   
+  created_by: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
   
+  updated_by: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  
+  updated_at: {
+    type: Date
+  },
   
   calls: [{
     userId: {

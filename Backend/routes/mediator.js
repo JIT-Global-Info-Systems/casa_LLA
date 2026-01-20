@@ -3,17 +3,20 @@ const router = express.Router();
 const upload = require("../middleware/uploadMiddleware");
 const mediatorController = require("../controllers/MediatorController");
 
+const { verifyToken } = require("../middleware/authMiddleware");
+
 router.post(
   "/create",
   upload.fields([
     { name: "pan_upload", maxCount: 1 },
     { name: "aadhar_upload", maxCount: 1 }
   ]),
+  verifyToken,
   mediatorController.createMediator
 );
 
-router.put("/update/:mediatorId", mediatorController.updateMediator);
-router.delete("/delete/:mediatorId", mediatorController.softDeleteMediator);
-router.get("/all", mediatorController.getAllMediators);
+router.put("/update/:mediatorId", verifyToken, mediatorController.updateMediator);
+router.delete("/delete/:mediatorId", verifyToken, mediatorController.softDeleteMediator);
+router.get("/all", verifyToken, mediatorController.getAllMediators);
 
 module.exports = router;
