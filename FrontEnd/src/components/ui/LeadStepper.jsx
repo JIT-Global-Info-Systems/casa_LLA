@@ -36,30 +36,46 @@ const LEAD_STAGES = [
   "Admin",
 ]
 
-export default function LeadStepper({ stageName }) {
+export default function LeadStepper({ stageName, currentStep = 1, onStepChange, className }) {
   // Find current step number from stage name
-  const currentStep = LEAD_STAGES.indexOf(stageName) + 1 || 1
+  const stepFromStage = LEAD_STAGES.indexOf(stageName) + 1 || 1
+  const activeStep = currentStep || stepFromStage
+
+  const handleStepClick = (stepNumber) => {
+    if (onStepChange) {
+      onStepChange(stepNumber)
+    }
+  }
 
   return (
-    <div className="overflow-x-auto">
-      <div className="flex mb-2 min-w-[900px]">
+    <div className={`overflow-x-auto ${className || ''}`}>
+      <div className="flex mb-2 min-w-[900px] items-center">
         {LEAD_STAGES.map((label, index) => {
           const step = index + 1
-          const active = step <= currentStep
+          const active = step <= activeStep
+          const isLast = index === LEAD_STAGES.length - 1
 
           return (
-            <div key={step} className="flex flex-col items-center">
+            <div key={step} className="flex items-center">
+              <div className="flex flex-col items-center">
+                <button
+                  onClick={() => handleStepClick(step)}
+                  className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors z-10
+                  ${active >= step ? "bg-indigo-600 text-white hover:bg-indigo-700" : "bg-gray-200 text-gray-600 hover:bg-gray-300"}`}
+                >
+                  {active > step ? <Check size={14} /> : step}
+                </button>
 
-              <div
-                className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold
-                ${active ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-600"}`}
-              >
-                {step < currentStep ? <Check size={14} /> : step}
+                <span className="text-[11px] text-center mt-1 w-24 text-gray-600 cursor-pointer hover:text-indigo-600"
+                      onClick={() => handleStepClick(step)}>
+                  {label}
+                </span>
               </div>
-
-              <span className="text-[11px] text-center mt-1 w-24 text-gray-600">
-                {label}
-              </span>
+              
+              {/* Connecting line */}
+              {!isLast && (
+                <div className="w-8 h-px bg-gray-400 mx-1" />
+              )}
             </div>
           )
         })}

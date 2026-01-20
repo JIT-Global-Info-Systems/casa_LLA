@@ -73,12 +73,6 @@
 //       </div>
 
 //       {/* Modal */}
-//       <Modal open={open} onClose={() => setOpen(false)}>
-//         <Leads />
-//       </Modal>
-//     </div>
-//   )
-// }
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 // import Modal from "@/components/ui/modal"
@@ -109,6 +103,8 @@ import {
   Trash2,
   MoreVertical,
   Search,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 // Mock Data (Expanded to match your filter logic)
@@ -138,11 +134,12 @@ const leadsData = [
     registeredDate: "2024-02-10",
   },
 ];
- 
+
 export default function LeadsPage() {
   const { leads, loading, error, fetchLeads } = useLeads()
   const [open, setOpen] = useState(false)
   const [selectedLead, setSelectedLead] = useState(null)
+  const [currentStep, setCurrentStep] = useState(1)
 
   const leadComments = [
     selectedLead?.remark,
@@ -159,16 +156,18 @@ export default function LeadsPage() {
     fetchLeads()
   }, [])
 
-
   const handleCreate = () => {
     setSelectedLead(null);
+    setCurrentStep(1); // Reset to first step for new lead
     setOpen(true);
   };
- 
+
   const handleEdit = (lead) => {
     setSelectedLead(lead);
+    setCurrentStep(null); // Reset so Stepper derives step from lead status
     setOpen(true);
   };
+
   return (
     <div>
       {open ? (
@@ -176,21 +175,34 @@ export default function LeadsPage() {
         <div className="min-h-screen bg-gray-50 p-4">
           <div className="w-full">
             <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="mb-4">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setOpen(false)}
-                  className="mb-4"
-                >
-                  ← Back to Leads
-                </Button>
-              </div>
               <div className="p-2 grid grid-cols-1 lg:grid-cols-3 gap-2">
                 <div className={`${selectedLead ? "lg:col-span-2" : "lg:col-span-3"} space-y-4`}>
-                  {selectedLead && (
-                    <LeadStepper stageName={selectedLead.stageName} />
-                  )}
-                  <Leads data={selectedLead} onClose={() => setOpen(false)} />
+                  <LeadStepper
+                    stageName={selectedLead?.leadStatus || selectedLead?.stageName || "Tele Caller"}
+                    currentStep={currentStep}
+                    onStepChange={setCurrentStep}
+                    className="w-full"
+                  />
+
+                  {/* Header with Back button */}
+                  <div className="flex justify-between items-center">
+                    <h1 className="text-2xl font-bold">
+                      {selectedLead ? "Edit Lead" : "Create Lead"}
+                    </h1>
+                    <Button
+                      variant="outline"
+                      onClick={() => setOpen(false)}
+                    >
+                      ← Back to Leads
+                    </Button>
+                  </div>
+
+                  <Leads
+                    data={selectedLead}
+                    onClose={() => setOpen(false)}
+                    currentStep={currentStep}
+                    onStepChange={setCurrentStep}
+                  />
                 </div>
 
                 {/* Right-side message thread (only show when editing) */}

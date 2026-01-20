@@ -15,7 +15,7 @@
 
 // export default function Leads({ data = null, onClose }) {
 //   const { createLead, updateLead, loading } = useLeads()
-  
+
 //   // Initialize form with either incoming data (edit) or default values (create)
 //   const [formData, setFormData] = useState({
 //     leadType: "mediator",
@@ -81,7 +81,7 @@
 //         // Create new lead with files
 //         await createLead(submitData, files)
 //       }
-      
+
 //       // Close modal on successful submission
 //       if (onClose) onClose()
 //     } catch (error) {
@@ -360,10 +360,11 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
+
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { ChevronDown } from "lucide-react"
- 
-export default function Leads({ data = null, onSubmit }) {
+import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react"
+
+export default function Leads({ data = null, onSubmit, onClose, currentStep = 1, onStepChange }) {
   const [formData, setFormData] = useState({
     // Basic Lead Information
     leadType: "mediator",
@@ -392,7 +393,7 @@ export default function Leads({ data = null, onSubmit }) {
     sspde: "No",
     leadStatus: "Pending",
     remark: "",
- 
+
     // Yield Calculation
     yield: "",
 
@@ -409,7 +410,7 @@ export default function Leads({ data = null, onSubmit }) {
     competitorTotalUnits: "",
     competitorKeyAmenities: "",
     competitorUSP: "",
- 
+
     // Site Checklist
     checkLandLocation: false,
     checkLandExtent: false,
@@ -445,32 +446,29 @@ export default function Leads({ data = null, onSubmit }) {
     checkNotes: "",
     checkRequests: "",
   })
- 
+
   useEffect(() => {
     if (data) {
       setFormData(data)
     }
   }, [data])
- 
+
   const handleChange = (key, value) => {
     setFormData(prev => ({ ...prev, [key]: value }))
   }
- 
+
   const handleCheckboxChange = (key, checked) => {
     setFormData(prev => ({ ...prev, [key]: checked }))
   }
- 
+
   const handleSubmit = () => {
     console.log("Submitting Lead:", formData)
     if (onSubmit) onSubmit(formData)
   }
- 
+
   return (
-    <div className="flex-1 space-y-3 p-4">
-      <h1 className="text-2xl font-bold mb-4">
-        {data ? "Edit Lead" : "Create Lead"}
-      </h1>
- 
+    <div className="flex-1 space-y-2 p-2">
+      {/* Form Content */}
       {/* Section 1: Basic Lead Information */}
       <Card className="bg-white shadow-sm">
         <CardHeader>
@@ -501,7 +499,7 @@ export default function Leads({ data = null, onSubmit }) {
               </label>
             </div>
           </div>
- 
+
           <div className="space-y-2">
             <Label>Contact Number</Label>
             <Input
@@ -511,7 +509,7 @@ export default function Leads({ data = null, onSubmit }) {
               className="border-gray-300"
             />
           </div>
- 
+
           <div className="space-y-2">
             <Label>Mediator Name</Label>
             <Input
@@ -521,7 +519,7 @@ export default function Leads({ data = null, onSubmit }) {
               className="border-gray-300"
             />
           </div>
- 
+
           <div className="space-y-2">
             <Label>Date</Label>
             <Input
@@ -531,7 +529,7 @@ export default function Leads({ data = null, onSubmit }) {
               className="border-gray-300"
             />
           </div>
- 
+
           <div className="space-y-2">
             <Label>Location</Label>
             <DropdownMenu>
@@ -554,7 +552,7 @@ export default function Leads({ data = null, onSubmit }) {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
- 
+
           <div className="space-y-2">
             <Label>Land Name</Label>
             <Input
@@ -564,7 +562,7 @@ export default function Leads({ data = null, onSubmit }) {
               className="border-gray-300"
             />
           </div>
- 
+
           <div className="space-y-2">
             <Label>Source Category</Label>
             <DropdownMenu>
@@ -587,7 +585,7 @@ export default function Leads({ data = null, onSubmit }) {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
- 
+
           <div className="space-y-2">
             <Label>Source</Label>
             <Select
@@ -600,7 +598,7 @@ export default function Leads({ data = null, onSubmit }) {
               ]}
             />
           </div>
- 
+
           <div className="space-y-2">
             <Label>Zone</Label>
             <Input
@@ -610,7 +608,7 @@ export default function Leads({ data = null, onSubmit }) {
               className="border-gray-300"
             />
           </div>
- 
+
           <div className="space-y-2">
             <Label>Extent</Label>
             <Input
@@ -620,7 +618,7 @@ export default function Leads({ data = null, onSubmit }) {
               className="border-gray-300"
             />
           </div>
- 
+
           <div className="space-y-2">
             <Label>Unit</Label>
             <Select
@@ -632,7 +630,7 @@ export default function Leads({ data = null, onSubmit }) {
               ]}
             />
           </div>
- 
+
           <div className="space-y-2">
             <Label>Property Type</Label>
             <Select
@@ -645,7 +643,7 @@ export default function Leads({ data = null, onSubmit }) {
               ]}
             />
           </div>
- 
+
           <div className="space-y-2"><Label>FSI</Label><Input
             value={formData.fsi}
             onChange={e => handleChange("fsi", e.target.value)}
@@ -664,7 +662,7 @@ export default function Leads({ data = null, onSubmit }) {
             placeholder="Enter revenue"
             className="border-gray-300"
           /></div>
- 
+
           <div className="space-y-2">
             <Label>Transaction Type</Label>
             <Select
@@ -676,7 +674,7 @@ export default function Leads({ data = null, onSubmit }) {
               ]}
             />
           </div>
- 
+
           <div className="space-y-2"><Label>Rate</Label><Input
             value={formData.rate}
             onChange={e => handleChange("rate", e.target.value)}
@@ -701,7 +699,7 @@ export default function Leads({ data = null, onSubmit }) {
             placeholder="Enter amount"
             className="border-gray-300"
           /></div>
- 
+
           <div className="space-y-2"><Label>Landmark</Label><Input
             value={formData.landmark}
             onChange={e => handleChange("landmark", e.target.value)}
@@ -720,13 +718,13 @@ export default function Leads({ data = null, onSubmit }) {
             placeholder="Enter width"
             className="border-gray-300"
           /></div>
-           <div className="space-y-2"><Label>Yield</Label><Input
+          <div className="space-y-2"><Label>Yield</Label><Input
             value={formData.yield}
             onChange={e => handleChange("yield", e.target.value)}
             placeholder="Enter width"
             className="border-gray-300"
           /></div>
- 
+
           <div className="space-y-2">
             <Label>SSPDE</Label>
             <Select
@@ -738,7 +736,7 @@ export default function Leads({ data = null, onSubmit }) {
               ]}
             />
           </div>
- 
+
           <div className="space-y-2">
             <Label>Lead Status</Label>
             <Select
@@ -755,7 +753,7 @@ export default function Leads({ data = null, onSubmit }) {
               ]}
             />
           </div>
- 
+
           <div className="md:col-span-3 space-y-2">
             <Label>Remark</Label>
             <Textarea
@@ -767,7 +765,7 @@ export default function Leads({ data = null, onSubmit }) {
           </div>
         </CardContent>
       </Card>
- 
+
       {/* Section 2: Yield Calculation */}
       {/* <Card>
         <CardHeader>
@@ -812,7 +810,7 @@ export default function Leads({ data = null, onSubmit }) {
           </div>
         </CardContent>
       </Card> */}
- 
+
       {/* Section 3: Competitor Analysis */}
       <Card>
         <CardHeader>
@@ -929,7 +927,7 @@ export default function Leads({ data = null, onSubmit }) {
           </div>
         </CardContent>
       </Card>
- 
+
       {/* Section 4: Site Visit Checklist */}
       <Card>
         <CardHeader>
@@ -1217,35 +1215,35 @@ export default function Leads({ data = null, onSubmit }) {
               <span>Google Location</span>
             </label>
           </div>
- 
-            <div className="mt-6 space-y-4">
-              <div className="space-y-2">
-                <Label>Notes</Label>
-                <Textarea
-                  value={formData.checkNotes}
-                  onChange={e => handleChange("checkNotes", e.target.value)}
-                  placeholder="Enter additional notes"
-                  rows={3}
-                  className="border-gray-300"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Requests</Label>
-                <Textarea
-                  value={formData.checkRequests}
-                  onChange={e => handleChange("checkRequests", e.target.value)}
-                  placeholder="Enter any special requests"
-                  rows={3}
-                  className="border-gray-300"
-                />
-              </div>
+
+          <div className="mt-6 space-y-4">
+            <div className="space-y-2">
+              <Label>Notes</Label>
+              <Textarea
+                value={formData.checkNotes}
+                onChange={e => handleChange("checkNotes", e.target.value)}
+                placeholder="Enter additional notes"
+                rows={3}
+                className="border-gray-300"
+              />
             </div>
+            <div className="space-y-2">
+              <Label>Requests</Label>
+              <Textarea
+                value={formData.checkRequests}
+                onChange={e => handleChange("checkRequests", e.target.value)}
+                placeholder="Enter any special requests"
+                rows={3}
+                className="border-gray-300"
+              />
+            </div>
+          </div>
         </CardContent>
       </Card>
- 
+
       {/* Submit Button */}
       <div className="flex justify-end gap-3">
-        <Button variant="outline" onClick={() => window.history.back()} className="border-gray-300">
+        <Button variant="outline" onClick={onClose} className="border-gray-300">
           Cancel
         </Button>
         <Button onClick={handleSubmit} className="bg-indigo-600 hover:bg-indigo-700 text-white px-8">
@@ -1255,6 +1253,5 @@ export default function Leads({ data = null, onSubmit }) {
     </div>
   )
 }
- 
 
- 
+
