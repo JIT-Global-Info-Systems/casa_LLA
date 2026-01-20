@@ -99,6 +99,18 @@ export const leadsAPI = {
     // We want to return the data array
     return response.data || [];
   },
+
+  // Get approved leads
+  getApproved: async () => {
+    const response = await apiRequest('/leads/approved');
+    return response.data || [];
+  },
+
+  // Get purchased leads
+  getPurchased: async () => {
+    const response = await apiRequest('/leads/purchased');
+    return response.data || [];
+  },
  
   // Get lead by ID
   getById: async (id) => {

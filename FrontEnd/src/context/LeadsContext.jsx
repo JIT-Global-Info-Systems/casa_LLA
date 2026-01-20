@@ -13,6 +13,8 @@ export const useLeads = () => {
 
 export const LeadsProvider = ({ children }) => {
   const [leads, setLeads] = useState([]);
+  const [approvedLeads, setApprovedLeads] = useState([]);
+  const [purchasedLeads, setPurchasedLeads] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -27,6 +29,40 @@ export const LeadsProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchApprovedLeads = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await leadsAPI.getApproved();
+      setApprovedLeads(response.data ?? response);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchPurchasedLeads = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await leadsAPI.getPurchased();
+      setPurchasedLeads(response.data ?? response);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchAllLeadStatuses = async () => {
+    await Promise.all([
+      fetchLeads(),
+      fetchApprovedLeads(),
+      fetchPurchasedLeads()
+    ]);
   };
 
   const getLeadById = async (id) => {
@@ -104,9 +140,14 @@ export const LeadsProvider = ({ children }) => {
     <LeadsContext.Provider
       value={{
         leads,
+        approvedLeads,
+        purchasedLeads,
         loading,
         error,
         fetchLeads,
+        fetchApprovedLeads,
+        fetchPurchasedLeads,
+        fetchAllLeadStatuses,
         getLeadById,
         createLead,
         updateLead,

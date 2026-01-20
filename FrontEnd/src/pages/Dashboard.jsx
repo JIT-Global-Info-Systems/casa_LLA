@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLeads } from "../context/LeadsContext";
 import {
   Card,
   CardContent,
@@ -208,6 +209,7 @@ function WideMetricCard({ icon: Icon, label, value }) {
 /* -------------------- DASHBOARD -------------------- */
 
 function Dashboard() {
+  const { leads, approvedLeads, purchasedLeads, fetchAllLeadStatuses, loading } = useLeads();
   const [filters, setFilters] = useState({
     location: "all",
     zone: "all",
@@ -215,21 +217,38 @@ function Dashboard() {
     endDate: "",
   });
 
+  // Fetch all lead statuses on component mount
+  useEffect(() => {
+    fetchAllLeadStatuses();
+  }, []);
+
+  // Calculate active leads count (PENDING leads from all leads API)
+  const activeLeadsCount = leads.filter(lead => {
+    const status = lead.lead_status || lead.status;
+    return status === 'PENDING' || status === 'pending';
+  }).length;
+  
+  // Debug: log the leads data to see structure
+  console.log('Leads data:', leads);
+  console.log('Active leads count:', activeLeadsCount);
+  console.log('Approved leads count:', approvedLeads.length);
+  console.log('Purchased leads count:', purchasedLeads.length);
+  
   const donutCards = [
     {
-      title: "Leads Strategy",
+      title: "Leads Status",
       dateRange: "2025-08-30 – 2025-11-30",
-      total: 390,
+      total: leads.length + approvedLeads.length + purchasedLeads.length,
       tone: "blue",
       segments: [
-        { label: "Active", value: 193, color: "#22c55e" },
-        { label: "Hold", value: 63, color: "#f59e0b" },
-        { label: "Lost", value: 125, color: "#ef4444" },
-        { label: "Pushed", value: 9, color: "#3b82f6" },
+        { label: "Active", value: activeLeadsCount, color: "#22c55e" },
+        { label: "Approved", value: approvedLeads.length, color: "#f59e0b" },
+        { label: "Purchased", value: purchasedLeads.length, color: "#ef4444" },
+        // { label: "Pushed", value: leadsByStatus.pushed || 0, color: "#3b82f6" },
       ],
     },
     {
-      title: "Call Strategy",
+      title: "Leads Stages",
       dateRange: "2025-08-30 – 2025-11-30",
       total: 193,
       tone: "red",
@@ -237,6 +256,7 @@ function Dashboard() {
         { label: "Hot", value: 71, color: "#ef4444" },
         { label: "Warm", value: 68, color: "#f59e0b" },
         { label: "Cold", value: 54, color: "#3b82f6" },
+        { label: "Management Hot", value: 89, color: "#22c55e" },
       ],
     },
     {
@@ -296,7 +316,7 @@ function Dashboard() {
 
         {/* STATUS CARDS */}
         <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-4">
-          <StatusCard icon={BadgeCheck} label="Active records" value={1991} tone="success" />
+          <StatusCard icon={BadgeCheck} label="Active records" value={activeLeadsCount} tone="success" />
           <StatusCard icon={FileText} label="Site visit pending" value={1738} tone="info" />
           <StatusCard icon={CalendarClock} label="Owner meet pending" value={130} tone="warning" />
           <StatusCard icon={AlertTriangle} label="Critical overdue" value={12} tone="destructive" />
