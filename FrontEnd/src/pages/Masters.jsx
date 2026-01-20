@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -396,31 +396,58 @@ const Masters = () => {
         {type === 'region' && (
           <Select 
             value={data.location || ''}
-            onChange={(value) => setForm(prev => ({ ...prev, data: { ...prev.data, location: value } }))}
-            options={getOptions('location')}
-            placeholder="Select location"
+            onValueChange={(value) => setForm(prev => ({ ...prev, data: { ...prev.data, location: value } }))}
             disabled={!!form.editing}
-          />
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select location" />
+            </SelectTrigger>
+            <SelectContent>
+              {getOptions('location').map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         )}
         {type === 'zone' && (
           <>
             <Select 
               value={data.location || ''}
-              onChange={(value) => setForm(prev => ({ 
+              onValueChange={(value) => setForm(prev => ({ 
                 ...prev, 
                 data: { ...prev.data, location: value, region: '' } // Clear region when location changes
               }))}
-              options={getOptions('location')}
-              placeholder="Select location"
               disabled={!!form.editing}
-            />
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select location" />
+              </SelectTrigger>
+              <SelectContent>
+                {getOptions('location').map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Select 
               value={data.region || ''}
-              onChange={(value) => setForm(prev => ({ ...prev, data: { ...prev.data, region: value } }))}
-              options={getOptions('region', data.location)}
-              placeholder="Select zone"
+              onValueChange={(value) => setForm(prev => ({ ...prev, data: { ...prev.data, region: value } }))}
               disabled={!!form.editing}
-            />
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select region" />
+              </SelectTrigger>
+              <SelectContent>
+                {getOptions('region', data.location).map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </>
         )}
         <Input
