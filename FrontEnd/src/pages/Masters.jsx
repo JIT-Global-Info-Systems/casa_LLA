@@ -438,7 +438,7 @@ const Masters = () => {
               disabled={!!form.editing}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select region" />
+                <SelectValue placeholder="Select Zone" />
               </SelectTrigger>
               <SelectContent>
                 {getOptions('region', data.location).map((option) => (
