@@ -59,7 +59,7 @@ const PurchasedLeads = () => {
       }
     } catch (err) {
       console.error("Error fetching purchased leads:", err);
-      setError("Failed to fetch purchased leads. Please try again later.");
+      setError("Failed to fetch   . Please try again later.");
     } finally {
       setLoading(false);
     }

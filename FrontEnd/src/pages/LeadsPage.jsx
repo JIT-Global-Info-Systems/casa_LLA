@@ -256,33 +256,6 @@ import LeadStepper from "@/components/ui/LeadStepper"
 import Leads from "./Leads"
 import { useLeads } from "../context/LeadsContext.jsx"
 
-const leadsData = [
-  {
-    id: "L-001",
-    name: "Ravi",
-    email: "ravi@example.com",
-    phone: "9876543210",
-    location: "Chennai",
-    region: "North",
-    zone: "Alandur",
-    status: "Pending",
-    stageName: "Feasibility Team",
-    registeredDate: "2024-01-15",
-  },
-  {
-    id: "L-002",
-    name: "Kumar",
-    email: "kumar@example.com",
-    phone: "8765432109",
-    location: "Bangalore",
-    region: "East",
-    zone: "Electronic City",
-    status: "Approved",
-    stageName: "Legal",
-    registeredDate: "2024-02-10",
-  },
-];
- 
 export default function LeadsPage() {
   const [open, setOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
@@ -320,22 +293,45 @@ export default function LeadsPage() {
     console.log("Deleting", lead);
   };
  
-  const filteredLeads = leadsData.filter((lead) => {
+  const normalizedLeads = (Array.isArray(leads) ? leads : []).map((lead) => {
+    const registeredDate =
+      lead.registeredDate || lead.date || lead.createdAt || null;
+    return {
+      id: lead.id || lead._id || "N/A",
+      name:
+        lead.mediatorName ||
+        lead.ownerName ||
+        lead.name ||
+        lead.contactName ||
+        "N/A",
+      email: lead.email || lead.contactEmail || "—",
+      phone: lead.phone || lead.contactNumber || "",
+      location: lead.location || lead.address?.city || "N/A",
+      zone: lead.zone || lead.region || "N/A",
+      status: lead.status || lead.stageStatus || "Pending",
+      stageName: lead.stageName || lead.currentStage || "Not Started",
+      registeredDate,
+      raw: lead,
+    };
+  });
+
+  const filteredLeads = normalizedLeads.filter((lead) => {
     const matchesSearch =
       searchTerm === "" ||
       lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       lead.phone.includes(searchTerm) ||
-      lead.id.toLowerCase().includes(searchTerm.toLowerCase());
- 
+      String(lead.id).toLowerCase().includes(searchTerm.toLowerCase());
+
     const matchesDateRange = (() => {
       if (!dateFrom && !dateTo) return true;
+      if (!lead.registeredDate) return false;
       const leadDate = new Date(lead.registeredDate);
       const fromDate = dateFrom ? new Date(dateFrom) : new Date("1900-01-01");
       const toDate = dateTo ? new Date(dateTo) : new Date("2100-12-31");
       return leadDate >= fromDate && leadDate <= toDate;
     })();
- 
+
     return matchesSearch && matchesDateRange;
   });
  
@@ -445,8 +441,8 @@ export default function LeadsPage() {
                     Manage your leads pipeline · Last updated today
                   </p>
                 </div>
-                <div className="flex items-center gap-4">
-                  <Button variant="outline" size="sm">
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={fetchLeads}>
                     <RefreshCw className="h-4 w-4 mr-2" />
                     Refresh
                   </Button>
@@ -604,14 +600,14 @@ export default function LeadsPage() {
                                   View Details
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
-                                  onClick={() => handleEdit(lead)}
+                                  onClick={() => handleEdit(lead.raw)}
                                 >
                                   <Edit className="h-4 w-4 mr-2" />
                                   Edit Lead
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   className="text-red-600 focus:text-red-600"
-                                  onClick={() => handleDelete(lead)}
+                                  onClick={() => handleDelete(lead.raw)}
                                 >
                                   <Trash2 className="h-4 w-4 mr-2" />
                                   Delete
@@ -631,8 +627,8 @@ export default function LeadsPage() {
                 <div className="text-sm text-muted-foreground">
                   Showing {filteredLeads.length} result
                   {filteredLeads.length !== 1 ? "s" : ""}
-                  {filteredLeads.length !== leadsData.length &&
-                    ` (of ${leadsData.length} total)`}
+                  {filteredLeads.length !== normalizedLeads.length &&
+                    ` (of ${normalizedLeads.length} total)`}
                 </div>
                 <div className="flex items-center gap-2">
                   <Button variant="outline" size="sm" disabled>
