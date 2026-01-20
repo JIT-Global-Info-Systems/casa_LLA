@@ -1,6 +1,17 @@
 const mongoose = require("mongoose");
 
+const leadCounterSchema = new mongoose.Schema({
+  _id: { type: String, required: true },
+  seq: { type: Number, default: 0 }
+});
+
+const LeadCounter = mongoose.models.LeadCounter || mongoose.model('LeadCounter', leadCounterSchema);
+
 const leadSchema = new mongoose.Schema({
+  lead_id: {
+    type: Number,
+    unique: true
+  },
   leadType: {
     type: String,
     default: "mediator"
@@ -120,6 +131,11 @@ const leadSchema = new mongoose.Schema({
 
   lead_status: {
     type: String,
+  },
+  
+  lead_stage: {
+    type: String,
+    default: "new"
   },
   created_at: {
     type: Date,
@@ -246,4 +262,24 @@ const leadSchema = new mongoose.Schema({
 
 });
 
-module.exports = mongoose.model("Lead", leadSchema);
+// Pre-save hook to auto-increment lead_id
+leadSchema.pre('save', async function() {
+  if (this.isNew) {
+    try {
+      const counter = await LeadCounter.findOneAndUpdate(
+        { _id: 'lead_id' },
+        { $inc: { seq: 1 } },
+        { new: true, upsert: true }
+      );
+      this.lead_id = counter.seq;
+    } catch (error) {
+      // If there's an error, we'll just log it and continue
+      // The save will fail if lead_id is required but not set
+      console.error('Error incrementing lead counter:', error);
+    }
+  }
+});
+
+const Lead = mongoose.model("Lead", leadSchema);
+
+module.exports = Lead;
