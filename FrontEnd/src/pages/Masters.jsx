@@ -542,17 +542,17 @@ const Masters = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
-      <h1 className="text-2xl font-bold text-indigo-700 mb-6">Masters</h1>
+      <h1 className="text-2xl font-bold text-indigo-600 mb-3">Masters</h1>
       
       <div className="flex gap-8">
         {/* Tab Navigation */}
-        <div className="bg-white rounded-lg shadow p-2 h-fit">
+        <div className="bg-white rounded-lg shadow p-1 h-fit">
           <div className="flex flex-col gap-2">
             {sidebarTabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-6 py-3 rounded-md font-medium text-left transition-colors whitespace-nowrap ${
+                className={`px-3 py-2 rounded-md font-medium text-left transition-colors whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'bg-blue-600 text-white'
                     : 'text-gray-700 hover:bg-gray-100'
@@ -569,7 +569,7 @@ const Masters = () => {
           {sidebarTabs.map((tab) => activeTab === tab.id && (
             <div key={tab.id}>
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-bold text-indigo-700">{tab.label} Management</h2>
+                <h2 className="text-l font-bold text-indigo-700">{tab.label} Management</h2>
                 <Button 
                   className="flex items-center gap-2"
                   onClick={() => openForm(tab.id)}
