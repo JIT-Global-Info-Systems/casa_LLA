@@ -49,7 +49,7 @@ export default function LeadStepper({ stageName }) {
 
           return (
             <div key={step} className="flex flex-col items-center">
-              
+
               <div
                 className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold
                 ${active ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-600"}`}

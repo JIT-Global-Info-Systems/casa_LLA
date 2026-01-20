@@ -58,11 +58,11 @@ export const LeadsProvider = ({ children }) => {
     }
   };
 
-  const updateLead = async (id, leadData) => {
+  const updateLead = async (id, leadData, files = {}) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await leadsAPI.update(id, leadData);
+      const response = await leadsAPI.update(id, leadData, files);
       const updated = response.data ?? response;
 
       setLeads(prev =>
