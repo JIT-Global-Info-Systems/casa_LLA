@@ -35,23 +35,35 @@ const DateFilter = ({
     if (startDate !== undefined) setLocalStartDate(startDate);
     if (endDate !== undefined) setLocalEndDate(endDate);
   }, [startDate, endDate]);
- 
+
   const handleStartDateChange = (e) => {
     const value = e.target.value;
+
+    // Validation: If end date exists, start date should not be after end date
+    if (localEndDate && value && new Date(value) > new Date(localEndDate)) {
+      return; // Prevent setting start date after end date
+    }
+
     setLocalStartDate(value);
     if (onDateChange) {
       onDateChange({ startDate: value, endDate: localEndDate });
     }
   };
- 
+
   const handleEndDateChange = (e) => {
     const value = e.target.value;
+
+    // Validation: If start date exists, end date should not be before start date
+    if (localStartDate && value && new Date(value) < new Date(localStartDate)) {
+      return; // Prevent setting end date before start date
+    }
+
     setLocalEndDate(value);
     if (onDateChange) {
       onDateChange({ startDate: localStartDate, endDate: value });
     }
   };
- 
+
   return (
     <div className={`flex items-center gap-3 ${className}`}>
       <div className="flex items-center gap-2">
