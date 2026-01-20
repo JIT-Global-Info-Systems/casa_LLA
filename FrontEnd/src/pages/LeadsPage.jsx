@@ -45,6 +45,7 @@ export default function LeadsPage() {
  
   const { leads, loading, error, fetchLeads } = useLeads()
   
+    const [currentStep, setCurrentStep] = useState(1)
     const leadComments = [
       selectedLead?.remark,
       selectedLead?.comment,
@@ -67,6 +68,20 @@ export default function LeadsPage() {
     setOpen(true);
   };
 
+  const handleLeadSubmit = async (formData) => {
+    try {
+      if (selectedLead) {
+        await updateLead(selectedLead._id || selectedLead.id, formData);
+      } else {
+        await createLead(formData);
+      }
+      setOpen(false);
+      fetchLeads(); // Refresh list
+    } catch (err) {
+      console.error("Failed to submit lead:", err);
+      // Optionally handle error state here
+    }
+  };
  
   const handleDelete = (lead) => {
     // Add delete logic here
@@ -122,17 +137,17 @@ export default function LeadsPage() {
         <div className="min-h-screen bg-gray-50 p-4">
           <div className="w-full">
             <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="mb-4">
-                <Button
+             <div className="mb-4">
+                 {/* <Button
                   variant="outline"
                   onClick={() => setOpen(false)}
                   className="mb-4"
                 >
                   ← Back to Leads
                 </Button>
-              </div>
+              </div> */}
 
-              <div className="p-2 grid grid-cols-1 lg:grid-cols-3 gap-2">
+              {/* <div className="p-2 grid grid-cols-1 lg:grid-cols-3 gap-2">
                 <div
                   className={`${
                     selectedLead ? "lg:col-span-2" : "lg:col-span-3"
@@ -142,6 +157,37 @@ export default function LeadsPage() {
                     <LeadStepper stageName={selectedLead.stageName} />
                   )}
                   <Leads data={selectedLead} onClose={() => setOpen(false)} />
+                </div> */}
+
+
+                <div className={`${selectedLead ? "lg:col-span-2" : "lg:col-span-3"} space-y-4`}>
+                  <LeadStepper
+                    stageName={selectedLead?.leadStatus || selectedLead?.stageName || "Tele Caller"}
+                    currentStep={currentStep}
+                    onStepChange={setCurrentStep}
+                    className="w-full"
+                  />
+ 
+               
+                  <div className="flex justify-between items-center">
+                    <h1 className="text-2xl font-bold">
+                      {selectedLead ? "Edit Lead" : "Create Lead"}
+                    </h1>
+                    <Button
+                      variant="outline"
+                      onClick={() => setOpen(false)}
+                    >
+                      ← Back to Leads
+                    </Button>
+                  </div>
+ 
+                  <Leads
+                    data={selectedLead}
+                    onSubmit={handleLeadSubmit}
+                    onClose={() => setOpen(false)}
+                    currentStep={currentStep}
+                    onStepChange={setCurrentStep}
+                  />
                 </div>
 
                 {/* Right-side message thread (only show when editing) */}
@@ -305,9 +351,9 @@ export default function LeadsPage() {
                       <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">
                         Status
                       </TableHead>
-                      <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">
+                      {/* <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">
                         Current Stage
-                      </TableHead>
+                      </TableHead> */}
                       <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium text-right">
                         Action
                       </TableHead>
@@ -356,11 +402,11 @@ export default function LeadsPage() {
                               {lead.status}
                             </span>
                           </TableCell>
-                          <TableCell>
+                          {/* <TableCell>
                             <div className="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-indigo-100 text-indigo-800 shadow hover:bg-indigo-200">
                               {lead.stageName}
                             </div>
-                          </TableCell>
+                          </TableCell> */}
                           <TableCell className="text-right">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
