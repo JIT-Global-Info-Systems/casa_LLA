@@ -98,7 +98,7 @@ export default function ApprovedLeads() {
       {/* Top Bar */}
       <div className="flex items-center justify-between">
         <div className="text-xl font-bold text-indigo-700">
-          Leads
+          Approved Leads
           <div className="text-sm text-slate-500">
             Leads list · Last updated today
           </div>

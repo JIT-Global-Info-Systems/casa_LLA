@@ -32,7 +32,7 @@ exports.createMediator = async (req, res) => {
       });
     }
 
-    const mediator = await Mediator.create({
+        const mediator = await Mediator.create({
       name,
       email,
       phone_primary,
@@ -45,7 +45,8 @@ exports.createMediator = async (req, res) => {
       location,
       linked_executive,
       mediator_type,
-      address
+      address,
+      created_by: req.user.user_id
     });
 
     return res.status(201).json({
@@ -118,6 +119,10 @@ exports.updateMediator = async (req, res) => {
     if (req.body.address) {
       mediator.address = JSON.parse(req.body.address);
     }
+
+    // Update updated_by and updated_at fields
+    mediator.updated_by = req.user.user_id;
+    mediator.updated_at = new Date();
 
     await mediator.save();
 
