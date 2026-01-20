@@ -21,6 +21,7 @@ export default function Leads({ data = null, onClose }) {
     leadType: "mediator",
     contactNumber: "",
     mediatorName: "",
+    mediatorId: "",
     date: "",
     location: "",
     landName: "",
@@ -42,9 +43,7 @@ export default function Leads({ data = null, onClose }) {
     frontage: "",
     roadWidth: "",
     sspde: "No",
-    leadStatus: "Pending",
     remark: "",
-    comment: "",
   })
 
   // If `data` changes (i.e., editing), update formData
@@ -54,24 +53,40 @@ export default function Leads({ data = null, onClose }) {
     }
   }, [data])
 
+  const handleFileChange = (fieldName) => (e) => {
+    setFiles(prev => ({
+      ...prev,
+      [fieldName]: e.target.files[0]
+    }))
+  }
+
   const handleChange = (key, value) => {
     setFormData(prev => ({ ...prev, [key]: value }))
   }
 
   const handleSubmit = async () => {
     try {
+      // Prepare the data according to API requirements
+      const submitData = {
+        ...formData,
+        // Ensure arrays are properly formatted
+        competitorAnalysis: formData.competitorAnalysis.length > 0 ? formData.competitorAnalysis : undefined,
+        checkListPage: formData.checkListPage.length > 0 ? formData.checkListPage : undefined,
+      }
+
       if (data) {
         // Update existing lead
-        await updateLead(data._id, formData)
+        await updateLead(data._id, submitData)
       } else {
-        // Create new lead
-        await createLead(formData)
+        // Create new lead with files
+        await createLead(submitData, files)
       }
       
       // Close modal on successful submission
       if (onClose) onClose()
     } catch (error) {
       console.error("Error saving lead:", error)
+      // Don't close modal on error - let user try again
     }
   }
 
@@ -318,15 +333,6 @@ export default function Leads({ data = null, onClose }) {
           <Textarea
             value={formData.remark}
             onChange={e => handleChange("remark", e.target.value)}
-          />
-        </div>
-
-        {/* Comment */}
-        <div className="md:col-span-3">
-          <Label>Comment</Label>
-          <Textarea
-            value={formData.comment}
-            onChange={e => handleChange("comment", e.target.value)}
           />
         </div>
 
