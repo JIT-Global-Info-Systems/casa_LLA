@@ -37,22 +37,22 @@ function Users() {
     phone_number: "",
     status: "active"
   });
- 
+
   useEffect(() => {
     fetchUsers();
   }, []);
- 
+
   useEffect(() => {
     setFilteredUsers(users);
   }, [users]);
- 
+
   useEffect(() => {
     filterUsers();
   }, [users, searchTerm, roleFilter, statusFilter, fromDate, toDate]);
- 
+
   const filterUsers = () => {
     let filtered = users;
- 
+
     if (searchTerm) {
       filtered = filtered.filter(user =>
         user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -60,26 +60,26 @@ function Users() {
         user.phone_number.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
- 
+
     if (roleFilter !== "all") {
       filtered = filtered.filter(user => user.role === roleFilter);
     }
- 
+
     if (statusFilter !== "all") {
       filtered = filtered.filter(user => user.status === statusFilter);
     }
- 
+
     if (fromDate) {
       filtered = filtered.filter(user => new Date(user.created_at) >= new Date(fromDate));
     }
- 
+
     if (toDate) {
       filtered = filtered.filter(user => new Date(user.created_at) <= new Date(toDate));
     }
- 
+
     setFilteredUsers(filtered);
   };
- 
+
   const handleAddUser = async () => {
     try {
       await createUser(formData);
@@ -96,7 +96,7 @@ function Users() {
       // Error is handled by the context
     }
   };
- 
+
   const handleEditUser = async () => {
     try {
       await updateUser(selectedUser.user_id, formData);
@@ -114,7 +114,7 @@ function Users() {
       // Error is handled by the context
     }
   };
- 
+
   const handleDeleteUser = async (userId) => {
     try {
       await deleteUser(userId);
@@ -122,7 +122,7 @@ function Users() {
       // Error is handled by the context
     }
   };
- 
+
   const openEditDialog = (user) => {
     setSelectedUser(user);
     setFormData({
@@ -135,12 +135,12 @@ function Users() {
     });
     setMode("edit");
   };
- 
+
   const openViewDialog = (user) => {
     setSelectedUser(user);
     setMode("view");
   };
- 
+
   const getCategoryColor = (role) => {
     const colors = {
       admin: "bg-red-100 text-red-700",
@@ -150,7 +150,7 @@ function Users() {
     };
     return colors[role] || "bg-blue-100 text-blue-700";
   };
- 
+
   return (
     <div className="min-h-screen bg-gray-50">
       {mode === "list" && (
@@ -379,13 +379,12 @@ function Users() {
                               id={`status-toggle-${user.user_id}`}
                               className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-gray-300"
                             />
-                            <Label 
+                            <Label
                               htmlFor={`status-toggle-${user.user_id}`}
-                              className={`text-sm font-medium cursor-pointer ${
-                                user.status === "active" 
-                                  ? "text-green-700" 
+                              className={`text-sm font-medium cursor-pointer ${user.status === "active"
+                                  ? "text-green-700"
                                   : "text-gray-500"
-                              }`}
+                                }`}
                             >
                               {user.status === "active" ? "Active" : "Inactive"}
                             </Label>
@@ -514,8 +513,8 @@ function Users() {
             </Button>
             <h2 className="text-xl font-semibold mb-6">Add New User</h2>
 
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
+              <div className="space-y-2">
                 <Label htmlFor="name">Name</Label>
                 <Input
                   id="name"
@@ -526,7 +525,7 @@ function Users() {
                   placeholder="Enter user name"
                 />
               </div>
-              <div className="grid gap-2">
+              <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
@@ -538,7 +537,7 @@ function Users() {
                   placeholder="Enter email address"
                 />
               </div>
-              <div className="grid gap-2">
+              <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <Input
                   id="password"
@@ -550,7 +549,7 @@ function Users() {
                   placeholder="Enter password"
                 />
               </div>
-              <div className="grid gap-2">
+              <div className="space-y-2">
                 <Label htmlFor="phone">Phone</Label>
                 <Input
                   id="phone"
@@ -561,11 +560,11 @@ function Users() {
                   placeholder="Enter phone number"
                 />
               </div>
-              <div className="grid gap-2">
+              <div className="space-y-2">
                 <Label>Role</Label>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="justify-between capitalize">
+                    <Button variant="outline" className="w-full justify-between capitalize">
                       {formData.role || "Select role"}
                     </Button>
                   </DropdownMenuTrigger>
@@ -605,11 +604,11 @@ function Users() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
-              <div className="grid gap-2">
+              <div className="space-y-2">
                 <Label>Status</Label>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="justify-between capitalize">
+                    <Button variant="outline" className="w-full justify-between capitalize">
                       {formData.status || "Select status"}
                     </Button>
                   </DropdownMenuTrigger>
@@ -646,7 +645,7 @@ function Users() {
                 Add User
               </Button>
             </div>
-             {/* ... rest of edit inputs ... */}
+            {/* ... rest of edit inputs ... */}
           </div>
         </div>
       )}
@@ -666,8 +665,8 @@ function Users() {
             </Button>
             <h2 className="text-xl font-semibold mb-6">Edit User</h2>
 
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
+              <div className="space-y-2">
                 <Label htmlFor="edit-name">Name</Label>
                 <Input
                   id="edit-name"
@@ -678,7 +677,7 @@ function Users() {
                   placeholder="Enter user name"
                 />
               </div>
-              <div className="grid gap-2">
+              <div className="space-y-2">
                 <Label htmlFor="edit-email">Email</Label>
                 <Input
                   id="edit-email"
@@ -690,7 +689,7 @@ function Users() {
                   placeholder="Enter email address"
                 />
               </div>
-              <div className="grid gap-2">
+              <div className="space-y-2">
                 <Label htmlFor="edit-password">Password</Label>
                 <Input
                   id="edit-password"
@@ -702,7 +701,7 @@ function Users() {
                   placeholder="Enter password"
                 />
               </div>
-              <div className="grid gap-2">
+              <div className="space-y-2">
                 <Label htmlFor="edit-phone">Phone</Label>
                 <Input
                   id="edit-phone"
@@ -716,11 +715,11 @@ function Users() {
                   placeholder="Enter phone number"
                 />
               </div>
-              <div className="grid gap-2">
+              <div className="space-y-2">
                 <Label>Role</Label>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="justify-between capitalize">
+                    <Button variant="outline" className="w-full justify-between capitalize">
                       {formData.role}
                     </Button>
                   </DropdownMenuTrigger>
@@ -798,36 +797,36 @@ function Users() {
             </Button>
             <h2 className="text-xl font-semibold mb-6">User Details</h2>
 
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
+              <div className="space-y-1">
                 <Label className="font-medium text-gray-700">ID:</Label>
-                <div className="col-span-2 text-gray-900">
+                <div className="text-gray-900 border rounded px-3 py-2 bg-gray-50">
                   {selectedUser.user_id}
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-1">
                 <Label className="font-medium text-gray-700">Name:</Label>
-                <div className="col-span-2 text-gray-900">
+                <div className="text-gray-900 border rounded px-3 py-2 bg-gray-50">
                   {selectedUser.name}
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-1">
                 <Label className="font-medium text-gray-700">Email:</Label>
-                <div className="col-span-2 text-gray-900">
+                <div className="text-gray-900 border rounded px-3 py-2 bg-gray-50">
                   {selectedUser.email}
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-1">
                 <Label className="font-medium text-gray-700">Phone:</Label>
-                <div className="col-span-2 text-gray-900">
+                <div className="text-gray-900 border rounded px-3 py-2 bg-gray-50">
                   {selectedUser.phone_number}
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-1">
                 <Label className="font-medium text-gray-700">Role:</Label>
-                <div className="col-span-2">
+                <div className="text-gray-900 border rounded px-3 py-2 bg-gray-50">
                   <span
-                    className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${getCategoryColor(
+                    className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(
                       selectedUser.role
                     )} capitalize`}
                   >
@@ -835,15 +834,15 @@ function Users() {
                   </span>
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-1">
                 <Label className="font-medium text-gray-700">Status:</Label>
-                <div className="col-span-2 capitalize text-gray-900">
+                <div className="text-gray-900 border rounded px-3 py-2 bg-gray-50 capitalize">
                   {selectedUser.status}
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-1">
                 <Label className="font-medium text-gray-700">Created:</Label>
-                <div className="col-span-2 text-gray-900">
+                <div className="text-gray-900 border rounded px-3 py-2 bg-gray-50">
                   {new Date(selectedUser.created_at).toLocaleString()}
                 </div>
               </div>
@@ -854,7 +853,6 @@ function Users() {
     </div>
   );
 }
- 
+
 export default Users;
- 
- 
+
