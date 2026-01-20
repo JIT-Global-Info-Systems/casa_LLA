@@ -74,9 +74,23 @@ export const mediatorsAPI = {
  
   // Update mediator
   update: async (id, mediatorData) => {
+    // Ensure address is a JSON string for backend parsing
+    // Backend expects req.body.address to be a JSON string it can parse
+    const dataToSend = { ...mediatorData };
+    if (dataToSend.address !== undefined && dataToSend.address !== null) {
+      if (typeof dataToSend.address === 'object') {
+        // If it's already an object, stringify it
+        dataToSend.address = JSON.stringify(dataToSend.address);
+      } else if (typeof dataToSend.address === 'string') {
+        // If it's a plain string, we need to JSON.stringify it so it becomes a JSON string
+        // When Express parses the body, it will be a string, which backend can then parse
+        // But backend expects a JSON string, so we stringify the string value
+        dataToSend.address = JSON.stringify(dataToSend.address);
+      }
+    }
     return await apiRequest(`/mediators/update/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(mediatorData),
+      body: JSON.stringify(dataToSend),
     });
   },
  

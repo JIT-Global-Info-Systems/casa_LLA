@@ -984,6 +984,23 @@ function Mediators() {
     setSelectedMediator(mediator);
     setOpen(true);
 
+    // Format address for display: if object, convert to formatted string; otherwise use as-is
+    let addressDisplay = "";
+    if (mediator.address) {
+      if (typeof mediator.address === 'object') {
+        // Format address object as readable string
+        const addr = mediator.address;
+        const parts = [];
+        if (addr.street) parts.push(addr.street);
+        if (addr.city) parts.push(addr.city);
+        if (addr.state) parts.push(addr.state);
+        if (addr.pincode) parts.push(addr.pincode);
+        addressDisplay = parts.join(", ");
+      } else {
+        addressDisplay = mediator.address;
+      }
+    }
+
     setFormData({
       mediatorName: mediator.name || "",
       email: mediator.email || "",
@@ -995,7 +1012,7 @@ function Mediators() {
       location: mediator.location || "",
       linkedExecutive: mediator.linked_executive || "",
       officeIndividual: mediator.mediator_type || "",
-      address: mediator.address || "",
+      address: addressDisplay,
     });
   };
 

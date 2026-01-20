@@ -370,9 +370,9 @@ const Masters = () => {
 
   const sidebarTabs = [
     { id: 'location', label: 'Location', columns: ['S.No', 'Location', 'Status', 'Action'] },
-    { id: 'region', label: 'Zone', columns: ['S.No', 'Location', 'Region', 'Action'] },
-    { id: 'zone', label: 'Area', columns: ['S.No', 'Location', 'Region', 'Zone', 'Action'] },
-    { id: 'type', label: 'Type', columns: ['S.No', 'Location', 'Region', 'Zone', 'Action'] },
+    { id: 'region', label: 'Zone', columns: ['S.No', 'Location', 'Zone', 'Action'] },
+    { id: 'zone', label: 'Area', columns: ['S.No', 'Location', 'Zone', 'Area', 'Action'] },
+    { id: 'type', label: 'Type', columns: ['S.No', 'Location', 'Zone', 'Area', 'Action'] },
   ];
 
   const getOptions = useCallback((type, selectedLocation = null) => {
@@ -430,7 +430,7 @@ const Masters = () => {
             const key = type === 'region' ? 'region' : type === 'zone' ? 'zone' : 'name';
             setForm(prev => ({ ...prev, data: { ...prev.data, [key]: value } }));
           }}
-          placeholder={`Enter ${type} name`}
+          placeholder={`Enter ${type === 'region' ? 'zone' : type === 'zone' ? 'area' : type} name`}
         />
       </>
     );
@@ -561,7 +561,7 @@ const Masters = () => {
       <Modal open={form.open} onClose={closeForm}>
         <div className="space-y-4">
           <h2 className="text-xl font-bold text-indigo-700">
-            {form.editing ? `Edit ${form.type}` : `Add New ${form.type}`}
+            {form.editing ? `Edit ${form.type === 'region' ? 'Zone' : form.type === 'zone' ? 'Area' : form.type}` : `Add New ${form.type === 'region' ? 'Zone' : form.type === 'zone' ? 'Area' : form.type}`}
           </h2>
           {renderFormFields()}
           <div className="flex justify-end space-x-2">
@@ -576,7 +576,7 @@ const Masters = () => {
       {/* Generic Delete Modal */}
       <Modal open={deleteDialog.open} onClose={() => setDeleteDialog({ open: false, type: '', item: null })}>
         <div className="space-y-4">
-          <h2 className="text-xl font-bold text-red-600">Delete {activeTab}</h2>
+          <h2 className="text-xl font-bold text-red-600">Delete {activeTab === 'region' ? 'Zone' : activeTab === 'zone' ? 'Area' : activeTab}</h2>
           <p className="text-gray-700">
             Are you sure you want to delete <strong>"{deleteDialog.item?.name || deleteDialog.item?.region || deleteDialog.item?.zone || ''}"</strong>?
           </p>
