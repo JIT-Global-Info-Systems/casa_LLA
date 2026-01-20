@@ -1,5 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { useUsers } from "@/context/UsersContext";
 import {
   BarChart3,
   FileText,
@@ -36,8 +38,14 @@ const documentsItems = [
 
 function Sidebar() {
   const location = useLocation();
+  const { users, fetchUsers, loading } = useUsers();
   const activeDocHash =
     location.pathname === "/pages/documents" ? location.hash || "#policies" : "";
+
+  // Fetch users on component mount
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
   return (
     <aside className="hidden md:fixed md:inset-y-0 md:flex md:w-52 md:flex-col md:border-r md:border-indigo-700 md:bg-indigo-700">
@@ -48,6 +56,26 @@ function Sidebar() {
       </div>
       <div className="flex-1 overflow-y-auto">
         <div className="px-3 py-4">
+          <div className="border-t border-indigo-600/60 pt-4">
+            <div className="px-3 text-[11px] font-semibold tracking-wider text-white/80">
+              USERS
+            </div>
+            <div className="mt-2 space-y-1">
+              {loading ? (
+                <div className="px-3 text-xs text-white/60">Loading users...</div>
+              ) : users.length > 0 ? (
+                users.map((user) => (
+                  <div key={user.user_id || user.id} className="px-3 py-1">
+                    <div className="text-sm font-medium text-white/90">
+                      {user.username || user.name || 'Unknown User'} - {user.role || 'No role'}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="px-3 text-xs text-white/60">No users found</div>
+              )}
+            </div>
+          </div>
           <div className="border-t border-indigo-600/60 pt-4">
             <div className="px-3 text-[11px] font-semibold tracking-wider text-white/80">
               DOCUMENTS
