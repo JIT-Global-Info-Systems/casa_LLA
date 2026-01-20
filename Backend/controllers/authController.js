@@ -1,6 +1,7 @@
 const bcrypt = require("bcrypt");
 const User = require("../models/user");
 const Access = require("../models/access");
+const jwt = require("jsonwebtoken");
 const { generateToken } = require("../utils/jwt");
 
 exports.login = async (req, res) => {
@@ -69,5 +70,80 @@ exports.login = async (req, res) => {
   }
 };
 
+exports.resetPassword = async (req, res) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
 
+    // Validate input
+    if (!oldPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Old password and new password are required"
+      });
+    }
+
+    // Get token from header
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: "No token provided"
+      });
+    }
+
+    // Verify token and get user ID
+    let userId;
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      userId = decoded.user_id;
+    } catch (error) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid or expired token"
+      });
+    }
+
+    // Find user by ID
+    const user = await User.findById(userId).select('+password');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    // Verify old password
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        message: "Old password is incorrect"
+      });
+    }
+
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Update password
+    user.password = hashedPassword;
+    await user.save();
+
+    // Remove password from response
+    user.password = undefined;
+
+    res.status(200).json({
+      success: true,
+      message: "Password updated successfully"
+    });
+
+  } catch (error) {
+    console.error("Reset Password Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message
+    });
+  }
+};
 
