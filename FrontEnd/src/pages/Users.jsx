@@ -377,7 +377,7 @@ function Users() {
                                 }
                               }}
                               id={`status-toggle-${user.user_id}`}
-                              className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-gray-300"
+                              className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-gray-300 h-4 w-8.5 [&>span]:h-3 [&>span]:w-3"
                             />
                             <Label
                               htmlFor={`status-toggle-${user.user_id}`}
