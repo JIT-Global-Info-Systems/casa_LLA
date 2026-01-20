@@ -103,9 +103,9 @@ export default function ApprovedLeads() {
             Leads list · Last updated today
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        {/* <div className="flex items-center gap-2">
           <Button variant="outline" size="sm">
-            <RefreshCw className="h-4 w-4 mr-2" />
+           <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
           </Button>
           <Button
@@ -116,7 +116,7 @@ export default function ApprovedLeads() {
             <Plus className="h-4 w-4 mr-2" />
             Add
           </Button>
-        </div>
+        </div> */}
       </div>
 
       <Card>
