@@ -60,7 +60,7 @@ export default function ApprovedLeads() {
     const fetchApprovedLeads = async () => {
       try {
         setLoading(true);
-        const response = await axios.get("http://localhost:5000/api/leads/approved");
+        const response = await axios.get("http://13.201.132.94:5000/api/leads/approved");
         setLeads(response.data.data || []);
         setError(null);
       } catch (err) {
@@ -98,7 +98,7 @@ export default function ApprovedLeads() {
       {/* Top Bar */}
       <div className="flex items-center justify-between">
         <div className="text-xl font-bold text-indigo-700">
-          Leads
+          Approved Leads
           <div className="text-sm text-slate-500">
             Leads list · Last updated today
           </div>

@@ -1,6 +1,6 @@
 const bcrypt = require("bcrypt");
 const User = require("../models/user");
-const Access = require("../models/Access");
+const Access = require("../models/access");
 const { generateToken } = require("../utils/jwt");
 
 exports.login = async (req, res) => {

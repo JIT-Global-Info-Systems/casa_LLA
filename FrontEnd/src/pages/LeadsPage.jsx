@@ -1,9 +1,13 @@
 
-// import { useState } from "react"
-// import { Button } from "@/components/ui/button"
-// import Modal from "@/components/ui/modal"
-// import Leads from "./Leads"
 
+// import { useState , useEffect } from "react";
+// import { Button } from "@/components/ui/button";
+// import Modal from "@/components/ui/modal";
+// // import LeadStepper from "@/components/ui/LeadStepper";
+// import { Label } from "@/components/ui/label";
+// // import Leads from "./Leads";
+// import { Card, CardContent } from "@/components/ui/card";
+// import { Input } from "@/components/ui/input";
 // import {
 //   Table,
 //   TableBody,
@@ -11,316 +15,1531 @@
 //   TableHead,
 //   TableHeader,
 //   TableRow,
-// } from "@/components/ui/table"
-
-// const leadsData = [
-//   {
-//     id: 1,
-//     name: "Ravi",
-//     location: "Chennai",
-//     zone: "North",
-//     status: "Pending",
-//   },
-//   {
-//     id: 2,
-//     name: "Kumar",
-//     location: "Bangalore",
-//     zone: "East",
-//     status: "Approved",
-//   },
-// ]
+// } from "@/components/ui/table";
+// import {
+//   DropdownMenu,
+//   DropdownMenuContent,
+//   DropdownMenuItem,
+//   DropdownMenuTrigger,
+// } from "@/components/ui/dropdown-menu";
+// import {
+//   Plus,
+//   RefreshCw,
+//   Filter,
+//   Eye,
+//   Edit,
+//   Trash2,
+//   MoreVertical,
+//   Search,
+// } from "lucide-react";
+// import LeadStepper from "@/components/ui/LeadStepper"
+// import Leads from "./Leads"
+// import { useLeads } from "../context/LeadsContext.jsx"
 
 // export default function LeadsPage() {
-//   const [open, setOpen] = useState(false)
+//   const [open, setOpen] = useState(false);
+//   const [selectedLead, setSelectedLead] = useState(null);
+//   const [searchTerm, setSearchTerm] = useState("");
+//   const [dateFrom, setDateFrom] = useState("");
+//   const [dateTo, setDateTo] = useState("");
+ 
+//   const { leads, loading, error, fetchLeads } = useLeads()
+  
+//     const leadComments = [
+//       selectedLead?.remark,
+//       selectedLead?.comment,
+//     ]
+//       .map((v) => (typeof v === "string" ? v.trim() : ""))
+//       .filter((text) => Boolean(text))
 
+//     useEffect(() => {
+//     fetchLeads()
+//   }, [])
+
+
+//   const handleCreate = () => {
+//     setSelectedLead(null);
+//     setOpen(true);
+//   };
+ 
+//   const handleEdit = (lead) => {
+//     setSelectedLead(lead);
+//     setOpen(true);
+//   };
+
+ 
+//   const handleDelete = (lead) => {
+//     // Add delete logic here
+//     console.log("Deleting", lead);
+//   };
+ 
+//   const normalizedLeads = (Array.isArray(leads) ? leads : []).map((lead) => {
+//     const registeredDate =
+//       lead.registeredDate || lead.date || lead.createdAt || null;
+//     return {
+//       id: lead.id || lead._id || "N/A",
+//       name:
+//         lead.mediatorName ||
+//         lead.ownerName ||
+//         lead.name ||
+//         lead.contactName ||
+//         "N/A",
+//       email: lead.email || lead.contactEmail || "—",
+//       phone: lead.phone || lead.contactNumber || "",
+//       location: lead.location || lead.address?.city || "N/A",
+//       zone: lead.zone || lead.region || "N/A",
+//       status: lead.status || lead.stageStatus || "Pending",
+//       stageName: lead.stageName || lead.currentStage || "Not Started",
+//       registeredDate,
+//       raw: lead,
+//     };
+//   });
+
+//   const filteredLeads = normalizedLeads.filter((lead) => {
+//     const matchesSearch =
+//       searchTerm === "" ||
+//       lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+//       lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+//       lead.phone.includes(searchTerm) ||
+//       String(lead.id).toLowerCase().includes(searchTerm.toLowerCase());
+
+//     const matchesDateRange = (() => {
+//       if (!dateFrom && !dateTo) return true;
+//       if (!lead.registeredDate) return false;
+//       const leadDate = new Date(lead.registeredDate);
+//       const fromDate = dateFrom ? new Date(dateFrom) : new Date("1900-01-01");
+//       const toDate = dateTo ? new Date(dateTo) : new Date("2100-12-31");
+//       return leadDate >= fromDate && leadDate <= toDate;
+//     })();
+
+//     return matchesSearch && matchesDateRange;
+//   });
+ 
 //   return (
-//     <div className="p-6">
+//     <div className="flex-1 space-y-6 p-6">
+//       {open ? (
+//         /* Full page view when editing/creating */
+//         <div className="min-h-screen bg-gray-50 p-4">
+//           <div className="w-full">
+//             <div className="bg-white rounded-lg shadow-md p-6">
+//               <div className="mb-4">
+//                 <Button
+//                   variant="outline"
+//                   onClick={() => setOpen(false)}
+//                   className="mb-4"
+//                 >
+//                   ← Back to Leads
+//                 </Button>
+//               </div>
 
-//       {/* Top Bar */}
-//       <div className="flex justify-between items-center mb-4">
-//         <h1 className="text-2xl font-bold">Leads</h1>
+//               <div className="p-2 grid grid-cols-1 lg:grid-cols-3 gap-2">
+//                 <div
+//                   className={`${
+//                     selectedLead ? "lg:col-span-2" : "lg:col-span-3"
+//                   } space-y-4`}
+//                 >
+//                   {selectedLead && (
+//                     <LeadStepper stageName={selectedLead.stageName} />
+//                   )}
+//                   <Leads data={selectedLead} onClose={() => setOpen(false)} />
+//                 </div>
 
-//         <Button onClick={() => setOpen(true)}>
-//           + Create Lead
-//         </Button>
-//       </div>
+//                 {/* Right-side message thread (only show when editing) */}
+//                 {selectedLead && (
+//                   <div className="lg:col-span-1">
+//                     <div className="h-full rounded-lg border bg-slate-50">
+//                       <div className="px-4 py-3 border-b bg-white rounded-t-lg">
+//                         <div className="text-sm font-semibold text-slate-800">
+//                           Notes
+//                         </div>
+//                         <div className="text-xs text-slate-500">
+//                           Message thread
+//                         </div>
+//                       </div>
 
-//       {/* Table */}
-//       <div className="bg-white rounded-lg border">
-//         <Table>
-//           <TableHeader>
-//             <TableRow>
-//               <TableHead>ID</TableHead>
-//               <TableHead>Name</TableHead>
-//               <TableHead>Location</TableHead>
-//               <TableHead>Zone</TableHead>
-//               <TableHead>Status</TableHead>
-//             </TableRow>
-//           </TableHeader>
+//                       <div className="p-4 space-y-3 max-h-[40vh] overflow-y-auto">
+//                         {leadComments.length === 0 ? (
+//                           <div className="text-sm text-slate-500">
+//                             No comments
+//                           </div>
+//                         ) : (
+//                           leadComments.map((text, idx) => (
+//                             <div
+//                               key={`${idx}-${text}`}
+//                               className="w-full border bg-white px-3 py-2 text-sm text-slate-800"
+//                             >
+//                               {text}
+//                             </div>
+//                           ))
+//                         )}
+//                       </div>
+//                     </div>
+//                   </div>
+//                 )}
+//               </div>
+//             </div>
+//           </div>
+//         </div>
+//       ) : (
+//         /* Main page content when not editing */
+//         <div className="p-6">
+//           {/* Top Bar */}
+//           {/* <div className="flex justify-between items-center mb-4">
+//             <div className="text-xl font-bold text-indigo-700">
+//               Leads
+//               <div className="text-sm text-slate-500">
+//                 Leads list · Last updated today
+//               </div>
+//             </div>
 
-//           <TableBody>
-//             {leadsData.map((lead) => (
-//               <TableRow key={lead.id}>
-//                 <TableCell>{lead.id}</TableCell>
-//                 <TableCell>{lead.name}</TableCell>
-//                 <TableCell>{lead.location}</TableCell>
-//                 <TableCell>{lead.zone}</TableCell>
-//                 <TableCell>{lead.status}</TableCell>
-//               </TableRow>
-//             ))}
-//           </TableBody>
-//         </Table>
-//       </div>
+//             <Button onClick={handleCreate}>+ Create</Button>
+//           </div> */}
 
-//       {/* Modal */}
-import { useState, useEffect } from "react"
+//           {/* Loading and Error States */}
+//           {loading && (
+//             <div className="text-center py-8">
+//               <p className="text-slate-600">Loading leads...</p>
+//             </div>
+//           )}
+
+//           {error && (
+//             <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
+//               <p className="text-red-600">Error: {error}</p>
+//             </div>
+//           )}
+
+//           {/* Table */}
+//           {!loading && !error && (
+//             <>
+//               {/* Header */}
+//               <div className="flex items-center justify-between">
+//                 <div className="space-y-1">
+//                   <h2 className="text-2xl font-bold tracking-tight text-indigo-700">
+//                     Leads
+//                   </h2>
+//                   <p className="text-sm text-muted-foreground">
+//                     Manage your leads pipeline · Last updated today
+//                   </p>
+//                 </div>
+//                 <div className="flex items-center gap-2">
+//                   <Button variant="outline" size="sm" onClick={fetchLeads}>
+//                     <RefreshCw className="h-4 w-4 mr-2" />
+//                     Refresh
+//                   </Button>
+//                   <Button
+//                     onClick={handleCreate}
+//                     size="sm"
+//                     className="bg-indigo-600 hover:bg-indigo-700 text-white"
+//                   >
+//                     <Plus className="h-4 w-4 mr-2" />
+//                     Add Lead
+//                   </Button>
+//                 </div>
+//               </div>
+
+//               {/* Filters */}
+//               <Card>
+//                 <CardContent className="p-4">
+//                   <div className="flex flex-wrap items-center gap-4">
+//                     <div className="flex-1 min-w-[200px]">
+//                       <div className="relative">
+//                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+//                         <Input
+//                           placeholder="Search leads (ID, Name, Email)..."
+//                           value={searchTerm}
+//                           onChange={(e) => setSearchTerm(e.target.value)}
+//                           className="pl-9"
+//                         />
+//                       </div>
+//                     </div>
+
+//                     <div className="flex items-center gap-2">
+//                       <Label className="text-sm text-muted-foreground whitespace-nowrap">
+//                         From:
+//                       </Label>
+//                       <Input
+//                         type="date"
+//                         value={dateFrom}
+//                         onChange={(e) => setDateFrom(e.target.value)}
+//                         className="w-[140px]"
+//                       />
+//                     </div>
+
+//                     <div className="flex items-center gap-2">
+//                       <Label className="text-sm text-muted-foreground whitespace-nowrap">
+//                         To:
+//                       </Label>
+//                       <Input
+//                         type="date"
+//                         value={dateTo}
+//                         onChange={(e) => setDateTo(e.target.value)}
+//                         className="w-[140px]"
+//                       />
+//                     </div>
+
+//                     <Button variant="outline" size="sm">
+//                       <Filter className="h-4 w-4 mr-2" />
+//                       Filter
+//                     </Button>
+//                   </div>
+//                 </CardContent>
+//               </Card>
+
+//               {/* Table Section */}
+//               <div className="rounded-md border bg-white">
+//                 <Table>
+//                   <TableHeader className="bg-gray-50">
+//                     <TableRow>
+//                       <TableHead className="w-[100px] text-xs uppercase tracking-wider text-gray-500 font-medium">
+//                         ID
+//                       </TableHead>
+//                       <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">
+//                         Name
+//                       </TableHead>
+//                       <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">
+//                         Location
+//                       </TableHead>
+//                       <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">
+//                         Zone
+//                       </TableHead>
+//                       <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">
+//                         Status
+//                       </TableHead>
+//                       <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">
+//                         Current Stage
+//                       </TableHead>
+//                       <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium text-right">
+//                         Action
+//                       </TableHead>
+//                     </TableRow>
+//                   </TableHeader>
+//                   <TableBody>
+//                     {filteredLeads.length === 0 ? (
+//                       <TableRow>
+//                         <TableCell
+//                           colSpan={7}
+//                           className="h-24 text-center text-muted-foreground"
+//                         >
+//                           No leads found matching your criteria.
+//                         </TableCell>
+//                       </TableRow>
+//                     ) : (
+//                       filteredLeads.map((lead) => (
+//                         <TableRow key={lead.id} className="hover:bg-gray-50">
+//                           <TableCell className="font-medium text-gray-900">
+//                             {lead.id}
+//                           </TableCell>
+//                           <TableCell>
+//                             <div className="flex flex-col">
+//                               <span className="font-medium text-gray-900">
+//                                 {lead.name}
+//                               </span>
+//                               <span className="text-xs text-gray-500">
+//                                 {lead.email}
+//                               </span>
+//                             </div>
+//                           </TableCell>
+//                           <TableCell className="text-gray-900">
+//                             {lead.location}
+//                           </TableCell>
+//                           <TableCell className="text-gray-600">
+//                             {lead.zone}
+//                           </TableCell>
+//                           <TableCell>
+//                             <span
+//                               className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+//                                 lead.status === "Approved"
+//                                   ? "bg-green-100 text-green-800"
+//                                   : "bg-yellow-100 text-yellow-800"
+//                               }`}
+//                             >
+//                               {lead.status}
+//                             </span>
+//                           </TableCell>
+//                           <TableCell>
+//                             <div className="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-indigo-100 text-indigo-800 shadow hover:bg-indigo-200">
+//                               {lead.stageName}
+//                             </div>
+//                           </TableCell>
+//                           <TableCell className="text-right">
+//                             <DropdownMenu>
+//                               <DropdownMenuTrigger asChild>
+//                                 <Button
+//                                   variant="ghost"
+//                                   size="icon"
+//                                   className="h-8 w-8"
+//                                 >
+//                                   <MoreVertical className="h-4 w-4" />
+//                                 </Button>
+//                               </DropdownMenuTrigger>
+//                               <DropdownMenuContent align="end">
+//                                 <DropdownMenuItem
+//                                   onClick={() => alert(`View ${lead.name}`)}
+//                                 >
+//                                   <Eye className="h-4 w-4 mr-2" />
+//                                   View Details
+//                                 </DropdownMenuItem>
+//                                 <DropdownMenuItem
+//                                   onClick={() => handleEdit(lead.raw)}
+//                                 >
+//                                   <Edit className="h-4 w-4 mr-2" />
+//                                   Edit Lead
+//                                 </DropdownMenuItem>
+//                                 <DropdownMenuItem
+//                                   className="text-red-600 focus:text-red-600"
+//                                   onClick={() => handleDelete(lead.raw)}
+//                                 >
+//                                   <Trash2 className="h-4 w-4 mr-2" />
+//                                   Delete
+//                                 </DropdownMenuItem>
+//                               </DropdownMenuContent>
+//                             </DropdownMenu>
+//                           </TableCell>
+//                         </TableRow>
+//                       ))
+//                     )}
+//                   </TableBody>
+//                 </Table>
+//               </div>
+
+//               {/* Pagination */}
+//               <div className="flex items-center justify-between px-2">
+//                 <div className="text-sm text-muted-foreground">
+//                   Showing {filteredLeads.length} result
+//                   {filteredLeads.length !== 1 ? "s" : ""}
+//                   {filteredLeads.length !== normalizedLeads.length &&
+//                     ` (of ${normalizedLeads.length} total)`}
+//                 </div>
+//                 <div className="flex items-center gap-2">
+//                   <Button variant="outline" size="sm" disabled>
+//                     Previous
+//                   </Button>
+//                   <Button variant="outline" size="sm">
+//                     Next
+//                   </Button>
+//                 </div>
+//               </div>
+//             </>
+//           )}
+//         </div>
+//       )}
+//     </div>
+//   );
+// }
+
+
+
+
+import { useState, useEffect, useCallback } from "react"
+import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-// import Modal from "@/components/ui/modal"
-import LeadStepper from "@/components/ui/LeadStepper"
-import Leads from "./Leads"
-import { useLeads } from "../context/LeadsContext.jsx"
-
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Plus,
-  RefreshCw,
-  Filter,
-  Eye,
-  Edit,
-  Trash2,
-  MoreVertical,
-  Search,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
-
-// Mock Data (Expanded to match your filter logic)
-const leadsData = [
-  {
-    id: "L-001",
-    name: "Ravi",
-    email: "ravi@example.com",
-    phone: "9876543210",
-    location: "Chennai",
-    region: "North",
-    zone: "Alandur",
-    status: "Pending",
-    stageName: "Feasibility Team",
-    registeredDate: "2024-01-15",
-  },
-  {
-    id: "L-002",
-    name: "Kumar",
-    email: "kumar@example.com",
-    phone: "8765432109",
-    location: "Bangalore",
-    region: "East",
-    zone: "Electronic City",
-    status: "Approved",
-    stageName: "Legal",
-    registeredDate: "2024-02-10",
-  },
-];
-
-export default function LeadsPage() {
-  const { leads, loading, error, fetchLeads, createLead, updateLead } = useLeads()
-  const [open, setOpen] = useState(false)
-  const [selectedLead, setSelectedLead] = useState(null)
-  const [currentStep, setCurrentStep] = useState(1)
-
-  const leadComments = [
-    selectedLead?.remark,
-    selectedLead?.comment,
-  ]
-    .map((v) => (typeof v === "string" ? v.trim() : ""))
-    .filter((text) => {
-      if (!text) return false
-      const lower = text.toLowerCase()
-    })
-
-  // Fetch leads on component mount
-  useEffect(() => {
-    fetchLeads()
-  }, [])
-
-  const handleCreate = () => {
-    setSelectedLead(null);
-    setCurrentStep(1); // Reset to first step for new lead
-    setOpen(true);
-  };
-
-  const handleEdit = (lead) => {
-    setSelectedLead(lead);
-    setCurrentStep(null); // Reset so Stepper derives step from lead status
-    setOpen(true);
-  };
-
-  const handleLeadSubmit = async (formData) => {
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { locationsAPI, mediatorsAPI } from "@/services/api"
+ 
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react"
+ 
+export default function Leads({ data = null, onSubmit, onClose, currentStep = 1, onStepChange }) {
+  const [formData, setFormData] = useState({
+    // Basic Lead Information
+    leadType: "mediator",
+    contactNumber: "",
+    mediatorName: "",
+    date: "",
+    location: "",
+    landName: "",
+    sourceCategory: "",
+    source: "",
+    zone: "",
+    area: "",
+    extent: "",
+    unit: "Acre",
+    propertyType: "",
+    fsi: "",
+    asp: "",
+    revenue: "",
+    transactionType: "JV",
+    rate: "",
+    builderShare: "",
+    refundable: "",
+    nonRefundable: "",
+    landmark: "",
+    frontage: "",
+    roadWidth: "",
+    sspde: "No",
+    leadStatus: "Pending",
+    remark: "",
+    lead_stage:"",
+    currentRole:"Telecaller",
+ 
+    // Yield Calculation
+    yield: "",
+ 
+    // Competitor Analysis
+    competitorDeveloperName: "",
+    competitorProjectName: "",
+    competitorProductType: "",
+    competitorLocation: "",
+    competitorPlotSize: "",
+    competitorLandExtent: "",
+    competitorPriceRange: "",
+    competitorApproxPrice: "",
+    competitorApproxPriceRent: "",
+    competitorTotalUnits: "",
+    competitorKeyAmenities: "",
+    competitorUSP: "",
+ 
+    // Site Checklist
+    checkLandLocation: false,
+    checkLandExtent: false,
+    checkLandPrice: false,
+    checkApproachRoad: false,
+    checkSoilType: false,
+    checkTopography: false,
+    checkDrainageWaterLogging: false,
+    checkSoilType2: false,
+    checkChemistry: false,
+    checkGroundWaterAvailability: false,
+    checkBorewellWater: false,
+    checkPondTank: false,
+    checkNearbyLakes: false,
+    checkElectricity: false,
+    checkNearbyActivities: false,
+    checkReligiousStructures: false,
+    checkCemeteryDock: false,
+    checkNearbyAirport: false,
+    checkProximityMetro: false,
+    checkNearbyIndustries: false,
+    checkMarketRate: false,
+    checkProjectTypes: false,
+    checkLandOwnership: false,
+    checkNumberOwners: false,
+    checkMaritalStatus: false,
+    checkLandClassification: false,
+    checkMortgage: false,
+    checkBankLease: false,
+    checkLitigation: false,
+    checkNearbyRailway: false,
+    checkGoogleLocation: false,
+    checkNotes: "",
+    checkRequests: "",
+  })
+ 
+  // State for locations, regions, zones, and mediators
+  const [masters, setMasters] = useState({
+    locations: [],
+    regions: [],
+    zones: [],
+    mediators: [],
+  })
+  const [loading, setLoading] = useState({ locations: false, regions: false, zones: false, mediators: false })
+ 
+  // Fetch locations and mediators from API
+  const fetchLocations = useCallback(async () => {
+    setLoading(prev => ({ ...prev, locations: true, regions: true, zones: true }));
     try {
-      if (selectedLead) {
-        await updateLead(selectedLead._id || selectedLead.id, formData);
-      } else {
-        await createLead(formData);
-      }
-      setOpen(false);
-      fetchLeads(); // Refresh list
+      const locationsData = await locationsAPI.getAll();
+      // Transform API data to match component structure
+      const transformedLocations = locationsData.map(loc => ({
+        id: loc._id,
+        name: loc.location,
+        status: loc.status,
+        regions: loc.regions || [],
+        created_by: loc.created_by,
+        created_at: loc.created_at,
+        updated_at: loc.updated_at,
+        updated_by: loc.updated_by
+      }));
+     
+      // Extract regions and zones from locations data
+      const transformedRegions = [];
+      const transformedZones = [];
+     
+      locationsData.forEach(location => {
+        if (location.regions && location.regions.length > 0) {
+          location.regions.forEach(region => {
+            transformedRegions.push({
+              id: region._id,
+              location: location.location,
+              region: region.region,
+              zones: region.zones || []
+            });
+           
+            if (region.zones && region.zones.length > 0) {
+              region.zones.forEach(zone => {
+                transformedZones.push({
+                  id: zone._id,
+                  location: location.location,
+                  region: region.region,
+                  zone: zone.zone
+                });
+              });
+            }
+          });
+        }
+      });
+     
+      setMasters(prev => ({
+        ...prev,
+        locations: transformedLocations,
+        regions: transformedRegions,
+        zones: transformedZones
+      }));
     } catch (err) {
-      console.error("Failed to submit lead:", err);
-      // Optionally handle error state here
+      console.error('Failed to fetch locations:', err);
+    } finally {
+      setLoading(prev => ({ ...prev, locations: false, regions: false, zones: false }));
     }
+  }, []);
+ 
+  const fetchMediators = useCallback(async () => {
+    setLoading(prev => ({ ...prev, mediators: true }));
+    try {
+      const mediatorsData = await mediatorsAPI.getAll();
+      // Transform API data to match component structure
+      const transformedMediators = mediatorsData.map(mediator => ({
+        id: mediator._id,
+        name: mediator.name,
+        email: mediator.email,
+        phone: mediator.phone_number,
+        status: mediator.status
+      }));
+     
+      setMasters(prev => ({
+        ...prev,
+        mediators: transformedMediators
+      }));
+    } catch (err) {
+      console.error('Failed to fetch mediators:', err);
+    } finally {
+      setLoading(prev => ({ ...prev, mediators: false }));
+    }
+  }, []);
+ 
+  // Fetch locations and mediators on component mount
+  useEffect(() => {
+    fetchLocations();
+    fetchMediators();
+  }, [fetchLocations, fetchMediators]);
+ 
+  useEffect(() => {
+    if (data) {
+      setFormData(data)
+    }
+  }, [data])
+ 
+  const handleChange = (key, value) => {
+    setFormData(prev => ({ ...prev, [key]: value }))
+  }
+ 
+  const handleLocationChange = (value) => {
+    setFormData(prev => ({ ...prev, location: value, zone: '', area: '' }));
   };
-
+ 
+  const handleZoneChange = (value) => {
+    setFormData(prev => ({ ...prev, zone: value, area: '' }));
+  };
+ 
+  const getOptions = useCallback((type, selectedLocation = null) => {
+    if (type === 'location') return masters.locations.map(l => ({ value: l.name, label: l.name }));
+    if (type === 'mediator') return masters.mediators.map(m => ({ value: m.name, label: m.name }));
+    if (type === 'region') {
+      if (selectedLocation) {
+        // Filter regions by selected location
+        return masters.regions
+          .filter(r => r.location === selectedLocation)
+          .map(r => ({ value: r.region, label: r.region }));
+      }
+      return masters.regions.map(r => ({ value: r.region, label: r.region }));
+    }
+    if (type === 'zone') {
+      if (selectedLocation && formData.zone) {
+        // Filter zones by selected location and region
+        return masters.zones
+          .filter(z => z.location === selectedLocation && z.region === formData.zone)
+          .map(z => ({ value: z.zone, label: z.zone }));
+      }
+      return [];
+    }
+    return [];
+  }, [masters, formData.zone]);
+ 
+  const handleCheckboxChange = (key, checked) => {
+    setFormData(prev => ({ ...prev, [key]: checked }))
+  }
+ 
+  const handleSubmit = () => {
+    console.log("Submitting Lead:", formData)
+    if (onSubmit) onSubmit(formData)
+  }
+ 
   return (
-    <div>
-      {open ? (
-        /* Full page view when editing/creating */
-        <div className="min-h-screen bg-gray-50 p-4">
-          <div className="w-full">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="p-2 grid grid-cols-1 lg:grid-cols-3 gap-2">
-                <div className={`${selectedLead ? "lg:col-span-2" : "lg:col-span-3"} space-y-4`}>
-                  <LeadStepper
-                    stageName={selectedLead?.leadStatus || selectedLead?.stageName || "Tele Caller"}
-                    currentStep={currentStep}
-                    onStepChange={setCurrentStep}
-                    className="w-full"
-                  />
-                  <div className="flex justify-between items-center">
-                    <h1 className="text-2xl font-bold">
-                      {selectedLead ? "Edit Lead" : "Create Lead"}
-                    </h1>
-                    <Button
-                      variant="outline"
-                      onClick={() => setOpen(false)}
-                    >
-                      ← Back to Leads
-                    </Button>
-                  </div>
-
-                  <Leads
-                    data={selectedLead}
-                    onSubmit={handleLeadSubmit}
-                    onClose={() => setOpen(false)}
-                    currentStep={currentStep}
-                    onStepChange={setCurrentStep}
-                  />
-                </div>
-
-                {/* Right-side message thread (only show when editing) */}
-                {selectedLead && (
-                  <div className="lg:col-span-1">
-                    <div className="h-full rounded-lg border bg-slate-50">
-                      <div className="px-4 py-3 border-b bg-white rounded-t-lg">
-                        <div className="text-sm font-semibold text-slate-800">Notes</div>
-                        <div className="text-xs text-slate-500">Message thread</div>
-                      </div>
-
-                      <div className="p-4 space-y-3 max-h-[40vh] overflow-y-auto">
-                        {leadComments.length === 0 ? (
-                          <div className="text-sm text-slate-500">No comments</div>
-                        ) : (
-                          leadComments.map((text, idx) => (
-                            <div
-                              key={`${idx}-${text}`}
-                              className="w-full border bg-white px-3 py-2 text-sm text-slate-800"
-                            >
-                              {text}
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
+    <div className="flex-1 space-y-2 p-2">
+      {/* Form Content */}
+      {/* Section 1: Basic Lead Information */}
+      <Card className="bg-white shadow-sm">
+        <CardHeader>
+          <CardTitle>Basic Lead Information</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Type Radio */}
+          <div className="space-y-2">
+            <Label>Type</Label>
+            <div className="flex gap-4 mt-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  checked={formData.leadType === "mediator"}
+                  onChange={() => handleChange("leadType", "mediator")}
+                  className="cursor-pointer"
+                />
+                Mediator
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  checked={formData.leadType === "owner"}
+                  onChange={() => handleChange("leadType", "owner")}
+                  className="cursor-pointer"
+                />
+                Owner
+              </label>
             </div>
           </div>
-        </div>
-      ) : (
-        /* Main page content when not editing */
-        <div className="p-6">
-          {/* Top Bar */}
-          <div className="flex justify-between items-center mb-4">
-            <div className="text-xl font-bold text-indigo-700">
-              Leads
-              <div className="text-sm text-slate-500">
-                Leads list · Last updated today
-              </div>
-            </div>
-
-            <Button onClick={handleCreate}>+ Create</Button>
+ 
+          <div className="space-y-2">
+            <Label>Contact Number</Label>
+            <Input
+              value={formData.contactNumber}
+              onChange={e => handleChange("contactNumber", e.target.value)}
+              placeholder="Enter contact number"
+              className="border-gray-300"
+            />
           </div>
-
-          {/* Loading and Error States */}
-          {loading && (
-            <div className="text-center py-8">
-              <p className="text-slate-600">Loading leads...</p>
+ 
+          <div className="space-y-2">
+            <Label>Mediator Name</Label>
+            <Select
+              value={formData.mediatorName || ''}
+              onValueChange={(value) => handleChange("mediatorName", value)}
+              disabled={loading.mediators}
+            >
+              <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                <SelectValue placeholder="Select mediator" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-200 shadow-lg">
+                {getOptions('mediator').map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+ 
+          <div className="space-y-2">
+            <Label>Date</Label>
+            <Input
+              type="date"
+              value={formData.date}
+              onChange={e => handleChange("date", e.target.value)}
+              className="border-gray-300"
+            />
+          </div>
+ 
+          {/* Location, Zone, Area - Full Width Fields */}
+          <div className="space-y-2">
+            <Label>Location</Label>
+            <Select
+              value={formData.location || ''}
+              onValueChange={handleLocationChange}
+              disabled={loading.locations}
+            >
+              <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                <SelectValue placeholder="Select location" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-200 shadow-lg">
+                {getOptions('location').map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+ 
+          <div className="space-y-2">
+            <Label>Zone</Label>
+            <Select
+              value={formData.zone || ''}
+              onValueChange={handleZoneChange}
+              disabled={!formData.location || loading.regions}
+            >
+              <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                <SelectValue placeholder="Select zone" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-200 shadow-lg">
+                {getOptions('region', formData.location).map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+ 
+          <div className="space-y-2">
+            <Label>Area</Label>
+            <Select
+              value={formData.area || ''}
+              onValueChange={(value) => handleChange('area', value)}
+              disabled={!formData.location || !formData.zone || loading.zones}
+            >
+              <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                <SelectValue placeholder="Select area" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-200 shadow-lg">
+                {getOptions('zone', formData.location).map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+ 
+          <div className="space-y-2">
+            <Label>Land Name</Label>
+            <Input
+              value={formData.landName}
+              onChange={e => handleChange("landName", e.target.value)}
+              placeholder="Enter land name"
+              className="border-gray-300"
+            />
+          </div>
+ 
+          <div className="space-y-2">
+            <Label>Source Category</Label>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-between"
+                >
+                  {formData.sourceCategory ? (formData.sourceCategory === "online" ? "Online" : "Reference") : "Select category"}
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-full">
+                <DropdownMenuItem onClick={() => handleChange("sourceCategory", "online")}>
+                  Online
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleChange("sourceCategory", "reference")}>
+                  Reference
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          <div className="space-y-2">
+            <Label>Lead Stage</Label>
+            <Select
+              value={formData.lead_stage || ''}
+              onValueChange={(value) => handleChange("lead_stage", value)}
+            >
+              <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                <SelectValue placeholder="Select stage" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-200 shadow-lg">
+                <SelectItem value="warm">Warm</SelectItem>
+                <SelectItem value="hot">Hot</SelectItem>
+                <SelectItem value="cold">Cold</SelectItem>
+                <SelectItem value="management_hot">Management Hot</SelectItem>
+              </SelectContent>
+            </Select>
+ 
+          </div>
+ 
+          <div className="space-y-2">
+            <Label>Source</Label>
+            <Select
+              value={formData.source || ''}
+              onValueChange={(value) => handleChange("source", value)}
+            >
+              <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                <SelectValue placeholder="Select source" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-200 shadow-lg">
+                <SelectItem value="facebook">Facebook</SelectItem>
+                <SelectItem value="google">Google</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+ 
+ 
+          <div className="space-y-2">
+            <Label>Extent</Label>
+            <Input
+              value={formData.extent}
+              onChange={e => handleChange("extent", e.target.value)}
+              placeholder="Enter extent"
+              className="border-gray-300"
+            />
+          </div>
+ 
+          <div className="space-y-2">
+            <Label>Unit</Label>
+            <Select
+              value={formData.unit || ''}
+              onValueChange={(value) => handleChange("unit", value)}
+            >
+              <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                <SelectValue placeholder="Select unit" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-200 shadow-lg">
+                <SelectItem value="Acre">Acre</SelectItem>
+                <SelectItem value="Sqft">Sqft</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+ 
+          <div className="space-y-2">
+            <Label>Property Type</Label>
+            <Select
+              value={formData.propertyType || ''}
+              onValueChange={(value) => handleChange("propertyType", value)}
+            >
+              <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                <SelectValue placeholder="Select property type" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-200 shadow-lg">
+                <SelectItem value="residential">Residential</SelectItem>
+                <SelectItem value="commercial">Commercial</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+ 
+          <div className="space-y-2"><Label>FSI</Label><Input
+            value={formData.fsi}
+            onChange={e => handleChange("fsi", e.target.value)}
+            placeholder="Enter FSI"
+            className="border-gray-300"
+          /></div>
+          <div className="space-y-2"><Label>ASP</Label><Input
+            value={formData.asp}
+            onChange={e => handleChange("asp", e.target.value)}
+            placeholder="Enter ASP"
+            className="border-gray-300"
+          /></div>
+          <div className="space-y-2"><Label>Total Revenue</Label><Input
+            value={formData.revenue}
+            onChange={e => handleChange("revenue", e.target.value)}
+            placeholder="Enter revenue"
+            className="border-gray-300"
+          /></div>
+ 
+          <div className="space-y-2">
+            <Label>Transaction Type</Label>
+            <Select
+              value={formData.transactionType || ''}
+              onValueChange={(value) => handleChange("transactionType", value)}
+            >
+              <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                <SelectValue placeholder="Select transaction type" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-200 shadow-lg">
+                <SelectItem value="JV">JV</SelectItem>
+                <SelectItem value="Sale">Sale</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+ 
+          <div className="space-y-2"><Label>Rate</Label><Input
+            value={formData.rate}
+            onChange={e => handleChange("rate", e.target.value)}
+            placeholder="Enter rate"
+            className="border-gray-300"
+          /></div>
+          <div className="space-y-2"><Label>Builder Share (%)</Label><Input
+            value={formData.builderShare}
+            onChange={e => handleChange("builderShare", e.target.value)}
+            placeholder="Enter percentage"
+            className="border-gray-300"
+          /></div>
+          <div className="space-y-2"><Label>Refundable Deposit</Label><Input
+            value={formData.refundable}
+            onChange={e => handleChange("refundable", e.target.value)}
+            placeholder="Enter amount"
+            className="border-gray-300"
+          /></div>
+          <div className="space-y-2"><Label>Non-Refundable Deposit</Label><Input
+            value={formData.nonRefundable}
+            onChange={e => handleChange("nonRefundable", e.target.value)}
+            placeholder="Enter amount"
+            className="border-gray-300"
+          /></div>
+ 
+          <div className="space-y-2"><Label>Landmark</Label><Input
+            value={formData.landmark}
+            onChange={e => handleChange("landmark", e.target.value)}
+            placeholder="Enter landmark"
+            className="border-gray-300"
+          /></div>
+          <div className="space-y-2"><Label>Frontage</Label><Input
+            value={formData.frontage}
+            onChange={e => handleChange("frontage", e.target.value)}
+            placeholder="Enter frontage"
+            className="border-gray-300"
+          /></div>
+          <div className="space-y-2"><Label>Road Width</Label><Input
+            value={formData.roadWidth}
+            onChange={e => handleChange("roadWidth", e.target.value)}
+            placeholder="Enter width"
+            className="border-gray-300"
+          /></div>
+          <div className="space-y-2"><Label>Yield (%)</Label><Input
+            value={formData.yield}
+            onChange={e => handleChange("yield", e.target.value)}
+            placeholder="Enter width"
+            className="border-gray-300"
+          /></div>
+ 
+          <div className="space-y-2">
+            <Label>SSPDE</Label>
+            <Select
+              value={formData.sspde || ''}
+              onValueChange={(value) => handleChange("sspde", value)}
+            >
+              <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                <SelectValue placeholder="Select SSPDE" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-200 shadow-lg">
+                <SelectItem value="Yes">Yes</SelectItem>
+                <SelectItem value="No">No</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+ 
+          <div className="space-y-2">
+            <Label>Lead Status</Label>
+            <Select
+              value={formData.leadStatus || ''}
+              onValueChange={(value) => handleChange("leadStatus", value)}
+            >
+              <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                <SelectValue placeholder="Select lead status" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-200 shadow-lg">
+                <SelectItem value="Pending">Pending</SelectItem>
+                <SelectItem value="Approved">Approved</SelectItem>
+                <SelectItem value="Rejected">Rejected</SelectItem>
+                <SelectItem value="Cancelled">Cancelled</SelectItem>
+                <SelectItem value="Lost">Lost</SelectItem>
+                <SelectItem value="Won">Won</SelectItem>
+                <SelectItem value="Purchased">Purchased</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+ 
+          <div className="md:col-span-3 space-y-2">
+            <Label>Remark</Label>
+            <Textarea
+              value={formData.remark}
+              onChange={e => handleChange("remark", e.target.value)}
+              placeholder="Enter any remarks"
+              rows={3}
+            />
+          </div>
+        </CardContent>
+      </Card>
+ 
+      {/* Section 2: Yield Calculation */}
+      {/* <Card>
+        <CardHeader>
+          <CardTitle>Yield Calculation</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="space-y-2">
+            <Label>Saleable Area (sq ft)</Label>
+            <Input
+              value={formData.yieldSaleable}
+              onChange={e => handleChange("yieldSaleable", e.target.value)}
+              placeholder="Enter saleable area"
+              className="border-gray-300"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Common Area (sq ft)</Label>
+            <Input
+              value={formData.yieldCommon}
+              onChange={e => handleChange("yieldCommon", e.target.value)}
+              placeholder="Enter common area"
+              className="border-gray-300"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Total Built-up Area (sq ft)</Label>
+            <Input
+              value={formData.yieldTotal}
+              onChange={e => handleChange("yieldTotal", e.target.value)}
+              placeholder="Enter total area"
+              className="border-gray-300"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Efficiency (%)</Label>
+            <Input
+              value={formData.yieldEfficiency}
+              onChange={e => handleChange("yieldEfficiency", e.target.value)}
+              placeholder="Enter efficiency"
+              className="border-gray-300"
+            />
+          </div>
+        </CardContent>
+      </Card> */}
+ 
+      {/* Section 3: Competitor Analysis */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Competitor Analysis</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label>Developer Name</Label>
+            <Input
+              value={formData.competitorDeveloperName}
+              onChange={e => handleChange("competitorDeveloperName", e.target.value)}
+              placeholder="Enter developer name"
+              className="border-gray-300"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Project Name</Label>
+            <Input
+              value={formData.competitorProjectName}
+              onChange={e => handleChange("competitorProjectName", e.target.value)}
+              placeholder="Enter project name"
+              className="border-gray-300"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Product Type</Label>
+            <Input
+              value={formData.competitorProductType}
+              onChange={e => handleChange("competitorProductType", e.target.value)}
+              placeholder="Enter product type"
+              className="border-gray-300"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Location</Label>
+            <Input
+              value={formData.competitorLocation}
+              onChange={e => handleChange("competitorLocation", e.target.value)}
+              placeholder="Enter location"
+              className="border-gray-300"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Plot / Unit Size</Label>
+            <Input
+              value={formData.competitorPlotSize}
+              onChange={e => handleChange("competitorPlotSize", e.target.value)}
+              placeholder="Enter plot size"
+              className="border-gray-300"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Land Extent</Label>
+            <Input
+              value={formData.competitorLandExtent}
+              onChange={e => handleChange("competitorLandExtent", e.target.value)}
+              placeholder="Enter land extent"
+              className="border-gray-300"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Price Range</Label>
+            <Input
+              value={formData.competitorPriceRange}
+              onChange={e => handleChange("competitorPriceRange", e.target.value)}
+              placeholder="Enter price range"
+              className="border-gray-300"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Approx Price</Label>
+            <Input
+              value={formData.competitorApproxPrice}
+              onChange={e => handleChange("competitorApproxPrice", e.target.value)}
+              placeholder="Enter approx price"
+              className="border-gray-300"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Approx Price / Rent</Label>
+            <Input
+              value={formData.competitorApproxPriceRent}
+              onChange={e => handleChange("competitorApproxPriceRent", e.target.value)}
+              placeholder="Enter price/rent"
+              className="border-gray-300"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Total Plots / Units</Label>
+            <Input
+              value={formData.competitorTotalUnits}
+              onChange={e => handleChange("competitorTotalUnits", e.target.value)}
+              placeholder="Enter total units"
+              className="border-gray-300"
+            />
+          </div>
+          <div className="md:col-span-2 space-y-2">
+            <Label>Key Amenities</Label>
+            <Input
+              value={formData.competitorKeyAmenities}
+              onChange={e => handleChange("competitorKeyAmenities", e.target.value)}
+              placeholder="Enter key amenities"
+              className="border-gray-300"
+            />
+          </div>
+          <div className="md:col-span-3 space-y-2">
+            <Label>USP / Positioning</Label>
+            <Textarea
+              value={formData.competitorUSP}
+              onChange={e => handleChange("competitorUSP", e.target.value)}
+              placeholder="Enter unique selling proposition"
+              rows={2}
+            />
+          </div>
+        </CardContent>
+      </Card>
+ 
+      {/* Section 4: Site Visit Checklist */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Site Visit Checklist</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.checkLandLocation}
+                onChange={e => handleCheckboxChange("checkLandLocation", e.target.checked)}
+                className="cursor-pointer"
+              />
+              <span>Land Location</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.checkLandExtent}
+                onChange={e => handleCheckboxChange("checkLandExtent", e.target.checked)}
+                className="cursor-pointer"
+              />
+              <span>Land Extent</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.checkLandPrice}
+                onChange={e => handleCheckboxChange("checkLandPrice", e.target.checked)}
+                className="cursor-pointer"
+              />
+              <span>Land Price</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.checkApproachRoad}
+                onChange={e => handleCheckboxChange("checkApproachRoad", e.target.checked)}
+                className="cursor-pointer"
+              />
+              <span>Approach Road</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.checkSoilType}
+                onChange={e => handleCheckboxChange("checkSoilType", e.target.checked)}
+                className="cursor-pointer"
+              />
+              <span>Soil Type</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.checkTopography}
+                onChange={e => handleCheckboxChange("checkTopography", e.target.checked)}
+                className="cursor-pointer"
+              />
+              <span>Topography / Undulations</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.checkDrainageWaterLogging}
+                onChange={e => handleCheckboxChange("checkDrainageWaterLogging", e.target.checked)}
+                className="cursor-pointer"
+              />
+              <span>Drainage / Water Logging</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.checkSoilType2}
+                onChange={e => handleCheckboxChange("checkSoilType2", e.target.checked)}
+                className="cursor-pointer"
+              />
+              <span>Soil Type (Test)</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.checkChemistry}
+                onChange={e => handleCheckboxChange("checkChemistry", e.target.checked)}
+                className="cursor-pointer"
+              />
+              <span>Chemistry / pH Quantity</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.checkGroundWaterAvailability}
+                onChange={e => handleCheckboxChange("checkGroundWaterAvailability", e.target.checked)}
+                className="cursor-pointer"
+              />
+              <span>Ground Water Availability</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.checkBorewellWater}
+                onChange={e => handleCheckboxChange("checkBorewellWater", e.target.checked)}
+                className="cursor-pointer"
+              />
+              <span>Borewell Water</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.checkPondTank}
+                onChange={e => handleCheckboxChange("checkPondTank", e.target.checked)}
+                className="cursor-pointer"
+              />
+              <span>Pond / Tank</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.checkNearbyLakes}
+                onChange={e => handleCheckboxChange("checkNearbyLakes", e.target.checked)}
+                className="cursor-pointer"
+              />
+              <span>Nearby Lakes</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.checkElectricity}
+                onChange={e => handleCheckboxChange("checkElectricity", e.target.checked)}
+                className="cursor-pointer"
+              />
+              <span>Electricity</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.checkNearbyActivities}
+                onChange={e => handleCheckboxChange("checkNearbyActivities", e.target.checked)}
+                className="cursor-pointer"
+              />
+              <span>Nearby Activities / Stock</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.checkReligiousStructures}
+                onChange={e => handleCheckboxChange("checkReligiousStructures", e.target.checked)}
+                className="cursor-pointer"
+              />
+              <span>Religious Structures</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.checkCemeteryDock}
+                onChange={e => handleCheckboxChange("checkCemeteryDock", e.target.checked)}
+                className="cursor-pointer"
+              />
+              <span>Cemetery / Dock</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.checkNearbyAirport}
+                onChange={e => handleCheckboxChange("checkNearbyAirport", e.target.checked)}
+                className="cursor-pointer"
+              />
+              <span>Nearby Airport</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.checkProximityMetro}
+                onChange={e => handleCheckboxChange("checkProximityMetro", e.target.checked)}
+                className="cursor-pointer"
+              />
+              <span>Proximity to Metro / HS Rail</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.checkNearbyIndustries}
+                onChange={e => handleCheckboxChange("checkNearbyIndustries", e.target.checked)}
+                className="cursor-pointer"
+              />
+              <span>Nearby Industries</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.checkMarketRate}
+                onChange={e => handleCheckboxChange("checkMarketRate", e.target.checked)}
+                className="cursor-pointer"
+              />
+              <span>Market Rate</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.checkProjectTypes}
+                onChange={e => handleCheckboxChange("checkProjectTypes", e.target.checked)}
+                className="cursor-pointer"
+              />
+              <span>Project Types</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.checkLandOwnership}
+                onChange={e => handleCheckboxChange("checkLandOwnership", e.target.checked)}
+                className="cursor-pointer"
+              />
+              <span>Land Ownership</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.checkNumberOwners}
+                onChange={e => handleCheckboxChange("checkNumberOwners", e.target.checked)}
+                className="cursor-pointer"
+              />
+              <span>Number of Owners</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.checkMaritalStatus}
+                onChange={e => handleCheckboxChange("checkMaritalStatus", e.target.checked)}
+                className="cursor-pointer"
+              />
+              <span>Marital Status</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.checkLandClassification}
+                onChange={e => handleCheckboxChange("checkLandClassification", e.target.checked)}
+                className="cursor-pointer"
+              />
+              <span>Land Classification</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.checkMortgage}
+                onChange={e => handleCheckboxChange("checkMortgage", e.target.checked)}
+                className="cursor-pointer"
+              />
+              <span>Mortgage</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.checkBankLease}
+                onChange={e => handleCheckboxChange("checkBankLease", e.target.checked)}
+                className="cursor-pointer"
+              />
+              <span>Bank Lease</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.checkLitigation}
+                onChange={e => handleCheckboxChange("checkLitigation", e.target.checked)}
+                className="cursor-pointer"
+              />
+              <span>Litigation</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.checkNearbyRailway}
+                onChange={e => handleCheckboxChange("checkNearbyRailway", e.target.checked)}
+                className="cursor-pointer"
+              />
+              <span>Nearby Railway Deck</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.checkGoogleLocation}
+                onChange={e => handleCheckboxChange("checkGoogleLocation", e.target.checked)}
+                className="cursor-pointer"
+              />
+              <span>Google Location</span>
+            </label>
+          </div>
+ 
+          <div className="mt-6 space-y-4">
+            <div className="space-y-2">
+              <Label>Notes</Label>
+              <Textarea
+                value={formData.checkNotes}
+                onChange={e => handleChange("checkNotes", e.target.value)}
+                placeholder="Enter additional notes"
+                rows={3}
+                className="border-gray-300"
+              />
             </div>
-          )}
-
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
-              <p className="text-red-600">Error: {error}</p>
+            <div className="space-y-2">
+              <Label>Requests</Label>
+              <Textarea
+                value={formData.checkRequests}
+                onChange={e => handleChange("checkRequests", e.target.value)}
+                placeholder="Enter any special requests"
+                rows={3}
+                className="border-gray-300"
+              />
             </div>
-          )}
-
-          {/* Table */}
-          {!loading && !error && (
-            <div className="bg-white rounded-lg border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead>Region</TableHead>
-                    <TableHead>Zone</TableHead>
-                    <TableHead>Area</TableHead>
-                    <TableHead>Lead Type</TableHead>
-                    {/* <TableHead>Status</TableHead> */}
-                    <TableHead>Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-
-                <TableBody>
-                  {leads.map((lead) => (
-                    <TableRow key={lead._id}>
-                      <TableCell>{lead.mediatorName || 'N/A'}</TableCell>
-                      <TableCell>{lead.location || 'N/A'}</TableCell>
-                      <TableCell>{lead.source || 'N/A'}</TableCell>
-                      <TableCell>{lead.zone || 'N/A'}</TableCell>
-                      <TableCell>{lead.area || 'N/A'}</TableCell>
-                      <TableCell>{lead.leadType || 'N/A'}</TableCell>
-                      <TableCell>
-                        {/* Edit Icon Button */}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(lead)}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </div>
-      )}
+          </div>
+        </CardContent>
+      </Card>
+ 
+      {/* Submit Button */}
+      <div className="flex justify-end gap-3">
+        <Button variant="outline" onClick={onClose} className="border-gray-300">
+          Cancel
+        </Button>
+        <Button onClick={handleSubmit} className="bg-indigo-600 hover:bg-indigo-700 text-white px-8">
+          {data ? "Update Lead" : "Submit Lead"}
+        </Button>
+      </div>
     </div>
-  );
+  )
 }
+ 

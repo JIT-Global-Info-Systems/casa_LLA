@@ -32,8 +32,8 @@ function Users() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    password: "",
-    role: "telecaller",
+    // password: "",
+    role: "",
     phone_number: "",
     status: "active"
   });
