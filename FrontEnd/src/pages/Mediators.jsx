@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useMediators } from "../context/MediatorsContext"; // Using Context for API calls
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,107 +47,33 @@ import {
   MoreVertical,
 } from "lucide-react";
 
-// Initial mock data
-const initialMediators = [
-  {
-    id: "MED001",
-    name: "Rajesh Kumar",
-    category: "Individual",
-    phone: "+91 98765 43210",
-    email: "rajesh.kumar@email.com",
-    registeredDate: "2024-01-15",
-    createdBy: "Admin",
-    phonePrimary: "+91 98765 43210",
-    phoneSecondary: "+91 98765 43211",
-    panNumber: "ABCDE1234F",
-    aadhaarNumber: "1234 5678 9012",
-    location: "Mumbai",
-    linkedExecutive: "Executive 1",
-    officeIndividual: "Individual",
-    address: "123 Main Street, Mumbai, Maharashtra",
-  },
-  {
-    id: "MED005",
-    name: "Priya Sharma",
-    category: "Office",
-    phone: "+91 87654 32109",
-    email: "priya.sharma@email.com",
-    registeredDate: "2024-01-14",
-    createdBy: "Manager",
-    phonePrimary: "+91 87654 32109",
-    phoneSecondary: "+91 87654 32110",
-    panNumber: "FGHIJ5678K",
-    aadhaarNumber: "2345 6789 0123",
-    location: "Delhi",
-    linkedExecutive: "Executive 2",
-    officeIndividual: "Office",
-    address: "456 Park Avenue, Delhi",
-  },
-  {
-    id: "MED003",
-    name: "Amit Patel",
-    category: "Individual",
-    phone: "+91 76543 21098",
-    email: "amit.patel@email.com",
-    registeredDate: "2024-01-13",
-    createdBy: "Admin",
-    phonePrimary: "+91 76543 21098",
-    phoneSecondary: "+91 76543 21099",
-    panNumber: "KLMNO9012P",
-    aadhaarNumber: "3456 7890 1234",
-    location: "Bangalore",
-    linkedExecutive: "Executive 1",
-    officeIndividual: "Individual",
-    address: "789 Tech Park, Bangalore, Karnataka",
-  },
-  {
-    id: "MED004",
-    name: "Sneha Reddy",
-    category: "Office",
-    phone: "+91 65432 10987",
-    email: "sneha.reddy@email.com",
-    registeredDate: "2024-01-12",
-    createdBy: "Executive",
-    phonePrimary: "+91 65432 10987",
-    phoneSecondary: "+91 65432 10988",
-    panNumber: "PQRST3456U",
-    aadhaarNumber: "4567 8901 2345",
-    location: "Chennai",
-    linkedExecutive: "Executive 3",
-    officeIndividual: "Office",
-    address: "321 Business District, Chennai, Tamil Nadu",
-  },
-  {
-    id: "MED005",
-    name: "Vikram Singh",
-    category: "Individual",
-    phone: "+91 54321 09876",
-    email: "vikram.singh@email.com",
-    registeredDate: "2024-01-11",
-    createdBy: "Admin",
-    phonePrimary: "+91 54321 09876",
-    phoneSecondary: "+91 54321 09877",
-    panNumber: "UVWXY7890Z",
-    aadhaarNumber: "5678 9012 3456",
-    location: "Mumbai",
-    linkedExecutive: "Executive 2",
-    officeIndividual: "Individual",
-    address: "654 Residential Area, Mumbai, Maharashtra",
-  },
-];
-
 function Mediators() {
-  const [mediators, setMediators] = useState(initialMediators);
+  // 1. Context Hooks
+  const {
+    mediators,
+    loading,
+    error,
+    fetchMediators,
+    createMediator,
+    updateMediator,
+    deleteMediator
+  } = useMediators();
+
+  // 2. UI State
   const [isAddEditModalOpen, setIsAddEditModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  const [selectedMediator, setSelectedMediator] = useState(null);
-  const [mediatorToDelete, setMediatorToDelete] = useState(null);
+
+  const [selectedMediator, setSelectedMediator] = useState(null); // For Edit/View
+  const [mediatorToDelete, setMediatorToDelete] = useState(null); // For Delete
+
+  // 3. Filter State
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedExecutive, setSelectedExecutive] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
-  // Form state
+  // 4. Form State
   const [formData, setFormData] = useState({
     mediatorName: "",
     email: "",
@@ -161,41 +88,24 @@ function Mediators() {
     address: "",
   });
 
-  // Generate new mediator ID
-  const generateId = () => {
-    const ids = mediators.map((m) => parseInt(m.id.replace("MED", "")));
-    const maxId = Math.max(...ids, 0);
-    return `MED${String(maxId + 1).padStart(3, "0")}`;
-  };
-
-  // Filter mediators
-  const filteredMediators = mediators.filter((mediator) => {
-    const matchesSearch =
-      searchTerm === "" ||
-      mediator.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      mediator.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      mediator.phone.includes(searchTerm) ||
-      mediator.id.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesExecutive =
-      selectedExecutive === "" || mediator.createdBy === selectedExecutive;
-
-    const matchesDateRange = (() => {
-      if (!dateFrom && !dateTo) return true;
-      const mediatorDate = new Date(mediator.registeredDate);
-      const fromDate = dateFrom ? new Date(dateFrom) : new Date("1900-01-01");
-      const toDate = dateTo ? new Date(dateTo) : new Date("2100-12-31");
-      return mediatorDate >= fromDate && mediatorDate <= toDate;
-    })();
-
-    return matchesSearch && matchesExecutive && matchesDateRange;
+  const [files, setFiles] = useState({
+    pan_upload: null,
+    aadhar_upload: null,
   });
 
+  // 5. Initial Data Fetch
+  useEffect(() => {
+    fetchMediators();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 6. Helpers & Handlers
   const handleInputChange = (field, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleFileChange = (field, file) => {
+    setFiles((prev) => ({ ...prev, [field]: file }));
   };
 
   const resetForm = () => {
@@ -212,8 +122,20 @@ function Mediators() {
       officeIndividual: "",
       address: "",
     });
+    setFiles({ pan_upload: null, aadhar_upload: null });
     setSelectedMediator(null);
   };
+
+  // Helper to format address if it comes as an object from API
+  const formatAddress = (addr) => {
+    if (!addr) return "";
+    if (typeof addr === 'object') {
+      return [addr.street, addr.city, addr.state, addr.pincode].filter(Boolean).join(", ");
+    }
+    return addr;
+  };
+
+  // --- Actions ---
 
   const handleAdd = () => {
     resetForm();
@@ -223,82 +145,68 @@ function Mediators() {
   const handleEdit = (mediator) => {
     setSelectedMediator(mediator);
     setFormData({
-      mediatorName: mediator.name,
-      email: mediator.email,
-      phonePrimary: mediator.phonePrimary,
-      phoneSecondary: mediator.phoneSecondary,
-      category: mediator.category,
-      panNumber: mediator.panNumber,
-      aadhaarNumber: mediator.aadhaarNumber,
-      location: mediator.location,
-      linkedExecutive: mediator.linkedExecutive,
-      officeIndividual: mediator.officeIndividual,
-      address: mediator.address,
+      mediatorName: mediator.name || "",
+      email: mediator.email || "",
+      phonePrimary: mediator.phone_primary || "",
+      phoneSecondary: mediator.phone_secondary || "",
+      category: mediator.category || "",
+      panNumber: mediator.pan_number || "",
+      aadhaarNumber: mediator.aadhar_number || "",
+      location: mediator.location || "",
+      linkedExecutive: mediator.linked_executive || "",
+      officeIndividual: mediator.mediator_type || "",
+      address: formatAddress(mediator.address),
     });
+    // Note: We usually don't pre-fill file inputs for security/browser reasons
     setIsAddEditModalOpen(true);
   };
 
-  const handleDelete = (mediator) => {
+  const handleView = (mediator) => {
+    setSelectedMediator(mediator);
+    setIsViewModalOpen(true);
+  };
+
+  const handleDeleteClick = (mediator) => {
     setMediatorToDelete(mediator);
     setIsDeleteConfirmOpen(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (mediatorToDelete) {
-      setMediators((prev) => prev.filter((m) => m.id !== mediatorToDelete.id));
+      await deleteMediator(mediatorToDelete._id);
       setIsDeleteConfirmOpen(false);
       setMediatorToDelete(null);
     }
   };
 
-  const handleSave = () => {
-    if (selectedMediator) {
-      // Edit existing mediator
-      setMediators((prev) =>
-        prev.map((m) =>
-          m.id === selectedMediator.id
-            ? {
-                ...m,
-                name: formData.mediatorName,
-                email: formData.email,
-                phone: formData.phonePrimary,
-                phonePrimary: formData.phonePrimary,
-                phoneSecondary: formData.phoneSecondary,
-                category: formData.category,
-                panNumber: formData.panNumber,
-                aadhaarNumber: formData.aadhaarNumber,
-                location: formData.location,
-                linkedExecutive: formData.linkedExecutive,
-                officeIndividual: formData.officeIndividual,
-                address: formData.address,
-              }
-            : m
-        )
-      );
-    } else {
-      // Add new mediator
-      const newMediator = {
-        id: generateId(),
+  const handleSave = async () => {
+    try {
+      // Map form state to API expected keys
+      const apiData = {
         name: formData.mediatorName,
         email: formData.email,
-        phone: formData.phonePrimary,
-        phonePrimary: formData.phonePrimary,
-        phoneSecondary: formData.phoneSecondary,
+        phone_primary: formData.phonePrimary,
+        phone_secondary: formData.phoneSecondary,
         category: formData.category,
-        panNumber: formData.panNumber,
-        aadhaarNumber: formData.aadhaarNumber,
+        pan_number: formData.panNumber,
+        aadhar_number: formData.aadhaarNumber,
         location: formData.location,
-        linkedExecutive: formData.linkedExecutive,
-        officeIndividual: formData.officeIndividual,
+        linked_executive: formData.linkedExecutive,
+        mediator_type: formData.officeIndividual,
         address: formData.address,
-        registeredDate: new Date().toISOString().split("T")[0],
-        createdBy: "Admin",
       };
-      setMediators((prev) => [...prev, newMediator]);
-    }
 
-    setIsAddEditModalOpen(false);
-    resetForm();
+      if (selectedMediator) {
+        await updateMediator(selectedMediator._id, apiData);
+      } else {
+        await createMediator(apiData, files);
+      }
+
+      setIsAddEditModalOpen(false);
+      resetForm();
+    } catch (err) {
+      console.error("Failed to save mediator", err);
+    }
   };
 
   const handleRefresh = () => {
@@ -306,7 +214,35 @@ function Mediators() {
     setSelectedExecutive("");
     setDateFrom("");
     setDateTo("");
+    fetchMediators();
   };
+
+  // --- Filtering Logic ---
+  const filteredMediators = mediators.filter((mediator) => {
+    // Search
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch =
+      !searchTerm ||
+      mediator.name?.toLowerCase().includes(searchLower) ||
+      mediator.email?.toLowerCase().includes(searchLower) ||
+      mediator.phone_primary?.includes(searchTerm) ||
+      mediator._id?.toLowerCase().includes(searchLower);
+
+    // Executive Filter
+    const matchesExecutive =
+      !selectedExecutive || mediator.linked_executive === selectedExecutive;
+
+    // Date Filter
+    const matchesDateRange = (() => {
+      if (!dateFrom && !dateTo) return true;
+      const mediatorDate = new Date(mediator.created_at);
+      const from = dateFrom ? new Date(dateFrom) : new Date("1900-01-01");
+      const to = dateTo ? new Date(dateTo) : new Date("2100-12-31");
+      return mediatorDate >= from && mediatorDate <= to;
+    })();
+
+    return matchesSearch && matchesExecutive && matchesDateRange;
+  });
 
   return (
     <div className="flex-1 space-y-6 p-6">
@@ -322,7 +258,7 @@ function Mediators() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleRefresh}>
-            <RefreshCw className="h-4 w-4 mr-2" />
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </Button>
           <Button
@@ -369,19 +305,13 @@ function Mediators() {
                   <DropdownMenuItem onClick={() => setSelectedExecutive("")}>
                     All
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => setSelectedExecutive("Admin")}
-                  >
+                  <DropdownMenuItem onClick={() => setSelectedExecutive("Admin")}>
                     Admin
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => setSelectedExecutive("Manager")}
-                  >
+                  <DropdownMenuItem onClick={() => setSelectedExecutive("Manager")}>
                     Manager
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => setSelectedExecutive("Executive")}
-                  >
+                  <DropdownMenuItem onClick={() => setSelectedExecutive("Executive")}>
                     Executive
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -411,11 +341,6 @@ function Mediators() {
                 className="w-[140px]"
               />
             </div>
-
-            <Button variant="outline" size="sm">
-              <Filter className="h-4 w-4 mr-2" />
-              Filter
-            </Button>
           </div>
         </CardContent>
       </Card>
@@ -431,24 +356,25 @@ function Mediators() {
               <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">Phone</TableHead>
               <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">Email</TableHead>
               <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">Registered Date</TableHead>
-              <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">Created By</TableHead>
+              <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">Linked Exec</TableHead>
               <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium text-right">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredMediators.length === 0 ? (
+            {loading ? (
               <TableRow>
-                <TableCell
-                  colSpan={8}
-                  className="h-24 text-center text-muted-foreground"
-                >
+                 <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">Loading...</TableCell>
+              </TableRow>
+            ) : filteredMediators.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
                   No mediators found
                 </TableCell>
               </TableRow>
             ) : (
               filteredMediators.map((mediator) => (
-                <TableRow key={mediator.id} className="hover:bg-gray-50">
-                  <TableCell className="font-medium text-gray-900">{mediator.id}</TableCell>
+                <TableRow key={mediator._id} className="hover:bg-gray-50">
+                  <TableCell className="font-medium text-gray-900">{mediator._id}</TableCell>
                   <TableCell className="text-gray-900">{mediator.name}</TableCell>
                   <TableCell>
                     <span
@@ -461,10 +387,12 @@ function Mediators() {
                       {mediator.category}
                     </span>
                   </TableCell>
-                  <TableCell className="text-gray-600">{mediator.phone}</TableCell>
+                  <TableCell className="text-gray-600">{mediator.phone_primary}</TableCell>
                   <TableCell className="text-gray-600">{mediator.email}</TableCell>
-                  <TableCell className="text-gray-600">{mediator.registeredDate}</TableCell>
-                  <TableCell className="text-gray-600">{mediator.createdBy}</TableCell>
+                  <TableCell className="text-gray-600">
+                     {mediator.created_at ? new Date(mediator.created_at).toLocaleDateString() : 'N/A'}
+                  </TableCell>
+                  <TableCell className="text-gray-600">{mediator.linked_executive || 'N/A'}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -477,9 +405,7 @@ function Mediators() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => alert(`View ${mediator.name}`)}
-                        >
+                        <DropdownMenuItem onClick={() => handleView(mediator)}>
                           <Eye className="h-4 w-4 mr-2" />
                           View
                         </DropdownMenuItem>
@@ -489,7 +415,7 @@ function Mediators() {
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-red-600 focus:text-red-600"
-                          onClick={() => handleDelete(mediator)}
+                          onClick={() => handleDeleteClick(mediator)}
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
                           Delete
@@ -504,251 +430,165 @@ function Mediators() {
         </Table>
       </div>
 
-      {/* Pagination */}
+      {/* Pagination (Visual) */}
       <div className="flex items-center justify-between px-2">
         <div className="text-sm text-muted-foreground">
-          Showing {filteredMediators.length} result
-          {filteredMediators.length !== 1 ? "s" : ""}
-          {filteredMediators.length !== mediators.length &&
-            ` (of ${mediators.length} total)`}
+          Showing {filteredMediators.length} result{filteredMediators.length !== 1 ? "s" : ""}
+          {filteredMediators.length !== mediators.length && ` (of ${mediators.length} total)`}
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" disabled>
-            Previous
-          </Button>
-          <Button variant="outline" size="sm">
-            Next
-          </Button>
+          <Button variant="outline" size="sm" disabled>Previous</Button>
+          <Button variant="outline" size="sm" disabled>Next</Button>
         </div>
       </div>
 
-      {/* Add/Edit Mediator Modal */}
-      <Dialog
-        open={isAddEditModalOpen}
-        onOpenChange={setIsAddEditModalOpen}
-      >
+      {/* Add/Edit Dialog */}
+      <Dialog open={isAddEditModalOpen} onOpenChange={setIsAddEditModalOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {selectedMediator ? "Edit Mediator" : "Add Mediator"}
-            </DialogTitle>
+            <DialogTitle>{selectedMediator ? "Edit Mediator" : "Add Mediator"}</DialogTitle>
           </DialogHeader>
-
           <div className="grid grid-cols-2 gap-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="mediatorName">
-                Mediator Name <span className="text-red-500">*</span>
-              </Label>
+              <Label>Mediator Name <span className="text-red-500">*</span></Label>
               <Input
-                id="mediatorName"
                 value={formData.mediatorName}
-                onChange={(e) =>
-                  handleInputChange("mediatorName", e.target.value)
-                }
+                onChange={(e) => handleInputChange("mediatorName", e.target.value)}
                 placeholder="Enter mediator name"
               />
             </div>
-
             <div className="space-y-2">
-              <Label htmlFor="email">
-                Email <span className="text-red-500">*</span>
-              </Label>
+              <Label>Email <span className="text-red-500">*</span></Label>
               <Input
-                id="email"
                 type="email"
                 value={formData.email}
                 onChange={(e) => handleInputChange("email", e.target.value)}
-                placeholder="Enter email address"
+                placeholder="Enter email"
               />
             </div>
-
             <div className="space-y-2">
-              <Label htmlFor="phonePrimary">
-                Phone Primary <span className="text-red-500">*</span>
-              </Label>
+              <Label>Phone Primary <span className="text-red-500">*</span></Label>
               <Input
-                id="phonePrimary"
                 value={formData.phonePrimary}
-                onChange={(e) =>
-                  handleInputChange("phonePrimary", e.target.value)
-                }
+                onChange={(e) => handleInputChange("phonePrimary", e.target.value)}
                 placeholder="Enter primary phone"
               />
             </div>
-
             <div className="space-y-2">
-              <Label htmlFor="phoneSecondary">Phone Secondary</Label>
+              <Label>Phone Secondary</Label>
               <Input
-                id="phoneSecondary"
                 value={formData.phoneSecondary}
-                onChange={(e) =>
-                  handleInputChange("phoneSecondary", e.target.value)
-                }
+                onChange={(e) => handleInputChange("phoneSecondary", e.target.value)}
                 placeholder="Enter secondary phone"
               />
             </div>
-
             <div className="space-y-2">
-              <Label htmlFor="category">
-                Category <span className="text-red-500">*</span>
-              </Label>
+              <Label>Category <span className="text-red-500">*</span></Label>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-between"
-                  >
+                  <Button variant="outline" className="w-full justify-between">
                     {formData.category || "Select category"}
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-full">
-                  <DropdownMenuItem
-                    onClick={() => handleInputChange("category", "Individual")}
-                  >
-                    Individual
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleInputChange("category", "Office")}
-                  >
-                    Office
-                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleInputChange("category", "Individual")}>Individual</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleInputChange("category", "Office")}>Office</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-
             <div className="space-y-2">
-              <Label htmlFor="panNumber">PAN Number</Label>
+              <Label>PAN Number</Label>
               <Input
-                id="panNumber"
                 value={formData.panNumber}
                 onChange={(e) => handleInputChange("panNumber", e.target.value)}
-                placeholder="Enter PAN number"
+                placeholder="Enter PAN"
               />
             </div>
-
             <div className="space-y-2">
-              <Label htmlFor="aadhaarNumber">Aadhaar Number</Label>
+              <Label>Aadhaar Number</Label>
               <Input
-                id="aadhaarNumber"
                 value={formData.aadhaarNumber}
-                onChange={(e) =>
-                  handleInputChange("aadhaarNumber", e.target.value)
-                }
-                placeholder="Enter Aadhaar number"
+                onChange={(e) => handleInputChange("aadhaarNumber", e.target.value)}
+                placeholder="Enter Aadhaar"
               />
             </div>
-
             <div className="space-y-2">
-              <Label htmlFor="location">Location</Label>
+              <Label>Location</Label>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-between"
-                  >
+                  <Button variant="outline" className="w-full justify-between">
                     {formData.location || "Select location"}
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-full">
-                  <DropdownMenuItem
-                    onClick={() => handleInputChange("location", "Mumbai")}
-                  >
-                    Mumbai
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleInputChange("location", "Delhi")}
-                  >
-                    Delhi
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleInputChange("location", "Bangalore")}
-                  >
-                    Bangalore
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleInputChange("location", "Chennai")}
-                  >
-                    Chennai
-                  </DropdownMenuItem>
+                   {/* Add real locations here */}
+                  <DropdownMenuItem onClick={() => handleInputChange("location", "Mumbai")}>Mumbai</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleInputChange("location", "Delhi")}>Delhi</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleInputChange("location", "Bangalore")}>Bangalore</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleInputChange("location", "Chennai")}>Chennai</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="linkedExecutive">Link an Executive</Label>
+             <div className="space-y-2">
+              <Label>Link Executive</Label>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-between"
-                  >
+                  <Button variant="outline" className="w-full justify-between">
                     {formData.linkedExecutive || "Select executive"}
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-full">
-                  <DropdownMenuItem
-                    onClick={() =>
-                      handleInputChange("linkedExecutive", "Executive 1")
-                    }
-                  >
-                    Executive 1
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() =>
-                      handleInputChange("linkedExecutive", "Executive 2")
-                    }
-                  >
-                    Executive 2
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() =>
-                      handleInputChange("linkedExecutive", "Executive 3")
-                    }
-                  >
-                    Executive 3
-                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleInputChange("linkedExecutive", "Executive 1")}>Executive 1</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleInputChange("linkedExecutive", "Executive 2")}>Executive 2</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="officeIndividual">Office / Individual</Label>
+             <div className="space-y-2">
+              <Label>Type</Label>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-between"
-                  >
+                  <Button variant="outline" className="w-full justify-between">
                     {formData.officeIndividual || "Select type"}
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-full">
-                  <DropdownMenuItem
-                    onClick={() =>
-                      handleInputChange("officeIndividual", "Office")
-                    }
-                  >
-                    Office
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() =>
-                      handleInputChange("officeIndividual", "Individual")
-                    }
-                  >
-                    Individual
-                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleInputChange("officeIndividual", "Office")}>Office</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleInputChange("officeIndividual", "Individual")}>Individual</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
 
+            {/* File Uploads */}
+            <div className="space-y-2">
+                <Label htmlFor="panUpload">PAN Upload</Label>
+                <Input
+                  id="panUpload"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleFileChange("pan_upload", e.target.files[0])}
+                  className="file:mr-4 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-slate-50 file:text-slate-700 hover:file:bg-slate-100"
+                />
+                 {files.pan_upload && <p className="text-xs text-green-600">Selected: {files.pan_upload.name}</p>}
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="aadharUpload">Aadhaar Upload</Label>
+                <Input
+                  id="aadharUpload"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleFileChange("aadhar_upload", e.target.files[0])}
+                   className="file:mr-4 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-slate-50 file:text-slate-700 hover:file:bg-slate-100"
+                />
+                 {files.aadhar_upload && <p className="text-xs text-green-600">Selected: {files.aadhar_upload.name}</p>}
+            </div>
+
             <div className="col-span-2 space-y-2">
-              <Label htmlFor="address">Address</Label>
+              <Label>Address</Label>
               <Textarea
-                id="address"
                 value={formData.address}
                 onChange={(e) => handleInputChange("address", e.target.value)}
                 placeholder="Enter complete address"
@@ -756,54 +596,82 @@ function Mediators() {
               />
             </div>
           </div>
-
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsAddEditModalOpen(false);
-                resetForm();
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSave}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white"
-            >
+            <Button variant="outline" onClick={() => setIsAddEditModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleSave} className="bg-indigo-600 hover:bg-indigo-700 text-white">
               {selectedMediator ? "Update" : "Save"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
+      {/* View Dialog */}
+      <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Mediator Details</DialogTitle>
+          </DialogHeader>
+          {selectedMediator && (
+             <div className="grid grid-cols-2 gap-4 py-4">
+                <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">ID</Label>
+                    <div className="text-sm font-medium">{selectedMediator._id}</div>
+                </div>
+                <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Name</Label>
+                    <div className="text-sm font-medium">{selectedMediator.name}</div>
+                </div>
+                <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Email</Label>
+                    <div className="text-sm font-medium">{selectedMediator.email}</div>
+                </div>
+                 <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Category</Label>
+                    <div className="text-sm font-medium">{selectedMediator.category}</div>
+                </div>
+                 <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Phone Primary</Label>
+                    <div className="text-sm font-medium">{selectedMediator.phone_primary}</div>
+                </div>
+                 <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Phone Secondary</Label>
+                    <div className="text-sm font-medium">{selectedMediator.phone_secondary || '-'}</div>
+                </div>
+                 <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">PAN</Label>
+                    <div className="text-sm font-medium">{selectedMediator.pan_number || '-'}</div>
+                </div>
+                 <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Aadhaar</Label>
+                    <div className="text-sm font-medium">{selectedMediator.aadhar_number || '-'}</div>
+                </div>
+                <div className="col-span-2 space-y-1">
+                    <Label className="text-xs text-muted-foreground">Address</Label>
+                    <div className="text-sm font-medium bg-slate-50 p-2 rounded">
+                        {formatAddress(selectedMediator.address) || '-'}
+                    </div>
+                </div>
+             </div>
+          )}
+          <DialogFooter>
+              <Button onClick={() => setIsViewModalOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Delete Confirmation Dialog */}
-      <AlertDialog
-        open={isDeleteConfirmOpen}
-        onOpenChange={setIsDeleteConfirmOpen}
-      >
+      <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the mediator{" "}
-              <strong>{mediatorToDelete?.name}</strong> (ID:{" "}
-              {mediatorToDelete?.id}). This action cannot be undone.
+              This will permanently delete the mediator <strong>{mediatorToDelete?.name}</strong>.
+              This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel
-              onClick={() => {
-                setIsDeleteConfirmOpen(false);
-                setMediatorToDelete(null);
-              }}
-            >
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDelete}
-              className="bg-red-600 hover:bg-red-700 text-white"
-            >
+            <AlertDialogCancel onClick={() => setIsDeleteConfirmOpen(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700 text-white">
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
