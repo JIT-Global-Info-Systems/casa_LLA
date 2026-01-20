@@ -33,7 +33,7 @@ const locations = [
   { label: "All Locations", value: "all" },
   { label: "Chennai", value: "chennai" },
   { label: "Bangalore", value: "bangalore" },
-  { label: "Hyderabad", value: "hyderabad" },
+  { label: "Mysore", value: "mysore" },
 ];
 
 function Topbar() {

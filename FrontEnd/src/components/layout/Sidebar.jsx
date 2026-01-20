@@ -55,32 +55,34 @@ function Sidebar() {
         </div>
       </div>
       <div className="flex-1 overflow-y-auto">
-        <div className="px-3 py-4 ">
-          <div className="border-t border-indigo-600/60 pt-4 ">
-            <div className="px-3 text-[11px] font-semibold tracking-wider text-white/80">
-              EMPLOYEE
-            </div>
+        <div className="px-3 py-4">
+          <div className="px-3 text-[11px] font-semibold tracking-wider text-white/80">
+            EMPLOYEE
+          </div>
+          <div className="border-t border-indigo-600/60 pt-0.5 mt-2">
             <div className="mt-2 space-y-1 max-h-82 overflow-y-auto custom-scrollbar">
               {loading ? (
-                <div className="px-3 text-xs text-white/60">Loading users...</div>
-              ) : users.length > 0 ? (
-                users.map((user) => (
-                  <div key={user.user_id || user.id} className="px-3 py-1">
-                    <div className="text-sm font-medium text-white/90">
-                      {user.username || user.name || 'Unknown User'} - {user.role || 'No role'}
-                    </div>
+              <div className="px-3 text-xs text-white/60">Loading users...</div>
+            ) : users.length > 0 ? (
+              users.map((user) => (
+                <div key={user.user_id || user.id} className="px-3 py-1">
+                  <div className="text-sm font-medium text-white/90">
+                    {user.username || user.name || 'Unknown User'} - {user.role || 'No role'}
                   </div>
-                ))
-              ) : (
-                <div className="px-3 text-xs text-white/60">No users found</div>
-              )}
-            </div>
+                </div>
+              ))
+            ) : (
+              <div className="px-3 text-xs text-white/60">No users found</div>
+            )}
           </div>
-          <div className="border-t border-indigo-600/60 pt-4">
+        </div>
+        </div>
+        <div className="border-t border-indigo-600/60 pt-4">
             <div className="px-3 text-[11px] font-semibold tracking-wider text-white/80">
               DOCUMENTS
             </div>
-            <div className="mt-2 space-y-1">
+            <div className="border-t border-indigo-600/60 pt-0.5 mt-2">
+              <div className="mt-2 space-y-1">
               {documentsItems.map((item) => {
                 const Icon = item.icon;
                 const to = `/pages/documents${item.hash}`;
@@ -103,8 +105,8 @@ function Sidebar() {
                 );
               })}
             </div>
+            </div>
           </div>
-        </div>
       </div>
       <div className="border-t border-indigo-600/60 p-3">
         <div className="rounded-lg bg-white/10 px-3 py-2 text-xs text-white/80">
