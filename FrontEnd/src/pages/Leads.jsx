@@ -395,6 +395,8 @@ export default function Leads({ data = null, onSubmit, onClose, currentStep = 1,
     sspde: "No",
     leadStatus: "Pending",
     remark: "",
+    lead_stage:"",
+    currentRole:"Telecaller",
 
     // Yield Calculation
     yield: "",
@@ -764,6 +766,24 @@ export default function Leads({ data = null, onSubmit, onClose, currentStep = 1,
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+          <div className="space-y-2">
+            <Label>Lead Stage</Label>
+            <Select 
+              value={formData.lead_stage || ''}
+              onValueChange={(value) => handleChange("lead_stage", value)}
+            >
+              <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                <SelectValue placeholder="Select stage" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-200 shadow-lg">
+                <SelectItem value="warm">Warm</SelectItem>
+                <SelectItem value="hot">Hot</SelectItem>
+                <SelectItem value="cold">Cold</SelectItem>
+                <SelectItem value="management_hot">Management Hot</SelectItem>
+              </SelectContent>
+            </Select>
+
+          </div>
 
           <div className="space-y-2">
             <Label>Source</Label>
@@ -902,7 +922,7 @@ export default function Leads({ data = null, onSubmit, onClose, currentStep = 1,
             placeholder="Enter width"
             className="border-gray-300"
           /></div>
-          <div className="space-y-2"><Label>Yield</Label><Input
+          <div className="space-y-2"><Label>Yield (%)</Label><Input
             value={formData.yield}
             onChange={e => handleChange("yield", e.target.value)}
             placeholder="Enter width"
