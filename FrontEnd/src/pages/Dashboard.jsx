@@ -315,7 +315,7 @@ function Dashboard() {
         </section>
 
         {/* NOTES */}
-        <section className="mt-6">
+        {/* <section className="mt-6">
           <Card>
             <CardHeader>
               <CardTitle className="text-sm">Notes</CardTitle>
@@ -329,7 +329,7 @@ function Dashboard() {
               <div className="rounded-lg border p-4">9 Active Users</div>
             </CardContent>
           </Card>
-        </section>
+        </section> */}
 
       </div>
     </div>
