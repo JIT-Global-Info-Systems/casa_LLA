@@ -251,8 +251,6 @@ import {
   Trash2,
   MoreVertical,
   Search,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
 import LeadStepper from "@/components/ui/LeadStepper"
 import Leads from "./Leads"
@@ -278,15 +276,14 @@ export default function LeadsPage() {
     fetchLeads()
   }, [])
 
+
   const handleCreate = () => {
     setSelectedLead(null);
-    setCurrentStep(1); // Reset to first step for new lead
     setOpen(true);
   };
-
+ 
   const handleEdit = (lead) => {
     setSelectedLead(lead);
-    setCurrentStep(null); // Reset so Stepper derives step from lead status
     setOpen(true);
   };
 
