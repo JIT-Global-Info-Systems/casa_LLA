@@ -38,20 +38,20 @@ const locations = [
   { label: "Hyderabad", value: "hyderabad" },
 ];
 
-const zones = [
-  { label: "All Zones", value: "all" },
-  { label: "North Zone", value: "north" },
-  { label: "South Zone", value: "south" },
-  { label: "East Zone", value: "east" },
-  { label: "West Zone", value: "west" },
-];
+// const zones = [
+//   { label: "All Zones", value: "all" },
+//   { label: "North Zone", value: "north" },
+//   { label: "South Zone", value: "south" },
+//   { label: "East Zone", value: "east" },
+//   { label: "West Zone", value: "west" },
+// ];
 
 /* -------------------- FILTER BAR -------------------- */
 
 function DashboardFilters({ filters, setFilters }) {
   return (
     <div className="flex flex-wrap gap-3">
-      <Select
+      {/* <Select
         label="Location"
         value={filters.location}
         onChange={(value) =>
@@ -59,9 +59,9 @@ function DashboardFilters({ filters, setFilters }) {
         }
         options={locations}
         placeholder="Location"
-      />
+      /> */}
 
-      <Select
+      {/* <Select
         label="Zone"
         value={filters.zone}
         onChange={(value) =>
@@ -69,7 +69,7 @@ function DashboardFilters({ filters, setFilters }) {
         }
         options={zones}
         placeholder="Zone"
-      />
+      /> */}
     </div>
   );
 }
@@ -259,16 +259,16 @@ function Dashboard() {
 
         {/* HEADER + FILTERS */}
         <div className="flex flex-col gap-4">
-          <div>
-            <div className="text-xl font-bold text-indigo-700">
-              Dashboard
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-xl font-bold text-indigo-700">
+                Dashboard
+              </div>
+              <div className="text-sm text-slate-500">
+                CRM Analytics Overview
+              </div>
             </div>
-            <div className="text-sm text-slate-500">
-              CRM Analytics Overview
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-between gap-4">
+            
             <DateFilter
               startDate={filters.startDate}
               endDate={filters.endDate}
@@ -276,12 +276,12 @@ function Dashboard() {
                 setFilters((prev) => ({ ...prev, startDate: dates.startDate, endDate: dates.endDate }))
               }
             />
-            
-            <DashboardFilters
-              filters={filters}
-              setFilters={setFilters}
-            />
           </div>
+
+          <DashboardFilters
+            filters={filters}
+            setFilters={setFilters}
+          />
         </div>
 
         {/* DONUT CHARTS */}

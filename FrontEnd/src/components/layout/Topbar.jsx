@@ -4,6 +4,7 @@ import { Bell, Menu } from "lucide-react";
 
 import { navItems } from "./Sidebar";
 import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,12 +29,20 @@ const pageTitles = {
   "/pages/profile": "Profile",
 };
 
+const locations = [
+  { label: "All Locations", value: "all" },
+  { label: "Chennai", value: "chennai" },
+  { label: "Bangalore", value: "bangalore" },
+  { label: "Hyderabad", value: "hyderabad" },
+];
+
 function Topbar() {
   const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate()
   const title = pageTitles[location.pathname] || "Dashboard";
   const [mobileNavOpen, setMobileNavOpen] = React.useState(false);
+  const [selectedLocation, setSelectedLocation] = React.useState("all");
 
   // Function to get initials from user name
   const getInitials = (name) => {
@@ -132,6 +141,14 @@ function Topbar() {
         </div>
 
         <div className="flex items-center gap-2">
+          <Select
+            value={selectedLocation}
+            onChange={setSelectedLocation}
+            options={locations}
+            placeholder="Location"
+            className="w-[110px]"
+          />
+          
           <Button variant="ghost" size="icon" aria-label="Notifications">
             <Bell />
           </Button>
