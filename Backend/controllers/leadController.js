@@ -94,7 +94,7 @@ exports.softDeleteLead = async (req, res) => {
 
 exports.getAllLeads = async (req, res) => {
   try {
-    const leads = await Lead.find({ lead_status: "pending" })
+    const leads = await Lead.find({ status: "active" })
       .sort({ created_at: -1 });
 
     return res.status(200).json({

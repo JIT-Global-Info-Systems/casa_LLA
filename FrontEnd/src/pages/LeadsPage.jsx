@@ -1,7 +1,9 @@
-import { useState, useEffect } from "react";
-import { useLeads } from "../context/LeadsContext"; // Context Import
+import { useState , useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import Modal from "@/components/ui/modal";
+// import LeadStepper from "@/components/ui/LeadStepper";
 import { Label } from "@/components/ui/label";
+// import Leads from "./Leads";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
@@ -27,37 +29,59 @@ import {
   Trash2,
   MoreVertical,
   Search,
-  ArrowLeft,
 } from "lucide-react";
-
-// Components
-import LeadStepper from "@/components/ui/LeadStepper";
-import Leads from "./Leads"; // This is your form component
+import LeadStepper from "@/components/ui/LeadStepper"
+import Leads from "./Leads"
+import { useLeads } from "../context/LeadsContext.jsx"
 
 export default function LeadsPage() {
-  // 1. Context & State
-  const { leads, loading, error, fetchLeads } = useLeads();
-
-  const [open, setOpen] = useState(false); // Controls List vs Editor view
+  const [open, setOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
-
-  // Filter States
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
-  // 2. Initial Fetch
-  useEffect(() => {
-    fetchLeads();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const { leads, loading, error, fetchLeads } = useLeads()
 
-  // 3. Data Normalization (Crucial for handling different API response structures)
+    const leadComments = [
+      selectedLead?.remark,
+      selectedLead?.comment,
+    ]
+      .map((v) => (typeof v === "string" ? v.trim() : ""))
+      .filter((text) => Boolean(text))
+
+    useEffect(() => {
+    fetchLeads()
+  }, [])
+
+
+  const handleCreate = () => {
+    setSelectedLead(null);
+    setOpen(true);
+  };
+
+  const handleEdit = (lead) => {
+    setSelectedLead(lead);
+    setOpen(true);
+  };
+
+
+  const handleDelete = (lead) => {
+    // Add delete logic here
+    console.log("Deleting", lead);
+  };
+
   const normalizedLeads = (Array.isArray(leads) ? leads : []).map((lead) => {
-    const registeredDate = lead.registeredDate || lead.date || lead.createdAt || null;
+    const registeredDate =
+      lead.registeredDate || lead.date || lead.createdAt || null;
     return {
       id: lead.id || lead._id || "N/A",
-      name: lead.mediatorName || lead.ownerName || lead.name || lead.contactName || "N/A",
+      name:
+        lead.mediatorName ||
+        lead.ownerName ||
+        lead.name ||
+        lead.contactName ||
+        "N/A",
       email: lead.email || lead.contactEmail || "—",
       phone: lead.phone || lead.contactNumber || "",
       location: lead.location || lead.address?.city || "N/A",
@@ -65,13 +89,10 @@ export default function LeadsPage() {
       status: lead.status || lead.stageStatus || "Pending",
       stageName: lead.stageName || lead.currentStage || "Not Started",
       registeredDate,
-      comment: lead.comment,
-      remark: lead.remark,
-      raw: lead, // Keep original data for editing
+      raw: lead,
     };
   });
 
-  // 4. Filtering Logic
   const filteredLeads = normalizedLeads.filter((lead) => {
     const matchesSearch =
       searchTerm === "" ||
@@ -92,98 +113,58 @@ export default function LeadsPage() {
     return matchesSearch && matchesDateRange;
   });
 
-  // 5. Comments Logic for Sidebar
-  const leadComments = [
-    selectedLead?.remark,
-    selectedLead?.comment,
-  ]
-    .map((v) => (typeof v === "string" ? v.trim() : ""))
-    .filter((text) => Boolean(text));
-
-  // 6. Handlers
-  const handleCreate = () => {
-    setSelectedLead(null);
-    setOpen(true);
-  };
-
-  const handleEdit = (leadRaw) => {
-    // We pass the raw API data to the form
-    setSelectedLead(leadRaw);
-    setOpen(true);
-  };
-
-  const handleDelete = (lead) => {
-    // Add context delete function here
-    if(window.confirm("Are you sure you want to delete this lead?")) {
-        console.log("Deleting", lead.id);
-    }
-  };
-
-  // --- RENDER ---
   return (
     <div className="flex-1 space-y-6 p-6">
       {open ? (
-        /* ============================
-           EDITOR / CREATE VIEW
-           ============================ */
-        <div className="min-h-screen bg-gray-50 p-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <div className="w-full max-w-7xl mx-auto">
+        /* Full page view when editing/creating */
+        <div className="min-h-screen bg-gray-50 p-4">
+          <div className="w-full">
             <div className="bg-white rounded-lg shadow-md p-6">
-              {/* Back Button */}
-              <div className="mb-6 flex items-center gap-2">
+              <div className="mb-4">
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   onClick={() => setOpen(false)}
-                  className="gap-2"
+                  className="mb-4"
                 >
-                  <ArrowLeft className="h-4 w-4" />
-                  Back to Leads
+                  ← Back to Leads
                 </Button>
-                <h2 className="text-xl font-semibold ml-2">
-                    {selectedLead ? "Edit Lead" : "Create New Lead"}
-                </h2>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Main Form Area */}
-                <div className={`${selectedLead ? "lg:col-span-2" : "lg:col-span-3"} space-y-6`}>
+              <div className="p-2 grid grid-cols-1 lg:grid-cols-3 gap-2">
+                <div
+                  className={`${
+                    selectedLead ? "lg:col-span-2" : "lg:col-span-3"
+                  } space-y-4`}
+                >
                   {selectedLead && (
-                    <LeadStepper stageName={selectedLead.stageName || selectedLead.currentStage} />
+                    <LeadStepper stageName={selectedLead.stageName} />
                   )}
-                  {/* Pass raw data or null to the Leads Form Component */}
-                  <Leads
-                    data={selectedLead}
-                    onSubmit={() => {
-                        fetchLeads(); // Refresh data after save
-                        setOpen(false);
-                    }}
-                    onClose={() => setOpen(false)}
-                  />
+                  <Leads data={selectedLead} onClose={() => setOpen(false)} />
                 </div>
 
-                {/* Right-side Notes/Comments (Only shown when editing existing lead) */}
+                {/* Right-side message thread (only show when editing) */}
                 {selectedLead && (
                   <div className="lg:col-span-1">
-                    <div className="h-full rounded-lg border bg-slate-50 sticky top-4">
+                    <div className="h-full rounded-lg border bg-slate-50">
                       <div className="px-4 py-3 border-b bg-white rounded-t-lg">
                         <div className="text-sm font-semibold text-slate-800">
-                          Notes & History
+                          Notes
                         </div>
                         <div className="text-xs text-slate-500">
-                          Communication thread
+                          Message thread
                         </div>
                       </div>
 
-                      <div className="p-4 space-y-3 max-h-[60vh] overflow-y-auto">
+                      <div className="p-4 space-y-3 max-h-[40vh] overflow-y-auto">
                         {leadComments.length === 0 ? (
-                          <div className="text-sm text-slate-500 italic text-center py-4">
-                            No comments recorded yet.
+                          <div className="text-sm text-slate-500">
+                            No comments
                           </div>
                         ) : (
                           leadComments.map((text, idx) => (
                             <div
-                              key={`${idx}-${text.substring(0, 10)}`}
-                              className="w-full border bg-white px-3 py-2 text-sm text-slate-700 rounded shadow-sm"
+                              key={`${idx}-${text}`}
+                              className="w-full border bg-white px-3 py-2 text-sm text-slate-800"
                             >
                               {text}
                             </div>
@@ -198,202 +179,246 @@ export default function LeadsPage() {
           </div>
         </div>
       ) : (
-        /* ============================
-           LIST / DASHBOARD VIEW
-           ============================ */
-        <div className="space-y-6">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <h2 className="text-2xl font-bold tracking-tight text-indigo-700">
-                Leads
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Manage your leads pipeline · Last updated today
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={fetchLeads}
-                disabled={loading}
-              >
-                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-                Refresh
-              </Button>
-              <Button
-                onClick={handleCreate}
-                size="sm"
-                className="bg-indigo-600 hover:bg-indigo-700 text-white"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Lead
-              </Button>
-            </div>
-          </div>
-
-          {/* Filters */}
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="flex-1 min-w-[200px]">
-                  <div className="relative">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search leads (ID, Name, Email)..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-9"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Label className="text-sm text-muted-foreground whitespace-nowrap">
-                    From:
-                  </Label>
-                  <Input
-                    type="date"
-                    value={dateFrom}
-                    onChange={(e) => setDateFrom(e.target.value)}
-                    className="w-[140px]"
-                  />
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Label className="text-sm text-muted-foreground whitespace-nowrap">
-                    To:
-                  </Label>
-                  <Input
-                    type="date"
-                    value={dateTo}
-                    onChange={(e) => setDateTo(e.target.value)}
-                    className="w-[140px]"
-                  />
-                </div>
-
-                <Button variant="outline" size="sm">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filter
-                </Button>
+        /* Main page content when not editing */
+        <div className="p-6">
+          {/* Top Bar */}
+          {/* <div className="flex justify-between items-center mb-4">
+            <div className="text-xl font-bold text-indigo-700">
+              Leads
+              <div className="text-sm text-slate-500">
+                Leads list · Last updated today
               </div>
-            </CardContent>
-          </Card>
+            </div>
 
-          {/* Table Container */}
-          <div className="rounded-md border bg-white">
-            {loading && (
-                <div className="text-center py-12 text-gray-500">
-                    <p>Loading leads...</p>
+            <Button onClick={handleCreate}>+ Create</Button>
+          </div> */}
+
+          {/* Loading and Error States */}
+          {loading && (
+            <div className="text-center py-8">
+              <p className="text-slate-600">Loading leads...</p>
+            </div>
+          )}
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
+              <p className="text-red-600">Error: {error}</p>
+            </div>
+          )}
+
+          {/* Table */}
+          {!loading && !error && (
+            <>
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <h2 className="text-2xl font-bold tracking-tight text-indigo-700">
+                    Leads
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    Manage your leads pipeline · Last updated today
+                  </p>
                 </div>
-            )}
-
-            {error && (
-                <div className="bg-red-50 border border-red-200 rounded-md p-4 m-4">
-                    <p className="text-red-600">Error: {error}</p>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={fetchLeads}>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Refresh
+                  </Button>
+                  <Button
+                    onClick={handleCreate}
+                    size="sm"
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Lead
+                  </Button>
                 </div>
-            )}
+              </div>
 
-            {!loading && !error && (
+              {/* Filters */}
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex-1 min-w-[200px]">
+                      <div className="relative">
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search leads (ID, Name, Email)..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="pl-9"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm text-muted-foreground whitespace-nowrap">
+                        From:
+                      </Label>
+                      <Input
+                        type="date"
+                        value={dateFrom}
+                        onChange={(e) => setDateFrom(e.target.value)}
+                        className="w-[140px]"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm text-muted-foreground whitespace-nowrap">
+                        To:
+                      </Label>
+                      <Input
+                        type="date"
+                        value={dateTo}
+                        onChange={(e) => setDateTo(e.target.value)}
+                        className="w-[140px]"
+                      />
+                    </div>
+
+                    <Button variant="outline" size="sm">
+                      <Filter className="h-4 w-4 mr-2" />
+                      Filter
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Table Section */}
+              <div className="rounded-md border bg-white">
                 <Table>
-                <TableHeader className="bg-gray-50">
+                  <TableHeader className="bg-gray-50">
                     <TableRow>
-                    <TableHead className="w-[100px] text-xs uppercase tracking-wider text-gray-500 font-medium">ID</TableHead>
-                    <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">Name</TableHead>
-                    <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">Location</TableHead>
-                    <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">Zone</TableHead>
-                    <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">Status</TableHead>
-                    <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">Current Stage</TableHead>
-                    <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium text-right">Action</TableHead>
+                      <TableHead className="w-[100px] text-xs uppercase tracking-wider text-gray-500 font-medium">
+                        ID
+                      </TableHead>
+                      <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">
+                        Name
+                      </TableHead>
+                      <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">
+                        Location
+                      </TableHead>
+                      <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">
+                        Zone
+                      </TableHead>
+                      <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">
+                        Status
+                      </TableHead>
+                      <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">
+                        Current Stage
+                      </TableHead>
+                      <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium text-right">
+                        Action
+                      </TableHead>
                     </TableRow>
-                </TableHeader>
-                <TableBody>
+                  </TableHeader>
+                  <TableBody>
                     {filteredLeads.length === 0 ? (
-                    <TableRow>
-                        <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                        No leads found matching your criteria.
+                      <TableRow>
+                        <TableCell
+                          colSpan={7}
+                          className="h-24 text-center text-muted-foreground"
+                        >
+                          No leads found matching your criteria.
                         </TableCell>
-                    </TableRow>
+                      </TableRow>
                     ) : (
-                    filteredLeads.map((lead) => (
+                      filteredLeads.map((lead) => (
                         <TableRow key={lead.id} className="hover:bg-gray-50">
-                        <TableCell className="font-medium text-gray-900">{lead.id}</TableCell>
-                        <TableCell>
+                          <TableCell className="font-medium text-gray-900">
+                            {lead.id}
+                          </TableCell>
+                          <TableCell>
                             <div className="flex flex-col">
-                            <span className="font-medium text-gray-900">{lead.name}</span>
-                            <span className="text-xs text-gray-500">{lead.email}</span>
+                              <span className="font-medium text-gray-900">
+                                {lead.name}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                {lead.email}
+                              </span>
                             </div>
-                        </TableCell>
-                        <TableCell className="text-gray-900">{lead.location}</TableCell>
-                        <TableCell className="text-gray-600">{lead.zone}</TableCell>
-                        <TableCell>
+                          </TableCell>
+                          <TableCell className="text-gray-900">
+                            {lead.location}
+                          </TableCell>
+                          <TableCell className="text-gray-600">
+                            {lead.zone}
+                          </TableCell>
+                          <TableCell>
                             <span
-                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                              className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                                 lead.status === "Approved"
-                                ? "bg-green-100 text-green-800"
-                                : "bg-yellow-100 text-yellow-800"
-                            }`}
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-yellow-100 text-yellow-800"
+                              }`}
                             >
-                            {lead.status}
+                              {lead.status}
                             </span>
-                        </TableCell>
-                        <TableCell>
-                            <div className="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold border-transparent bg-indigo-100 text-indigo-800">
-                            {lead.stageName}
+                          </TableCell>
+                          <TableCell>
+                            <div className="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-indigo-100 text-indigo-800 shadow hover:bg-indigo-200">
+                              {lead.stageName}
                             </div>
-                        </TableCell>
-                        <TableCell className="text-right">
+                          </TableCell>
+                          <TableCell className="text-right">
                             <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreVertical className="h-4 w-4" />
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                >
+                                  <MoreVertical className="h-4 w-4" />
                                 </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="bg-white border shadow-lg">
-                                <DropdownMenuItem onClick={() => alert(`View ${lead.name}`)} className="cursor-pointer">
-                                <Eye className="h-4 w-4 mr-2" />
-                                View Details
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleEdit(lead.raw)} className="cursor-pointer">
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit Lead
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() => alert(`View ${lead.name}`)}
+                                >
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View Details
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
-                                    className="text-red-600 focus:text-red-600 cursor-pointer"
-                                    onClick={() => handleDelete(lead)}
+                                  onClick={() => handleEdit(lead.raw)}
                                 >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit Lead
                                 </DropdownMenuItem>
-                            </DropdownMenuContent>
+                                <DropdownMenuItem
+                                  className="text-red-600 focus:text-red-600"
+                                  onClick={() => handleDelete(lead.raw)}
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
                             </DropdownMenu>
-                        </TableCell>
+                          </TableCell>
                         </TableRow>
-                    ))
+                      ))
                     )}
-                </TableBody>
+                  </TableBody>
                 </Table>
-            )}
-          </div>
+              </div>
 
-          {/* Pagination (Static for now, hook up to backend if needed) */}
-          <div className="flex items-center justify-between px-2">
-            <div className="text-sm text-muted-foreground">
-              Showing {filteredLeads.length} result
-              {filteredLeads.length !== 1 ? "s" : ""}
-              {filteredLeads.length !== normalizedLeads.length &&
-                ` (of ${normalizedLeads.length} total)`}
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" disabled>
-                Previous
-              </Button>
-              <Button variant="outline" size="sm" disabled>
-                Next
-              </Button>
-            </div>
-          </div>
+              {/* Pagination */}
+              <div className="flex items-center justify-between px-2">
+                <div className="text-sm text-muted-foreground">
+                  Showing {filteredLeads.length} result
+                  {filteredLeads.length !== 1 ? "s" : ""}
+                  {filteredLeads.length !== normalizedLeads.length &&
+                    ` (of ${normalizedLeads.length} total)`}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" disabled>
+                    Previous
+                  </Button>
+                  <Button variant="outline" size="sm">
+                    Next
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
