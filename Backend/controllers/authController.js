@@ -1,5 +1,6 @@
 const bcrypt = require("bcrypt");
 const User = require("../models/user");
+const Access = require("../models/Access");
 const { generateToken } = require("../utils/jwt");
 
 exports.login = async (req, res) => {
@@ -38,18 +39,26 @@ exports.login = async (req, res) => {
       });
     }
 
-    // 5️⃣ Generate JWT
+    // 5️⃣ Get access details for the user's role
+    const accessDetails = await Access.findOne({ role: user.role });
+    
+    // 6️⃣ Generate JWT
     const token = generateToken(user);
 
-    // 6️⃣ Send response
+    // 7️⃣ Prepare user data for response
+    const userData = {
+      user_id: user._id,
+      email: user.email,
+      role: user.role,
+      name: user.name,
+      access: accessDetails ? accessDetails.page_names : []
+    };
+
+    // 8️⃣ Send response
     res.status(200).json({
       message: "Login successful",
       token,
-      user: {
-        user_id: user._id,
-        email: user.email,
-        role: user.role
-      }
+      user: userData
     });
   } catch (error) {
     console.error("Login Error:", error);
