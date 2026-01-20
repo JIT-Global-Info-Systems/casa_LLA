@@ -23,7 +23,6 @@ import {
 } from "lucide-react";
 
 export const navItems = [
-<<<<<<< HEAD
   { path: "/pages/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { path: "/pages/leads", label: "Leads", icon: Users },
   { path: "/pages/users", label: "Users", icon: UserRound },
@@ -34,16 +33,6 @@ export const navItems = [
   { path: "/pages/mediators", label: "Mediators", icon: Handshake },
   { path: "/pages/masters", label: "Masters", icon: Settings },
   // { path: "/pages/reports", label: "Reports", icon: BarChart3 },
-=======
-  { path: "/pages/dashboard", label: "Dashboard", icon: LayoutDashboard, page: "dashboard" },
-  { path: "/pages/leads", label: "Leads", icon: Users, page: "lead" },
-  { path: "/pages/users", label: "Users", icon: UserRound, page: "users" },
-  { path: "/pages/documents", label: "Documents", icon: FileText, page: "documents" },
-  { path: "/pages/owners", label: "Approval", icon: Users, page: "owners" },
-  { path: "/pages/mediators", label: "Mediators", icon: Handshake, page: "mediator" },
-  { path: "/pages/masters", label: "Masters", icon: Settings, page: "masters" },
-  { path: "/pages/reports", label: "Reports", icon: BarChart3, page: "reports" },
->>>>>>> bdf7c3a (rbac)
 ];
 
 const documentsItems = [
