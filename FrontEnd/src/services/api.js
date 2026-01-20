@@ -104,26 +104,81 @@ export const leadsAPI = {
   },
  
   // Create new lead
-  create: async (leadData) => {
+  create: async (leadData, files = {}) => {
+    const formData = new FormData();
+    
+    // Add all text fields
+    Object.keys(leadData).forEach(key => {
+      if (leadData[key] !== null && leadData[key] !== undefined) {
+        if (typeof leadData[key] === 'object') {
+          formData.append(key, JSON.stringify(leadData[key]));
+        } else {
+          formData.append(key, leadData[key]);
+        }
+      }
+    });
+    
+    // Add file uploads if present
+    if (files.fmb_sketch) {
+      formData.append('fmb_sketch', files.fmb_sketch);
+    }
+    if (files.patta_chitta) {
+      formData.append('patta_chitta', files.patta_chitta);
+    }
+    
     return await apiRequest('/leads/create', {
       method: 'POST',
-      body: JSON.stringify(leadData),
+      body: formData,
+      headers: {}, // Remove Content-Type to let browser set it with boundary
     });
   },
  
   // Update lead
-  update: async (id, leadData) => {
-    return await apiRequest(`/leads/update/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(leadData),
-    });
+  update: async (id, leadData, files = {}) => {
+    // If files are provided, use FormData
+    if (files.fmb_sketch || files.patta_chitta) {
+      const formData = new FormData();
+      
+      // Add all text fields
+      Object.keys(leadData).forEach(key => {
+        if (leadData[key] !== null && leadData[key] !== undefined) {
+          if (typeof leadData[key] === 'object') {
+            formData.append(key, JSON.stringify(leadData[key]));
+          } else {
+            formData.append(key, leadData[key]);
+          }
+        }
+      });
+      
+      // Add file uploads if present
+      if (files.fmb_sketch) {
+        formData.append('fmb_sketch', files.fmb_sketch);
+      }
+      if (files.patta_chitta) {
+        formData.append('patta_chitta', files.patta_chitta);
+      }
+      
+      return await apiRequest(`/leads/update/${id}`, {
+        method: 'PUT',
+        body: formData,
+        headers: {}, // Remove Content-Type to let browser set it with boundary
+      });
+    } else {
+      // Regular JSON update
+      return await apiRequest(`/leads/update/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(leadData),
+      });
+    }
   },
  
   // Delete lead
   delete: async (id) => {
-    return await apiRequest(`/leads/${id}`, {
+    const response = await apiRequest(`/leads/delete/${id}`, {
       method: 'DELETE',
     });
+    // Return the deleted lead data from response
+    return response.data || response;
   },
 };
  

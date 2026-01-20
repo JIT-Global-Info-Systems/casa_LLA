@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import Modal from "@/components/ui/modal";
 import LeadStepper from "@/components/ui/LeadStepper";
@@ -14,7 +14,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
- 
+import { useLeads } from "../context/LeadsContext.jsx";
+
 import {
   Plus,
   Search,
@@ -25,80 +26,71 @@ import {
   Edit,
   Trash2,
   MoreVertical,
-} from "lucide-react"; // ← Import Edit Icon
- 
+} from "lucide-react";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-const leadsData = [
-  {
-    id: 1,
-    name: "Ravi",
-    location: "Chennai",
-    region: "North",
-    zone:"alandur",
-    status: "Pending",
-    stageName: "Feasibility Team",
-  },
-  {
-    id: 2,
-    name: "Kumar",
-    location: "Bangalore",
-    region: "East",
-    zone: "electricCity",
-    status: "Approved",
-    stageName: "Legal",
-  },
-];
- 
+
 export default function LeadsPage() {
+  const { leads, loading, error, fetchLeads, deleteLead } = useLeads();
   const [open, setOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
- 
+
+  useEffect(() => {
+    fetchLeads();
+  }, []); // Empty dependency array - run only once on mount
+
   const handleCreate = () => {
     setSelectedLead(null);
     setOpen(true);
   };
- 
+
+  const handleDelete = async (lead) => {
+    if (window.confirm(`Are you sure you want to delete ${lead.mediatorName || 'this lead'}?`)) {
+      try {
+        await deleteLead(lead._id);
+      } catch (error) {
+        console.error("Error deleting lead:", error);
+        alert("Failed to delete lead. Please try again.");
+      }
+    }
+  };
+
   const handleEdit = (lead) => {
     setSelectedLead(lead);
     setOpen(true);
   };
- 
-  const filteredLeads = leadsData.filter((leads) => {
+
+  const filteredLeads = leads.filter((lead) => {
     const matchesSearch =
       searchTerm === "" ||
-      leads.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      leads.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      leads.phone.includes(searchTerm) ||
-      leads.id.toLowerCase().includes(searchTerm.toLowerCase());
- 
+      (lead.mediatorName && lead.mediatorName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (lead.contactNumber && lead.contactNumber.includes(searchTerm)) ||
+      (lead.location && lead.location.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (lead.zone && lead.zone.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (lead._id && lead._id.toLowerCase().includes(searchTerm.toLowerCase()));
+
     const matchesDateRange = (() => {
       if (!dateFrom && !dateTo) return true;
-      const leadsDate = new Date(leads.registeredDate);
+      const leadDate = new Date(lead.date || lead.created_at);
       const fromDate = dateFrom ? new Date(dateFrom) : new Date("1900-01-01");
       const toDate = dateTo ? new Date(dateTo) : new Date("2100-12-31");
-      return leadsDate >= fromDate && leadsDate <= toDate;
+      return leadDate >= fromDate && leadDate <= toDate;
     })();
- 
+
     return matchesSearch && matchesDateRange;
   });
- 
+
   return (
     <div className=" flex-1 space-y-6 p-6">
       {/* Top Bar */}
-      {/* <div className="flex justify-between items-center mb-4">
-     
-            </div>
-         
-        <Button onClick={handleCreate}>+ Create</Button>
-      </div> */}
       <div className="flex items-center justify-between">
         <div className="text-xl font-bold text-indigo-700">
           Leads
@@ -107,8 +99,8 @@ export default function LeadsPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <RefreshCw className="h-4 w-4 mr-2" />
+          <Button variant="outline" size="sm" onClick={fetchLeads} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
           <Button
@@ -121,13 +113,12 @@ export default function LeadsPage() {
           </Button>
         </div>
       </div>
- 
+
       <Card>
         <CardContent className="p-4">
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex-1 min-w-[200px]">
               <div className="relative">
-                {/* <Search className=" p-2 absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" /> */}
                 <Input
                   placeholder="Search leads..."
                   value={searchTerm}
@@ -136,7 +127,7 @@ export default function LeadsPage() {
                 />
               </div>
             </div>
- 
+
             <div className="flex items-center gap-2">
               <Label className="text-sm text-slate-600 whitespace-nowrap">
                 From:
@@ -149,7 +140,7 @@ export default function LeadsPage() {
                 size="sm"
               />
             </div>
- 
+
             <div className="flex items-center gap-2">
               <Label className="text-sm text-slate-600 whitespace-nowrap">
                 To:
@@ -162,7 +153,7 @@ export default function LeadsPage() {
                 size="sm"
               />
             </div>
- 
+
             <Button variant="outline" size="sm">
               <Filter className="h-4 w-4 mr-2" />
               Filter
@@ -170,7 +161,7 @@ export default function LeadsPage() {
           </div>
         </CardContent>
       </Card>
- 
+
       {/* Table */}
       <Card>
         <CardContent className="p-0">
@@ -179,11 +170,10 @@ export default function LeadsPage() {
               <TableHeader>
                 <TableRow className="bg-slate-50 hover:bg-slate-50">
                   <TableHead className="font-medium">ID</TableHead>
-                  <TableHead className="font-medium">Name</TableHead>
-                  <TableHead className="font-medium">Location</TableHead>
-                  <TableHead className="font-medium">Region</TableHead>
-                  <TableHead className="font-medium">Zone</TableHead>
-             
+                  <TableHead className="font-medium">Mediator Name</TableHead>
+                  <TableHead className="font-medium">Contact</TableHead>
+                  <TableHead className="font-medium">Land Name</TableHead>
+                  <TableHead className="font-medium">Status</TableHead>
                   <TableHead className="text-right font-medium">
                     Action
                   </TableHead>
@@ -193,37 +183,30 @@ export default function LeadsPage() {
                 {filteredLeads.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={8}
+                      colSpan={6}
                       className="text-center py-8 text-slate-500"
                     >
-                      No Leads found
+                      {loading ? "Loading leads..." : "No Leads found"}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredLeads.map((leads) => (
-                    <TableRow key={leads.id}>
+                  filteredLeads.map((lead) => (
+                    <TableRow key={lead._id}>
                       <TableCell className="font-medium">
-                        {leads.id}
+                        {lead._id}
                       </TableCell>
-                      <TableCell>{leads.name}</TableCell>
+                      <TableCell>{lead.mediatorName || 'N/A'}</TableCell>
+                      <TableCell>{lead.contactNumber || 'N/A'}</TableCell>
+                      <TableCell>{lead.landName || ''}</TableCell>
                       <TableCell>
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            leads.category === "Individual"
-                              ? "bg-blue-100 text-blue-800"
-                              : "bg-purple-100 text-purple-800"
-                          }`}
-                        >
-                          {leads.location}
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          lead.lead_status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                          lead.lead_status === 'APPROVED' ? 'bg-green-100 text-green-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {lead.lead_status || 'N/A'}
                         </span>
                       </TableCell>
-                      <TableCell className="text-slate-600">
-                        {leads.region}
-                      </TableCell>
-                      <TableCell className="text-slate-600">
-                        {leads.zone}
-                      </TableCell>
-                   
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -237,20 +220,20 @@ export default function LeadsPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="bg-white">
                             <DropdownMenuItem
-                              onClick={() => alert(`View ${leads.name}`)}
+                              onClick={() => alert(`View ${lead.mediatorName || 'Lead'}`)}
                             >
                               <Eye className="h-4 w-4 mr-2" />
                               View
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              onClick={() => handleEdit(leads)}
+                              onClick={() => handleEdit(lead)}
                             >
                               <Edit className="h-4 w-4 mr-2" />
                               Edit
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               className="text-red-600 focus:text-red-600"
-                              onClick={() => handleDelete(leads)}
+                              onClick={() => handleDelete(lead)}
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
                               Delete
@@ -264,14 +247,14 @@ export default function LeadsPage() {
               </TableBody>
             </Table>
           </div>
- 
+
           {/* Pagination */}
           <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200">
             <div className="text-sm text-slate-600">
               Showing {filteredLeads.length} result
               {filteredLeads.length !== 1 ? "s" : ""}
-              {filteredLeads.length !== leadsData.length &&
-                ` (of ${leadsData.length} total)`}
+              {filteredLeads.length !== leads.length &&
+                ` (of ${leads.length} total)`}
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" disabled>
@@ -331,7 +314,7 @@ export default function LeadsPage() {
           {selectedLead && <LeadStepper stageName={selectedLead.stageName} />}
  
           {/* Always show form */}
-          <Leads data={selectedLead} />
+          <Leads data={selectedLead} onClose={() => setOpen(false)} />
         </div>
       </Modal>
     </div>
