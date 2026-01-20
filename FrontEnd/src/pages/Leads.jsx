@@ -353,13 +353,14 @@
 // }
 
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { Select } from "@/components/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
+import { locationsAPI } from "@/services/api"
 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react"
@@ -376,6 +377,7 @@ export default function Leads({ data = null, onSubmit, onClose, currentStep = 1,
     sourceCategory: "",
     source: "",
     zone: "",
+    area: "",
     extent: "",
     unit: "Acre",
     propertyType: "",
@@ -447,6 +449,77 @@ export default function Leads({ data = null, onSubmit, onClose, currentStep = 1,
     checkRequests: "",
   })
 
+  // State for locations, regions, and zones
+  const [masters, setMasters] = useState({
+    locations: [],
+    regions: [],
+    zones: [],
+  })
+  const [loading, setLoading] = useState({ locations: false, regions: false, zones: false })
+
+  // Fetch locations from API
+  const fetchLocations = useCallback(async () => {
+    setLoading(prev => ({ ...prev, locations: true, regions: true, zones: true }));
+    try {
+      const locationsData = await locationsAPI.getAll();
+      // Transform API data to match component structure
+      const transformedLocations = locationsData.map(loc => ({
+        id: loc._id,
+        name: loc.location,
+        status: loc.status,
+        regions: loc.regions || [],
+        created_by: loc.created_by,
+        created_at: loc.created_at,
+        updated_at: loc.updated_at,
+        updated_by: loc.updated_by
+      }));
+      
+      // Extract regions and zones from locations data
+      const transformedRegions = [];
+      const transformedZones = [];
+      
+      locationsData.forEach(location => {
+        if (location.regions && location.regions.length > 0) {
+          location.regions.forEach(region => {
+            transformedRegions.push({
+              id: region._id,
+              location: location.location,
+              region: region.region,
+              zones: region.zones || []
+            });
+            
+            if (region.zones && region.zones.length > 0) {
+              region.zones.forEach(zone => {
+                transformedZones.push({
+                  id: zone._id,
+                  location: location.location,
+                  region: region.region,
+                  zone: zone.zone
+                });
+              });
+            }
+          });
+        }
+      });
+      
+      setMasters(prev => ({ 
+        ...prev, 
+        locations: transformedLocations,
+        regions: transformedRegions,
+        zones: transformedZones
+      }));
+    } catch (err) {
+      console.error('Failed to fetch locations:', err);
+    } finally {
+      setLoading(prev => ({ ...prev, locations: false, regions: false, zones: false }));
+    }
+  }, []);
+
+  // Fetch locations on component mount
+  useEffect(() => {
+    fetchLocations();
+  }, [fetchLocations]);
+
   useEffect(() => {
     if (data) {
       setFormData(data)
@@ -456,6 +529,37 @@ export default function Leads({ data = null, onSubmit, onClose, currentStep = 1,
   const handleChange = (key, value) => {
     setFormData(prev => ({ ...prev, [key]: value }))
   }
+
+  const handleLocationChange = (value) => {
+    setFormData(prev => ({ ...prev, location: value, zone: '', area: '' }));
+  };
+
+  const handleZoneChange = (value) => {
+    setFormData(prev => ({ ...prev, zone: value, area: '' }));
+  };
+
+  const getOptions = useCallback((type, selectedLocation = null) => {
+    if (type === 'location') return masters.locations.map(l => ({ value: l.name, label: l.name }));
+    if (type === 'region') {
+      if (selectedLocation) {
+        // Filter regions by selected location
+        return masters.regions
+          .filter(r => r.location === selectedLocation)
+          .map(r => ({ value: r.region, label: r.region }));
+      }
+      return masters.regions.map(r => ({ value: r.region, label: r.region }));
+    }
+    if (type === 'zone') {
+      if (selectedLocation && formData.zone) {
+        // Filter zones by selected location and region
+        return masters.zones
+          .filter(z => z.location === selectedLocation && z.region === formData.zone)
+          .map(z => ({ value: z.zone, label: z.zone }));
+      }
+      return [];
+    }
+    return [];
+  }, [masters, formData.zone]);
 
   const handleCheckboxChange = (key, checked) => {
     setFormData(prev => ({ ...prev, [key]: checked }))
@@ -530,27 +634,65 @@ export default function Leads({ data = null, onSubmit, onClose, currentStep = 1,
             />
           </div>
 
+          {/* Location, Zone, Area - Full Width Fields */}
           <div className="space-y-2">
             <Label>Location</Label>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full justify-between"
-                >
-                  {formData.location ? (formData.location === "chennai" ? "Chennai" : "Bangalore") : "Select location"}
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-full">
-                <DropdownMenuItem onClick={() => handleChange("location", "chennai")}>
-                  Chennai
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleChange("location", "blr")}>
-                  Bangalore
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Select
+              value={formData.location || ''}
+              onValueChange={handleLocationChange}
+              disabled={loading.locations}
+            >
+              <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                <SelectValue placeholder="Select location" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-200 shadow-lg">
+                {getOptions('location').map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Zone</Label>
+            <Select
+              value={formData.zone || ''}
+              onValueChange={handleZoneChange}
+              disabled={!formData.location || loading.regions}
+            >
+              <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                <SelectValue placeholder="Select zone" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-200 shadow-lg">
+                {getOptions('region', formData.location).map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Area</Label>
+            <Select
+              value={formData.area || ''}
+              onValueChange={(value) => handleChange('area', value)}
+              disabled={!formData.location || !formData.zone || loading.zones}
+            >
+              <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                <SelectValue placeholder="Select area" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-200 shadow-lg">
+                {getOptions('zone', formData.location).map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
@@ -599,15 +741,6 @@ export default function Leads({ data = null, onSubmit, onClose, currentStep = 1,
             />
           </div>
 
-          <div className="space-y-2">
-            <Label>Zone</Label>
-            <Input
-              value={formData.zone}
-              onChange={e => handleChange("zone", e.target.value)}
-              placeholder="Enter zone"
-              className="border-gray-300"
-            />
-          </div>
 
           <div className="space-y-2">
             <Label>Extent</Label>

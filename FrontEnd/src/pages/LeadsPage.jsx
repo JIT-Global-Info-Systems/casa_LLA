@@ -273,6 +273,7 @@ export default function LeadsPage() {
                     <TableHead>Location</TableHead>
                     <TableHead>Region</TableHead>
                     <TableHead>Zone</TableHead>
+                    <TableHead>Area</TableHead>
                     <TableHead>Lead Type</TableHead>
                     {/* <TableHead>Status</TableHead> */}
                     <TableHead>Action</TableHead>
@@ -286,6 +287,7 @@ export default function LeadsPage() {
                       <TableCell>{lead.location || 'N/A'}</TableCell>
                       <TableCell>{lead.source || 'N/A'}</TableCell>
                       <TableCell>{lead.zone || 'N/A'}</TableCell>
+                      <TableCell>{lead.area || 'N/A'}</TableCell>
                       <TableCell>{lead.leadType || 'N/A'}</TableCell>
                       <TableCell>
                         {/* Edit Icon Button */}
