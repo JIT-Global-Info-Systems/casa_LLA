@@ -9,7 +9,7 @@ export const PERMISSIONS = {
   PAGE_REPORTS: 'page:reports',
   PAGE_OWNERS: 'page:owners',
   PAGE_MEDIATORS: 'page:mediators',
-
+  PAGE_CALLS:'page:calls',
   // Action permissions
   LEAD_CREATE: 'lead:create',
   LEAD_EDIT: 'lead:edit',
@@ -37,6 +37,7 @@ export const ROLE_PERMISSIONS = {
     PERMISSIONS.LEAD_CREATE,
     PERMISSIONS.LEAD_EDIT,
     PERMISSIONS.MEDIATOR_VIEW,
+    PERMISSIONS.PAGE_CALLS
   ],
   land_executive: [
     PERMISSIONS.PAGE_DASHBOARD,

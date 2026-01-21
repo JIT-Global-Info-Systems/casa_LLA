@@ -217,6 +217,7 @@ const pageTitles = {
   "/pages/leads": "Leads",
   "/pages/users": "Users",
   "/pages/approvedleads": "Approval",
+  "/pages/purchasedleads":"Purchased",
   "/pages/mediators": "Mediators",
   "/pages/masters": "Masters",
   "/pages/documents": "Documents",

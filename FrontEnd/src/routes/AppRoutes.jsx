@@ -109,7 +109,7 @@ function AppRoutes() {
             
             <Route path="profile" element={<Profile />} />
             <Route path="calls" element={
-              <ProtectedRoute requiredPage="lead">
+              <ProtectedRoute requiredPermission={PERMISSIONS.PAGE_CALLS}>
                 <Calls />
               </ProtectedRoute>
             } />

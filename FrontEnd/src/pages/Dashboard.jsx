@@ -243,7 +243,7 @@ function Dashboard() {
   // Debug: log the leads data to see structure
   console.log('Leads data:', leads);
   console.log('Active leads count:', activeLeadsCount);
-  console.log('Approved leads count:', approvedLeadsCount);
+  console.log('Approval leads count:', approvedLeadsCount);
   console.log('Purchased leads count:', purchasedLeadsCount);
 
   const donutCards = [
