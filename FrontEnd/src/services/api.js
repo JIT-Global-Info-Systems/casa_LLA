@@ -1,13 +1,13 @@
 // const API_BASE_URL = 'http://13.201.132.94:5000/api';
-const API_BASE_URL = 'http://13.201.132.94:5000/api';
- 
+const API_BASE_URL = 'http://localhost:5000/api';
+
 // Generic API request helper
 const apiRequest = async (endpoint, options = {}) => {
   const url = `${API_BASE_URL}${endpoint}`;
- 
+
   // Get token from localStorage
   const token = localStorage.getItem('token');
- 
+
   const config = {
     headers: {
       'Content-Type': 'application/json',
@@ -16,22 +16,22 @@ const apiRequest = async (endpoint, options = {}) => {
     },
     ...options,
   };
-//  const userId = 
+  //  const userId = 
   try {
     const response = await fetch(url, config);
-   
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
     }
-   
+
     return await response.json();
   } catch (error) {
     console.error('API Request Error:', error);
     throw error;
   }
 };
- 
+
 // Mediators API
 export const mediatorsAPI = {
   // Get all mediators
@@ -41,23 +41,23 @@ export const mediatorsAPI = {
     // We want to return the data array
     return response.data || [];
   },
- 
+
   // Get mediator by ID
   getById: async (id) => {
     return await apiRequest(`/mediators/${id}`);
   },
- 
+
   // Create new mediator with file uploads
   create: async (mediatorData, files = {}) => {
     const formData = new FormData();
-   
+
     // Add all text fields
     Object.keys(mediatorData).forEach(key => {
       if (mediatorData[key] !== null && mediatorData[key] !== undefined) {
         formData.append(key, mediatorData[key]);
       }
     });
-   
+
     // Add file uploads if present
     if (files.pan_upload) {
       formData.append('pan_upload', files.pan_upload);
@@ -65,14 +65,14 @@ export const mediatorsAPI = {
     if (files.aadhar_upload) {
       formData.append('aadhar_upload', files.aadhar_upload);
     }
-   
+
     return await apiRequest('/mediators/create', {
       method: 'POST',
       body: formData,
       headers: {}, // Remove Content-Type to let browser set it with boundary
     });
   },
- 
+
   // Update mediator
   update: async (id, mediatorData) => {
     // Ensure address is a JSON string for backend parsing
@@ -94,7 +94,7 @@ export const mediatorsAPI = {
       body: JSON.stringify(dataToSend),
     });
   },
- 
+
   // Delete mediator
   delete: async (id) => {
     const response = await apiRequest(`/mediators/delete/${id}`, {
@@ -104,7 +104,7 @@ export const mediatorsAPI = {
     return response.data || response;
   },
 };
- 
+
 // Leads API
 export const leadsAPI = {
   // Get all leads
@@ -114,7 +114,7 @@ export const leadsAPI = {
     // We want to return the data array
     return response.data || [];
   },
- 
+
   // Get lead by ID
   getById: async (id) => {
     const response = await apiRequest(`/leads/${id}`);
@@ -122,7 +122,7 @@ export const leadsAPI = {
     // We want to return the data object
     return response.data || response;
   },
- 
+
   // Create new lead
   create: async (leadData, files = {}) => {
     const hasFiles = Boolean(files?.fmb_sketch || files?.patta_chitta);
@@ -147,14 +147,14 @@ export const leadsAPI = {
       headers: {}, // let browser set boundary
     });
   },
- 
+
   // Update lead
   update: async (id, leadData, files = {}) => {
     // If files are provided, use FormData
     if (files.fmb_sketch || files.patta_chitta) {
       const formData = new FormData();
       formData.append('data', JSON.stringify(leadData));
-      
+
       // Add file uploads if present
       if (files.fmb_sketch) {
         formData.append('fmb_sketch', files.fmb_sketch);
@@ -162,7 +162,7 @@ export const leadsAPI = {
       if (files.patta_chitta) {
         formData.append('patta_chitta', files.patta_chitta);
       }
-      
+
       return await apiRequest(`/leads/update/${id}`, {
         method: 'PUT',
         body: formData,
@@ -176,7 +176,7 @@ export const leadsAPI = {
       });
     }
   },
- 
+
   // Delete lead
   delete: async (id) => {
     const response = await apiRequest(`/leads/delete/${id}`, {
@@ -186,7 +186,7 @@ export const leadsAPI = {
     return response.data || response;
   },
 };
- 
+
 // Users API
 export const usersAPI = {
   // Get all users (requires authentication)
@@ -196,7 +196,7 @@ export const usersAPI = {
     // We want to return the users array
     return response.users || [];
   },
- 
+
   // Get user by ID
   getById: async (id) => {
     const response = await apiRequest(`/users/${id}`);
@@ -204,7 +204,7 @@ export const usersAPI = {
     // We want to return the data object
     return response.data || response;
   },
- 
+
   // Create new user (no auth required)
   create: async (userData) => {
     return await apiRequest('/users/create', {
@@ -212,7 +212,7 @@ export const usersAPI = {
       body: JSON.stringify(userData),
     });
   },
- 
+
   // Update user (requires authentication)
   update: async (id, userData) => {
     const response = await apiRequest(`/users/update/${id}`, {
@@ -223,7 +223,7 @@ export const usersAPI = {
     // We want to return the user object
     return response.user || response;
   },
- 
+
   // Delete user (requires authentication)
   delete: async (id) => {
     return await apiRequest(`/users/delete/${id}`, {
@@ -231,7 +231,7 @@ export const usersAPI = {
     });
   },
 };
- 
+
 // Locations API
 export const locationsAPI = {
   // Get all locations
@@ -241,12 +241,12 @@ export const locationsAPI = {
     // We want to return the locations array
     return response.locations || [];
   },
- 
+
   // Get location by ID
   getById: async (id) => {
     return await apiRequest(`/locations/${id}`);
   },
- 
+
   // Create new location
   create: async (locationData) => {
     return await apiRequest('/locations/create', {
@@ -254,7 +254,7 @@ export const locationsAPI = {
       body: JSON.stringify(locationData),
     });
   },
- 
+
   // Update location
   update: async (id, locationData) => {
     return await apiRequest(`/locations/update/${id}`, {
@@ -262,14 +262,14 @@ export const locationsAPI = {
       body: JSON.stringify(locationData),
     });
   },
- 
+
   // Delete location
   delete: async (id) => {
     return await apiRequest(`/locations/${id}`, {
       method: 'DELETE',
     });
   },
- 
+
   // Region operations
   addRegion: async (locationId, regionData) => {
     return await apiRequest(`/locations/${locationId}/regions`, {
@@ -277,20 +277,20 @@ export const locationsAPI = {
       body: JSON.stringify(regionData),
     });
   },
- 
+
   updateRegion: async (locationId, regionId, regionData) => {
     return await apiRequest(`/locations/update/${locationId}/regions/${regionId}`, {
       method: 'PUT',
       body: JSON.stringify(regionData),
     });
   },
- 
+
   deleteRegion: async (locationId, regionId) => {
     return await apiRequest(`/locations/${locationId}/regions/${regionId}`, {
       method: 'DELETE',
     });
   },
- 
+
   // Zone operations
   addZone: async (locationId, regionId, zoneData) => {
     return await apiRequest(`/locations/${locationId}/regions/${regionId}/zones`, {
@@ -298,21 +298,59 @@ export const locationsAPI = {
       body: JSON.stringify(zoneData),
     });
   },
- 
+
   updateZone: async (locationId, regionId, zoneId, zoneData) => {
     return await apiRequest(`/locations/update/${locationId}/regions/${regionId}/zones/${zoneId}`, {
       method: 'PUT',
       body: JSON.stringify(zoneData),
     });
   },
- 
+
   deleteZone: async (locationId, regionId, zoneId) => {
     return await apiRequest(`/locations/${locationId}/regions/${regionId}/zones/${zoneId}`, {
-      method: 'DELETE',
-    });
+      method: "DELETE",
+    })
   },
-};
- 
+}
+
+// Calls API
+export const callsAPI = {
+  // Get all calls
+  getAll: async () => {
+    const response = await apiRequest("/calls/all")
+    return response.data || []
+  },
+
+  // Get call by ID
+  getById: async (id) => {
+    const response = await apiRequest(`/calls/${id}`)
+    return response.data || response
+  },
+
+  // Create new call
+  create: async (callData) => {
+    return await apiRequest("/calls/create", {
+      method: "POST",
+      body: JSON.stringify(callData),
+    })
+  },
+
+  // Update call
+  update: async (id, callData) => {
+    return await apiRequest(`/calls/update/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(callData),
+    })
+  },
+
+  // Delete call
+  delete: async (id) => {
+    return await apiRequest(`/calls/delete/${id}`, {
+      method: "DELETE",
+    })
+  },
+}
+
 // Export other API modules as needed
 export const authAPI = {
   login: async (credentials) => {
@@ -321,7 +359,7 @@ export const authAPI = {
       body: JSON.stringify(credentials),
     });
   },
- 
+
   register: async (userData) => {
     return await apiRequest('/auth/register', {
       method: 'POST',
@@ -329,11 +367,12 @@ export const authAPI = {
     });
   },
 };
- 
+
 export default {
   mediatorsAPI,
   leadsAPI,
   usersAPI,
   locationsAPI,
+  callsAPI,
   authAPI,
-};
+}

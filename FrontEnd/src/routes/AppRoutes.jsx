@@ -37,10 +37,9 @@ function AppRoutes() {
       <BrowserRouter>
         <Routes>
           {/* Public Routes */}
-          <Route path="/" element={<Login/>}/>
-          <Route path="/login" element={<Login/>}/>
-          <Route path="/unauthorized" element={<Unauthorized/>}/>
-          <Route path="/calls" element={<Calls/>}/>
+          <Route path="/" element={<Login />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/unauthorized" element={<Unauthorized />} />
           {/* Protected Routes */}
           <Route path="/pages" element={
             <ProtectedRoute requiredPage="dashboard">
@@ -49,7 +48,7 @@ function AppRoutes() {
           }>
             <Route index element={<Dashboard />} />
             <Route path="dashboard" element={<Dashboard />} />
-           {/* Lead Management Routes */}
+            {/* Lead Management Routes */}
             <Route path="leads" element={
               <ProtectedRoute requiredPage="lead">
                 <LeadsPage />
@@ -107,6 +106,11 @@ function AppRoutes() {
               </ProtectedRoute>
             } />
             <Route path="profile" element={<Profile />} />
+            <Route path="calls" element={
+              <ProtectedRoute requiredPage="lead">
+                <Calls />
+              </ProtectedRoute>
+            } />
             <Route path="reports" element={
               <ProtectedRoute requiredPage="reports">
                 <Reports />
