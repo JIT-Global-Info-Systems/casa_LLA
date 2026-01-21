@@ -10,6 +10,7 @@ import ApprovedLeads from "@/pages/ApprovedLeads";
 import PurchasedLeads from "@/pages/PurchasedLeads";
 import Leads from "@/pages/Leads";
 import Unauthorized from "@/pages/Unauthorized";
+import Calls from "@/pages/Calls";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { AuthProvider } from "@/context/AuthContext";
 // const Leads = () => (
@@ -39,6 +40,7 @@ function AppRoutes() {
           <Route path="/" element={<Login/>}/>
           <Route path="/login" element={<Login/>}/>
           <Route path="/unauthorized" element={<Unauthorized/>}/>
+          <Route path="/calls" element={<Calls/>}/>
           {/* Protected Routes */}
           <Route path="/pages" element={
             <ProtectedRoute requiredPage="dashboard">
