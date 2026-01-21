@@ -221,6 +221,7 @@ const pageTitles = {
   "/pages/masters": "Masters",
   "/pages/documents": "Documents",
   "/pages/profile": "Profile",
+  "/pages/calls": "Calls",
 };
 
 const locations = [

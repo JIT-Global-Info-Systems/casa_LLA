@@ -311,9 +311,9 @@ function Users() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b bg-gray-50">
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         ID
-                      </th>
+                      </th> */}
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Name
                       </th>
@@ -343,9 +343,9 @@ function Users() {
                         key={user.user_id}
                         className="hover:bg-gray-50 transition-colors"
                       >
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {/* <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {user.user_id}
-                        </td>
+                        </td> */}
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {user.name}
                         </td>
@@ -798,12 +798,12 @@ function Users() {
             <h2 className="text-xl font-semibold mb-6">User Details</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
-              <div className="space-y-1">
+              {/* <div className="space-y-1">
                 <Label className="font-medium text-gray-700">ID:</Label>
                 <div className="text-gray-900 border rounded px-3 py-2 bg-gray-50">
                   {selectedUser.user_id}
                 </div>
-              </div>
+              </div> */}
               <div className="space-y-1">
                 <Label className="font-medium text-gray-700">Name:</Label>
                 <div className="text-gray-900 border rounded px-3 py-2 bg-gray-50">
