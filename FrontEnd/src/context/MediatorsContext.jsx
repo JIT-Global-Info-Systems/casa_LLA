@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 import { mediatorsAPI } from '../services/api';
 
 const MediatorsContext = createContext(null);
@@ -16,7 +16,7 @@ export const MediatorsProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetchMediators = async () => {
+  const fetchMediators = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -27,9 +27,9 @@ export const MediatorsProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const getMediatorById = async (id) => {
+  const getMediatorById = useCallback(async (id) => {
     try {
       setLoading(true);
       setError(null);
@@ -40,9 +40,9 @@ export const MediatorsProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const createMediator = async (mediatorData, files = {}) => {
+  const createMediator = useCallback(async (mediatorData, files = {}) => {
     try {
       setLoading(true);
       setError(null);
@@ -55,9 +55,9 @@ export const MediatorsProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const updateMediator = async (id, mediatorData) => {
+  const updateMediator = useCallback(async (id, mediatorData) => {
     try {
       setLoading(true);
       setError(null);
@@ -77,9 +77,9 @@ export const MediatorsProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const deleteMediator = async (id) => {
+  const deleteMediator = useCallback(async (id) => {
     try {
       setLoading(true);
       setError(null);
@@ -100,9 +100,9 @@ export const MediatorsProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const clearError = () => setError(null);
+  const clearError = useCallback(() => setError(null), []);
 
   return (
     <MediatorsContext.Provider
