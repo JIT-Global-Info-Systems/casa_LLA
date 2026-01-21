@@ -291,7 +291,7 @@ export default function Leads({ data = null, onSubmit, onClose, currentStep = 1,
           <div className="space-y-2">
             <Label>Mediator Name</Label>
             <Select
-              value={formData.mediatorName || ''}
+              value={formData.mediatorName}
               onValueChange={(value) => handleChange("mediatorName", value)}
               disabled={loading.mediators}
             >
@@ -299,11 +299,17 @@ export default function Leads({ data = null, onSubmit, onClose, currentStep = 1,
                 <SelectValue placeholder="Select mediator" />
               </SelectTrigger>
               <SelectContent className="bg-white border-gray-200 shadow-lg">
-                {getOptions('mediator').map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
+                {getOptions('mediator').length > 0 ? (
+                  getOptions('mediator').map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="no-data" disabled>
+                    No Data Found
                   </SelectItem>
-                ))}
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -330,11 +336,17 @@ export default function Leads({ data = null, onSubmit, onClose, currentStep = 1,
                 <SelectValue placeholder="Select location" />
               </SelectTrigger>
               <SelectContent className="bg-white border-gray-200 shadow-lg">
-                {getOptions('location').map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
+                {getOptions('location').length > 0 ? (
+                  getOptions('location').map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="no-data" disabled>
+                    No Data Found
                   </SelectItem>
-                ))}
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -350,11 +362,17 @@ export default function Leads({ data = null, onSubmit, onClose, currentStep = 1,
                 <SelectValue placeholder="Select zone" />
               </SelectTrigger>
               <SelectContent className="bg-white border-gray-200 shadow-lg">
-                {getOptions('region', formData.location).map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
+                {getOptions('region', formData.location).length > 0 ? (
+                  getOptions('region', formData.location).map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="no-data" disabled>
+                    {formData.location ? 'No zones available for selected location' : 'Please select a location first'}
                   </SelectItem>
-                ))}
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -370,11 +388,17 @@ export default function Leads({ data = null, onSubmit, onClose, currentStep = 1,
                 <SelectValue placeholder="Select area" />
               </SelectTrigger>
               <SelectContent className="bg-white border-gray-200 shadow-lg">
-                {getOptions('zone', formData.location).map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
+                {getOptions('zone', formData.location).length > 0 ? (
+                  getOptions('zone', formData.location).map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="no-data" disabled>
+                    {formData.location && formData.zone ? 'No areas available for selected zone' : 'Please select a location and zone first'}
                   </SelectItem>
-                ))}
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -391,25 +415,18 @@ export default function Leads({ data = null, onSubmit, onClose, currentStep = 1,
 
           <div className="space-y-2">
             <Label>Source Category</Label>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full justify-between"
-                >
-                  {formData.sourceCategory ? (formData.sourceCategory === "online" ? "Online" : "Reference") : "Select category"}
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-full">
-                <DropdownMenuItem onClick={() => handleChange("sourceCategory", "online")}>
-                  Online
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleChange("sourceCategory", "reference")}>
-                  Reference
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Select
+              value={formData.sourceCategory || ''}
+              onValueChange={(value) => handleChange("sourceCategory", value)}
+            >
+              <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-200 shadow-lg">
+                <SelectItem value="online">Online</SelectItem>
+                <SelectItem value="reference">Reference</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-2">
             <Label>Lead Stage</Label>

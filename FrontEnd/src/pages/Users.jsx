@@ -537,7 +537,7 @@ function Users() {
                   placeholder="Enter email address"
                 />
               </div>
-              {/* <div className="grid gap-2">
+              <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <Input
                   id="password"
@@ -548,8 +548,8 @@ function Users() {
                   }
                   placeholder="Enter password"
                 />
-              </div> */}
-              <div className="grid gap-2">
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="phone">Phone</Label>
                 <Input
                   id="phone"

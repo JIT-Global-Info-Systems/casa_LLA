@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 import { leadsAPI } from '../services/api';
 
 const LeadsContext = createContext(null);
@@ -16,7 +16,7 @@ export const LeadsProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetchLeads = async () => {
+  const fetchLeads = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -27,9 +27,9 @@ export const LeadsProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const getLeadById = async (id) => {
+  const getLeadById = useCallback(async (id) => {
     try {
       setLoading(true);
       setError(null);
@@ -41,9 +41,9 @@ export const LeadsProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const createLead = async (leadData) => {
+  const createLead = useCallback(async (leadData) => {
     try {
       setLoading(true);
       setError(null);
@@ -56,9 +56,9 @@ export const LeadsProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const updateLead = async (id, leadData, files = {}) => {
+  const updateLead = useCallback(async (id, leadData, files = {}) => {
     try {
       setLoading(true);
       setError(null);
@@ -80,9 +80,9 @@ export const LeadsProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const deleteLead = async (id) => {
+  const deleteLead = useCallback(async (id) => {
     try {
       setLoading(true);
       setError(null);
@@ -96,9 +96,9 @@ export const LeadsProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const clearError = () => setError(null);
+  const clearError = useCallback(() => setError(null), []);
 
   return (
     <LeadsContext.Provider

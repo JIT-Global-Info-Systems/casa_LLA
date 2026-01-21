@@ -216,33 +216,47 @@ function Dashboard() {
     startDate: "",
     endDate: "",
   });
- 
-  // Fetch leads on component mount
+
+  // Fetch all leads on component mount
   useEffect(() => {
     fetchLeads();
   }, []);
- 
-  // Calculate active leads count
-  const activeLeadsCount = leads.filter(lead => lead.status === 'active').length;
- 
-  // Calculate leads by status for the donut chart
-  const leadsByStatus = leads.reduce((acc, lead) => {
-    const status = lead.status || 'unknown';
-    acc[status] = (acc[status] || 0) + 1;
-    return acc;
-  }, {});
- 
+
+  // Calculate active leads count (PENDING leads from all leads API)
+  const activeLeadsCount = leads?.filter(lead => {
+    const status = lead.lead_status || lead.status;
+    return status === 'PENDING' || status === 'pending';
+  }).length || 0;
+
+  // Calculate approved leads count
+  const approvedLeadsCount = leads?.filter(lead => {
+    const status = lead.lead_status || lead.status;
+    return status === 'APPROVED' || status === 'approved';
+  }).length || 0;
+
+  // Calculate purchased leads count
+  const purchasedLeadsCount = leads?.filter(lead => {
+    const status = lead.lead_status || lead.status;
+    return status === 'PURCHASED' || status === 'purchased';
+  }).length || 0;
+
+  // Debug: log the leads data to see structure
+  console.log('Leads data:', leads);
+  console.log('Active leads count:', activeLeadsCount);
+  console.log('Approved leads count:', approvedLeadsCount);
+  console.log('Purchased leads count:', purchasedLeadsCount);
+
   const donutCards = [
     {
       title: "Leads Status",
       dateRange: "2025-08-30 – 2025-11-30",
-      total: leads.length,
+      total: activeLeadsCount + approvedLeadsCount + purchasedLeadsCount,
       tone: "blue",
       segments: [
-        { label: "Active", value: leadsByStatus.active || 0, color: "#22c55e" },
-        { label: "Hold", value: leadsByStatus.hold || 0, color: "#f59e0b" },
-        { label: "Lost", value: leadsByStatus.lost || 0, color: "#ef4444" },
-        { label: "Pushed", value: leadsByStatus.pushed || 0, color: "#3b82f6" },
+        { label: "Active", value: activeLeadsCount, color: "#22c55e" },
+        { label: "Approved", value: approvedLeadsCount, color: "#f59e0b" },
+        { label: "Purchased", value: purchasedLeadsCount, color: "#ef4444" },
+        // { label: "Pushed", value: leadsByStatus.pushed || 0, color: "#3b82f6" },
       ],
     },
     {
@@ -254,7 +268,7 @@ function Dashboard() {
         { label: "Hot", value: 71, color: "#ef4444" },
         { label: "Warm", value: 68, color: "#f59e0b" },
         { label: "Cold", value: 54, color: "#3b82f6" },
-        { label: "Active", value: leadsByStatus.active || 0, color: "#22c55e" },
+        { label: "Management Hot", value: 89, color: "#22c55e" },
       ],
     },
     {
@@ -355,3 +369,5 @@ function Dashboard() {
 }
  
 export default Dashboard;
+ 
+ 
