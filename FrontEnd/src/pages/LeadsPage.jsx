@@ -45,7 +45,7 @@ export default function LeadsPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
-  const { leads, loading, error, fetchLeads } = useLeads()
+  const { leads, loading, error, fetchLeads, createLead, updateLead, deleteLead } = useLeads()
 
   const [currentStep, setCurrentStep] = useState(1)
   const leadComments = [
@@ -69,12 +69,12 @@ export default function LeadsPage() {
     setOpen(true);
   };
 
-  const handleLeadSubmit = async (formData) => {
+  const handleLeadSubmit = async (leadPayload, files = {}) => {
     try {
       if (selectedLead) {
-        await updateLead(selectedLead._id || selectedLead.id, formData);
+        await updateLead(selectedLead._id || selectedLead.id, leadPayload, files);
       } else {
-        await createLead(formData);
+        await createLead(leadPayload, files);
       }
       setOpen(false);
       fetchLeads(); // Refresh list
@@ -84,9 +84,13 @@ export default function LeadsPage() {
     }
   };
 
-  const handleDelete = (lead) => {
-    // Add delete logic here
-    console.log("Deleting", lead);
+  const handleDelete = async (lead) => {
+    try {
+      await deleteLead(lead._id || lead.id);
+      fetchLeads();
+    } catch (err) {
+      console.error("Failed to delete lead:", err);
+    }
   };
 
   const handleView = (lead) => {
@@ -159,14 +163,14 @@ export default function LeadsPage() {
                     className="w-full"
                   />
 
-                  <div className="flex justify-between items-center">
+                  {/* <div className="flex justify-between items-center">
                     <h1 className="text-2xl font-bold">
                       {selectedLead ? "Edit Lead" : "Create Lead"}
                     </h1>
                     <Button variant="outline" onClick={() => setOpen(false)}>
                       ← Back to Leads
                     </Button>
-                  </div>
+                  </div> */}
 
                   <Leads
                     data={selectedLead}
