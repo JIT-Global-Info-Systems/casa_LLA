@@ -9,14 +9,6 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -45,7 +37,7 @@ export default function LeadsPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
-  const { leads, loading, error, fetchLeads } = useLeads()
+  const { leads, loading, error, fetchLeads, createLead, updateLead, deleteLead } = useLeads()
 
   const [currentStep, setCurrentStep] = useState(1)
   const leadComments = [
@@ -69,12 +61,12 @@ export default function LeadsPage() {
     setOpen(true);
   };
 
-  const handleLeadSubmit = async (formData) => {
+  const handleLeadSubmit = async (leadPayload, files = {}) => {
     try {
       if (selectedLead) {
-        await updateLead(selectedLead._id || selectedLead.id, formData);
+        await updateLead(selectedLead._id || selectedLead.id, leadPayload, files);
       } else {
-        await createLead(formData);
+        await createLead(leadPayload, files);
       }
       setOpen(false);
       fetchLeads(); // Refresh list
@@ -84,9 +76,13 @@ export default function LeadsPage() {
     }
   };
 
-  const handleDelete = (lead) => {
-    // Add delete logic here
-    console.log("Deleting", lead);
+  const handleDelete = async (lead) => {
+    try {
+      await deleteLead(lead._id || lead.id);
+      fetchLeads();
+    } catch (err) {
+      console.error("Failed to delete lead:", err);
+    }
   };
 
   const handleView = (lead) => {
@@ -105,10 +101,12 @@ export default function LeadsPage() {
         lead.name ||
         lead.contactName ||
         "N/A",
+        lead_id:lead.lead_id,
       email: lead.email || lead.contactEmail || "—",
       phone: lead.phone || lead.contactNumber || "",
       location: lead.location || lead.address?.city || "N/A",
       zone: lead.zone || lead.region || "N/A",
+      property:lead.propertyType,
       status: lead.status || lead.stageStatus || "Pending",
       stageName: lead.stageName || lead.currentStage || "Not Started",
       registeredDate,
@@ -159,14 +157,14 @@ export default function LeadsPage() {
                     className="w-full"
                   />
 
-                  <div className="flex justify-between items-center">
+                  {/* <div className="flex justify-between items-center">
                     <h1 className="text-2xl font-bold">
                       {selectedLead ? "Edit Lead" : "Create Lead"}
                     </h1>
                     <Button variant="outline" onClick={() => setOpen(false)}>
                       ← Back to Leads
                     </Button>
-                  </div>
+                  </div> */}
 
                   <Leads
                     data={selectedLead}
@@ -335,244 +333,135 @@ export default function LeadsPage() {
         </div>
       ) : (
         /* Main page content when not editing or viewing */
-        <div className="p-6">
-          {/* Top Bar */}
-          {/* <div className="flex justify-between items-center mb-4">
-            <div className="text-xl font-bold text-indigo-700">
-              Leads
-              <div className="text-sm text-slate-500">
-                Leads list · Last updated today
+        <div className="min-h-screen bg-gray-50">
+          <div className="bg-white border-b px-8 py-4">
+            <div className="flex items-center justify-between max-w-[1600px] mx-auto">
+              <div>
+                <h1 className="text-2xl font-semibold text-indigo-700">Leads</h1>
+                <p className="text-sm text-gray-500 mt-1">Leads list · Last updated today</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <Button variant="ghost" className="text-gray-700" onClick={fetchLeads} disabled={loading}>
+                  <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+                  Refresh
+                </Button>
+                <Button className="bg-indigo-600 hover:bg-indigo-700 text-white" onClick={handleCreate}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add
+                </Button>
               </div>
             </div>
+          </div>
 
-            <Button onClick={handleCreate}>+ Create</Button>
-          </div> */}
-
-          {/* Loading and Error States */}
-          {loading && (
-            <div className="text-center py-8">
-              <p className="text-slate-600">Loading leads...</p>
-            </div>
-          )}
-
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
-              <p className="text-red-600">Error: {error}</p>
-            </div>
-          )}
-
-          {/* Table */}
-          {!loading && !error && (
-            <>
-              {/* Header */}
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <h2 className="text-2xl font-bold tracking-tight text-indigo-700">
-                    Leads
-                  </h2>
-                  <p className="text-sm text-muted-foreground">
-                    Manage your leads pipeline · Last updated today
-                  </p>
+          <div className="max-w-[1600px] mx-auto px-8 py-6">
+            <Card className="bg-white shadow-sm">
+              <div className="p-6 border-b flex flex-wrap gap-4 items-center">
+                <div className="relative flex-1 min-w-[250px]">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder="Search leads..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 border-gray-300"
+                  />
                 </div>
+
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={fetchLeads}>
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Refresh
-                  </Button>
-                  <Button
-                    onClick={handleCreate}
-                    size="sm"
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Lead
-                  </Button>
+                  <Label className="text-sm text-gray-600 whitespace-nowrap">From:</Label>
+                  <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px] border-gray-300" />
                 </div>
-              </div>
 
-              {/* Filters */}
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex flex-wrap items-center gap-4">
-                    <div className="flex-1 min-w-[200px]">
-                      <div className="relative">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          placeholder="Search leads (ID, Name, Email)..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="pl-9"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Label className="text-sm text-muted-foreground whitespace-nowrap">
-                        From:
-                      </Label>
-                      <Input
-                        type="date"
-                        value={dateFrom}
-                        onChange={(e) => setDateFrom(e.target.value)}
-                        className="w-[140px]"
-                      />
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Label className="text-sm text-muted-foreground whitespace-nowrap">
-                        To:
-                      </Label>
-                      <Input
-                        type="date"
-                        value={dateTo}
-                        onChange={(e) => setDateTo(e.target.value)}
-                        className="w-[140px]"
-                      />
-                    </div>
-
-                    <Button variant="outline" size="sm">
-                      <Filter className="h-4 w-4 mr-2" />
-                      Filter
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Table Section */}
-              <div className="rounded-md border bg-white">
-                <Table>
-                  <TableHeader className="bg-gray-50">
-                    <TableRow>
-                      <TableHead className="w-[100px] text-xs uppercase tracking-wider text-gray-500 font-medium">
-                        ID
-                      </TableHead>
-                      <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">
-                        Name
-                      </TableHead>
-                      <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">
-                        Location
-                      </TableHead>
-                      <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">
-                        Zone
-                      </TableHead>
-                      <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">
-                        Status
-                      </TableHead>
-                      {/* <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium">
-                        Current Stage
-                      </TableHead> */}
-                      <TableHead className="text-xs uppercase tracking-wider text-gray-500 font-medium text-right">
-                        Action
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredLeads.length === 0 ? (
-                      <TableRow>
-                        <TableCell
-                          colSpan={7}
-                          className="h-24 text-center text-muted-foreground"
-                        >
-                          No leads found matching your criteria.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredLeads.map((lead) => (
-                        <TableRow key={lead.id} className="hover:bg-gray-50">
-                          <TableCell className="font-medium text-gray-900">
-                            {lead.id}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-col">
-                              <span className="font-medium text-gray-900">
-                                {lead.name}
-                              </span>
-                              <span className="text-xs text-gray-500">
-                                {lead.email}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-gray-900">
-                            {lead.location}
-                          </TableCell>
-                          <TableCell className="text-gray-600">
-                            {lead.zone}
-                          </TableCell>
-                          <TableCell>
-                            <span
-                              className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${lead.status === "Approved"
-                                  ? "bg-green-100 text-green-800"
-                                  : "bg-yellow-100 text-yellow-800"
-                                }`}
-                            >
-                              {lead.status}
-                            </span>
-                          </TableCell>
-                          {/* <TableCell>
-                            <div className="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-indigo-100 text-indigo-800 shadow hover:bg-indigo-200">
-                              {lead.stageName}
-                            </div>
-                          </TableCell> */}
-                          <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                >
-                                  <MoreVertical className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="bg-white border border-gray-200 shadow-lg">
-                                <DropdownMenuItem
-                                  onClick={() => handleView(lead.raw)}
-                                >
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  View Details
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => handleEdit(lead.raw)}
-                                >
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Edit Lead
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className="text-red-600 focus:text-red-600"
-                                  onClick={() => handleDelete(lead.raw)}
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-
-              {/* Pagination */}
-              <div className="flex items-center justify-between px-2">
-                <div className="text-sm text-muted-foreground">
-                  Showing {filteredLeads.length} result
-                  {filteredLeads.length !== 1 ? "s" : ""}
-                  {filteredLeads.length !== normalizedLeads.length &&
-                    ` (of ${normalizedLeads.length} total)`}
-                </div>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" disabled>
-                    Previous
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    Next
-                  </Button>
+                  <Label className="text-sm text-gray-600 whitespace-nowrap">To:</Label>
+                  <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px] border-gray-300" />
+                </div>
+
+                <Button variant="outline" className="border-gray-300" disabled>
+                  <Filter className="h-4 w-4 mr-2" />
+                  Filter
+                </Button>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b bg-gray-50">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Zone</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property</th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Registered Date</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredLeads.map((lead) => (
+                      <tr key={lead.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{lead.raw?.lead_id ?? lead.id}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{lead.name}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.phone || "—"}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.location}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.zone}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.raw?.propertyType || "—"}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                          <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${String(lead.status).toLowerCase() === "approved" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
+                            {lead.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {lead.registeredDate ? new Date(lead.registeredDate).toISOString().split("T")[0] : "—"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="bg-white border shadow-lg">
+                              <DropdownMenuItem onClick={() => handleView(lead.raw)} className="cursor-pointer">
+                                <Eye className="h-4 w-4 mr-2" />
+                                View
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEdit(lead.raw)} className="cursor-pointer">
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  if (window.confirm("Are you sure you want to delete this lead?")) handleDelete(lead.raw)
+                                }}
+                                className="cursor-pointer text-red-600"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {loading && <div className="text-center py-12 text-gray-500"><p>Loading leads...</p></div>}
+              {error && <div className="text-center py-12 text-red-500"><p>Error: {error}</p></div>}
+              {!loading && !error && filteredLeads.length === 0 && <div className="text-center py-12 text-gray-500"><p>No leads found matching your criteria.</p></div>}
+
+              <div className="px-6 py-4 border-t flex items-center justify-between">
+                <p className="text-sm text-gray-600">Showing {filteredLeads.length} results</p>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" disabled className="text-gray-400">Previous</Button>
+                  <Button variant="outline" size="sm" disabled className="text-gray-400">Next</Button>
+                  <Button variant="outline" size="sm" disabled className="text-gray-400">Last</Button>
                 </div>
               </div>
-            </>
-          )}
+            </Card>
+          </div>
         </div>
       )}
     </div>
