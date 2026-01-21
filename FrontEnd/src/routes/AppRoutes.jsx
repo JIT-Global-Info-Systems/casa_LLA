@@ -6,6 +6,8 @@ import LeadsPage from "@/pages/LeadsPage";
 import Documents from "@/pages/Documents";
 import Mediators from "@/pages/Mediators";
 import Login from "@/pages/auth/Login";
+import ApprovedLeads from "@/pages/ApprovedLeads";
+import PurchasedLeads from "@/pages/PurchasedLeads";
 import Leads from "@/pages/Leads";
 import Unauthorized from "@/pages/Unauthorized";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
@@ -37,7 +39,6 @@ function AppRoutes() {
           <Route path="/" element={<Login/>}/>
           <Route path="/login" element={<Login/>}/>
           <Route path="/unauthorized" element={<Unauthorized/>}/>
-
           {/* Protected Routes */}
           <Route path="/pages" element={
             <ProtectedRoute requiredPage="dashboard">
@@ -46,11 +47,20 @@ function AppRoutes() {
           }>
             <Route index element={<Dashboard />} />
             <Route path="dashboard" element={<Dashboard />} />
-
-            {/* Lead Management Routes */}
+           {/* Lead Management Routes */}
             <Route path="leads" element={
               <ProtectedRoute requiredPage="lead">
                 <LeadsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="approvedLeads" element={
+              <ProtectedRoute requiredPage="lead">
+                <ApprovedLeads />
+              </ProtectedRoute>
+            } />
+            <Route path="purchasedLeads" element={
+              <ProtectedRoute requiredPage="lead">
+                <PurchasedLeads />
               </ProtectedRoute>
             } />
             <Route path="leads/new" element={

@@ -1,6 +1,18 @@
 const mongoose = require("mongoose");
 
+const leadCounterSchema = new mongoose.Schema({
+  _id: { type: String, required: true },
+  seq: { type: Number, default: 0 }
+});
+
+const LeadCounter = mongoose.models.LeadCounter || mongoose.model('LeadCounter', leadCounterSchema);
+
 const mediatorSchema = new mongoose.Schema({
+  mediator_id: {
+    type: Number,
+    unique: true
+  },
+
   name: {
     type: String,
     required: true,
@@ -75,10 +87,43 @@ const mediatorSchema = new mongoose.Schema({
     default: "active"
   },
 
+  created_by: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    
+    updated_by: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    
+    updated_at: {
+      type: Date
+    },
+    
   created_at: {
     type: Date,
     default: Date.now
   }
 });
 
-module.exports = mongoose.model("Mediator", mediatorSchema);
+mediatorSchema.pre('save', async function() {
+  if (this.isNew) {
+    try {
+      const counter = await LeadCounter.findOneAndUpdate(
+        { _id: 'mediator_id' },
+        { $inc: { seq: 1 } },
+        { new: true, upsert: true }
+      );
+      this.mediator_id = counter.seq;
+    } catch (error) {
+      // If there's an error, we'll just log it and continue
+      // The save will fail if lead_id is required but not set
+      console.error('Error incrementing mediator counter:', error);
+    }
+  }
+});
+
+const Mediator = mongoose.model("Mediator", mediatorSchema);
+module.exports = Mediator;

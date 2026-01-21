@@ -1,4 +1,5 @@
-const API_BASE_URL = 'http://localhost:5000/api';
+// const API_BASE_URL = 'http://13.201.132.94:5000/api';
+const API_BASE_URL = 'http://13.201.132.94:5000/api';
 
 // Generic API request helper
 const apiRequest = async (endpoint, options = {}) => {
@@ -15,7 +16,7 @@ const apiRequest = async (endpoint, options = {}) => {
     },
     ...options,
   };
-
+//  const userId =
   try {
     const response = await fetch(url, config);
 
@@ -74,17 +75,33 @@ export const mediatorsAPI = {
 
   // Update mediator
   update: async (id, mediatorData) => {
+    // Ensure address is a JSON string for backend parsing
+    // Backend expects req.body.address to be a JSON string it can parse
+    const dataToSend = { ...mediatorData };
+    if (dataToSend.address !== undefined && dataToSend.address !== null) {
+      if (typeof dataToSend.address === 'object') {
+        // If it's already an object, stringify it
+        dataToSend.address = JSON.stringify(dataToSend.address);
+      } else if (typeof dataToSend.address === 'string') {
+        // If it's a plain string, we need to JSON.stringify it so it becomes a JSON string
+        // When Express parses the body, it will be a string, which backend can then parse
+        // But backend expects a JSON string, so we stringify the string value
+        dataToSend.address = JSON.stringify(dataToSend.address);
+      }
+    }
     return await apiRequest(`/mediators/update/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(mediatorData),
+      body: JSON.stringify(dataToSend),
     });
   },
 
   // Delete mediator
   delete: async (id) => {
-    return await apiRequest(`/mediators/delete/${id}`, {
+    const response = await apiRequest(`/mediators/delete/${id}`, {
       method: 'DELETE',
     });
+    // Return the deleted mediator data from response
+    return response.data || response;
   },
 };
 
@@ -100,30 +117,88 @@ export const leadsAPI = {
 
   // Get lead by ID
   getById: async (id) => {
-    return await apiRequest(`/leads/${id}`);
+    const response = await apiRequest(`/leads/${id}`);
+    // The API returns { success: true, data: {...} }
+    // We want to return the data object
+    return response.data || response;
   },
 
   // Create new lead
-  create: async (leadData) => {
+  create: async (leadData, files = {}) => {
+    const formData = new FormData();
+
+    // Add all text fields
+    Object.keys(leadData).forEach(key => {
+      if (leadData[key] !== null && leadData[key] !== undefined) {
+        if (typeof leadData[key] === 'object') {
+          formData.append(key, JSON.stringify(leadData[key]));
+        } else {
+          formData.append(key, leadData[key]);
+        }
+      }
+    });
+
+    // Add file uploads if present
+    if (files.fmb_sketch) {
+      formData.append('fmb_sketch', files.fmb_sketch);
+    }
+    if (files.patta_chitta) {
+      formData.append('patta_chitta', files.patta_chitta);
+    }
+
     return await apiRequest('/leads/create', {
       method: 'POST',
-      body: JSON.stringify(leadData),
+      body: formData,
+      headers: {}, // Remove Content-Type to let browser set it with boundary
     });
   },
 
   // Update lead
-  update: async (id, leadData) => {
-    return await apiRequest(`/leads/update/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(leadData),
-    });
+  update: async (id, leadData, files = {}) => {
+    // If files are provided, use FormData
+    if (files.fmb_sketch || files.patta_chitta) {
+      const formData = new FormData();
+
+      // Add all text fields
+      Object.keys(leadData).forEach(key => {
+        if (leadData[key] !== null && leadData[key] !== undefined) {
+          if (typeof leadData[key] === 'object') {
+            formData.append(key, JSON.stringify(leadData[key]));
+          } else {
+            formData.append(key, leadData[key]);
+          }
+        }
+      });
+
+      // Add file uploads if present
+      if (files.fmb_sketch) {
+        formData.append('fmb_sketch', files.fmb_sketch);
+      }
+      if (files.patta_chitta) {
+        formData.append('patta_chitta', files.patta_chitta);
+      }
+
+      return await apiRequest(`/leads/update/${id}`, {
+        method: 'PUT',
+        body: formData,
+        headers: {}, // Remove Content-Type to let browser set it with boundary
+      });
+    } else {
+      // Regular JSON update
+      return await apiRequest(`/leads/update/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(leadData),
+      });
+    }
   },
 
   // Delete lead
   delete: async (id) => {
-    return await apiRequest(`/leads/${id}`, {
+    const response = await apiRequest(`/leads/delete/${id}`, {
       method: 'DELETE',
     });
+    // Return the deleted lead data from response
+    return response.data || response;
   },
 };
 

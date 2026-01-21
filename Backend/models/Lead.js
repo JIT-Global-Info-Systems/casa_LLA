@@ -1,6 +1,17 @@
 const mongoose = require("mongoose");
 
+const leadCounterSchema = new mongoose.Schema({
+  _id: { type: String, required: true },
+  seq: { type: Number, default: 0 }
+});
+
+const LeadCounter = mongoose.models.LeadCounter || mongoose.model('LeadCounter', leadCounterSchema);
+
 const leadSchema = new mongoose.Schema({
+  lead_id: {
+    type: Number,
+    unique: true
+  },
   leadType: {
     type: String,
     default: "mediator"
@@ -121,10 +132,154 @@ const leadSchema = new mongoose.Schema({
   lead_status: {
     type: String,
   },
+  
+  lead_stage: {
+    type: String,
+    default: "new"
+  },
   created_at: {
     type: Date,
     default: Date.now
+  },
+  
+  created_by: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  
+  updated_by: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  
+  updated_at: {
+    type: Date
+  },
+  
+  calls: [{
+    userId: {
+      type: String,
+      required: true
+    },
+    note: {
+      type: String,
+      required: true
+    },
+    timestamp: {
+      type: Date,
+      default: Date.now
+    },
+    role: {
+      type: String,
+      required: true
+    }
+  }],
+
+  competitorAnalysis: [{
+    developerName: {
+      type: String
+    },
+    projectName: {
+      type: String
+    },
+    productType: {
+      type: String
+    },
+    location: {
+      type: String
+    },
+    plotUnitSize: {
+      type: String
+    },
+    landExtent: {
+      type: String
+    },
+    priceRange: {
+      type: String
+    },
+    approxPrice: {
+      type: String
+    },
+    approxPriceCent: {
+      type: String
+    },
+    totalPlotsUnits: {
+      type: String
+    },
+    keyAmenities: {
+      type: [String]
+    },
+    uspPositioning: {
+      type: String
+    },
+    timestamp: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  checkListPage: [{
+  landLocation: { type: String },
+  landExtent: { type: String },
+  landZone: { type: String },
+  classificationOfLand: { type: String },
+  googlePin: { type: String },
+  approachRoadWidth: { type: String },
+  ebLine: { type: String },
+  soilType: { type: String },
+  quarryCrusher: { type: String },
+  sellingPrice: { type: String },
+  guidelineValue: { type: String },
+  locationSellingPrice: { type: String },
+  marketingPrice: { type: String },
+
+  // File paths
+  fmbSketchPath: { type: String },
+  pattaChittaPath: { type: String },
+
+  roadWidth: { type: String },
+  govtLandAcquisition: { type: String },
+  railwayTrackNoc: { type: String },
+  bankIssues: { type: String },
+  dumpyardQuarryCheck: { type: String },
+  waterbodyNearby: { type: String },
+  nearbyHtLine: { type: String },
+  templeLand: { type: String },
+  futureGovtProjects: { type: String },
+  farmLand: { type: String },
+  totalSaleableArea: { type: String },
+  landCleaning: { type: String },
+  subDivision: { type: String },
+  soilTest: { type: String },
+  waterList: { type: String },
+  ownerName: { type: String },
+  consultantName: { type: String },
+  notes: { type: String },
+
+  projects: { type: String },
+  googleLocation: { type: String }
+}]
+
+});
+
+// Pre-save hook to auto-increment lead_id
+leadSchema.pre('save', async function() {
+  if (this.isNew) {
+    try {
+      const counter = await LeadCounter.findOneAndUpdate(
+        { _id: 'lead_id' },
+        { $inc: { seq: 1 } },
+        { new: true, upsert: true }
+      );
+      this.lead_id = counter.seq;
+    } catch (error) {
+      // If there's an error, we'll just log it and continue
+      // The save will fail if lead_id is required but not set
+      console.error('Error incrementing lead counter:', error);
+    }
   }
 });
 
-module.exports = mongoose.model("Lead", leadSchema);
+const Lead = mongoose.model("Lead", leadSchema);
+
+module.exports = Lead;
