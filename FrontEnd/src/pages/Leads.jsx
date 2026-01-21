@@ -1112,3 +1112,310 @@ export default function Leads({ data = null, onSubmit, onClose, currentStep = 1,
 }
 
 
+
+
+// import { useState, useEffect, useCallback, useMemo } from "react"
+// import { Input } from "@/components/ui/input"
+// import { Button } from "@/components/ui/button"
+// import { Textarea } from "@/components/ui/textarea"
+// import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+// import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+// import { Label } from "@/components/ui/label"
+// import { Checkbox } from "@/components/ui/checkbox"
+// import { locationsAPI, mediatorsAPI } from "@/services/api"
+// import { ChevronLeft, ChevronRight, CheckCircle2 } from "lucide-react"
+
+// // Configuration for the Checklist to keep JSX clean
+// const CHECKLIST_FIELDS = [
+//   { id: "checkLandLocation", label: "Land Location" },
+//   { id: "checkLandExtent", label: "Land Extent" },
+//   { id: "checkLandPrice", label: "Land Price" },
+//   { id: "checkApproachRoad", label: "Approach Road" },
+//   { id: "checkSoilType", label: "Soil Type" },
+//   { id: "checkTopography", label: "Topography" },
+//   { id: "checkDrainageWaterLogging", label: "Drainage/Water Logging" },
+//   { id: "checkChemistry", label: "Chemistry" },
+//   { id: "checkGroundWaterAvailability", label: "Ground Water Availability" },
+//   { id: "checkBorewellWater", label: "Borewell Water" },
+//   { id: "checkPondTank", label: "Pond/Tank" },
+//   { id: "checkNearbyLakes", label: "Nearby Lakes" },
+//   { id: "checkElectricity", label: "Electricity" },
+//   { id: "checkNearbyActivities", label: "Nearby Activities" },
+//   { id: "checkReligiousStructures", label: "Religious Structures" },
+//   { id: "checkCemeteryDock", label: "Cemetery/Dock" },
+//   { id: "checkNearbyAirport", label: "Nearby Airport" },
+//   { id: "checkProximityMetro", label: "Proximity to Metro" },
+//   { id: "checkNearbyIndustries", label: "Nearby Industries" },
+//   { id: "checkMarketRate", label: "Market Rate" },
+//   { id: "checkProjectTypes", label: "Project Types" },
+//   { id: "checkLandOwnership", label: "Land Ownership" },
+//   { id: "checkNumberOwners", label: "Number of Owners" },
+//   { id: "checkMaritalStatus", label: "Marital Status" },
+//   { id: "checkLandClassification", label: "Land Classification" },
+//   { id: "checkMortgage", label: "Mortgage" },
+//   { id: "checkBankLease", label: "Bank Lease" },
+//   { id: "checkLitigation", label: "Litigation" },
+//   { id: "checkNearbyRailway", label: "Nearby Railway" },
+//   { id: "checkGoogleLocation", label: "Google Location" },
+// ];
+
+// export default function Leads({ data = null, onSubmit, onClose, currentStep = 1, onStepChange }) {
+//   const [formData, setFormData] = useState({
+//     leadType: "mediator",
+//     contactNumber: "",
+//     mediatorName: "",
+//     date: new Date().toISOString().split('T')[0],
+//     location: "",
+//     landName: "",
+//     sourceCategory: "",
+//     source: "",
+//     zone: "",
+//     area: "",
+//     extent: "",
+//     unit: "Acre",
+//     propertyType: "",
+//     fsi: "",
+//     asp: "",
+//     revenue: "",
+//     transactionType: "JV",
+//     rate: "",
+//     builderShare: "",
+//     refundable: "",
+//     nonRefundable: "",
+//     landmark: "",
+//     frontage: "",
+//     roadWidth: "",
+//     sspde: "No",
+//     leadStatus: "Pending",
+//     remark: "",
+//     lead_stage: "",
+//     currentRole: "Telecaller",
+//     yield: "",
+//     // Competitor
+//     competitorDeveloperName: "",
+//     competitorProjectName: "",
+//     competitorProductType: "",
+//     competitorLocation: "",
+//     competitorPlotSize: "",
+//     competitorLandExtent: "",
+//     competitorPriceRange: "",
+//     competitorApproxPrice: "",
+//     competitorApproxPriceRent: "",
+//     competitorTotalUnits: "",
+//     competitorKeyAmenities: "",
+//     competitorUSP: "",
+//     // Checklist initialized to false
+//     ...CHECKLIST_FIELDS.reduce((acc, field) => ({ ...acc, [field.id]: false }), {}),
+//     checkNotes: "",
+//     checkRequests: "",
+//   })
+
+//   const [masters, setMasters] = useState({ locations: [], regions: [], zones: [], mediators: [] })
+//   const [loading, setLoading] = useState(false)
+
+//   // API Fetching
+//   const fetchData = useCallback(async () => {
+//     setLoading(true);
+//     try {
+//       const [locs, meds] = await Promise.all([locationsAPI.getAll(), mediatorsAPI.getAll()]);
+      
+//       const regions = [];
+//       const zones = [];
+//       locs.forEach(l => {
+//         l.regions?.forEach(r => {
+//           regions.push({ id: r._id, location: l.location, region: r.region });
+//           r.zones?.forEach(z => {
+//             zones.push({ id: z._id, location: l.location, region: r.region, zone: z.zone });
+//           });
+//         });
+//       });
+
+//       setMasters({
+//         locations: locs.map(l => ({ id: l._id, name: l.location })),
+//         regions,
+//         zones,
+//         mediators: meds.map(m => ({ id: m._id, name: m.name }))
+//       });
+//     } catch (err) {
+//       console.error("Fetch error:", err);
+//     } finally {
+//       setLoading(false);
+//     }
+//   }, []);
+
+//   useEffect(() => { fetchData() }, [fetchData]);
+
+//   useEffect(() => { if (data) setFormData(data) }, [data]);
+
+//   // Handlers
+//   const handleChange = (key, value) => setFormData(prev => ({ ...prev, [key]: value }));
+
+//   const handleLocationChange = (value) => {
+//     setFormData(prev => ({ ...prev, location: value, zone: '', area: '' }));
+//   };
+
+//   // Memoized Options for performance
+//   const filteredRegions = useMemo(() => 
+//     masters.regions.filter(r => r.location === formData.location), 
+//   [masters.regions, formData.location]);
+//   const filteredZones = useMemo(() => 
+//     masters.zones.filter(z => z.location === formData.location && z.region === formData.zone), 
+//   [masters.zones, formData.location, formData.zone]);
+
+//   return (
+//     <div className="max-w-6xl mx-auto p-4 space-y-6">
+      
+//       {/* Progress Indicator */}
+//       <div className="flex items-center justify-between mb-8 px-4">
+//         {[1, 2, 3].map((step) => (
+//           <div key={step} className="flex items-center">
+//             <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${
+//               currentStep >= step ? "bg-primary border-primary text-white" : "border-gray-300 text-gray-400"
+//             }`}>
+//               {currentStep > step ? <CheckCircle2 className="w-6 h-6" /> : step}
+//             </div>
+//             {step < 3 && <div className={`w-20 h-1 mx-2 ${currentStep > step ? "bg-primary" : "bg-gray-200"}`} />}
+//           </div>
+//         ))}
+//       </div>
+
+//       {/* STEP 1: Basic Information */}
+//       {currentStep === 1 && (
+//         <Card className="shadow-md border-t-4 border-t-primary">
+//           <CardHeader>
+//             <CardTitle className="text-xl font-bold">Basic Lead Information</CardTitle>
+//           </CardHeader>
+//           <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
+//             <div className="space-y-2">
+//               <Label>Lead Type</Label>
+//               <div className="flex gap-4 p-2 border rounded-md bg-gray-50/50">
+//                 {['mediator', 'owner'].map(type => (
+//                   <label key={type} className="flex items-center gap-2 capitalize cursor-pointer font-medium">
+//                     <input type="radio" checked={formData.leadType === type} onChange={() => handleChange("leadType", type)} />
+//                     {type}
+//                   </label>
+//                 ))}
+//               </div>
+//             </div>
+
+//             <div className="space-y-2">
+//               <Label>Contact Number</Label>
+//               <Input value={formData.contactNumber} onChange={e => handleChange("contactNumber", e.target.value)} placeholder="9876543210" />
+//             </div>
+
+//             <div className="space-y-2">
+//               <Label>Location</Label>
+//               <Select value={formData.location} onValueChange={handleLocationChange}>
+//                 <SelectTrigger><SelectValue placeholder="Select Location" /></SelectTrigger>
+//                 <SelectContent>
+//                   {masters.locations.map(l => <SelectItem key={l.id} value={l.name}>{l.name}</SelectItem>)}
+//                 </SelectContent>
+//               </Select>
+//             </div>
+
+//             <div className="space-y-2">
+//               <Label>Zone</Label>
+//               <Select value={formData.zone} onValueChange={v => handleChange("zone", v)} disabled={!formData.location}>
+//                 <SelectTrigger><SelectValue placeholder="Select Zone" /></SelectTrigger>
+//                 <SelectContent>
+//                   {filteredRegions.map(r => <SelectItem key={r.id} value={r.region}>{r.region}</SelectItem>)}
+//                 </SelectContent>
+//               </Select>
+//             </div>
+
+//             <div className="space-y-2">
+//               <Label>Area</Label>
+//               <Select value={formData.area} onValueChange={v => handleChange("area", v)} disabled={!formData.zone}>
+//                 <SelectTrigger><SelectValue placeholder="Select Area" /></SelectTrigger>
+//                 <SelectContent>
+//                   {filteredZones.map(z => <SelectItem key={z.id} value={z.zone}>{z.zone}</SelectItem>)}
+//                 </SelectContent>
+//               </Select>
+//             </div>
+
+//             <div className="space-y-2">
+//               <Label>Transaction Type</Label>
+//               <Select value={formData.transactionType} onValueChange={v => handleChange("transactionType", v)}>
+//                 <SelectTrigger><SelectValue /></SelectTrigger>
+//                 <SelectContent>
+//                   <SelectItem value="JV">Joint Venture (JV)</SelectItem>
+//                   <SelectItem value="Sale">Outright Sale</SelectItem>
+//                 </SelectContent>
+//               </Select>
+//             </div>
+            
+//             <div className="md:col-span-3">
+//               <Label>Remark</Label>
+//               <Textarea value={formData.remark} onChange={e => handleChange("remark", e.target.value)} placeholder="Internal notes..." rows={3} />
+//             </div>
+//           </CardContent>
+//         </Card>
+//       )}
+
+//       {/* STEP 2: Competitor Analysis */}
+//       {currentStep === 2 && (
+//         <Card className="shadow-md border-t-4 border-t-blue-500">
+//           <CardHeader><CardTitle>Competitor Analysis</CardTitle></CardHeader>
+//           <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+//             <div className="space-y-2">
+//               <Label>Developer Name</Label>
+//               <Input value={formData.competitorDeveloperName} onChange={e => handleChange("competitorDeveloperName", e.target.value)} />
+//             </div>
+//             <div className="space-y-2">
+//               <Label>Approx Price</Label>
+//               <Input type="number" value={formData.competitorApproxPrice} onChange={e => handleChange("competitorApproxPrice", e.target.value)} />
+//             </div>
+//             <div className="md:col-span-3">
+//               <Label>USP / Positioning</Label>
+//               <Textarea value={formData.competitorUSP} onChange={e => handleChange("competitorUSP", e.target.value)} rows={3} />
+//             </div>
+//           </CardContent>
+//         </Card>
+//       )}
+
+//       {/* STEP 3: Site Checklist */}
+//       {currentStep === 3 && (
+//         <Card className="shadow-md border-t-4 border-t-green-500">
+//           <CardHeader><CardTitle>Site Visit Checklist</CardTitle></CardHeader>
+//           <CardContent>
+//             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+//               {CHECKLIST_FIELDS.map((field) => (
+//                 <div key={field.id} className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 transition-colors">
+//                   <Checkbox 
+//                     id={field.id} 
+//                     checked={formData[field.id]} 
+//                     onCheckedChange={(checked) => handleChange(field.id, checked)} 
+//                   />
+//                   <Label htmlFor={field.id} className="cursor-pointer text-sm font-medium">{field.label}</Label>
+//                 </div>
+//               ))}
+//             </div>
+//           </CardContent>
+//         </Card>
+//       )}
+
+//       {/* NAVIGATION CONTROLS */}
+//       <div className="flex justify-between items-center pt-6 border-t">
+//         <Button variant="ghost" onClick={onClose} className="text-gray-500">Cancel</Button>
+        
+//         <div className="flex gap-3">
+//           {currentStep > 1 && (
+//             <Button variant="outline" onClick={() => onStepChange(currentStep - 1)}>
+//               <ChevronLeft className="w-4 h-4 mr-2" /> Back
+//             </Button>
+//           )}
+
+//           {currentStep < 3 ? (
+//             <Button onClick={() => onStepChange(currentStep + 1)}>
+//               Next <ChevronRight className="w-4 h-4 ml-2" />
+//             </Button>
+//           ) : (
+//             <Button onClick={() => onSubmit(formData)} className="bg-green-600 hover:bg-green-700">
+//               Submit Lead
+//             </Button>
+//           )}
+//         </div>
+//       </div>
+//     </div>
+//   )
+// }
