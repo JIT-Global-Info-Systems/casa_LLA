@@ -84,9 +84,9 @@ export default function Calls() {
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900 tracking-tight flex items-center gap-3">
+                        <h1 className="text-1xl font-bold text-gray-900 tracking-tight flex items-center gap-3">
                             <Phone className="h-8 w-8 text-indigo-600" />
-                            Call Logs
+                            Call History
                         </h1>
                         <p className="text-gray-500 text-sm mt-1">
                             View and manage all communication history with leads.
