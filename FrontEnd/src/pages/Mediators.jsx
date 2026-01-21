@@ -421,8 +421,8 @@
 //                             <MoreVertical className="h-4 w-4" />
 //                           </Button>
 //                         </DropdownMenuTrigger>
-//                         <DropdownMenuContent 
-//                           align="end" 
+//                         <DropdownMenuContent
+//                           align="end"
 //                           className="z-50 bg-white border border-slate-200 shadow-lg"
 //                         >
 //                           <DropdownMenuItem onClick={() => handleView(mediator)}>
@@ -846,6 +846,7 @@ import {
   Edit,
   Trash2,
   MoreVertical,
+  Search,
 } from "lucide-react";
 
 function Mediators() {
@@ -921,10 +922,7 @@ function Mediators() {
   });
 
   const handleInputChange = (field, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleFileChange = (field, file) => {
@@ -986,6 +984,7 @@ function Mediators() {
       officeIndividual: "",
       address: "",
     });
+    setFiles({ pan_upload: null, aadhar_upload: null });
     setSelectedMediator(null);
     setFiles({
       pan_upload: null,

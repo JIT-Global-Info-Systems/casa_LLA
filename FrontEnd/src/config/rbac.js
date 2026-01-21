@@ -1,48 +1,279 @@
-// Role-based access control configuration
-export const ROLE_ACCESS = {
-  tele_caller: ["lead", "mediator", "dashboard", "users", "documents", "masters", "reports"],
-  land_executive: ["lead", "mediator", "dashboard", "owners", "users", "documents", "masters", "reports"],
-  feasibility_team: ["lead", "mediator", "dashboard", "users", "documents", "masters", "reports"],
-  l1_md: ["lead", "mediator", "dashboard", "owners", "users", "documents", "masters", "reports"],
-  cmo_cro: ["lead", "mediator", "dashboard", "owners", "users", "documents", "masters", "reports"],
-  legal: ["lead", "mediator", "dashboard", "owners", "users", "documents", "masters", "reports"],
-  liaison: ["lead", "mediator", "dashboard", "owners", "users", "documents", "masters", "reports"],
-  finance: ["lead", "mediator", "dashboard", "owners", "users", "documents", "masters", "reports"],
-  management: ["lead", "mediator", "dashboard", "owners", "users", "documents", "masters", "reports"],
-  all_team: ["lead", "mediator", "dashboard", "owners", "users", "documents", "masters", "reports"],
-  admin: ["*"]
+// Permission constants
+export const PERMISSIONS = {
+  // Page permissions
+  PAGE_DASHBOARD: 'page:dashboard',
+  PAGE_LEADS: 'page:leads',
+  PAGE_USERS: 'page:users',
+  PAGE_DOCUMENTS: 'page:documents',
+  PAGE_MASTERS: 'page:masters',
+  PAGE_REPORTS: 'page:reports',
+  PAGE_OWNERS: 'page:owners',
+  PAGE_MEDIATORS: 'page:mediators',
+
+  // Action permissions
+  LEAD_CREATE: 'lead:create',
+  LEAD_EDIT: 'lead:edit',
+  LEAD_DELETE: 'lead:delete',
+  LEAD_VIEW: 'lead:view',
+
+  USER_CREATE: 'user:create',
+  USER_EDIT: 'user:edit',
+  USER_DELETE: 'user:delete',
+  USER_VIEW: 'user:view',
+
+  MEDIATOR_CREATE: 'mediator:create',
+  MEDIATOR_EDIT: 'mediator:edit',
+  MEDIATOR_DELETE: 'mediator:delete',
+  MEDIATOR_VIEW: 'mediator:view',
 };
 
-// Helper function to check if a role has access to a page
-export const hasAccess = (userRole, requiredPage) => {
-  const userAccess = ROLE_ACCESS[userRole];
+// Role-based permission mapping
+export const ROLE_PERMISSIONS = {
+  tele_caller: [
+    PERMISSIONS.PAGE_DASHBOARD,
+    PERMISSIONS.PAGE_LEADS,
+    PERMISSIONS.PAGE_MEDIATORS,
+    PERMISSIONS.LEAD_VIEW,
+    PERMISSIONS.LEAD_CREATE,
+    PERMISSIONS.LEAD_EDIT,
+    PERMISSIONS.MEDIATOR_VIEW,
+  ],
+  land_executive: [
+    PERMISSIONS.PAGE_DASHBOARD,
+    PERMISSIONS.PAGE_LEADS,
+    PERMISSIONS.PAGE_MEDIATORS,
+    PERMISSIONS.PAGE_OWNERS,
+    PERMISSIONS.PAGE_USERS,
+    PERMISSIONS.PAGE_DOCUMENTS,
+    PERMISSIONS.PAGE_MASTERS,
+    PERMISSIONS.PAGE_REPORTS,
+    PERMISSIONS.LEAD_VIEW,
+    PERMISSIONS.LEAD_CREATE,
+    PERMISSIONS.LEAD_EDIT,
+    PERMISSIONS.LEAD_DELETE,
+    PERMISSIONS.MEDIATOR_VIEW,
+    PERMISSIONS.MEDIATOR_CREATE,
+    PERMISSIONS.MEDIATOR_EDIT,
+    PERMISSIONS.USER_VIEW,
+  ],
+  feasibility_team: [
+    PERMISSIONS.PAGE_DASHBOARD,
+    PERMISSIONS.PAGE_LEADS,
+    PERMISSIONS.PAGE_MEDIATORS,
+    PERMISSIONS.PAGE_USERS,
+    PERMISSIONS.PAGE_DOCUMENTS,
+    PERMISSIONS.PAGE_MASTERS,
+    PERMISSIONS.PAGE_REPORTS,
+    PERMISSIONS.LEAD_VIEW,
+    PERMISSIONS.LEAD_CREATE,
+    PERMISSIONS.LEAD_EDIT,
+    PERMISSIONS.LEAD_DELETE,
+    PERMISSIONS.MEDIATOR_VIEW,
+    PERMISSIONS.MEDIATOR_CREATE,
+    PERMISSIONS.MEDIATOR_EDIT,
+    PERMISSIONS.USER_VIEW,
+    PERMISSIONS.USER_EDIT,
+  ],
+  l1_md: [
+    PERMISSIONS.PAGE_DASHBOARD,
+    PERMISSIONS.PAGE_LEADS,
+    PERMISSIONS.PAGE_MEDIATORS,
+    PERMISSIONS.PAGE_OWNERS,
+    PERMISSIONS.PAGE_USERS,
+    PERMISSIONS.PAGE_DOCUMENTS,
+    PERMISSIONS.PAGE_MASTERS,
+    PERMISSIONS.PAGE_REPORTS,
+    PERMISSIONS.LEAD_VIEW,
+    PERMISSIONS.LEAD_CREATE,
+    PERMISSIONS.LEAD_EDIT,
+    PERMISSIONS.LEAD_DELETE,
+    PERMISSIONS.MEDIATOR_VIEW,
+    PERMISSIONS.MEDIATOR_CREATE,
+    PERMISSIONS.MEDIATOR_EDIT,
+    PERMISSIONS.MEDIATOR_DELETE,
+    PERMISSIONS.USER_VIEW,
+    PERMISSIONS.USER_EDIT,
+    PERMISSIONS.USER_CREATE,
+  ],
+  cmo_cro: [
+    PERMISSIONS.PAGE_DASHBOARD,
+    PERMISSIONS.PAGE_LEADS,
+    PERMISSIONS.PAGE_MEDIATORS,
+    PERMISSIONS.PAGE_OWNERS,
+    PERMISSIONS.PAGE_USERS,
+    PERMISSIONS.PAGE_DOCUMENTS,
+    PERMISSIONS.PAGE_MASTERS,
+    PERMISSIONS.PAGE_REPORTS,
+    PERMISSIONS.LEAD_VIEW,
+    PERMISSIONS.LEAD_CREATE,
+    PERMISSIONS.LEAD_EDIT,
+    PERMISSIONS.LEAD_DELETE,
+    PERMISSIONS.MEDIATOR_VIEW,
+    PERMISSIONS.MEDIATOR_CREATE,
+    PERMISSIONS.MEDIATOR_EDIT,
+    PERMISSIONS.MEDIATOR_DELETE,
+    PERMISSIONS.USER_VIEW,
+    PERMISSIONS.USER_EDIT,
+    PERMISSIONS.USER_CREATE,
+  ],
+  legal: [
+    PERMISSIONS.PAGE_DASHBOARD,
+    PERMISSIONS.PAGE_LEADS,
+    PERMISSIONS.PAGE_MEDIATORS,
+    PERMISSIONS.PAGE_OWNERS,
+    PERMISSIONS.PAGE_USERS,
+    PERMISSIONS.PAGE_DOCUMENTS,
+    PERMISSIONS.PAGE_MASTERS,
+    PERMISSIONS.PAGE_REPORTS,
+    PERMISSIONS.LEAD_VIEW,
+    PERMISSIONS.LEAD_CREATE,
+    PERMISSIONS.LEAD_EDIT,
+    PERMISSIONS.LEAD_DELETE,
+    PERMISSIONS.MEDIATOR_VIEW,
+    PERMISSIONS.MEDIATOR_CREATE,
+    PERMISSIONS.MEDIATOR_EDIT,
+    PERMISSIONS.MEDIATOR_DELETE,
+    PERMISSIONS.USER_VIEW,
+    PERMISSIONS.USER_EDIT,
+    PERMISSIONS.USER_CREATE,
+  ],
+  liaison: [
+    PERMISSIONS.PAGE_DASHBOARD,
+    PERMISSIONS.PAGE_LEADS,
+    PERMISSIONS.PAGE_MEDIATORS,
+    PERMISSIONS.PAGE_OWNERS,
+    PERMISSIONS.PAGE_USERS,
+    PERMISSIONS.PAGE_DOCUMENTS,
+    PERMISSIONS.PAGE_MASTERS,
+    PERMISSIONS.PAGE_REPORTS,
+    PERMISSIONS.LEAD_VIEW,
+    PERMISSIONS.LEAD_CREATE,
+    PERMISSIONS.LEAD_EDIT,
+    PERMISSIONS.LEAD_DELETE,
+    PERMISSIONS.MEDIATOR_VIEW,
+    PERMISSIONS.MEDIATOR_CREATE,
+    PERMISSIONS.MEDIATOR_EDIT,
+    PERMISSIONS.MEDIATOR_DELETE,
+    PERMISSIONS.USER_VIEW,
+    PERMISSIONS.USER_EDIT,
+    PERMISSIONS.USER_CREATE,
+  ],
+  finance: [
+    PERMISSIONS.PAGE_DASHBOARD,
+    PERMISSIONS.PAGE_LEADS,
+    PERMISSIONS.PAGE_MEDIATORS,
+    PERMISSIONS.PAGE_OWNERS,
+    PERMISSIONS.PAGE_USERS,
+    PERMISSIONS.PAGE_DOCUMENTS,
+    PERMISSIONS.PAGE_MASTERS,
+    PERMISSIONS.PAGE_REPORTS,
+    PERMISSIONS.LEAD_VIEW,
+    PERMISSIONS.LEAD_CREATE,
+    PERMISSIONS.LEAD_EDIT,
+    PERMISSIONS.LEAD_DELETE,
+    PERMISSIONS.MEDIATOR_VIEW,
+    PERMISSIONS.MEDIATOR_CREATE,
+    PERMISSIONS.MEDIATOR_EDIT,
+    PERMISSIONS.MEDIATOR_DELETE,
+    PERMISSIONS.USER_VIEW,
+    PERMISSIONS.USER_EDIT,
+    PERMISSIONS.USER_CREATE,
+  ],
+  management: [
+    PERMISSIONS.PAGE_DASHBOARD,
+    PERMISSIONS.PAGE_LEADS,
+    PERMISSIONS.PAGE_MEDIATORS,
+    PERMISSIONS.PAGE_OWNERS,
+    PERMISSIONS.PAGE_USERS,
+    PERMISSIONS.PAGE_DOCUMENTS,
+    PERMISSIONS.PAGE_MASTERS,
+    PERMISSIONS.PAGE_REPORTS,
+    PERMISSIONS.LEAD_VIEW,
+    PERMISSIONS.LEAD_CREATE,
+    PERMISSIONS.LEAD_EDIT,
+    PERMISSIONS.LEAD_DELETE,
+    PERMISSIONS.MEDIATOR_VIEW,
+    PERMISSIONS.MEDIATOR_CREATE,
+    PERMISSIONS.MEDIATOR_EDIT,
+    PERMISSIONS.MEDIATOR_DELETE,
+    PERMISSIONS.USER_VIEW,
+    PERMISSIONS.USER_EDIT,
+    PERMISSIONS.USER_CREATE,
+    PERMISSIONS.USER_DELETE,
+  ],
+  all_team: [
+    PERMISSIONS.PAGE_DASHBOARD,
+    PERMISSIONS.PAGE_LEADS,
+    PERMISSIONS.PAGE_MEDIATORS,
+    PERMISSIONS.PAGE_OWNERS,
+    PERMISSIONS.PAGE_USERS,
+    PERMISSIONS.PAGE_DOCUMENTS,
+    PERMISSIONS.PAGE_MASTERS,
+    PERMISSIONS.PAGE_REPORTS,
+    PERMISSIONS.LEAD_VIEW,
+    PERMISSIONS.LEAD_CREATE,
+    PERMISSIONS.LEAD_EDIT,
+    PERMISSIONS.LEAD_DELETE,
+    PERMISSIONS.MEDIATOR_VIEW,
+    PERMISSIONS.MEDIATOR_CREATE,
+    PERMISSIONS.MEDIATOR_EDIT,
+    PERMISSIONS.MEDIATOR_DELETE,
+    PERMISSIONS.USER_VIEW,
+    PERMISSIONS.USER_EDIT,
+    PERMISSIONS.USER_CREATE,
+    PERMISSIONS.USER_DELETE,
+  ],
+  admin: ["*"] // Wildcard for all permissions
+};
+
+// Helper function to check if a role has a specific permission
+export const hasPermission = (userRole, permission) => {
+  const userPermissions = ROLE_PERMISSIONS[userRole];
 
   // Admin has access to everything
-  if (userAccess?.includes("*")) {
+  if (userPermissions?.includes("*")) {
     return true;
   }
 
-  // Check if the role exists and has access to the required page
-  return userAccess?.includes(requiredPage) || false;
+  // Check if role exists and has the required permission
+  return userPermissions?.includes(permission) || false;
 };
 
-// Helper function to get all accessible pages for a role
-export const getAccessiblePages = (userRole) => {
-  const userAccess = ROLE_ACCESS[userRole];
+// Helper function to check if user has any of the provided permissions
+export const hasAnyPermission = (userRole, permissions) => {
+  if (!Array.isArray(permissions)) {
+    return hasPermission(userRole, permissions);
+  }
+
+  return permissions.some(permission => hasPermission(userRole, permission));
+};
+
+// Helper function to get all permissions for a role
+export const getRolePermissions = (userRole) => {
+  const userPermissions = ROLE_PERMISSIONS[userRole];
 
   // Admin has access to everything
-  if (userAccess?.includes("*")) {
-    return ["*"]; // or return all possible pages if needed
+  if (userPermissions?.includes("*")) {
+    return ["*"]; // or return all possible permissions if needed
   }
 
-  return userAccess || [];
+  return userPermissions || [];
 };
 
-// Helper function to check if user can access any of the provided pages
-export const hasAnyAccess = (userRole, requiredPages) => {
-  if (!Array.isArray(requiredPages)) {
-    return hasAccess(userRole, requiredPages);
-  }
+// Legacy compatibility - map old page names to new permissions
+export const PAGE_TO_PERMISSION = {
+  dashboard: PERMISSIONS.PAGE_DASHBOARD,
+  lead: PERMISSIONS.PAGE_LEADS,
+  users: PERMISSIONS.PAGE_USERS,
+  documents: PERMISSIONS.PAGE_DOCUMENTS,
+  masters: PERMISSIONS.PAGE_MASTERS,
+  reports: PERMISSIONS.PAGE_REPORTS,
+  owners: PERMISSIONS.PAGE_OWNERS,
+  mediator: PERMISSIONS.PAGE_MEDIATORS,
+};
 
-  return requiredPages.some(page => hasAccess(userRole, page));
+// Legacy compatibility function
+export const hasAccess = (userRole, page) => {
+  const permission = PAGE_TO_PERMISSION[page];
+  return permission ? hasPermission(userRole, permission) : false;
 };
