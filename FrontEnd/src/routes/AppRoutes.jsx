@@ -10,6 +10,7 @@ import ApprovedLeads from "@/pages/ApprovedLeads";
 import PurchasedLeads from "@/pages/PurchasedLeads";
 import Leads from "@/pages/Leads";
 import Unauthorized from "@/pages/Unauthorized";
+import Calls from "@/pages/Calls";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { AuthProvider } from "@/context/AuthContext";
 import { PERMISSIONS } from "@/config/rbac";
@@ -37,9 +38,9 @@ function AppRoutes() {
       <BrowserRouter>
         <Routes>
           {/* Public Routes */}
-          <Route path="/" element={<Login/>}/>
-          <Route path="/login" element={<Login/>}/>
-          <Route path="/unauthorized" element={<Unauthorized/>}/>
+          <Route path="/" element={<Login />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/unauthorized" element={<Unauthorized />} />
           {/* Protected Routes */}
           <Route path="/pages" element={
             <ProtectedRoute requiredPermission={PERMISSIONS.PAGE_DASHBOARD}>
@@ -48,8 +49,7 @@ function AppRoutes() {
           }>
             <Route index element={<Dashboard />} />
             <Route path="dashboard" element={<Dashboard />} />
-
-           {/* Lead Management Routes */}
+            {/* Lead Management Routes */}
             <Route path="leads" element={
               <ProtectedRoute requiredPermission={PERMISSIONS.PAGE_LEADS}>
                 <LeadsPage />
@@ -105,8 +105,14 @@ function AppRoutes() {
               <ProtectedRoute requiredPermission={PERMISSIONS.PAGE_MASTERS}>
                 <Masters />
               </ProtectedRoute>
-            } />
+            } />  
+            
             <Route path="profile" element={<Profile />} />
+            <Route path="calls" element={
+              <ProtectedRoute requiredPage="lead">
+                <Calls />
+              </ProtectedRoute>
+            } />
             <Route path="reports" element={
               <ProtectedRoute requiredPermission={PERMISSIONS.PAGE_REPORTS}>
                 <Reports />

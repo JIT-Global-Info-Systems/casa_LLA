@@ -16,7 +16,7 @@ const apiRequest = async (endpoint, options = {}) => {
     },
     ...options,
   };
-//  const userId =
+
   try {
     const response = await fetch(url, config);
 
@@ -308,10 +308,48 @@ export const locationsAPI = {
 
   deleteZone: async (locationId, regionId, zoneId) => {
     return await apiRequest(`/locations/${locationId}/regions/${regionId}/zones/${zoneId}`, {
-      method: 'DELETE',
-    });
+      method: "DELETE",
+    })
   },
-};
+}
+
+// Calls API
+export const callsAPI = {
+  // Get all calls
+  getAll: async () => {
+    const response = await apiRequest("/calls/all")
+    return response.data || []
+  },
+
+  // Get call by ID
+  getById: async (id) => {
+    const response = await apiRequest(`/calls/${id}`)
+    return response.data || response
+  },
+
+  // Create new call
+  create: async (callData) => {
+    return await apiRequest("/calls/create", {
+      method: "POST",
+      body: JSON.stringify(callData),
+    })
+  },
+
+  // Update call
+  update: async (id, callData) => {
+    return await apiRequest(`/calls/update/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(callData),
+    })
+  },
+
+  // Delete call
+  delete: async (id) => {
+    return await apiRequest(`/calls/delete/${id}`, {
+      method: "DELETE",
+    })
+  },
+}
 
 // Export other API modules as needed
 export const authAPI = {
@@ -335,5 +373,6 @@ export default {
   leadsAPI,
   usersAPI,
   locationsAPI,
+  callsAPI,
   authAPI,
-};
+}

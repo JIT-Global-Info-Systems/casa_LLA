@@ -126,7 +126,7 @@ export const navItems = [
   { path: "/pages/users", label: "Users", icon: UserRound },
   { path: "/pages/approvedleads", label: "Approval", icon: UserRound },
   { path: "/pages/purchasedleads", label: "Purchased", icon: UserRound },
-  { path: "/pages/", label: "Calls", icon: FileText },
+  { path: "/pages/calls", label: "Call", icon: FileText },
   // { path: "/pages/owners", label: "Approval", icon: Users },
   { path: "/pages/mediators", label: "Mediators", icon: Handshake },
   { path: "/pages/masters", label: "Masters", icon: Settings },
