@@ -6,12 +6,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { locationsAPI } from "@/services/api"
+import { useMediators } from "../context/MediatorsContext.jsx"
 import { ChevronLeft, Upload, FileText, CheckCircle2, AlertCircle, Loader2 } from "lucide-react"
 import toast from "react-hot-toast"
 
 const yesNo = (v) => (v ? "Yes" : "No")
 
 export default function Leads({ data = null, onSubmit, onClose }) {
+  const { mediators, loading: mediatorsLoading, fetchMediators } = useMediators()
   const [formData, setFormData] = useState({
     // Basic Lead Information
     leadType: "mediator",
@@ -213,7 +215,8 @@ export default function Leads({ data = null, onSubmit, onClose }) {
 
   useEffect(() => {
     fetchLocations()
-  }, [fetchLocations])
+    fetchMediators()
+  }, [fetchLocations, fetchMediators])
 
   useEffect(() => {
     if (!data) return
@@ -541,11 +544,45 @@ export default function Leads({ data = null, onSubmit, onClose }) {
 
             <div className="space-y-2">
               <Label>Mediator/Owner Name</Label>
-              <Input
-                value={formData.mediatorName}
-                onChange={(e) => handleChange("mediatorName", e.target.value)}
-                className={`bg-gray-50/50 ${errors.mediatorName ? "border-red-500 focus:border-red-500" : ""}`}
-              />
+              {formData.leadType === "mediator" ? (
+                <Select 
+                  value={formData.mediatorName} 
+                  onValueChange={(value) => {
+                    handleChange("mediatorName", value)
+                    // Also set the mediator ID when a mediator is selected
+                    const selectedMediator = mediators.find(m => m.name === value)
+                    if (selectedMediator) {
+                      handleChange("mediatorId", selectedMediator._id)
+                    }
+                  }}
+                  disabled={mediatorsLoading}
+                >
+                  <SelectTrigger className={`bg-gray-50/50 ${errors.mediatorName ? "border-red-500 focus:border-red-500" : ""}`}>
+                    {mediatorsLoading ? (
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <SelectValue placeholder="Loading mediators..." />
+                      </div>
+                    ) : (
+                      <SelectValue placeholder="Select mediator" />
+                    )}
+                  </SelectTrigger>
+                  <SelectContent className="bg-white z-50 shadow-xl border-gray-200">
+                    {mediators.map((mediator) => (
+                      <SelectItem key={mediator._id} value={mediator.name}>
+                        {mediator.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  value={formData.mediatorName}
+                  onChange={(e) => handleChange("mediatorName", e.target.value)}
+                  placeholder="Enter owner name"
+                  className={`bg-gray-50/50 ${errors.mediatorName ? "border-red-500 focus:border-red-500" : ""}`}
+                />
+              )}
               {errors.mediatorName && (
                 <p className="text-red-500 text-sm flex items-center gap-1">
                   <AlertCircle className="h-4 w-4" />
