@@ -157,24 +157,6 @@ const leadSchema = new mongoose.Schema({
     type: Date
   },
   
-  calls: [{
-    userId: {
-      type: String,
-      required: true
-    },
-    note: {
-      type: String,
-      required: true
-    },
-    timestamp: {
-      type: Date,
-      default: Date.now
-    },
-    role: {
-      type: String,
-      required: true
-    }
-  }],
 
   competitorAnalysis: [{
     developerName: {
