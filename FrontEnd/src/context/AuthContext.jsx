@@ -15,6 +15,8 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isFirstLogin, setIsFirstLogin] = useState(false);
+  const [forcePasswordChange, setForcePasswordChange] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -29,6 +31,11 @@ export const AuthProvider = ({ children }) => {
         const parsedUser = JSON.parse(userData);
         console.log('Parsed user data:', parsedUser);
         setUser({ ...parsedUser, token });
+        // Check if it's first login from stored data
+        if (parsedUser.firstLogin) {
+          setIsFirstLogin(true);
+          setForcePasswordChange(true);
+        }
       } catch (error) {
         console.error('Failed to parse user data:', error);
         setUser({ token }); // Fallback to token only
@@ -75,11 +82,22 @@ export const AuthProvider = ({ children }) => {
 
         // Store user data if available
         if (response.user) {
-          localStorage.setItem('user_id', response.user.user_id);
+          localStorage.setItem('user_id', response.user.id || response.user.user_id);
           localStorage.setItem('user', JSON.stringify(response.user));
           setUser({ ...response.user, token: response.token });
+
+          // Check if it's first login
+          if (response.user.firstLogin) {
+            setIsFirstLogin(true);
+            setForcePasswordChange(true);
+          } else {
+            setIsFirstLogin(false);
+            setForcePasswordChange(false);
+          }
         } else {
           setUser({ token: response.token });
+          setIsFirstLogin(false);
+          setForcePasswordChange(false);
         }
       }
 
@@ -111,6 +129,19 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('user');
     setUser(null);
     setError(null);
+    setIsFirstLogin(false);
+    setForcePasswordChange(false);
+  };
+
+  const markPasswordChanged = () => {
+    setIsFirstLogin(false);
+    setForcePasswordChange(false);
+    // Update stored user data
+    if (user) {
+      const updatedUser = { ...user, firstLogin: false };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      setUser(updatedUser);
+    }
   };
 
   return (
@@ -122,6 +153,9 @@ export const AuthProvider = ({ children }) => {
         login,
         register,
         logout,
+        markPasswordChanged,
+        isFirstLogin,
+        forcePasswordChange,
         isAuthenticated: Boolean(user),
         userRole: user?.role,
       }}

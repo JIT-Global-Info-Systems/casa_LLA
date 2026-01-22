@@ -13,7 +13,7 @@ function Login() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const navigate = useNavigate()
-  const { login } = useAuth()
+  const { login, forcePasswordChange } = useAuth()
 
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -25,9 +25,18 @@ function Login() {
 
     try {
       await login({ email, password })
-      toast.success('Login successful! Redirecting...')
-      // Redirect to dashboard on successful login
-      navigate('/pages/dashboard')
+     
+      if (forcePasswordChange) {
+        navigate('/first-time-password-change', {
+          state: {
+            isFirstLogin: true,
+            message: 'This is your first login. Please change your password to continue.'
+          }
+        })
+      } else {
+        toast.success('Login successful! Redirecting...')
+        navigate('/pages/dashboard')
+      }
     } catch (err) {
       const errorMessage = err.response?.data?.message || err.message || 'An error occurred during login'
       setError(errorMessage)
