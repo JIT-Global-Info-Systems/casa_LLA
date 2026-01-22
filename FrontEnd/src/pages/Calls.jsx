@@ -75,7 +75,7 @@ export default function Calls() {
         return calls.filter((call) => {
             const userName = call.name || call.created_by?.name || ""
             const userRole = call.role || ""
-            const leadId = call.leadId?._id || "N/A"
+            const leadId = call.leadId?.lead_id?.toString() || "N/A"
             const matchesSearch =
                 (call.note?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
                 leadId.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -215,7 +215,7 @@ export default function Calls() {
                                             <TableCell className="font-medium text-indigo-600">
                                                 <div className="flex items-center gap-2">
                                                     <Hash className="h-3 w-3" />
-                                                    {call.leadId?._id || "N/A"}
+                                                    {call.leadId?.lead_id || "N/A"}
                                                 </div>
                                             </TableCell>
                                             <TableCell>
