@@ -423,6 +423,10 @@ export const authAPI = {
   changePassword: async (oldPassword, newPassword) => {
     return await apiRequest('/auth/change-password', {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
       body: JSON.stringify({ oldPassword, newPassword }),
     });
   },
