@@ -262,6 +262,53 @@ function Dashboard() {
   console.log('Approval leads count:', approvedLeadsCount);
   console.log('Purchased leads count:', purchasedLeadsCount);
   console.log('Lead stages:', leadStages);
+  
+  // Calculate work stages based on currentRole from leads API
+  const workStages = {
+    tele_callers: 0,
+    land_executive: 0,
+    l1_md: 0,
+    cmo_cro: 0,
+    feasibility_team: 0,
+    legal: 0,
+    liaison: 0,
+    finance: 0,
+    management:0
+  };
+
+  leads?.forEach(lead => {
+    const role = lead.currentRole;
+    if (role) {
+      const normalizedRole = role.toLowerCase().trim();
+      if (normalizedRole === 'tele callers' || normalizedRole === 'tele_callers' || normalizedRole === 'telecaller') {
+        workStages.tele_callers++;
+      } else if (normalizedRole === 'land executive' || normalizedRole === 'land_executive' || normalizedRole === 'landexecutive') {
+        workStages.land_executive++;
+      } else if (normalizedRole === 'l1 md' || normalizedRole === 'l1_md' || normalizedRole === 'l1md') {
+        workStages.l1_md++;
+      } else if (normalizedRole === 'cmo cro' || normalizedRole === 'cmo_cro' || normalizedRole === 'cmo' || normalizedRole === 'cro') {
+        workStages.cmo_cro++;
+      } else if (normalizedRole === 'feasibility team' || normalizedRole === 'feasibility_team' || normalizedRole === 'feasibility') {
+        workStages.feasibility_team++;
+      } else if (normalizedRole === 'legal') {
+        workStages.legal++;
+      } else if (normalizedRole === 'liaison') {
+        workStages.liaison++;
+      } else if (normalizedRole === 'finance') {
+        workStages.finance++;
+      } else if (normalizedRole === 'management') {
+        workStages.management++;
+      }
+    }
+  });
+
+  // Debug: Check for currentRole field in leads
+  if (leads && leads.length > 0) {
+    console.log('Sample lead structure:', leads[0]);
+    console.log('Available fields:', Object.keys(leads[0]));
+    console.log('Current role values:', leads.map(lead => lead.currentRole).filter(Boolean));
+    console.log('Work stages calculated:', workStages);
+  }
  
   const donutCards = [
     {
@@ -291,13 +338,18 @@ function Dashboard() {
     {
       title: "Work Stages",
       dateRange: "2025-08-30 – 2025-11-30",
-      total: 193,
+      total: workStages.tele_callers + workStages.land_executive + workStages.l1_md + workStages.cmo_cro + workStages.feasibility_team + workStages.legal + workStages.liaison + workStages.finance + workStages.management,
       tone: "purple",
       segments: [
-        { label: "No Action", value: 77, color: "#0f172a" },
-        { label: "Visit Done", value: 58, color: "#22c55e" },
-        { label: "Negotiation", value: 38, color: "#3b82f6" },
-        { label: "Due Diligence", value: 20, color: "#f59e0b" },
+        { label: "Tele Callers", value:workStages.tele_callers, color: "#0f172a" },
+        { label: "Land Executive", value: workStages.land_executive, color: "#22c55e" },
+        { label: "L1 MD", value:workStages.l1_md, color: "#3b82f6" },
+        { label: "CMO CRO", value:workStages.cmo_cro, color: "#f59e0b" },
+        { label: "Feasibility Team", value: workStages.feasibility_team, color: "#8b5cf6" },
+        { label: "Legal", value: workStages.legal, color: "#ec4899" },
+        { label: "Liaison", value: workStages.liaison, color: "#14b8a6" },
+        { label: "Finance", value: workStages.finance, color: "#f97316" },
+        { label: "Management", value: workStages.management, color: "#6366f1" }
       ],
     },
   ];
