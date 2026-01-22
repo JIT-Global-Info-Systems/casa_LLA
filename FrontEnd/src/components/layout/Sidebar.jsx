@@ -19,31 +19,31 @@ import {
   Settings,
 } from "lucide-react";
 
-export const navItems = [
-  { path: "/pages/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/pages/leads", label: "Leads", icon: Users },
-  { path: "/pages/users", label: "Users", icon: UserRound },
-  { path: "/pages/approvedleads", label: "Approval", icon: UserRound },
-  { path: "/pages/purchasedleads", label: "Purchased", icon: UserRound },
-  { path: "/pages/calls", label: "Call", icon: FileText },
-  // { path: "/pages/owners", label: "Approval", icon: Users },
-  { path: "/pages/mediators", label: "Mediators", icon: Handshake },
-  { path: "/pages/masters", label: "Masters", icon: Settings },
-  { path: "/pages/reports", label: "Reports", icon: BarChart3 },
-]
-
 // export const navItems = [
-//   { path: "/pages/dashboard", label: "Dashboard", icon: LayoutDashboard ,page: "dashboard"},
-//   { path: "/pages/leads", label: "Leads", icon: Users , page: "lead"},
-//   { path: "/pages/users", label: "Users", icon: UserRound , page: "users"},
-//   { path: "/pages/approvedleads", label: "Approval", icon: UserRound ,page: "lead" },
-//   { path: "/pages/purchasedleads", label: "Purchased", icon: UserRound , page: "lead"},
-//   { path: "/pages/calls", label: "Call", icon: FileText,page: "calls" },
+//   { path: "/pages/dashboard", label: "Dashboard", icon: LayoutDashboard },
+//   { path: "/pages/leads", label: "Leads", icon: Users },
+//   { path: "/pages/users", label: "Users", icon: UserRound },
+//   { path: "/pages/approvedleads", label: "Approval", icon: UserRound },
+//   { path: "/pages/purchasedleads", label: "Purchased", icon: UserRound },
+//   { path: "/pages/calls", label: "Call", icon: FileText },
 //   // { path: "/pages/owners", label: "Approval", icon: Users },
-//   { path: "/pages/mediators", label: "Mediators", icon: Handshake , page: "mediator"},
-//   { path: "/pages/masters", label: "Masters", icon: Settings , page: "masters"  },
-//   { path: "/pages/reports", label: "Reports", icon: BarChart3, page: "reports" },
+//   { path: "/pages/mediators", label: "Mediators", icon: Handshake },
+//   { path: "/pages/masters", label: "Masters", icon: Settings },
+//   { path: "/pages/reports", label: "Reports", icon: BarChart3 },
 // ]
+
+export const navItems = [
+  { path: "/pages/dashboard", label: "Dashboard", icon: LayoutDashboard ,page: "dashboard"},
+  { path: "/pages/leads", label: "Leads", icon: Users , page: "lead"},
+  { path: "/pages/users", label: "Users", icon: UserRound , page: "users"},
+  { path: "/pages/approvedleads", label: "Approval", icon: UserRound ,page: "lead" },
+  { path: "/pages/purchasedleads", label: "Purchased", icon: UserRound , page: "lead"},
+  { path: "/pages/calls", label: "Call", icon: FileText,page: "calls" },
+  // { path: "/pages/owners", label: "Approval", icon: Users },
+  { path: "/pages/mediators", label: "Mediators", icon: Handshake , page: "mediator"},
+  { path: "/pages/masters", label: "Masters", icon: Settings , page: "masters"  },
+  { path: "/pages/reports", label: "Reports", icon: BarChart3, page: "reports" },
+]
 
 const documentsItems = [
   { hash: "#policies", label: "Policies", icon: ShieldCheck },
