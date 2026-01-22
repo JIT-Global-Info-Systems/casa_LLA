@@ -71,10 +71,14 @@ const userSchema = new mongoose.Schema({
 
   updated_at: {
     type: Date
+  },
+  
+  firstLogin: {
+    type: Boolean,
+    default: true
   }
 
 });
-
 
 const User = mongoose.models.User || mongoose.model("User", userSchema);
 module.exports = User;
