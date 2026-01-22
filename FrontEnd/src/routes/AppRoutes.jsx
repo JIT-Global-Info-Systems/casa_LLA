@@ -10,12 +10,15 @@ import ForgotPassword from "@/pages/auth/ForgotPassword";
 import VerifyOtp from "@/pages/auth/VerifyOtp";
 import ResetPassword from "@/pages/auth/ResetPassword";
 import ChangePassword from "@/pages/auth/ChangePassword";
+import FirstTimePasswordChange from "@/pages/auth/FirstTimePasswordChange";
 import ApprovedLeads from "@/pages/ApprovedLeads";
 import PurchasedLeads from "@/pages/PurchasedLeads";
 import Leads from "@/pages/Leads";
 import Unauthorized from "@/pages/Unauthorized";
 import Calls from "@/pages/Calls";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import PasswordChangeProtectedRoute from "@/components/auth/PasswordChangeProtectedRoute";
+import { AuthProvider } from "@/context/AuthContext";
 import { PERMISSIONS } from "@/config/rbac";
 // const Leads = () => (
 //   <div className="p-6">
@@ -45,12 +48,15 @@ function AppRoutes() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/verify-otp" element={<VerifyOtp />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/first-time-password-change" element={<FirstTimePasswordChange />} />
           <Route path="/unauthorized" element={<Unauthorized />} />
           {/* Protected Routes */}
           <Route path="/pages" element={
-            <ProtectedRoute requiredPermission={PERMISSIONS.PAGE_DASHBOARD}>
-              <MainLayout />
-            </ProtectedRoute>
+            <PasswordChangeProtectedRoute>
+              <ProtectedRoute requiredPermission={PERMISSIONS.PAGE_DASHBOARD}>
+                <MainLayout />
+              </ProtectedRoute>
+            </PasswordChangeProtectedRoute>
           }>
             <Route index element={<Dashboard />} />
             <Route path="dashboard" element={<Dashboard />} />
