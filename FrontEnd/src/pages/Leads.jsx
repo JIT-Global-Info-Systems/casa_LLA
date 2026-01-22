@@ -13,7 +13,7 @@ import toast from "react-hot-toast"
 
 const yesNo = (v) => (v ? "Yes" : "No")
 
-export default function Leads({ data = null, onSubmit, onClose }) {
+export default function Leads({ data = null, onSubmit, onClose, viewMode = false }) {
   const { mediators, loading: mediatorsLoading, fetched: mediatorsFetched, fetchMediators } = useMediators()
   const { users, loading: usersLoading, fetchUsers } = useUsers()
   
@@ -531,9 +531,21 @@ export default function Leads({ data = null, onSubmit, onClose }) {
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
         className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+        disabled={viewMode}
       />
       <span className={`text-sm font-medium ${checked ? "text-indigo-900" : "text-gray-600"}`}>{label}</span>
     </label>
+  )
+
+  const ReadonlyField = ({ label, value, children }) => (
+    <div className="space-y-2">
+      <Label className="text-gray-700 font-medium">{label}</Label>
+      {children || (
+        <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+          {value || "-"}
+        </div>
+      )}
+    </div>
   )
 
   return (
@@ -547,8 +559,12 @@ export default function Leads({ data = null, onSubmit, onClose }) {
               </Button>
             )}
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 tracking-tight">{data ? "Edit Lead" : "New Lead"}</h1>
-              <p className="text-gray-500 text-sm mt-1">Fill in the details below to create a new property lead.</p>
+              <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+                {viewMode ? "View Lead" : data ? "Edit Lead" : "New Lead"}
+              </h1>
+              <p className="text-gray-500 text-sm mt-1">
+                {viewMode ? "View the lead details below." : "Fill in the details below to create a new property lead."}
+              </p>
             </div>
           </div>
         </div>
@@ -575,38 +591,50 @@ export default function Leads({ data = null, onSubmit, onClose }) {
           <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-2">
               <Label className="text-gray-700">Lead Type</Label>
-              <div className="flex gap-2 p-1 bg-gray-100 rounded-lg w-fit">
-                {["mediator", "owner"].map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => {
-                      handleChange("leadType", type)
-                      // Clear mediator fields when switching to owner
-                      if (type === "owner") {
-                        handleChange("mediatorName", "")
-                        handleChange("mediatorId", "")
-                      }
-                    }}
-                    className={`px-4 py-1.5 rounded-md text-sm font-medium capitalize transition-all ${
-                      formData.leadType === type ? "bg-white text-indigo-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
-                    }`}
-                  >
-                    {type}
-                  </button>
-                ))}
-              </div>
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
+                  {formData.leadType || "-"}
+                </div>
+              ) : (
+                <div className="flex gap-2 p-1 bg-gray-100 rounded-lg w-fit">
+                  {["mediator", "owner"].map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => {
+                        handleChange("leadType", type)
+                        // Clear mediator fields when switching to owner
+                        if (type === "owner") {
+                          handleChange("mediatorName", "")
+                          handleChange("mediatorId", "")
+                        }
+                      }}
+                      className={`px-4 py-1.5 rounded-md text-sm font-medium capitalize transition-all ${
+                        formData.leadType === type ? "bg-white text-indigo-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                      }`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label>Contact Number</Label>
-              <Input
-                value={formData.contactNumber}
-                onChange={(e) => handleChange("contactNumber", e.target.value)}
-                placeholder="e.g. +91 98765 43210"
-                className={`bg-gray-50/50 ${errors.contactNumber ? "border-red-500 focus:border-red-500" : ""}`}
-              />
-              {errors.contactNumber && (
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  {formData.contactNumber || "-"}
+                </div>
+              ) : (
+                <Input
+                  value={formData.contactNumber}
+                  onChange={(e) => handleChange("contactNumber", e.target.value)}
+                  placeholder="e.g. +91 98765 43210"
+                  className={`bg-gray-50/50 ${errors.contactNumber ? "border-red-500 focus:border-red-500" : ""}`}
+                />
+              )}
+              {errors.contactNumber && !viewMode && (
                 <p className="text-red-500 text-sm flex items-center gap-1">
                   <AlertCircle className="h-4 w-4" />
                   {errors.contactNumber}
@@ -616,46 +644,52 @@ export default function Leads({ data = null, onSubmit, onClose }) {
 
             <div className="space-y-2">
               <Label>Mediator/Owner Name</Label>
-              {formData.leadType === "mediator" ? (
-                <Select 
-                  value={formData.mediatorName} 
-                  onValueChange={(value) => {
-                    handleChange("mediatorName", value)
-                    // Also set the mediator ID when a mediator is selected
-                    const selectedMediator = mediators.find(m => m.name === value)
-                    if (selectedMediator) {
-                      handleChange("mediatorId", selectedMediator._id)
-                    }
-                  }}
-                  disabled={mediatorsLoading}
-                >
-                  <SelectTrigger className={`bg-gray-50/50 ${errors.mediatorName ? "border-red-500 focus:border-red-500" : ""}`}>
-                    {mediatorsLoading ? (
-                      <div className="flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <SelectValue placeholder="Loading mediators..." />
-                      </div>
-                    ) : (
-                      <SelectValue placeholder="Select mediator" />
-                    )}
-                  </SelectTrigger>
-                  <SelectContent className="bg-white z-50 shadow-xl border-gray-200">
-                    {mediators.map((mediator) => (
-                      <SelectItem key={mediator._id} value={mediator.name}>
-                        {mediator.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  {formData.mediatorName || "-"}
+                </div>
               ) : (
-                <Input
-                  value={formData.mediatorName}
-                  onChange={(e) => handleChange("mediatorName", e.target.value)}
-                  placeholder="Enter owner name"
-                  className={`bg-gray-50/50 ${errors.mediatorName ? "border-red-500 focus:border-red-500" : ""}`}
-                />
+                formData.leadType === "mediator" ? (
+                  <Select 
+                    value={formData.mediatorName} 
+                    onValueChange={(value) => {
+                      handleChange("mediatorName", value)
+                      // Also set the mediator ID when a mediator is selected
+                      const selectedMediator = mediators.find(m => m.name === value)
+                      if (selectedMediator) {
+                        handleChange("mediatorId", selectedMediator._id)
+                      }
+                    }}
+                    disabled={mediatorsLoading}
+                  >
+                    <SelectTrigger className={`bg-gray-50/50 ${errors.mediatorName ? "border-red-500 focus:border-red-500" : ""}`}>
+                      {mediatorsLoading ? (
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <SelectValue placeholder="Loading mediators..." />
+                        </div>
+                      ) : (
+                        <SelectValue placeholder="Select mediator" />
+                      )}
+                    </SelectTrigger>
+                    <SelectContent className="bg-white z-50 shadow-xl border-gray-200">
+                      {mediators.map((mediator) => (
+                        <SelectItem key={mediator._id} value={mediator.name}>
+                          {mediator.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    value={formData.mediatorName}
+                    onChange={(e) => handleChange("mediatorName", e.target.value)}
+                    placeholder="Enter owner name"
+                    className={`bg-gray-50/50 ${errors.mediatorName ? "border-red-500 focus:border-red-500" : ""}`}
+                  />
+                )
               )}
-              {errors.mediatorName && (
+              {errors.mediatorName && !viewMode && (
                 <p className="text-red-500 text-sm flex items-center gap-1">
                   <AlertCircle className="h-4 w-4" />
                   {errors.mediatorName}
@@ -665,29 +699,35 @@ export default function Leads({ data = null, onSubmit, onClose }) {
 
             <div className="space-y-2">
               <Label>Current Role</Label>
-              <Select 
-                value={formData.currentRole} 
-                onValueChange={(value) => handleChange("currentRole", value)}
-                disabled={usersLoading}
-              >
-                <SelectTrigger className="bg-gray-50/50">
-                  {usersLoading ? (
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <SelectValue placeholder="Loading roles..." />
-                    </div>
-                  ) : (
-                    <SelectValue placeholder="Select role" />
-                  )}
-                </SelectTrigger>
-                <SelectContent className="bg-white z-50 shadow-xl border-gray-200">
-                  {getFilteredRoles().map((role) => (
-                    <SelectItem key={role} value={role}>
-                      {role.replace('_', ' ')}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
+                  {formData.currentRole?.replace('_', ' ') || "-"}
+                </div>
+              ) : (
+                <Select 
+                  value={formData.currentRole} 
+                  onValueChange={(value) => handleChange("currentRole", value)}
+                  disabled={usersLoading}
+                >
+                  <SelectTrigger className="bg-gray-50/50">
+                    {usersLoading ? (
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <SelectValue placeholder="Loading roles..." />
+                      </div>
+                    ) : (
+                      <SelectValue placeholder="Select role" />
+                    )}
+                  </SelectTrigger>
+                  <SelectContent className="bg-white z-50 shadow-xl border-gray-200">
+                    {getFilteredRoles().map((role) => (
+                      <SelectItem key={role} value={role}>
+                        {role.replace('_', ' ')}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             <div className="space-y-2 hidden">
@@ -697,13 +737,19 @@ export default function Leads({ data = null, onSubmit, onClose }) {
 
             <div className="space-y-2">
               <Label>Date</Label>
-              <Input
-                type="date"
-                value={formData.date ? String(formData.date).slice(0, 10) : ""}
-                onChange={(e) => handleChange("date", e.target.value)}
-                className={`bg-gray-50/50 ${errors.date ? "border-red-500 focus:border-red-500" : ""}`}
-              />
-              {errors.date && (
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  {formData.date ? String(formData.date).slice(0, 10) : "-"}
+                </div>
+              ) : (
+                <Input
+                  type="date"
+                  value={formData.date ? String(formData.date).slice(0, 10) : ""}
+                  onChange={(e) => handleChange("date", e.target.value)}
+                  className={`bg-gray-50/50 ${errors.date ? "border-red-500 focus:border-red-500" : ""}`}
+                />
+              )}
+              {errors.date && !viewMode && (
                 <p className="text-red-500 text-sm flex items-center gap-1">
                   <AlertCircle className="h-4 w-4" />
                   {errors.date}
@@ -714,26 +760,32 @@ export default function Leads({ data = null, onSubmit, onClose }) {
             <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-6 p-4 bg-slate-50 rounded-xl border border-slate-100">
               <div className="space-y-2">
                 <Label className="text-indigo-900 font-semibold">Location</Label>
-                <Select value={formData.location} onValueChange={handleLocationChange} disabled={loading.locations}>
-                  <SelectTrigger className={`bg-white ${errors.location ? "border-red-500 focus:border-red-500" : ""}`}>
-                    {loading.locations ? (
-                      <div className="flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <SelectValue placeholder="Loading locations..." />
-                      </div>
-                    ) : (
-                      <SelectValue placeholder="Select location" />
-                    )}
-                  </SelectTrigger>
-                  <SelectContent className="bg-white z-50 shadow-xl border-gray-200">
-                    {getOptions("location").map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.location && (
+                {viewMode ? (
+                  <div className="p-2 bg-white border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                    {formData.location || "-"}
+                  </div>
+                ) : (
+                  <Select value={formData.location} onValueChange={handleLocationChange} disabled={loading.locations}>
+                    <SelectTrigger className={`bg-white ${errors.location ? "border-red-500 focus:border-red-500" : ""}`}>
+                      {loading.locations ? (
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <SelectValue placeholder="Loading locations..." />
+                        </div>
+                      ) : (
+                        <SelectValue placeholder="Select location" />
+                      )}
+                    </SelectTrigger>
+                    <SelectContent className="bg-white z-50 shadow-xl border-gray-200">
+                      {getOptions("location").map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                {errors.location && !viewMode && (
                   <p className="text-red-500 text-sm flex items-center gap-1">
                     <AlertCircle className="h-4 w-4" />
                     {errors.location}
@@ -743,231 +795,375 @@ export default function Leads({ data = null, onSubmit, onClose }) {
 
               <div className="space-y-2">
                 <Label className="text-indigo-900 font-semibold">Zone</Label>
-                <Select value={formData.zone} onValueChange={handleZoneChange} disabled={!formData.location || loading.regions}>
-                  <SelectTrigger className={`bg-white ${errors.zone ? "border-red-500 focus:border-red-500" : ""}`}>
-                    {loading.regions ? (
-                      <div className="flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <SelectValue placeholder="Loading zones..." />
-                      </div>
-                    ) : (
-                      <SelectValue placeholder="Select zone" />
-                    )}
-                  </SelectTrigger>
-                  <SelectContent className="bg-white z-50 shadow-xl border-gray-200">
-                    {getOptions("region").map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {viewMode ? (
+                  <div className="p-2 bg-white border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                    {formData.zone || "-"}
+                  </div>
+                ) : (
+                  <Select value={formData.zone} onValueChange={handleZoneChange} disabled={!formData.location || loading.regions}>
+                    <SelectTrigger className={`bg-white ${errors.zone ? "border-red-500 focus:border-red-500" : ""}`}>
+                      {loading.regions ? (
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <SelectValue placeholder="Loading zones..." />
+                        </div>
+                      ) : (
+                        <SelectValue placeholder="Select zone" />
+                      )}
+                    </SelectTrigger>
+                    <SelectContent className="bg-white z-50 shadow-xl border-gray-200">
+                      {getOptions("region").map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
 
               <div className="space-y-2">
                 <Label className="text-indigo-900 font-semibold">Area</Label>
-                <Select value={formData.area} onValueChange={(val) => handleChange("area", val)} disabled={!formData.zone || loading.zones}>
-                  <SelectTrigger className={`bg-white ${errors.area ? "border-red-500 focus:border-red-500" : ""}`}>
-                    {loading.zones ? (
-                      <div className="flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <SelectValue placeholder="Loading areas..." />
-                      </div>
-                    ) : (
-                      <SelectValue placeholder="Select area" />
-                    )}
-                  </SelectTrigger>
-                  <SelectContent className="bg-white z-50 shadow-xl border-gray-200">
-                    {getOptions("zone").map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {viewMode ? (
+                  <div className="p-2 bg-white border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                    {formData.area || "-"}
+                  </div>
+                ) : (
+                  <Select value={formData.area} onValueChange={(val) => handleChange("area", val)} disabled={!formData.zone || loading.zones}>
+                    <SelectTrigger className={`bg-white ${errors.area ? "border-red-500 focus:border-red-500" : ""}`}>
+                      {loading.zones ? (
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <SelectValue placeholder="Loading areas..." />
+                        </div>
+                      ) : (
+                        <SelectValue placeholder="Select area" />
+                      )}
+                    </SelectTrigger>
+                    <SelectContent className="bg-white z-50 shadow-xl border-gray-200">
+                      {getOptions("zone").map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
             </div>
 
             <div className="space-y-2">
               <Label>Land Name</Label>
-              <Input value={formData.landName} onChange={(e) => handleChange("landName", e.target.value)} className={errors.landName ? "border-red-500 focus:border-red-500" : ""} />
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  {formData.landName || "-"}
+                </div>
+              ) : (
+                <Input value={formData.landName} onChange={(e) => handleChange("landName", e.target.value)} className={errors.landName ? "border-red-500 focus:border-red-500" : ""} />
+              )}
             </div>
 
             <div className="space-y-2">
               <Label>Source Category</Label>
-              <Select value={formData.sourceCategory} onValueChange={(v) => handleChange("sourceCategory", v)}>
-                <SelectTrigger className={errors.sourceCategory ? "border-red-500 focus:border-red-500" : ""}>
-                  <SelectValue placeholder="Select Category" />
-                </SelectTrigger>
-                <SelectContent className="bg-white z-50 shadow-lg">
-                  <SelectItem value="online">Online</SelectItem>
-                  <SelectItem value="reference">Reference</SelectItem>
-                </SelectContent>
-              </Select>
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
+                  {formData.sourceCategory || "-"}
+                </div>
+              ) : (
+                <Select value={formData.sourceCategory} onValueChange={(v) => handleChange("sourceCategory", v)}>
+                  <SelectTrigger className={errors.sourceCategory ? "border-red-500 focus:border-red-500" : ""}>
+                    <SelectValue placeholder="Select Category" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white z-50 shadow-lg">
+                    <SelectItem value="online">Online</SelectItem>
+                    <SelectItem value="reference">Reference</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label>Lead Stage</Label>
-              <Select value={formData.lead_stage} onValueChange={(v) => handleChange("lead_stage", v)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select stage" />
-                </SelectTrigger>
-                <SelectContent className="bg-white z-50 shadow-lg">
-                  <SelectItem value="new">New</SelectItem>
-                  <SelectItem value="warm">Warm</SelectItem>
-                  <SelectItem value="hot">Hot</SelectItem>
-                  <SelectItem value="cold">Cold</SelectItem>
-                  <SelectItem value="management_hot">Management Hot</SelectItem>
-                </SelectContent>
-              </Select>
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
+                  {formData.lead_stage || "-"}
+                </div>
+              ) : (
+                <Select value={formData.lead_stage} onValueChange={(v) => handleChange("lead_stage", v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select stage" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white z-50 shadow-lg">
+                    <SelectItem value="new">New</SelectItem>
+                    <SelectItem value="warm">Warm</SelectItem>
+                    <SelectItem value="hot">Hot</SelectItem>
+                    <SelectItem value="cold">Cold</SelectItem>
+                    <SelectItem value="management_hot">Management Hot</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label>Source</Label>
-              <Select value={formData.source} onValueChange={(v) => handleChange("source", v)}>
-                <SelectTrigger className={errors.source ? "border-red-500 focus:border-red-500" : ""}>
-                  <SelectValue placeholder="Select Source" />
-                </SelectTrigger>
-                <SelectContent className="bg-white z-50 shadow-lg">
-                  <SelectItem value="facebook">Facebook</SelectItem>
-                  <SelectItem value="google">Google</SelectItem>
-                  <SelectItem value="referral">Referral</SelectItem>
-                </SelectContent>
-              </Select>
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
+                  {formData.source || "-"}
+                </div>
+              ) : (
+                <Select value={formData.source} onValueChange={(v) => handleChange("source", v)}>
+                  <SelectTrigger className={errors.source ? "border-red-500 focus:border-red-500" : ""}>
+                    <SelectValue placeholder="Select Source" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white z-50 shadow-lg">
+                    <SelectItem value="facebook">Facebook</SelectItem>
+                    <SelectItem value="google">Google</SelectItem>
+                    <SelectItem value="referral">Referral</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-2">
                 <Label>Extent</Label>
-                <Input value={formData.extent} onChange={(e) => handleChange("extent", e.target.value)} />
+                {viewMode ? (
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                    {formData.extent || "-"}
+                  </div>
+                ) : (
+                  <Input value={formData.extent} onChange={(e) => handleChange("extent", e.target.value)} />
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Unit</Label>
-                <Select value={formData.unit} onValueChange={(v) => handleChange("unit", v)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Unit" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white z-50 shadow-lg">
-                    <SelectItem value="Acre">Acre</SelectItem>
-                    <SelectItem value="Sqft">Sqft</SelectItem>
-                    <SelectItem value="Ground">Ground</SelectItem>
-                  </SelectContent>
-                </Select>
+                {viewMode ? (
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                    {formData.unit || "-"}
+                  </div>
+                ) : (
+                  <Select value={formData.unit} onValueChange={(v) => handleChange("unit", v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Unit" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white z-50 shadow-lg">
+                      <SelectItem value="Acre">Acre</SelectItem>
+                      <SelectItem value="Sqft">Sqft</SelectItem>
+                      <SelectItem value="Ground">Ground</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
             </div>
 
             <div className="space-y-2">
               <Label>Property Type</Label>
-              <Select value={formData.propertyType} onValueChange={(v) => handleChange("propertyType", v)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Type" />
-                </SelectTrigger>
-                <SelectContent className="bg-white z-50 shadow-lg">
-                  <SelectItem value="residential">Residential</SelectItem>
-                  <SelectItem value="commercial">Commercial</SelectItem>
-                  <SelectItem value="mixed">Mixed Use</SelectItem>
-                </SelectContent>
-              </Select>
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
+                  {formData.propertyType || "-"}
+                </div>
+              ) : (
+                <Select value={formData.propertyType} onValueChange={(v) => handleChange("propertyType", v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Type" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white z-50 shadow-lg">
+                    <SelectItem value="residential">Residential</SelectItem>
+                    <SelectItem value="commercial">Commercial</SelectItem>
+                    <SelectItem value="mixed">Mixed Use</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             <div className="md:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-4 pt-2">
               <div className="space-y-2">
                 <Label>FSI</Label>
-                <Input value={formData.fsi} onChange={(e) => handleChange("fsi", e.target.value)} />
+                {viewMode ? (
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                    {formData.fsi || "-"}
+                  </div>
+                ) : (
+                  <Input value={formData.fsi} onChange={(e) => handleChange("fsi", e.target.value)} />
+                )}
               </div>
               <div className="space-y-2">
                 <Label>ASP</Label>
-                <Input value={formData.asp} onChange={(e) => handleChange("asp", e.target.value)} />
+                {viewMode ? (
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                    {formData.asp || "-"}
+                  </div>
+                ) : (
+                  <Input value={formData.asp} onChange={(e) => handleChange("asp", e.target.value)} />
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Total Revenue</Label>
-                <Input value={formData.revenue} onChange={(e) => handleChange("revenue", e.target.value)} />
+                {viewMode ? (
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                    {formData.revenue || "-"}
+                  </div>
+                ) : (
+                  <Input value={formData.revenue} onChange={(e) => handleChange("revenue", e.target.value)} />
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Rate</Label>
-                <Input value={formData.rate} onChange={(e) => handleChange("rate", e.target.value)} />
+                {viewMode ? (
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                    {formData.rate || "-"}
+                  </div>
+                ) : (
+                  <Input value={formData.rate} onChange={(e) => handleChange("rate", e.target.value)} />
+                )}
               </div>
             </div>
 
             <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
               <div className="space-y-2">
                 <Label>Transaction Type</Label>
-                <Select value={formData.transactionType} onValueChange={(v) => handleChange("transactionType", v)}>
-                  <SelectTrigger className="bg-indigo-50/50 border-indigo-100">
-                    <SelectValue placeholder="Select" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white z-50 shadow-lg">
-                    <SelectItem value="JV">JV</SelectItem>
-                    <SelectItem value="Sale">Sale</SelectItem>
-                  </SelectContent>
-                </Select>
+                {viewMode ? (
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                    {formData.transactionType || "-"}
+                  </div>
+                ) : (
+                  <Select value={formData.transactionType} onValueChange={(v) => handleChange("transactionType", v)}>
+                    <SelectTrigger className="bg-indigo-50/50 border-indigo-100">
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white z-50 shadow-lg">
+                      <SelectItem value="JV">JV</SelectItem>
+                      <SelectItem value="Sale">Sale</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Builder Share (%)</Label>
-                <Input value={formData.builderShare} onChange={(e) => handleChange("builderShare", e.target.value)} />
+                {viewMode ? (
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                    {formData.builderShare || "-"}
+                  </div>
+                ) : (
+                  <Input value={formData.builderShare} onChange={(e) => handleChange("builderShare", e.target.value)} />
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Refundable Deposit</Label>
-                <Input value={formData.refundable} onChange={(e) => handleChange("refundable", e.target.value)} />
+                {viewMode ? (
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                    {formData.refundable || "-"}
+                  </div>
+                ) : (
+                  <Input value={formData.refundable} onChange={(e) => handleChange("refundable", e.target.value)} />
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Non-Refundable Deposit</Label>
-                <Input value={formData.nonRefundable} onChange={(e) => handleChange("nonRefundable", e.target.value)} />
+                {viewMode ? (
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                    {formData.nonRefundable || "-"}
+                  </div>
+                ) : (
+                  <Input value={formData.nonRefundable} onChange={(e) => handleChange("nonRefundable", e.target.value)} />
+                )}
               </div>
             </div>
 
             <div className="space-y-2">
               <Label>Landmark</Label>
-              <Input value={formData.landmark} onChange={(e) => handleChange("landmark", e.target.value)} />
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  {formData.landmark || "-"}
+                </div>
+              ) : (
+                <Input value={formData.landmark} onChange={(e) => handleChange("landmark", e.target.value)} />
+              )}
             </div>
             <div className="space-y-2">
               <Label>Frontage</Label>
-              <Input value={formData.frontage} onChange={(e) => handleChange("frontage", e.target.value)} />
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  {formData.frontage || "-"}
+                </div>
+              ) : (
+                <Input value={formData.frontage} onChange={(e) => handleChange("frontage", e.target.value)} />
+              )}
             </div>
             <div className="space-y-2">
               <Label>Road Width</Label>
-              <Input value={formData.roadWidth} onChange={(e) => handleChange("roadWidth", e.target.value)} />
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  {formData.roadWidth || "-"}
+                </div>
+              ) : (
+                <Input value={formData.roadWidth} onChange={(e) => handleChange("roadWidth", e.target.value)} />
+              )}
             </div>
             <div className="space-y-2">
               <Label>SSPDE</Label>
-              <Select value={formData.sspde} onValueChange={(v) => handleChange("sspde", v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-white z-50 shadow-lg">
-                  <SelectItem value="Yes">Yes</SelectItem>
-                  <SelectItem value="No">No</SelectItem>
-                </SelectContent>
-              </Select>
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  {formData.sspde || "-"}
+                </div>
+              ) : (
+                <Select value={formData.sspde} onValueChange={(v) => handleChange("sspde", v)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white z-50 shadow-lg">
+                    <SelectItem value="Yes">Yes</SelectItem>
+                    <SelectItem value="No">No</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <div className="space-y-2">
-              <Label>yield (%)</Label>
-              <Input value={formData.yield} onChange={(e) => handleChange("yield", e.target.value)} />
+              <Label>Yield (%)</Label>
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  {formData.yield || "-"}
+                </div>
+              ) : (
+                <Input value={formData.yield} onChange={(e) => handleChange("yield", e.target.value)} />
+              )}
             </div>
 
             {/* <div className="md:col-span-3 p-4 bg-yellow-50 rounded-lg border border-yellow-200"> */}
               <div className="space-y-2">
                 <Label className="text-yellow-800">Lead Status</Label>
-                <Select value={formData.leadStatus} onValueChange={(v) => handleChange("leadStatus", v)}>
-                  <SelectTrigger className="bg-white border-yellow-300">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white z-50 shadow-lg">
-                    <SelectItem value="Pending">Pending</SelectItem>
-                    <SelectItem value="Approved">Approved</SelectItem>
-                    <SelectItem value="Rejected">Rejected</SelectItem>
-                    <SelectItem value="Cancelled">Cancelled</SelectItem>
-                    <SelectItem value="Lost">Lost</SelectItem>
-                    <SelectItem value="Won">Won</SelectItem>
-                    <SelectItem value="Purchased">Purchased</SelectItem>
-                  </SelectContent>
-                </Select>
+                {viewMode ? (
+                  <div className="p-2 bg-white border border-yellow-300 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
+                    {formData.leadStatus || "-"}
+                  </div>
+                ) : (
+                  <Select value={formData.leadStatus} onValueChange={(v) => handleChange("leadStatus", v)}>
+                    <SelectTrigger className="bg-white border-yellow-300">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white z-50 shadow-lg">
+                      <SelectItem value="Pending">Pending</SelectItem>
+                      <SelectItem value="Approved">Approved</SelectItem>
+                      <SelectItem value="Rejected">Rejected</SelectItem>
+                      <SelectItem value="Cancelled">Cancelled</SelectItem>
+                      <SelectItem value="Lost">Lost</SelectItem>
+                      <SelectItem value="Won">Won</SelectItem>
+                      <SelectItem value="Purchased">Purchased</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
             {/* </div> */}
 
             <div className="md:col-span-3 space-y-2">
               <Label>Remark</Label>
-              <Textarea value={formData.remark} onChange={(e) => handleChange("remark", e.target.value)} rows={3} placeholder="Add any additional context here..." className="bg-gray-50" />
+              {viewMode ? (
+                <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[80px]">
+                  {formData.remark || "-"}
+                </div>
+              ) : (
+                <Textarea value={formData.remark} onChange={(e) => handleChange("remark", e.target.value)} rows={3} placeholder="Add any additional context here..." className="bg-gray-50" />
+              )}
             </div>
           </CardContent>
         </Card>
@@ -981,51 +1177,123 @@ export default function Leads({ data = null, onSubmit, onClose }) {
           <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>Developer Name</Label>
-              <Input value={formData.competitorDeveloperName} onChange={(e) => handleChange("competitorDeveloperName", e.target.value)} />
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  {formData.competitorDeveloperName || "-"}
+                </div>
+              ) : (
+                <Input value={formData.competitorDeveloperName} onChange={(e) => handleChange("competitorDeveloperName", e.target.value)} />
+              )}
             </div>
             <div className="space-y-2">
               <Label>Project Name</Label>
-              <Input value={formData.competitorProjectName} onChange={(e) => handleChange("competitorProjectName", e.target.value)} />
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  {formData.competitorProjectName || "-"}
+                </div>
+              ) : (
+                <Input value={formData.competitorProjectName} onChange={(e) => handleChange("competitorProjectName", e.target.value)} />
+              )}
             </div>
             <div className="space-y-2">
               <Label>Product Type</Label>
-              <Input value={formData.competitorProductType} onChange={(e) => handleChange("competitorProductType", e.target.value)} />
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  {formData.competitorProductType || "-"}
+                </div>
+              ) : (
+                <Input value={formData.competitorProductType} onChange={(e) => handleChange("competitorProductType", e.target.value)} />
+              )}
             </div>
             <div className="space-y-2">
               <Label>Location</Label>
-              <Input value={formData.competitorLocation} onChange={(e) => handleChange("competitorLocation", e.target.value)} />
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  {formData.competitorLocation || "-"}
+                </div>
+              ) : (
+                <Input value={formData.competitorLocation} onChange={(e) => handleChange("competitorLocation", e.target.value)} />
+              )}
             </div>
             <div className="space-y-2">
               <Label>Plot / Unit Size</Label>
-              <Input value={formData.competitorPlotSize} onChange={(e) => handleChange("competitorPlotSize", e.target.value)} />
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  {formData.competitorPlotSize || "-"}
+                </div>
+              ) : (
+                <Input value={formData.competitorPlotSize} onChange={(e) => handleChange("competitorPlotSize", e.target.value)} />
+              )}
             </div>
             <div className="space-y-2">
               <Label>Land Extent</Label>
-              <Input value={formData.competitorLandExtent} onChange={(e) => handleChange("competitorLandExtent", e.target.value)} />
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  {formData.competitorLandExtent || "-"}
+                </div>
+              ) : (
+                <Input value={formData.competitorLandExtent} onChange={(e) => handleChange("competitorLandExtent", e.target.value)} />
+              )}
             </div>
             <div className="space-y-2">
               <Label>Price Range</Label>
-              <Input value={formData.competitorPriceRange} onChange={(e) => handleChange("competitorPriceRange", e.target.value)} />
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  {formData.competitorPriceRange || "-"}
+                </div>
+              ) : (
+                <Input value={formData.competitorPriceRange} onChange={(e) => handleChange("competitorPriceRange", e.target.value)} />
+              )}
             </div>
             <div className="space-y-2">
               <Label>Approx Price</Label>
-              <Input value={formData.competitorApproxPrice} onChange={(e) => handleChange("competitorApproxPrice", e.target.value)} />
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  {formData.competitorApproxPrice || "-"}
+                </div>
+              ) : (
+                <Input value={formData.competitorApproxPrice} onChange={(e) => handleChange("competitorApproxPrice", e.target.value)} />
+              )}
             </div>
             <div className="space-y-2">
               <Label>Approx Price Cent</Label>
-              <Input value={formData.competitorApproxPriceCent} onChange={(e) => handleChange("competitorApproxPriceCent", e.target.value)} />
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  {formData.competitorApproxPriceCent || "-"}
+                </div>
+              ) : (
+                <Input value={formData.competitorApproxPriceCent} onChange={(e) => handleChange("competitorApproxPriceCent", e.target.value)} />
+              )}
             </div>
             <div className="space-y-2">
               <Label>Total Plots / Units</Label>
-              <Input value={formData.competitorTotalUnits} onChange={(e) => handleChange("competitorTotalUnits", e.target.value)} />
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  {formData.competitorTotalUnits || "-"}
+                </div>
+              ) : (
+                <Input value={formData.competitorTotalUnits} onChange={(e) => handleChange("competitorTotalUnits", e.target.value)} />
+              )}
             </div>
             <div className="md:col-span-2 space-y-2">
               <Label>Key Amenities (comma separated)</Label>
-              <Input value={formData.competitorKeyAmenities} onChange={(e) => handleChange("competitorKeyAmenities", e.target.value)} />
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  {formData.competitorKeyAmenities || "-"}
+                </div>
+              ) : (
+                <Input value={formData.competitorKeyAmenities} onChange={(e) => handleChange("competitorKeyAmenities", e.target.value)} />
+              )}
             </div>
             <div className="md:col-span-3 space-y-2">
               <Label>USP / Positioning</Label>
-              <Textarea value={formData.competitorUSP} onChange={(e) => handleChange("competitorUSP", e.target.value)} rows={2} />
+              {viewMode ? (
+                <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[80px]">
+                  {formData.competitorUSP || "-"}
+                </div>
+              ) : (
+                <Textarea value={formData.competitorUSP} onChange={(e) => handleChange("competitorUSP", e.target.value)} rows={2} />
+              )}
             </div>
           </CardContent>
         </Card>
@@ -1043,35 +1311,83 @@ export default function Leads({ data = null, onSubmit, onClose }) {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <div className="space-y-2">
                   <Label>Land Location</Label>
-                  <Input value={formData.checkLandLocation} onChange={(e) => handleChange("checkLandLocation", e.target.value)} />
+                  {viewMode ? (
+                    <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                      {formData.checkLandLocation || "-"}
+                    </div>
+                  ) : (
+                    <Input value={formData.checkLandLocation} onChange={(e) => handleChange("checkLandLocation", e.target.value)} />
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label>Land Extent</Label>
-                  <Input value={formData.checkLandExtent} onChange={(e) => handleChange("checkLandExtent", e.target.value)} />
+                  {viewMode ? (
+                    <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                      {formData.checkLandExtent || "-"}
+                    </div>
+                  ) : (
+                    <Input value={formData.checkLandExtent} onChange={(e) => handleChange("checkLandExtent", e.target.value)} />
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label>Land Zone</Label>
-                  <Input value={formData.checkLandZone} onChange={(e) => handleChange("checkLandZone", e.target.value)} />
+                  {viewMode ? (
+                    <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                      {formData.checkLandZone || "-"}
+                    </div>
+                  ) : (
+                    <Input value={formData.checkLandZone} onChange={(e) => handleChange("checkLandZone", e.target.value)} />
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label>Classification of Land</Label>
-                  <Input value={formData.checkLandClassification} onChange={(e) => handleChange("checkLandClassification", e.target.value)} />
+                  {viewMode ? (
+                    <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                      {formData.checkLandClassification || "-"}
+                    </div>
+                  ) : (
+                    <Input value={formData.checkLandClassification} onChange={(e) => handleChange("checkLandClassification", e.target.value)} />
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label>Google Pin</Label>
-                  <Input value={formData.checkGooglePin} onChange={(e) => handleChange("checkGooglePin", e.target.value)} />
+                  {viewMode ? (
+                    <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                      {formData.checkGooglePin || "-"}
+                    </div>
+                  ) : (
+                    <Input value={formData.checkGooglePin} onChange={(e) => handleChange("checkGooglePin", e.target.value)} />
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label>Approach Road Width</Label>
-                  <Input value={formData.checkApproachRoadWidth} onChange={(e) => handleChange("checkApproachRoadWidth", e.target.value)} />
+                  {viewMode ? (
+                    <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                      {formData.checkApproachRoadWidth || "-"}
+                    </div>
+                  ) : (
+                    <Input value={formData.checkApproachRoadWidth} onChange={(e) => handleChange("checkApproachRoadWidth", e.target.value)} />
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label>Road Width</Label>
-                  <Input value={formData.checkRoadWidth} onChange={(e) => handleChange("checkRoadWidth", e.target.value)} />
+                  {viewMode ? (
+                    <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                      {formData.checkRoadWidth || "-"}
+                    </div>
+                  ) : (
+                    <Input value={formData.checkRoadWidth} onChange={(e) => handleChange("checkRoadWidth", e.target.value)} />
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label>Soil Type</Label>
-                  <Input value={formData.checkSoilType} onChange={(e) => handleChange("checkSoilType", e.target.value)} />
+                  {viewMode ? (
+                    <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                      {formData.checkSoilType || "-"}
+                    </div>
+                  ) : (
+                    <Input value={formData.checkSoilType} onChange={(e) => handleChange("checkSoilType", e.target.value)} />
+                  )}
                 </div>
               </div>
             </div>
@@ -1081,23 +1397,53 @@ export default function Leads({ data = null, onSubmit, onClose }) {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 <div className="space-y-2">
                   <Label>Selling Price</Label>
-                  <Input value={formData.checkSellingPrice} onChange={(e) => handleChange("checkSellingPrice", e.target.value)} />
+                  {viewMode ? (
+                    <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                      {formData.checkSellingPrice || "-"}
+                    </div>
+                  ) : (
+                    <Input value={formData.checkSellingPrice} onChange={(e) => handleChange("checkSellingPrice", e.target.value)} />
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label>Guideline Value</Label>
-                  <Input value={formData.checkGuidelineValue} onChange={(e) => handleChange("checkGuidelineValue", e.target.value)} />
+                  {viewMode ? (
+                    <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                      {formData.checkGuidelineValue || "-"}
+                    </div>
+                  ) : (
+                    <Input value={formData.checkGuidelineValue} onChange={(e) => handleChange("checkGuidelineValue", e.target.value)} />
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label>Location Selling Price</Label>
-                  <Input value={formData.checkLocationSellingPrice} onChange={(e) => handleChange("checkLocationSellingPrice", e.target.value)} />
+                  {viewMode ? (
+                    <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                      {formData.checkLocationSellingPrice || "-"}
+                    </div>
+                  ) : (
+                    <Input value={formData.checkLocationSellingPrice} onChange={(e) => handleChange("checkLocationSellingPrice", e.target.value)} />
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label>Marketing Price</Label>
-                  <Input value={formData.checkMarketingPrice} onChange={(e) => handleChange("checkMarketingPrice", e.target.value)} />
+                  {viewMode ? (
+                    <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                      {formData.checkMarketingPrice || "-"}
+                    </div>
+                  ) : (
+                    <Input value={formData.checkMarketingPrice} onChange={(e) => handleChange("checkMarketingPrice", e.target.value)} />
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label>Total Saleable Area</Label>
-                  <Input value={formData.checkTotalSaleableArea} onChange={(e) => handleChange("checkTotalSaleableArea", e.target.value)} />
+                  {viewMode ? (
+                    <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                      {formData.checkTotalSaleableArea || "-"}
+                    </div>
+                  ) : (
+                    <Input value={formData.checkTotalSaleableArea} onChange={(e) => handleChange("checkTotalSaleableArea", e.target.value)} />
+                  )}
                 </div>
               </div>
             </div>
@@ -1128,18 +1474,41 @@ export default function Leads({ data = null, onSubmit, onClose }) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className={`border-2 border-dashed rounded-xl p-6 transition-all ${formData.checkFMBSketch ? "border-indigo-400 bg-indigo-50/30" : "border-gray-200 bg-gray-50"}`}>
                   <div className="flex items-center gap-3 mb-3">
-                    <input type="checkbox" checked={formData.checkFMBSketch} onChange={(e) => handleCheckboxChange("checkFMBSketch", e.target.checked)} className="w-5 h-5 text-indigo-600 rounded" />
+                    <input 
+                      type="checkbox" 
+                      checked={formData.checkFMBSketch} 
+                      onChange={(e) => handleCheckboxChange("checkFMBSketch", e.target.checked)} 
+                      className="w-5 h-5 text-indigo-600 rounded"
+                      disabled={viewMode}
+                    />
                     <span className="font-semibold text-gray-700">FMB Sketch Available</span>
                   </div>
                   {formData.checkFMBSketch && (
                     <div className="mt-4 animate-in fade-in slide-in-from-top-2">
-                      <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Upload File (JPG/PNG, ≤2MB)</Label>
-                      <Input type="file" accept="image/png,image/jpeg,image/jpg" onChange={(e) => handleFileChange("fileFMBSketch", e.target.files?.[0])} className={`bg-white ${errors.fileFMBSketch ? "border-red-500 focus:border-red-500" : ""}`} />
-                      {errors.fileFMBSketch && (
-                        <p className="text-red-500 text-sm flex items-center gap-1 mt-2">
-                          <AlertCircle className="h-4 w-4" />
-                          {errors.fileFMBSketch}
-                        </p>
+                      {viewMode && data?.checkListPage?.[0]?.fmbSketchPath ? (
+                        <div className="space-y-2">
+                          <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">FMB Sketch Document</Label>
+                          <div className="p-3 bg-white border border-gray-200 rounded-md">
+                            <p className="text-sm text-gray-600 truncate">{data.checkListPage[0].fmbSketchPath}</p>
+                            <button 
+                              className="mt-2 text-xs text-indigo-600 hover:text-indigo-800 underline"
+                              onClick={() => window.open(`/uploads/${data.checkListPage[0].fmbSketchPath}`, '_blank')}
+                            >
+                              View Document
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Upload File (JPG/PNG, ≤2MB)</Label>
+                          <Input type="file" accept="image/png,image/jpeg,image/jpg" onChange={(e) => handleFileChange("fileFMBSketch", e.target.files?.[0])} className={`bg-white ${errors.fileFMBSketch ? "border-red-500 focus:border-red-500" : ""}`} />
+                          {errors.fileFMBSketch && (
+                            <p className="text-red-500 text-sm flex items-center gap-1 mt-2">
+                              <AlertCircle className="h-4 w-4" />
+                              {errors.fileFMBSketch}
+                            </p>
+                          )}
+                        </>
                       )}
                     </div>
                   )}
@@ -1147,18 +1516,41 @@ export default function Leads({ data = null, onSubmit, onClose }) {
 
                 <div className={`border-2 border-dashed rounded-xl p-6 transition-all ${formData.checkPattaChitta ? "border-indigo-400 bg-indigo-50/30" : "border-gray-200 bg-gray-50"}`}>
                   <div className="flex items-center gap-3 mb-3">
-                    <input type="checkbox" checked={formData.checkPattaChitta} onChange={(e) => handleCheckboxChange("checkPattaChitta", e.target.checked)} className="w-5 h-5 text-indigo-600 rounded" />
+                    <input 
+                      type="checkbox" 
+                      checked={formData.checkPattaChitta} 
+                      onChange={(e) => handleCheckboxChange("checkPattaChitta", e.target.checked)} 
+                      className="w-5 h-5 text-indigo-600 rounded"
+                      disabled={viewMode}
+                    />
                     <span className="font-semibold text-gray-700">Patta / Chitta Available</span>
                   </div>
                   {formData.checkPattaChitta && (
                     <div className="mt-4 animate-in fade-in slide-in-from-top-2">
-                      <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Upload File (JPG/PNG, ≤2MB)</Label>
-                      <Input type="file" accept="image/png,image/jpeg,image/jpg" onChange={(e) => handleFileChange("filePattaChitta", e.target.files?.[0])} className={`bg-white ${errors.filePattaChitta ? "border-red-500 focus:border-red-500" : ""}`} />
-                      {errors.filePattaChitta && (
-                        <p className="text-red-500 text-sm flex items-center gap-1 mt-2">
-                          <AlertCircle className="h-4 w-4" />
-                          {errors.filePattaChitta}
-                        </p>
+                      {viewMode && data?.checkListPage?.[0]?.pattaChittaPath ? (
+                        <div className="space-y-2">
+                          <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Patta / Chitta Document</Label>
+                          <div className="p-3 bg-white border border-gray-200 rounded-md">
+                            <p className="text-sm text-gray-600 truncate">{data.checkListPage[0].pattaChittaPath}</p>
+                            <button 
+                              className="mt-2 text-xs text-indigo-600 hover:text-indigo-800 underline"
+                              onClick={() => window.open(`/uploads/${data.checkListPage[0].pattaChittaPath}`, '_blank')}
+                            >
+                              View Document
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Upload File (JPG/PNG, ≤2MB)</Label>
+                          <Input type="file" accept="image/png,image/jpeg,image/jpg" onChange={(e) => handleFileChange("filePattaChitta", e.target.files?.[0])} className={`bg-white ${errors.filePattaChitta ? "border-red-500 focus:border-red-500" : ""}`} />
+                          {errors.filePattaChitta && (
+                            <p className="text-red-500 text-sm flex items-center gap-1 mt-2">
+                              <AlertCircle className="h-4 w-4" />
+                              {errors.filePattaChitta}
+                            </p>
+                          )}
+                        </>
                       )}
                     </div>
                   )}
@@ -1171,63 +1563,99 @@ export default function Leads({ data = null, onSubmit, onClose }) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Owner Name</Label>
-                  <Input value={formData.checkOwnerName} onChange={(e) => handleChange("checkOwnerName", e.target.value)} />
+                  {viewMode ? (
+                    <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                      {formData.checkOwnerName || "-"}
+                    </div>
+                  ) : (
+                    <Input value={formData.checkOwnerName} onChange={(e) => handleChange("checkOwnerName", e.target.value)} />
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label>Consultant Name</Label>
-                  <Input value={formData.checkConsultantName} onChange={(e) => handleChange("checkConsultantName", e.target.value)} />
+                  {viewMode ? (
+                    <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                      {formData.checkConsultantName || "-"}
+                    </div>
+                  ) : (
+                    <Input value={formData.checkConsultantName} onChange={(e) => handleChange("checkConsultantName", e.target.value)} />
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label>Projects</Label>
-                  <Input value={formData.checkProjects} onChange={(e) => handleChange("checkProjects", e.target.value)} />
+                  {viewMode ? (
+                    <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                      {formData.checkProjects || "-"}
+                    </div>
+                  ) : (
+                    <Input value={formData.checkProjects} onChange={(e) => handleChange("checkProjects", e.target.value)} />
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label>Google Location</Label>
-                  <Input value={formData.checkGoogleLocation} onChange={(e) => handleChange("checkGoogleLocation", e.target.value)} />
+                  {viewMode ? (
+                    <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                      {formData.checkGoogleLocation || "-"}
+                    </div>
+                  ) : (
+                    <Input value={formData.checkGoogleLocation} onChange={(e) => handleChange("checkGoogleLocation", e.target.value)} />
+                  )}
                 </div>
               </div>
 
               <div className="mt-4">
                 <div className="space-y-2">
                   <Label>Requests</Label>
-                  <Textarea value={formData.checkRequests} onChange={(e) => handleChange("checkRequests", e.target.value)} placeholder="Enter any special requests" rows={3} className="bg-gray-50" />
+                  {viewMode ? (
+                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[80px]">
+                      {formData.checkRequests || "-"}
+                    </div>
+                  ) : (
+                    <Textarea value={formData.checkRequests} onChange={(e) => handleChange("checkRequests", e.target.value)} placeholder="Enter any special requests" rows={3} className="bg-gray-50" />
+                  )}
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-0 shadow-md bg-white">
-          
-          <CardContent>
-            <div className="space-y-2">
-              <Label>Calls</Label>
-              <Textarea 
-                value={formData.checkNotes} 
-                onChange={(e) => handleChange("checkNotes", e.target.value)} 
-                placeholder="Enter additional notes,calls, observations, or important information about this lead..." 
-                rows={3} 
-                className="bg-gray-50 resize-y" 
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="flex justify-end gap-4 pb-8">
-          <Button variant="outline" size="lg" onClick={onClose} className="bg-white border-gray-300" disabled={loading.submit}>
-            Cancel
-          </Button>
-          <Button size="lg" onClick={handleSubmit} className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 shadow-lg" disabled={loading.submit}>
-            {loading.submit ? (
-              <div className="flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                {data ? "Updating..." : "Submitting..."}
+        {!viewMode && (
+          <Card className="border-0 shadow-md bg-white">
+            <CardHeader>
+              <CardTitle className="text-xl text-gray-800">Calls & Notes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <Label>Calls & Notes</Label>
+                <Textarea 
+                  value={formData.checkNotes} 
+                  onChange={(e) => handleChange("checkNotes", e.target.value)} 
+                  placeholder="Enter additional notes, calls, observations, or important information about this lead..." 
+                  rows={3} 
+                  className="bg-gray-50 resize-y" 
+                />
               </div>
-            ) : (
-              <>{data ? "Update Lead" : "Submit Lead"}</>
-            )}
-          </Button>
-        </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {!viewMode && (
+          <div className="flex justify-end gap-4 pb-8">
+            <Button variant="outline" size="lg" onClick={onClose} className="bg-white border-gray-300" disabled={loading.submit}>
+              Cancel
+            </Button>
+            <Button size="lg" onClick={handleSubmit} className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 shadow-lg" disabled={loading.submit}>
+              {loading.submit ? (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {data ? "Updating..." : "Submitting..."}
+                </div>
+              ) : (
+                <>{data ? "Update Lead" : "Submit Lead"}</>
+              )}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   )
