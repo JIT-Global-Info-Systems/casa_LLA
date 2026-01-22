@@ -1,7 +1,7 @@
 // import * as React from "react";
 // import { Link, useLocation, useNavigate } from "react-router-dom";
 // import { Bell, Menu } from "lucide-react";
- 
+
 // import { navItems } from "./Sidebar";
 // import { Button } from "@/components/ui/button";
 // import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -16,7 +16,7 @@
 // import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 // import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 // import { useAuth } from "../../context/AuthContext";
- 
+
 // const pageTitles = {
 //   "/pages": "Dashboard",
 //   "/pages/dashboard": "Dashboard",
@@ -28,14 +28,14 @@
 //   "/pages/documents": "Documents",
 //   "/pages/profile": "Profile",
 // };
- 
+
 // const locations = [
 //   { label: "All Locations", value: "all" },
 //   { label: "Chennai", value: "chennai" },
 //   { label: "Bangalore", value: "bangalore" },
 //   { label: "Mysore", value: "mysore" },
 // ];
- 
+
 // function Topbar() {
 //   const { user } = useAuth();
 //   const location = useLocation();
@@ -43,7 +43,7 @@
 //   const title = pageTitles[location.pathname] || "Dashboard";
 //   const [mobileNavOpen, setMobileNavOpen] = React.useState(false);
 //   const [selectedLocation, setSelectedLocation] = React.useState("all");
- 
+
 //   // Function to get initials from user name
 //   const getInitials = (name) => {
 //     if (!name || typeof name !== 'string') {
@@ -55,14 +55,14 @@
 //       .join("")
 //       .toUpperCase();
 //   };
- 
+
 //   const isItemActive = (path) => {
 //     return (
 //       location.pathname === path ||
 //       (path === "/pages/dashboard" && location.pathname === "/pages")
 //     );
 //   };
- 
+
 //   return (
 //     <header className="sticky top-0 z-30 h-16 border-b border-border bg-white shadow-sm">
 //       <div className="flex h-full items-center justify-between gap-4 px-4 sm:px-6">
@@ -89,7 +89,7 @@
 //                   {navItems.map((item) => {
 //                     const active = isItemActive(item.path);
 //                     const Icon = item.icon;
- 
+
 //                     return (
 //                       <Link
 //                         key={item.path}
@@ -111,14 +111,14 @@
 //               </nav>
 //             </SheetContent>
 //           </Sheet>
- 
+
 //           <div className="flex flex-col">
 //             <div className="text-base font-bold text-indigo-700">{title}</div>
 //             <div className="hidden text-xs text-slate-500 sm:block">
 //               Analytics dashboard
 //             </div>
 //           </div>
- 
+
 //           <nav className="hidden md:flex items-center gap-1" aria-label="Primary">
 //             {navItems.map((item) => {
 //               const active = isItemActive(item.path);
@@ -139,7 +139,7 @@
 //             })}
 //           </nav>
 //         </div>
- 
+
 //         <div className="flex items-center gap-2">
 //           <Select value={selectedLocation} onValueChange={setSelectedLocation}>
 //             <SelectTrigger className="w-[140px]">
@@ -153,11 +153,11 @@
 //               ))}
 //             </SelectContent>
 //           </Select>
-         
+
 //           <Button variant="ghost" size="icon" aria-label="Notifications">
 //             <Bell />
 //           </Button>
- 
+
 //           <DropdownMenu>
 //             <DropdownMenuTrigger asChild>
 //               <Button
@@ -187,7 +187,7 @@
 //     </header>
 //   );
 // }
- 
+
 // export default Topbar;
 
 
@@ -195,7 +195,7 @@
 import * as React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Bell, Menu } from "lucide-react";
- 
+
 import { navItems } from "./Sidebar";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -210,7 +210,8 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "../../context/AuthContext";
- 
+import { hasAccess } from "@/config/rbac";
+
 const pageTitles = {
   "/pages": "Dashboard",
   "/pages/dashboard": "Dashboard",
@@ -224,22 +225,28 @@ const pageTitles = {
   "/pages/profile": "Profile",
   "/pages/calls": "Calls",
 };
- 
+
 const locations = [
   { label: "All Locations", value: "all" },
   { label: "Chennai", value: "chennai" },
   { label: "Bangalore", value: "bangalore" },
   { label: "Mysore", value: "mysore" },
 ];
- 
+
 function Topbar() {
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const location = useLocation();
   const navigate = useNavigate()
   const title = pageTitles[location.pathname] || "Dashboard";
   const [mobileNavOpen, setMobileNavOpen] = React.useState(false);
   const [selectedLocation, setSelectedLocation] = React.useState("all");
- 
+
+  // Filter navigation items based on user role
+  const filteredNavItems = navItems.filter(item => {
+    if (!item.page) return true; // Show items without page requirement
+    return hasAccess(userRole, item.page);
+  });
+
   // Function to get initials from user name
   const getInitials = (name) => {
     if (!name || typeof name !== 'string') {
@@ -251,14 +258,14 @@ function Topbar() {
       .join("")
       .toUpperCase();
   };
- 
+
   const isItemActive = (path) => {
     return (
       location.pathname === path ||
       (path === "/pages/dashboard" && location.pathname === "/pages")
     );
   };
- 
+
   return (
     <header className="sticky top-0 z-30 h-16 border-b border-border bg-white shadow-sm">
       <div className="flex h-full items-center justify-between gap-4 px-4 sm:px-6">
@@ -282,10 +289,10 @@ function Topbar() {
               </div>
               <nav className=" ms-5 px-3 py-4" aria-label="Primary">
                 <div className="space-y-1">
-                  {navItems.map((item) => {
+                  {filteredNavItems.map((item) => {
                     const active = isItemActive(item.path);
                     const Icon = item.icon;
- 
+
                     return (
                       <Link
                         key={item.path}
@@ -307,16 +314,16 @@ function Topbar() {
               </nav>
             </SheetContent>
           </Sheet>
- 
+
           <div className="flex flex-col">
             <div className="text-base font-bold text-indigo-700">{title}</div>
             <div className="hidden text-xs text-slate-500 sm:block">
               Analytics dashboard
             </div>
           </div>
- 
+
           <nav className="hidden md:flex items-center gap-1" aria-label="Primary">
-            {navItems.map((item) => {
+            {filteredNavItems.map((item) => {
               const active = isItemActive(item.path);
               return (
                 <Link
@@ -335,7 +342,7 @@ function Topbar() {
             })}
           </nav>
         </div>
- 
+
         <div className="flex items-center gap-2">
           <Select value={selectedLocation} onValueChange={setSelectedLocation}>
             <SelectTrigger className="w-[140px]">
@@ -349,11 +356,11 @@ function Topbar() {
               ))}
             </SelectContent>
           </Select>
-         
+
           <Button variant="ghost" size="icon" aria-label="Notifications">
             <Bell />
           </Button>
- 
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -383,5 +390,5 @@ function Topbar() {
     </header>
   );
 }
- 
+
 export default Topbar
