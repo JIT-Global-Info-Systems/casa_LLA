@@ -127,7 +127,7 @@ export const mediatorsAPI = {
 export const leadsAPI = {
   // Get all leads
   getAll: async () => {
-    const response = await apiRequest('/leads/all');
+    const response = await apiRequest('/leads/pending');
     // The API returns { count: number, data: [...] }
     // We want to return the data array
     return response.data || [];
@@ -349,7 +349,7 @@ export const locationsAPI = {
 export const callsAPI = {
   // Get all calls
   getAll: async () => {
-    const response = await apiRequest("/calls/all")
+    const response = await apiRequest("/leads/calls/all")
     return response.data || []
   },
  
@@ -396,6 +396,34 @@ export const authAPI = {
     return await apiRequest('/auth/register', {
       method: 'POST',
       body: JSON.stringify(userData),
+    });
+  },
+
+  forgotPassword: async (email) => {
+    return await apiRequest('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  },
+
+  verifyOtp: async (email, otp) => {
+    return await apiRequest('/auth/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify({ email, otp }),
+    });
+  },
+
+  resetPassword: async (token, newPassword) => {
+    return await apiRequest('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, newPassword }),
+    });
+  },
+
+  changePassword: async (oldPassword, newPassword) => {
+    return await apiRequest('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ oldPassword, newPassword }),
     });
   },
 };

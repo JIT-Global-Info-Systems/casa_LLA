@@ -7,7 +7,12 @@ const ProtectedRoute = ({
   requiredPermission,
   fallbackPath = "/unauthorized"
 }) => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
+
+  // Return null while checking authentication to prevent flash
+  if (loading) {
+    return null;
+  }
 
   // If user is not authenticated, redirect to login
   if (!isAuthenticated || !user) {

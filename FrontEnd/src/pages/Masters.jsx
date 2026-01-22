@@ -372,7 +372,7 @@ const Masters = () => {
     { id: 'location', label: 'Location', columns: ['S.No', 'Location', 'Status', 'Action'] },
     { id: 'region', label: 'Zone', columns: ['S.No', 'Location', 'Zone', 'Action'] },
     { id: 'zone', label: 'Area', columns: ['S.No', 'Location', 'Zone', 'Area', 'Action'] },
-    { id: 'type', label: 'Type', columns: ['S.No', 'Location', 'Zone', 'Area', 'Action'] },
+    { id: 'type', label: 'Type', columns: ['S.No', 'Type', 'Action'] },
   ];
 
   const getOptions = useCallback((type, selectedLocation = null) => {
@@ -518,7 +518,8 @@ const Masters = () => {
                     </TableCell>
                   </>
                 )}
-                {type !== 'location' && <TableCell className="text-center">{item.location}</TableCell>}
+                {type === 'type' && <TableCell className="text-center">{item.name || item.type}</TableCell>}
+                {type !== 'location' && type !== 'type' && <TableCell className="text-center">{item.location}</TableCell>}
                 {type === 'region' && <TableCell className="text-center">{item.region}</TableCell>}
                 {type === 'zone' && (
                   <>
