@@ -49,6 +49,26 @@ export default function Leads({ data = null, onSubmit, onClose }) {
       .filter(user => (roleHierarchy[user.role] || 9) > currentUserLevel)
       .sort((a, b) => (roleHierarchy[a.role] || 9) - (roleHierarchy[b.role] || 9))
   }
+
+  // Get unique roles based on role hierarchy
+  const getFilteredRoles = () => {
+    const currentUserRole = getCurrentUserRole()
+    const currentUserLevel = roleHierarchy[currentUserRole] || 8
+    
+    // Get all unique roles from users
+    const allRoles = [...new Set(users.map(user => user.role))]
+    
+    // Filter roles based on hierarchy
+    const availableRoles = allRoles.filter(role => {
+      if (currentUserRole === 'admin') {
+        return true // Admin can assign any role
+      }
+      return (roleHierarchy[role] || 9) > currentUserLevel
+    })
+    
+    // Sort roles by hierarchy
+    return availableRoles.sort((a, b) => (roleHierarchy[a] || 9) - (roleHierarchy[b] || 9))
+  }
   const [formData, setFormData] = useState({
     // Basic Lead Information
     leadType: "mediator",
@@ -560,7 +580,14 @@ export default function Leads({ data = null, onSubmit, onClose }) {
                   <button
                     key={type}
                     type="button"
-                    onClick={() => handleChange("leadType", type)}
+                    onClick={() => {
+                      handleChange("leadType", type)
+                      // Clear mediator fields when switching to owner
+                      if (type === "owner") {
+                        handleChange("mediatorName", "")
+                        handleChange("mediatorId", "")
+                      }
+                    }}
                     className={`px-4 py-1.5 rounded-md text-sm font-medium capitalize transition-all ${
                       formData.leadType === type ? "bg-white text-indigo-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
                     }`}
@@ -647,16 +674,16 @@ export default function Leads({ data = null, onSubmit, onClose }) {
                   {usersLoading ? (
                     <div className="flex items-center gap-2">
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      <SelectValue placeholder="Loading users..." />
+                      <SelectValue placeholder="Loading roles..." />
                     </div>
                   ) : (
-                    <SelectValue placeholder="Select user" />
+                    <SelectValue placeholder="Select role" />
                   )}
                 </SelectTrigger>
                 <SelectContent className="bg-white z-50 shadow-xl border-gray-200">
-                  {getFilteredUsers().map((user) => (
-                    <SelectItem key={user.user_id} value={user.user_id}>
-                      {user.name} - {user.role.replace('_', ' ')}
+                  {getFilteredRoles().map((role) => (
+                    <SelectItem key={role} value={role}>
+                      {role.replace('_', ' ')}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1160,16 +1187,28 @@ export default function Leads({ data = null, onSubmit, onClose }) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <div className="space-y-2">
-                  <Label>Notes</Label>
-                  <Textarea value={formData.checkNotes} onChange={(e) => handleChange("checkNotes", e.target.value)} placeholder="Enter additional notes" rows={3} className="bg-gray-50" />
-                </div>
+              <div className="mt-4">
                 <div className="space-y-2">
                   <Label>Requests</Label>
                   <Textarea value={formData.checkRequests} onChange={(e) => handleChange("checkRequests", e.target.value)} placeholder="Enter any special requests" rows={3} className="bg-gray-50" />
                 </div>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-md bg-white">
+          
+          <CardContent>
+            <div className="space-y-2">
+              <Label>Notes</Label>
+              <Textarea 
+                value={formData.checkNotes} 
+                onChange={(e) => handleChange("checkNotes", e.target.value)} 
+                placeholder="Enter additional notes, observations, or important information about this lead..." 
+                rows={3} 
+                className="bg-gray-50 resize-y" 
+              />
             </div>
           </CardContent>
         </Card>
