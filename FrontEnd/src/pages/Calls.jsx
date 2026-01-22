@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
-import { Search, RefreshCw, Calendar as CalendarIcon, Phone, User, Hash, FileText, MessageSquare } from "lucide-react"
+import { Search, RefreshCw, Calendar as CalendarIcon, Phone, User, Hash, FileText, MessageSquare, ChevronDown, ChevronUp } from "lucide-react"
 import { useCalls } from "@/context/CallsContext"
 import {
     Table,
@@ -24,45 +24,44 @@ import { format } from "date-fns"
 
 export default function Calls() {
     const { calls: apiCalls, loading, error, fetchCalls } = useCalls()
+    const [expandedNotes, setExpandedNotes] = useState(new Set())
 
-    // Dummy data for demonstration (Easy to remove by deleting this array)
-    const dummyCalls = [
-        {
-            _id: "dummy-1",
-            lead_id: "LD882",
-            user_name: "John Smith",
-            description: "Follow up on property inquiry",
-            message: "Spoke with the client about the site visit tomorrow. They seem interested in the 2-acre plot.",
-            created_at: new Date().toISOString()
-        },
-        {
-            _id: "dummy-2",
-            lead_id: "LD941",
-            user_name: "Sarah Parker",
-            description: "Cold call - Initial contact",
-            message: "Explained the project details. Client requested a detailed brochure over email.",
-            created_at: new Date(Date.now() - 3600000).toISOString()
-        }
-    ]
-
-    const calls = useMemo(() => [...dummyCalls, ...apiCalls], [apiCalls])
+    const calls = useMemo(() => apiCalls, [apiCalls])
 
     // Extract unique users from call logs
     const uniqueUsers = useMemo(() => {
         const userMap = new Map()
         calls.forEach(call => {
-            if (call.user_name && (call.user_id || call.user_name)) {
-                const userId = call.user_id || call.user_name
-                if (!userMap.has(userId)) {
-                    userMap.set(userId, {
-                        user_id: userId,
-                        name: call.user_name
-                    })
-                }
+            const userName = call.name || call.created_by?.name || "Unknown User"
+            const userId = call.userId || call.created_by?._id || userName
+            
+            if (!userMap.has(userId)) {
+                userMap.set(userId, {
+                    user_id: userId,
+                    name: userName,
+                    role: call.role || "user"
+                })
             }
         })
         return Array.from(userMap.values())
     }, [calls])
+
+    const toggleNoteExpansion = (callId) => {
+        setExpandedNotes(prev => {
+            const newSet = new Set(prev)
+            if (newSet.has(callId)) {
+                newSet.delete(callId)
+            } else {
+                newSet.add(callId)
+            }
+            return newSet
+        })
+    }
+
+    const truncateText = (text, maxLength = 100) => {
+        if (!text || text.length <= maxLength) return text
+        return text.substring(0, maxLength) + "..."
+    }
 
     const [searchTerm, setSearchTerm] = useState("")
     const [userFilter, setUserFilter] = useState("all")
@@ -72,18 +71,20 @@ export default function Calls() {
     useEffect(() => {
         fetchCalls()
     }, [fetchCalls])
-
     const filteredCalls = useMemo(() => {
         return calls.filter((call) => {
+            const userName = call.name || call.created_by?.name || ""
+            const userRole = call.role || ""
+            const leadId = call.leadId?._id || "N/A"
             const matchesSearch =
-                (call.description?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-                (call.message?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-                (call.lead_id?.toString() || "").includes(searchTerm) ||
-                (call.user_name?.toLowerCase() || "").includes(searchTerm.toLowerCase())
+                (call.note?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+                leadId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                userRole.toLowerCase().includes(searchTerm.toLowerCase())
 
-            const matchesUser = userFilter === "all" || call.user_id === userFilter
+            const matchesUser = userFilter === "all" || (call.userId === userFilter) || (call.created_by?._id === userFilter)
 
-            const callDate = new Date(call.created_at)
+            const callDate = new Date(call.created_at || call.createdAt)
             const matchesFromDate = !fromDate || callDate >= new Date(fromDate)
             const matchesToDate = !toDate || callDate <= new Date(toDate + "T23:59:59")
 
@@ -190,8 +191,8 @@ export default function Calls() {
                                 <TableRow>
                                     <TableHead className="w-[120px] font-semibold text-slate-600">Lead ID</TableHead>
                                     <TableHead className="w-[150px] font-semibold text-slate-600">User</TableHead>
-                                    <TableHead className="font-semibold text-slate-600">Description</TableHead>
-                                    <TableHead className="font-semibold text-slate-600">Message</TableHead>
+                                    <TableHead className="w-[120px] font-semibold text-slate-600">Role</TableHead>
+                                    <TableHead className="font-semibold text-slate-600">Note</TableHead>
                                     <TableHead className="w-[180px] font-semibold text-slate-600">Date & Time</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -214,42 +215,71 @@ export default function Calls() {
                                             <TableCell className="font-medium text-indigo-600">
                                                 <div className="flex items-center gap-2">
                                                     <Hash className="h-3 w-3" />
-                                                    {call.lead_id || "N/A"}
+                                                    {call.leadId?._id || "N/A"}
                                                 </div>
                                             </TableCell>
                                             <TableCell>
                                                 <div className="flex items-center gap-2">
-                                                    <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center">
+                                                    <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
                                                         <User className="h-4 w-4 text-indigo-600" />
                                                     </div>
-                                                    <span className="text-slate-700 font-medium">
-                                                        {call.user_name || "Unknown User"}
-                                                    </span>
+                                                    <div className="min-w-0 flex-1">
+                                                        <span className="text-slate-700 font-medium block truncate">
+                                                            {call.name || call.created_by?.name || "Unknown User"}
+                                                        </span>
+                                                        <span className="text-xs text-slate-400 truncate block">
+                                                            {call.created_by?.email || ""}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </TableCell>
-                                            <TableCell className="max-w-[200px]">
-                                                <div className="flex items-start gap-2">
-                                                    <FileText className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
-                                                    <span className="text-slate-600 line-clamp-2">
-                                                        {call.description || "No description"}
-                                                    </span>
-                                                </div>
+                                            <TableCell>
+                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                    call.role === 'admin' ? 'bg-purple-100 text-purple-800' :
+                                                    call.role === 'tele_caller' ? 'bg-blue-100 text-blue-800' :
+                                                    'bg-gray-100 text-gray-800'
+                                                }`}>
+                                                    {call.role || "user"}
+                                                </span>
                                             </TableCell>
                                             <TableCell className="max-w-[300px]">
                                                 <div className="flex items-start gap-2 py-2 px-3 bg-slate-50 rounded-lg border border-slate-100">
                                                     <MessageSquare className="h-4 w-4 text-indigo-400 mt-1 shrink-0" />
-                                                    <p className="text-slate-600 text-sm whitespace-pre-wrap">
-                                                        {call.message || "No message content"}
-                                                    </p>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-slate-600 text-sm whitespace-pre-wrap break-words">
+                                                            {expandedNotes.has(call._id) 
+                                                                ? (call.note || "No note content")
+                                                                : truncateText(call.note || "No note content", 100)
+                                                            }
+                                                        </p>
+                                                        {call.note && call.note.length > 100 && (
+                                                            <button
+                                                                onClick={() => toggleNoteExpansion(call._id)}
+                                                                className="flex items-center gap-1 mt-1 text-xs text-indigo-600 hover:text-indigo-800 transition-colors"
+                                                            >
+                                                                {expandedNotes.has(call._id) ? (
+                                                                    <>
+                                                                        <ChevronUp className="h-3 w-3" />
+                                                                        Show less
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <ChevronDown className="h-3 w-3" />
+                                                                        Show more
+                                                                    </>
+                                                                )}
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </TableCell>
                                             <TableCell>
                                                 <div className="text-slate-500 text-sm">
                                                     <p className="font-medium text-slate-700">
-                                                        {call.created_at ? format(new Date(call.created_at), "MMM dd, yyyy") : "N/A"}
+                                                        {call.created_at || call.createdAt ? format(new Date(call.created_at || call.createdAt), "MMM dd, yyyy") : "N/A"}
                                                     </p>
                                                     <p className="text-xs text-slate-400">
-                                                        {call.created_at ? format(new Date(call.created_at), "hh:mm a") : ""}
+                                                        {call.created_at || call.createdAt ? format(new Date(call.created_at || call.createdAt), "hh:mm a") : ""}
                                                     </p>
                                                 </div>
                                             </TableCell>

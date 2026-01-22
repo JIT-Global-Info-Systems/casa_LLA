@@ -9,15 +9,6 @@ import { Input } from "@/components/ui/input";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-
-import {
   Plus,
   Search,
   RefreshCw,
@@ -39,17 +30,42 @@ import {
 export default function ApprovedLeads() {
   const [open, setOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
+  const [viewLead, setViewLead] = useState(null);
+  const [isViewMode, setIsViewMode] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentStep, setCurrentStep] = useState(1);
+
+  const leadComments = [
+    selectedLead?.remark,
+    selectedLead?.comment,
+  ]
+    .map((v) => (typeof v === "string" ? v.trim() : ""))
+    .filter((text) => Boolean(text));
 
 
   const handleEdit = (lead) => {
     setSelectedLead(lead);
     setOpen(true);
+  };
+
+  const handleView = (lead) => {
+    setViewLead(lead);
+    setIsViewMode(true);
+  };
+
+  const handleLeadSubmit = async (leadPayload, files = {}) => {
+    try {
+      // Add your update logic here
+      setOpen(false);
+      fetchApprovedLeads();
+    } catch (err) {
+      console.error("Failed to submit lead:", err);
+    }
   };
 
   useEffect(() => {
@@ -77,16 +93,42 @@ export default function ApprovedLeads() {
     fetchApprovedLeads();
   }, []);
 
-  const filteredLeads = leads.filter((lead) => {
+  const normalizedLeads = (Array.isArray(leads) ? leads : []).map((lead) => {
+    const registeredDate =
+      lead.registeredDate || lead.date || lead.createdAt || null;
+    return {
+      id: lead.id || lead._id || "N/A",
+      name:
+        lead.mediatorName ||
+        lead.ownerName ||
+        lead.name ||
+        lead.contactName ||
+        "N/A",
+      lead_id: lead.lead_id,
+      email: lead.email || lead.contactEmail || "—",
+      phone: lead.phone || lead.contactNumber || "",
+      location: lead.location || lead.address?.city || "N/A",
+      zone: lead.zone || lead.region || "N/A",
+      property: lead.propertyType,
+      status: lead.lead_status || lead.status || "Pending",
+      stageName: lead.stageName || lead.currentStage || "Not Started",
+      registeredDate,
+      raw: lead,
+    };
+  });
+
+  const filteredLeads = normalizedLeads.filter((lead) => {
     const matchesSearch =
       searchTerm === "" ||
-      (lead.mediatorName && lead.mediatorName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (lead.contactNumber && lead.contactNumber.includes(searchTerm)) ||
-      (lead._id && lead._id.toLowerCase().includes(searchTerm.toLowerCase()));
+      lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.phone.includes(searchTerm) ||
+      String(lead.id).toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesDateRange = (() => {
       if (!dateFrom && !dateTo) return true;
-      const leadDate = new Date(lead.date || lead.created_at);
+      if (!lead.registeredDate) return false;
+      const leadDate = new Date(lead.registeredDate);
       const fromDate = dateFrom ? new Date(dateFrom) : new Date("1900-01-01");
       const toDate = dateTo ? new Date(dateTo) : new Date("2100-12-31");
       return leadDate >= fromDate && leadDate <= toDate;
@@ -96,194 +138,308 @@ export default function ApprovedLeads() {
   });
 
   return (
-    <div className=" flex-1 space-y-6 p-6">
-      {/* Top Bar */}
-      <div className="flex items-center justify-between">
-        <div className="text-xl font-bold text-indigo-700">
-          Approval Leads
-          <div className="text-sm text-slate-500">
-            Leads list · Last updated today
-          </div>
-        </div>
-        {/* <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-           <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
-          <Button
-            onClick={handleCreate}
-            size="sm"
-            className="bg-indigo-600 hover:bg-indigo-700 text-white"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add
-          </Button>
-        </div> */}
-      </div>
+    <div className="flex-1 space-y-6 p-0">
+      {open ? (
+        /* Full page view when editing/creating */
+        <div className="min-h-screen bg-gray-50 p-4">
+          <div className="w-full">
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div
+                  className={`${selectedLead ? "lg:col-span-2" : "lg:col-span-3"
+                    } space-y-4`}
+                >
+                  <LeadStepper
+                    stageName={
+                      selectedLead?.leadStatus ||
+                      selectedLead?.stageName ||
+                      "Tele Caller"
+                    }
+                    currentStep={currentStep}
+                    onStepChange={setCurrentStep}
+                    className="w-full"
+                  />
 
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex-1 min-w-[200px]">
-              <div className="relative">
-                <Input
-                  placeholder="Search leads..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+                  <Leads
+                    data={selectedLead}
+                    onSubmit={handleLeadSubmit}
+                    onClose={() => setOpen(false)}
+                    currentStep={currentStep}
+                    onStepChange={setCurrentStep}
+                  />
+                </div>
+
+                {/* Right-side message thread (only show when editing) */}
+                {selectedLead && (
+                  <div className="lg:col-span-1">
+                    <div className="h-full rounded-lg border bg-slate-50 sticky top-4">
+                      <div className="px-4 py-3 border-b bg-white rounded-t-lg">
+                        <div className="text-sm font-semibold text-slate-800">
+                          Notes
+                        </div>
+                        <div className="text-xs text-slate-500">
+                          Message thread
+                        </div>
+                      </div>
+
+                      <div className="p-4 space-y-3 max-h-[80vh] overflow-y-auto">
+                        {leadComments.length === 0 ? (
+                          <div className="text-sm text-slate-500">
+                            No comments
+                          </div>
+                        ) : (
+                          leadComments.map((text, idx) => (
+                            <div
+                              key={`${idx}-${text}`}
+                              className="w-full border bg-white px-3 py-2 text-sm text-slate-800 rounded-md shadow-sm"
+                            >
+                              {text}
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-
-            <div className="flex items-center gap-2">
-              <Label className="text-sm text-slate-600 whitespace-nowrap">
-                From:
-              </Label>
-              <Input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                className="w-[140px]"
-                size="sm"
-              />
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Label className="text-sm text-slate-600 whitespace-nowrap">
-                To:
-              </Label>
-              <Input
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                className="w-[140px]"
-                size="sm"
-              />
-            </div>
-
-           
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      ) : isViewMode ? (
+        /* VIEW MODE */
+        <div className="min-h-screen bg-gray-50 p-6">
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <Button
+              variant="outline"
+              onClick={() => setIsViewMode(false)}
+              className="mb-4"
+            >
+              ← Back to Leads
+            </Button>
 
-      {/* Table */}
-      <Card>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-slate-50 hover:bg-slate-50">
-                  <TableHead className="font-medium">ID</TableHead>
-                  <TableHead className="font-medium">Mediator Name</TableHead>
-                  <TableHead className="font-medium">Contact Number</TableHead>
-                  <TableHead className="font-medium">Location</TableHead>
-                  <TableHead className="font-medium">Property Type</TableHead>
-                  <TableHead className="font-medium">Status</TableHead>
-                  <TableHead className="text-right font-medium">
-                    Action
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8">
-                      <div className="flex items-center justify-center">
-                        <RefreshCw className="h-5 w-5 animate-spin mr-2" />
-                        Loading leads...
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : error ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-red-500">
-                      {error}
-                    </TableCell>
-                  </TableRow>
-                ) : filteredLeads.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-slate-500">
-                      No Approval leads found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredLeads.map((lead) => (
-                    <TableRow key={lead._id}>
-                                           <TableCell className="font-medium">{lead.lead_id}</TableCell>
+            <h2 className="text-xl font-semibold mb-6">Lead Details</h2>
 
-                      <TableCell>{lead.mediatorName || "N/A"}</TableCell>
-                      <TableCell>{lead.contactNumber || "N/A"}</TableCell>
-                      <TableCell>{lead.location || "N/A"}</TableCell>
-                      <TableCell>{lead.propertyType || "N/A"}</TableCell>
-                      <TableCell>
-                        <span
-                          className={`px-2 py-1 text-xs rounded-full ${
-                            lead.lead_status === "APPROVED"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-yellow-100 text-yellow-800"
-                          }`}
-                        >
-                          {lead.lead_status || "N/A"}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => handleEdit(lead)}
-                              className="flex items-center gap-2"
-                            >
-                              <Eye className="h-4 w-4" />
-                              View
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+            {viewLead && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    Lead ID
+                  </Label>
+                  <div className="text-sm text-slate-900 bg-gray-50 p-2 rounded">
+                    {viewLead._id || viewLead.id || 'N/A'}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    Name
+                  </Label>
+                  <div className="text-sm text-slate-900 bg-gray-50 p-2 rounded">
+                    {viewLead.mediatorName || viewLead.ownerName || viewLead.name || viewLead.contactName || 'N/A'}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    Email
+                  </Label>
+                  <div className="text-sm text-slate-900 bg-gray-50 p-2 rounded">
+                    {viewLead.email || viewLead.contactEmail || 'N/A'}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    Phone
+                  </Label>
+                  <div className="text-sm text-slate-900 bg-gray-50 p-2 rounded">
+                    {viewLead.phone || viewLead.contactNumber || 'N/A'}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    Location
+                  </Label>
+                  <div className="text-sm text-slate-900 bg-gray-50 p-2 rounded">
+                    {viewLead.location || viewLead.address?.city || 'N/A'}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    Zone
+                  </Label>
+                  <div className="text-sm text-slate-900 bg-gray-50 p-2 rounded">
+                    {viewLead.zone || viewLead.region || 'N/A'}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    Status
+                  </Label>
+                  <div className="text-sm text-slate-900 bg-gray-50 p-2 rounded">
+                    {viewLead.lead_status || viewLead.status || 'N/A'}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    Current Stage
+                  </Label>
+                  <div className="text-sm text-slate-900 bg-gray-50 p-2 rounded">
+                    {viewLead.stageName || viewLead.currentStage || 'N/A'}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    Registered Date
+                  </Label>
+                  <div className="text-sm text-slate-900 bg-gray-50 p-2 rounded">
+                    {viewLead.registeredDate || viewLead.date || viewLead.createdAt ?
+                      new Date(viewLead.registeredDate || viewLead.date || viewLead.createdAt).toLocaleDateString() :
+                      'N/A'}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    Remark
+                  </Label>
+                  <div className="text-sm text-slate-900 bg-gray-50 p-2 rounded min-h-[60px]">
+                    {viewLead.remark || 'N/A'}
+                  </div>
+                </div>
+
+                <div className="col-span-2 space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    Comment
+                  </Label>
+                  <div className="text-sm text-slate-900 bg-gray-50 p-2 rounded min-h-[60px]">
+                    {viewLead.comment || 'N/A'}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        /* Main page content when not editing or viewing */
+        <div className="min-h-screen bg-gray-50">
+          <div className="bg-white border-b px-8 py-4">
+            <div className="flex items-center justify-between max-w-[1600px] mx-auto">
+              <div>
+                <h1 className="text-2xl font-semibold text-indigo-700">Approved Leads</h1>
+                <p className="text-sm text-gray-500 mt-1">Approved leads list · Last updated today</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <Button variant="ghost" className="text-gray-700" onClick={() => fetchApprovedLeads()} disabled={loading}>
+                  <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+                  Refresh
+                </Button>
+              </div>
+            </div>
           </div>
 
-          {/* Pagination */}
-          <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200">
-            <div className="text-sm text-slate-600">
-              Showing {filteredLeads.length} result
-              {filteredLeads.length !== 1 ? "s" : ""}
-              {filteredLeads.length !== leads.length &&
-                ` (of ${leads.length} total)`}
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" disabled>
-                Previous
-              </Button>
-              <Button variant="outline" size="sm">
-                Next
-              </Button>
-              <Button variant="outline" size="sm">
-                Last
-              </Button>
-            </div>
+          <div className="max-w-[1600px] mx-auto px-8 py-6">
+            <Card className="bg-white shadow-sm">
+              <div className="p-6 border-b flex flex-wrap gap-4 items-center">
+                <div className="relative flex-1 min-w-[250px]">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder="Search leads..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 border-gray-300"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm text-gray-600 whitespace-nowrap">From:</Label>
+                  <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px] border-gray-300" />
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm text-gray-600 whitespace-nowrap">To:</Label>
+                  <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px] border-gray-300" />
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b bg-gray-50">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Zone</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property</th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Registered Date</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredLeads.map((lead) => (
+                      <tr key={lead.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{lead.raw?.lead_id ?? lead.id}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{lead.name}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.phone || "—"}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.location}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.zone}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.raw?.propertyType || "—"}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                          <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${String(lead.status).toLowerCase() === "approved" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
+                            {lead.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {lead.registeredDate ? new Date(lead.registeredDate).toISOString().split("T")[0] : "—"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="bg-white border shadow-lg">
+                              <DropdownMenuItem onClick={() => handleView(lead.raw)} className="cursor-pointer">
+                                <Eye className="h-4 w-4 mr-2" />
+                                View
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEdit(lead.raw)} className="cursor-pointer">
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {loading && <div className="text-center py-12 text-gray-500"><p>Loading leads...</p></div>}
+              {error && <div className="text-center py-12 text-red-500"><p>Error: {error}</p></div>}
+              {!loading && !error && filteredLeads.length === 0 && <div className="text-center py-12 text-gray-500"><p>No approved leads found matching your criteria.</p></div>}
+
+              <div className="px-6 py-4 border-t flex items-center justify-between">
+                <p className="text-sm text-gray-600">Showing {filteredLeads.length} results</p>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" disabled className="text-gray-400">Previous</Button>
+                  <Button variant="outline" size="sm" disabled className="text-gray-400">Next</Button>
+                  <Button variant="outline" size="sm" disabled className="text-gray-400">Last</Button>
+                </div>
+              </div>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Modal */}
-      <Modal open={open} onClose={() => setOpen(false)}>
-        <LeadStepper
-          onClose={() => setOpen(false)}
-          initialData={selectedLead}
-        />
-      </Modal>
-
-      {/* Toast Container */}
-      <div id="toast-container" />
+        </div>
+      )}
     </div>
   );
 }
