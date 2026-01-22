@@ -378,3 +378,39 @@ exports.getLeadById = async (req, res) => {
     });
   }
 };
+
+// Get all calls with optional leadId filter
+exports.getAllCalls = async (req, res) => {
+  try {
+    const { leadId } = req.query;
+    const query = {};
+    
+    if (leadId) {
+      if (!mongoose.Types.ObjectId.isValid(leadId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid lead ID format'
+        });
+      }
+      query.leadId = leadId;
+    }
+
+    const calls = await Call.find(query)
+      .populate('leadId', 'name contactNumber')
+      .populate('created_by', 'name email')
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      count: calls.length,
+      data: calls
+    });
+  } catch (error) {
+    console.error('Error fetching calls:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch calls',
+      error: error.message
+    });
+  }
+};
