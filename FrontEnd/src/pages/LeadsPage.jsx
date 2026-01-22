@@ -1,6 +1,7 @@
 
 
-import { useState , useEffect } from "react";
+ 
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import Modal from "@/components/ui/modal";
 // import LeadStepper from "@/components/ui/LeadStepper";
@@ -27,21 +28,30 @@ import {
 import LeadStepper from "@/components/ui/LeadStepper"
 import Leads from "./Leads"
 import { useLeads } from "../context/LeadsContext.jsx"
-
+ 
 export default function LeadsPage() {
   const [open, setOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
+  const [viewLead, setViewLead] = useState(null);
+  const [isViewMode, setIsViewMode] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-
+ 
   const { leads, loading, error, fetchLeads, createLead, updateLead, deleteLead } = useLeads()
-
-    useEffect(() => {
+ 
+  const [currentStep, setCurrentStep] = useState(1)
+  const leadComments = [
+    selectedLead?.remark,
+    selectedLead?.comment,
+  ]
+    .map((v) => (typeof v === "string" ? v.trim() : ""))
+    .filter((text) => Boolean(text))
+ 
+  useEffect(() => {
     fetchLeads()
   }, [])
-
-
+ 
   const handleCreate = () => {
     setSelectedLead(null);
     setOpen(true);
@@ -51,7 +61,7 @@ export default function LeadsPage() {
     setSelectedLead(lead);
     setOpen(true);
   };
-
+ 
   const handleLeadSubmit = async (leadPayload, files = {}) => {
     try {
       if (selectedLead) {
@@ -66,7 +76,7 @@ export default function LeadsPage() {
       // Optionally handle error state here
     }
   };
-
+ 
   const handleDelete = async (lead) => {
     try {
       await deleteLead(lead._id || lead.id);
@@ -74,6 +84,11 @@ export default function LeadsPage() {
     } catch (err) {
       console.error("Failed to delete lead:", err);
     }
+  };
+ 
+  const handleView = (lead) => {
+    setViewLead(lead);
+    setIsViewMode(true);
   };
  
   const normalizedLeads = (Array.isArray(leads) ? leads : []).map((lead) => {
@@ -99,7 +114,7 @@ export default function LeadsPage() {
       raw: lead,
     };
   });
-
+ 
   const filteredLeads = normalizedLeads.filter((lead) => {
     const matchesSearch =
       searchTerm === "" ||
@@ -107,7 +122,7 @@ export default function LeadsPage() {
       lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       lead.phone.includes(searchTerm) ||
       String(lead.id).toLowerCase().includes(searchTerm.toLowerCase());
-
+ 
     const matchesDateRange = (() => {
       if (!dateFrom && !dateTo) return true;
       if (!lead.registeredDate) return false;
@@ -116,7 +131,7 @@ export default function LeadsPage() {
       const toDate = dateTo ? new Date(dateTo) : new Date("2100-12-31");
       return leadDate >= fromDate && leadDate <= toDate;
     })();
-
+ 
     return matchesSearch && matchesDateRange;
   });
  
@@ -127,49 +142,31 @@ export default function LeadsPage() {
         <div className="min-h-screen bg-gray-50 p-4">
           <div className="w-full">
             <div className="bg-white rounded-lg shadow-md p-6">
-             <div className="mb-4">
-                 {/* <Button
-                  variant="outline"
-                  onClick={() => setOpen(false)}
-                  className="mb-4"
-                >
-                  ← Back to Leads
-                </Button>
-              </div> */}
-
-              {/* <div className="p-2 grid grid-cols-1 lg:grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div
-                  className={`${
-                    selectedLead ? "lg:col-span-2" : "lg:col-span-3"
-                  } space-y-4`}
+                  className={`${selectedLead ? "lg:col-span-2" : "lg:col-span-3"
+                    } space-y-4`}
                 >
-                  {selectedLead && (
-                    <LeadStepper stageName={selectedLead.stageName} />
-                  )}
-                  <Leads data={selectedLead} onClose={() => setOpen(false)} />
-                </div> */}
-
-
-                <div className={`${selectedLead ? "lg:col-span-2" : "lg:col-span-3"} space-y-4`}>
                   <LeadStepper
-                    stageName={selectedLead?.leadStatus || selectedLead?.stageName || "Tele Caller"}
+                    stageName={
+                      selectedLead?.leadStatus ||
+                      selectedLead?.stageName ||
+                      "Tele Caller"
+                    }
                     currentStep={currentStep}
                     onStepChange={setCurrentStep}
                     className="w-full"
                   />
-
+ 
                   {/* <div className="flex justify-between items-center">
                     <h1 className="text-2xl font-bold">
                       {selectedLead ? "Edit Lead" : "Create Lead"}
                     </h1>
-                    <Button
-                      variant="outline"
-                      onClick={() => setOpen(false)}
-                    >
+                    <Button variant="outline" onClick={() => setOpen(false)}>
                       ← Back to Leads
                     </Button>
                   </div> */}
-
+ 
                   <Leads
                     data={selectedLead}
                     onSubmit={handleLeadSubmit}
@@ -178,11 +175,11 @@ export default function LeadsPage() {
                     onStepChange={setCurrentStep}
                   />
                 </div>
-
+ 
                 {/* Right-side message thread (only show when editing) */}
                 {selectedLead && (
                   <div className="lg:col-span-1">
-                    <div className="h-full rounded-lg border bg-slate-50">
+                    <div className="h-full rounded-lg border bg-slate-50 sticky top-4">
                       <div className="px-4 py-3 border-b bg-white rounded-t-lg">
                         <div className="text-sm font-semibold text-slate-800">
                           Notes
@@ -191,8 +188,8 @@ export default function LeadsPage() {
                           Message thread
                         </div>
                       </div>
-
-                      <div className="p-4 space-y-3 max-h-[40vh] overflow-y-auto">
+ 
+                      <div className="p-4 space-y-3 max-h-[80vh] overflow-y-auto">
                         {leadComments.length === 0 ? (
                           <div className="text-sm text-slate-500">
                             No comments
@@ -201,7 +198,7 @@ export default function LeadsPage() {
                           leadComments.map((text, idx) => (
                             <div
                               key={`${idx}-${text}`}
-                              className="w-full border bg-white px-3 py-2 text-sm text-slate-800"
+                              className="w-full border bg-white px-3 py-2 text-sm text-slate-800 rounded-md shadow-sm"
                             >
                               {text}
                             </div>
@@ -213,6 +210,126 @@ export default function LeadsPage() {
                 )}
               </div>
             </div>
+          </div>
+        </div>
+      ) : isViewMode ? (
+        /* VIEW MODE */
+        <div className="min-h-screen bg-gray-50 p-6">
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <Button
+              variant="outline"
+              onClick={() => setIsViewMode(false)}
+              className="mb-4"
+            >
+              ← Back to Leads
+            </Button>
+ 
+            <h2 className="text-xl font-semibold mb-6">Lead Details</h2>
+ 
+            {viewLead && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    Lead ID
+                  </Label>
+                  <div className="text-sm text-slate-900 bg-gray-50 p-2 rounded">
+                    {viewLead._id || viewLead.id || 'N/A'}
+                  </div>
+                </div>
+ 
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    Name
+                  </Label>
+                  <div className="text-sm text-slate-900 bg-gray-50 p-2 rounded">
+                    {viewLead.mediatorName || viewLead.ownerName || viewLead.name || viewLead.contactName || 'N/A'}
+                  </div>
+                </div>
+ 
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    Email
+                  </Label>
+                  <div className="text-sm text-slate-900 bg-gray-50 p-2 rounded">
+                    {viewLead.email || viewLead.contactEmail || 'N/A'}
+                  </div>
+                </div>
+ 
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    Phone
+                  </Label>
+                  <div className="text-sm text-slate-900 bg-gray-50 p-2 rounded">
+                    {viewLead.phone || viewLead.contactNumber || 'N/A'}
+                  </div>
+                </div>
+ 
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    Location
+                  </Label>
+                  <div className="text-sm text-slate-900 bg-gray-50 p-2 rounded">
+                    {viewLead.location || viewLead.address?.city || 'N/A'}
+                  </div>
+                </div>
+ 
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    Zone
+                  </Label>
+                  <div className="text-sm text-slate-900 bg-gray-50 p-2 rounded">
+                    {viewLead.zone || viewLead.region || 'N/A'}
+                  </div>
+                </div>
+ 
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    Status
+                  </Label>
+                  <div className="text-sm text-slate-900 bg-gray-50 p-2 rounded">
+                    {viewLead.status || viewLead.stageStatus || 'N/A'}
+                  </div>
+                </div>
+ 
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    Current Stage
+                  </Label>
+                  <div className="text-sm text-slate-900 bg-gray-50 p-2 rounded">
+                    {viewLead.stageName || viewLead.currentStage || 'N/A'}
+                  </div>
+                </div>
+ 
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    Registered Date
+                  </Label>
+                  <div className="text-sm text-slate-900 bg-gray-50 p-2 rounded">
+                    {viewLead.registeredDate || viewLead.date || viewLead.createdAt ?
+                      new Date(viewLead.registeredDate || viewLead.date || viewLead.createdAt).toLocaleDateString() :
+                      'N/A'}
+                  </div>
+                </div>
+ 
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    Remark
+                  </Label>
+                  <div className="text-sm text-slate-900 bg-gray-50 p-2 rounded min-h-[60px]">
+                    {viewLead.remark || 'N/A'}
+                  </div>
+                </div>
+ 
+                <div className="col-span-2 space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">
+                    Comment
+                  </Label>
+                  <div className="text-sm text-slate-900 bg-gray-50 p-2 rounded min-h-[60px]">
+                    {viewLead.comment || 'N/A'}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       ) : (
@@ -236,7 +353,7 @@ export default function LeadsPage() {
               </div>
             </div>
           </div>
-
+ 
           <div className="max-w-[1600px] mx-auto px-8 py-6">
             <Card className="bg-white shadow-sm">
               <div className="p-6 border-b flex flex-wrap gap-4 items-center">
@@ -249,23 +366,23 @@ export default function LeadsPage() {
                     className="pl-10 border-gray-300"
                   />
                 </div>
-
+ 
                 <div className="flex items-center gap-2">
                   <Label className="text-sm text-gray-600 whitespace-nowrap">From:</Label>
                   <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px] border-gray-300" />
                 </div>
-
+ 
                 <div className="flex items-center gap-2">
                   <Label className="text-sm text-gray-600 whitespace-nowrap">To:</Label>
                   <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px] border-gray-300" />
                 </div>
-
+ 
                 <Button variant="outline" className="border-gray-300" disabled>
                   <Filter className="h-4 w-4 mr-2" />
                   Filter
                 </Button>
               </div>
-
+ 
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
@@ -331,11 +448,11 @@ export default function LeadsPage() {
                   </tbody>
                 </table>
               </div>
-
+ 
               {loading && <div className="text-center py-12 text-gray-500"><p>Loading leads...</p></div>}
               {error && <div className="text-center py-12 text-red-500"><p>Error: {error}</p></div>}
               {!loading && !error && filteredLeads.length === 0 && <div className="text-center py-12 text-gray-500"><p>No leads found matching your criteria.</p></div>}
-
+ 
               <div className="px-6 py-4 border-t flex items-center justify-between">
                 <p className="text-sm text-gray-600">Showing {filteredLeads.length} results</p>
                 <div className="flex gap-2">
@@ -351,3 +468,4 @@ export default function LeadsPage() {
     </div>
   );
 }
+ 

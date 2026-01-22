@@ -15,13 +15,20 @@ export const MediatorsProvider = ({ children }) => {
   const [mediators, setMediators] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [fetched, setFetched] = useState(false);
 
   const fetchMediators = async () => {
+    // Prevent multiple simultaneous calls
+    if (loading || fetched) {
+      return;
+    }
+    
     try {
       setLoading(true);
       setError(null);
       const response = await mediatorsAPI.getAll();
       setMediators(response);
+      setFetched(true);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -48,6 +55,8 @@ export const MediatorsProvider = ({ children }) => {
       setError(null);
       const response = await mediatorsAPI.create(mediatorData, files);
       setMediators(prev => [...prev, response.data]);
+      // Reset fetched state to allow refetching if needed
+      setFetched(false);
       return response.data;
     } catch (err) {
       setError(err.message);
@@ -70,6 +79,8 @@ export const MediatorsProvider = ({ children }) => {
         )
       );
 
+      // Reset fetched state to allow refetching if needed
+      setFetched(false);
       return response;
     } catch (err) {
       setError(err.message);
@@ -104,13 +115,20 @@ export const MediatorsProvider = ({ children }) => {
 
   const clearError = () => setError(null);
 
+  const refetchMediators = async () => {
+    setFetched(false);
+    await fetchMediators();
+  };
+
   return (
     <MediatorsContext.Provider
       value={{
         mediators,
         loading,
         error,
+        fetched,
         fetchMediators,
+        refetchMediators,
         getMediatorById,
         createMediator,
         updateMediator,
