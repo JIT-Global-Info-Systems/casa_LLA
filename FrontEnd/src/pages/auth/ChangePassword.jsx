@@ -1,9 +1,10 @@
-import React, { useState } from 'react'
-import { useNavigate } from "react-router-dom"
+import React, { useState, useEffect } from 'react'
+import { useNavigate, useLocation } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { authAPI } from '@/services/api'
+import { useAuth } from '@/context/AuthContext'
 
 function ChangePassword() {
   const [oldPassword, setOldPassword] = useState('')
@@ -13,9 +14,22 @@ function ChangePassword() {
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const navigate = useNavigate()
+  const location = useLocation()
+  const { markPasswordChanged } = useAuth()
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [isFirstLogin, setIsFirstLogin] = useState(false)
+
+  useEffect(() => {
+    // Check if this is a first login scenario
+    if (location.state?.isFirstLogin) {
+      setIsFirstLogin(true)
+      if (location.state?.message) {
+        setSuccess(location.state.message)
+      }
+    }
+  }, [location.state])
 
   const validatePassword = (password) => {
     // Basic password validation - at least 6 characters
@@ -64,14 +78,23 @@ function ChangePassword() {
       const response = await authAPI.changePassword(oldPassword, newPassword)
       setSuccess(response.message || 'Password updated successfully')
 
+      // If this was a first login, mark password as changed
+      if (isFirstLogin) {
+        markPasswordChanged()
+      }
+
       // Clear form after successful update
       setOldPassword('')
       setNewPassword('')
       setConfirmPassword('')
 
-      // Redirect to profile page after 2 seconds
+      // Redirect based on whether this was first login or regular password change
       setTimeout(() => {
-        navigate('/pages/profile')
+        if (isFirstLogin) {
+          navigate('/pages/dashboard')
+        } else {
+          navigate('/pages/profile')
+        }
       }, 2000)
     } catch (err) {
       setError(err.message || 'Error updating password')
@@ -86,9 +109,14 @@ function ChangePassword() {
       <div className="max-w-md mx-auto">
         <Card>
           <CardHeader>
-            <CardTitle className="text-xl font-bold text-gray-900">Change Password</CardTitle>
+            <CardTitle className="text-xl font-bold text-gray-900">
+              {isFirstLogin ? 'Set Your Password' : 'Change Password'}
+            </CardTitle>
             <CardDescription>
-              Update your account password
+              {isFirstLogin
+                ? 'This is your first login. Please set a new password to continue.'
+                : 'Update your account password'
+              }
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -215,10 +243,10 @@ function ChangePassword() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => navigate('/pages/profile')}
+                  onClick={() => isFirstLogin ? navigate('/login') : navigate('/pages/profile')}
                   disabled={isLoading}
                 >
-                  Cancel
+                  {isFirstLogin ? 'Back to Login' : 'Cancel'}
                 </Button>
               </div>
             </form>

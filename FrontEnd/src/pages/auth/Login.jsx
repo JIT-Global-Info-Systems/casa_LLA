@@ -10,7 +10,7 @@ function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const navigate = useNavigate()
-  const { login } = useAuth()
+  const { login, forcePasswordChange } = useAuth()
 
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -23,8 +23,18 @@ function Login() {
     try {
       await login({ email, password })
 
-      // Redirect to dashboard on successful login
-      navigate('/pages/dashboard')
+      // Check if forced password change is required
+      if (forcePasswordChange) {
+        navigate('/first-time-password-change', {
+          state: {
+            isFirstLogin: true,
+            message: 'This is your first login. Please change your password to continue.'
+          }
+        })
+      } else {
+        // Redirect to dashboard on successful login
+        navigate('/pages/dashboard')
+      }
     } catch (err) {
       setError(err.message || 'An error occurred during login')
       console.error('Login error:', err)
