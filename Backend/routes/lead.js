@@ -14,10 +14,13 @@ router.put("/update/:leadId",verifyToken, upload.fields([
   { name: "patta_chitta", maxCount: 1 }
 ]), verifyToken, leadController.updateLead);
 router.delete("/delete/:leadId", verifyToken, leadController.softDeleteLead);
+router.get("/pending", verifyToken, leadController.getPendingLeads);
 router.get("/all", verifyToken, leadController.getAllLeads);
 router.get("/approved", verifyToken, leadController.getApprovedLeads);
 router.get("/purchased", verifyToken, leadController.getPurchasedLeads);
 router.get("/:leadId", verifyToken, leadController.getLeadById);
 
+// Get all calls (optionally filtered by leadId)
+router.get("/calls/all", verifyToken, leadController.getAllCalls);
 
 module.exports = router;

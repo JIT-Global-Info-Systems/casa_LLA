@@ -45,23 +45,24 @@ exports.login = async (req, res) => {
     // 5️⃣ Get access details for the user's role
     const accessDetails = await Access.findOne({ role: user.role });
     
-    // 6️⃣ Generate JWT
-    const token = generateToken(user);
+    // 6️⃣ Check if it's first login
+    const isFirstLogin = user.firstLogin;
 
-    // 7️⃣ Prepare user data for response
-    const userData = {
-      user_id: user._id,
-      email: user.email,
-      role: user.role,
-      name: user.name,
-      access: accessDetails ? accessDetails.page_names : []
-    };
+    // 7️⃣ Generate JWT
+    const token = generateToken(user);
 
     // 8️⃣ Send response
     res.status(200).json({
       message: "Login successful",
       token,
-      user: userData
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        firstLogin: isFirstLogin
+      },
+      access: accessDetails ? accessDetails.access : []
     });
   } catch (error) {
     console.error("Login Error:", error);
@@ -279,8 +280,9 @@ exports.changePassword = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-    // Update password
+    // Update password and set firstLogin to false
     user.password = hashedPassword;
+    user.firstLogin = false;
     await user.save();
 
     // Remove password from response
