@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLeads } from "../context/LeadsContext";
+import { toast } from "react-hot-toast";
 import {
   Card,
   CardContent,
@@ -7,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
- 
+
 import {
   AlertTriangle,
   BadgeCheck,
@@ -19,26 +20,28 @@ import {
   Info,
   Users,
 } from "lucide-react";
- 
+
 import {
   PieChart,
   Pie,
   Cell,
   ResponsiveContainer,
 } from "recharts";
- 
+
 import { Select } from "@/components/ui/select";
 import DateFilter from "@/components/ui/datefilter";
- 
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
+
 /* -------------------- FILTER DATA -------------------- */
- 
+
 const locations = [
   { label: "All Locations", value: "all" },
   { label: "Chennai", value: "chennai" },
   { label: "Bangalore", value: "bangalore" },
   { label: "Hyderabad", value: "hyderabad" },
 ];
- 
+
 // const zones = [
 //   { label: "All Zones", value: "all" },
 //   { label: "North Zone", value: "north" },
@@ -46,9 +49,9 @@ const locations = [
 //   { label: "East Zone", value: "east" },
 //   { label: "West Zone", value: "west" },
 // ];
- 
+
 /* -------------------- FILTER BAR -------------------- */
- 
+
 function DashboardFilters({ filters, setFilters }) {
   return (
     <div className="flex flex-wrap gap-3">
@@ -61,7 +64,7 @@ function DashboardFilters({ filters, setFilters }) {
         options={locations}
         placeholder="Location"
       /> */}
- 
+
       {/* <Select
         label="Zone"
         value={filters.zone}
@@ -74,9 +77,9 @@ function DashboardFilters({ filters, setFilters }) {
     </div>
   );
 }
- 
+
 /* -------------------- DONUT CHART -------------------- */
- 
+
 function DonutChart({ title, dateRange, total, segments, tone }) {
   const toneStyles = {
     blue: "border-sky-100 bg-sky-50/80 before:bg-sky-500",
@@ -85,7 +88,7 @@ function DonutChart({ title, dateRange, total, segments, tone }) {
     purple: "border-violet-100 bg-violet-50/80 before:bg-violet-500",
     indigo: "border-indigo-100 bg-indigo-50/70 before:bg-indigo-500",
   };
- 
+
   return (
     <Card
       className={
@@ -101,7 +104,7 @@ function DonutChart({ title, dateRange, total, segments, tone }) {
           {dateRange}
         </CardDescription>
       </CardHeader>
- 
+
       <CardContent>
         <div className="relative h-40">
           <ResponsiveContainer width="100%" height="100%">
@@ -120,7 +123,7 @@ function DonutChart({ title, dateRange, total, segments, tone }) {
               </Pie>
             </PieChart>
           </ResponsiveContainer>
- 
+
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <div className="text-2xl font-bold text-slate-900">
               {total}
@@ -130,7 +133,7 @@ function DonutChart({ title, dateRange, total, segments, tone }) {
             </div>
           </div>
         </div>
- 
+
         <div className="mt-4 grid grid-cols-2 gap-2">
           {segments.map((s) => (
             <div key={s.label} className="flex items-center gap-2">
@@ -151,9 +154,9 @@ function DonutChart({ title, dateRange, total, segments, tone }) {
     </Card>
   );
 }
- 
+
 /* -------------------- STATUS CARD -------------------- */
- 
+
 function StatusCard({ icon: Icon, label, value, tone }) {
   const toneStyles = {
     success: "border-emerald-100 bg-emerald-50/80 before:bg-emerald-500",
@@ -161,7 +164,7 @@ function StatusCard({ icon: Icon, label, value, tone }) {
     destructive: "border-rose-100 bg-rose-50/80 before:bg-rose-500",
     info: "border-sky-100 bg-sky-50/80 before:bg-sky-500",
   };
- 
+
   return (
     <Card
       className={
@@ -185,9 +188,9 @@ function StatusCard({ icon: Icon, label, value, tone }) {
     </Card>
   );
 }
- 
+
 /* -------------------- WIDE CARD -------------------- */
- 
+
 function WideMetricCard({ icon: Icon, label, value }) {
   return (
     <Card>
@@ -205,9 +208,9 @@ function WideMetricCard({ icon: Icon, label, value }) {
     </Card>
   );
 }
- 
+
 /* -------------------- DASHBOARD -------------------- */
- 
+
 function Dashboard() {
   const { leads, fetchLeads, loading } = useLeads();
   const [filters, setFilters] = useState({
@@ -216,53 +219,68 @@ function Dashboard() {
     startDate: "",
     endDate: "",
   });
- 
+
   // Fetch all leads on component mount
   useEffect(() => {
-    fetchLeads();
-  }, []);
- 
+    const loadData = async () => {
+      try {
+        await fetchLeads();
+        if (leads?.length > 0) {
+          toast.success(`Loaded ${leads.length} leads`);
+        } else if (leads?.length === 0) {
+          toast("No leads found", { icon: "" });
+        }
+      } catch (error) {
+        console.error("Error loading dashboard data:", error);
+        toast.error("Failed to load dashboard data");
+      }
+    };
+
+    loadData();
+  }, [fetchLeads]);
+
   // Calculate active leads count (PENDING leads from all leads API)
-  const activeLeadsCount = leads?.filter(lead => {
+  const activeLeadsCount = leads?.filter((lead) => {
     const status = lead.lead_status || lead.status;
-    return status === 'PENDING' || status === 'pending';
+    return status === "PENDING" || status === "pending";
   }).length || 0;
- 
+
   // Calculate approved leads count
-  const approvedLeadsCount = leads?.filter(lead => {
+  const approvedLeadsCount = leads?.filter((lead) => {
     const status = lead.lead_status || lead.status;
-    return status === 'APPROVED' || status === 'approved';
+    return status === "APPROVED" || status === "approved";
   }).length || 0;
- 
+
   // Calculate purchased leads count
-  const purchasedLeadsCount = leads?.filter(lead => {
+  const purchasedLeadsCount = leads?.filter((lead) => {
     const status = lead.lead_status || lead.status;
-    return status === 'PURCHASED' || status === 'purchased';
+    return status === "PURCHASED" || status === "purchased";
   }).length || 0;
- 
+
   // Calculate lead stages count (filtering only valid stages: hot, warm, cold, management hot)
   const leadStages = {
     hot: 0,
     warm: 0,
     cold: 0,
-    management_hot: 0
+    management_hot: 0,
   };
- 
-  leads?.forEach(lead => {
+
+  leads?.forEach((lead) => {
     const stage = lead.lead_stage;
-    if (stage === 'hot') leadStages.hot++;
-    else if (stage === 'warm') leadStages.warm++;
-    else if (stage === 'cold') leadStages.cold++;
-    else if (stage === 'management hot' || stage === 'management_hot') leadStages.management_hot++;
+    if (stage === "hot") leadStages.hot++;
+    else if (stage === "warm") leadStages.warm++;
+    else if (stage === "cold") leadStages.cold++;
+    else if (stage === "management hot" || stage === "management_hot")
+      leadStages.management_hot++;
   });
- 
-  // Debug: log the leads data to see structure
-  console.log('Leads data:', leads);
-  console.log('Active leads count:', activeLeadsCount);
-  console.log('Approval leads count:', approvedLeadsCount);
-  console.log('Purchased leads count:', purchasedLeadsCount);
-  console.log('Lead stages:', leadStages);
- 
+
+  // Log errors if no leads are loaded
+  useEffect(() => {
+    if (leads === null && !loading) {
+      toast.error("Failed to load leads data");
+    }
+  }, [leads, loading]);
+
   const donutCards = [
     {
       title: "Leads Status",
@@ -301,11 +319,10 @@ function Dashboard() {
       ],
     },
   ];
- 
+
   return (
     <div className="min-h-full bg-background">
       <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6">
- 
         {/* HEADER + FILTERS */}
         <div className="relative mb-4">
           <div>
@@ -316,7 +333,7 @@ function Dashboard() {
               CRM Analytics Overview
             </div>
           </div>
-         
+
           <div className="absolute top-0 right-0">
             <DateFilter
               startDate={filters.startDate}
@@ -327,15 +344,32 @@ function Dashboard() {
             />
           </div>
         </div>
- 
+
         {/* FILTERS */}
         <div className="flex flex-col gap-4">
-          <DashboardFilters
-            filters={filters}
-            setFilters={setFilters}
-          />
+          <div className="flex justify-between items-center">
+            <DashboardFilters filters={filters} setFilters={setFilters} />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                try {
+                  await fetchLeads();
+                  toast.success("Dashboard data refreshed");
+                } catch (error) {
+                  console.error("Error refreshing data:", error);
+                  toast.error("Failed to refresh data");
+                }
+              }}
+              disabled={loading}
+              className="gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
+          </div>
         </div>
- 
+
         {/* DONUT CHARTS */}
         <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
           {donutCards.map((d) => (

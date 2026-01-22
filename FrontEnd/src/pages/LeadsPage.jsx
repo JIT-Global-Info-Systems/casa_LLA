@@ -1,12 +1,10 @@
 
 
- 
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import Modal from "@/components/ui/modal";
-// import LeadStepper from "@/components/ui/LeadStepper";
 import { Label } from "@/components/ui/label";
-// import Leads from "./Leads";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
@@ -18,16 +16,19 @@ import {
 import {
   Plus,
   RefreshCw,
-  Filter,
   Eye,
   Edit,
   Trash2,
   MoreVertical,
   Search,
+  Check,
+  X,
+  AlertCircle
 } from "lucide-react";
 import LeadStepper from "@/components/ui/LeadStepper"
 import Leads from "./Leads"
 import { useLeads } from "../context/LeadsContext.jsx"
+import toast from "react-hot-toast"
  
 export default function LeadsPage() {
   const [open, setOpen] = useState(false);
@@ -49,46 +50,120 @@ export default function LeadsPage() {
     .filter((text) => Boolean(text))
  
   useEffect(() => {
-    fetchLeads()
+    const loadLeads = async () => {
+      const loadingToast = toast.loading('Loading leads...');
+      try {
+        await fetchLeads();
+        toast.success('Leads loaded successfully', { 
+          id: loadingToast,
+          icon: <Check className="w-5 h-5 text-green-500" />,
+          duration: 2000
+        });
+      } catch (err) {
+        console.error('Failed to load leads:', err);
+        const errorMessage = err.response?.data?.message || 'Failed to load leads. Please try again.';
+        
+        toast.error(errorMessage, { 
+          id: loadingToast,
+          icon: <AlertCircle className="w-5 h-5 text-red-500" />,
+          duration: 5000
+        });
+      }
+    };
+    
+    loadLeads();
   }, [])
  
   const handleCreate = () => {
     setSelectedLead(null);
     setOpen(true);
+    toast.success('Creating a new lead', { icon: '📝' });
   };
  
   const handleEdit = (lead) => {
     setSelectedLead(lead);
     setOpen(true);
+    toast('Editing lead details', { icon: '✏️' });
   };
  
   const handleLeadSubmit = async (leadPayload, files = {}) => {
+    const isUpdate = !!selectedLead;
+    const loadingToast = toast.loading(isUpdate ? 'Updating lead...' : 'Creating lead...');
+    
     try {
-      if (selectedLead) {
+      if (isUpdate) {
         await updateLead(selectedLead._id || selectedLead.id, leadPayload, files);
       } else {
         await createLead(leadPayload, files);
       }
+      
+      toast.success(
+        isUpdate ? 'Lead updated successfully!' : 'Lead created successfully!',
+        { 
+          id: loadingToast,
+          icon: <Check className="w-5 h-5 text-green-500" />,
+          duration: 3000
+        }
+      );
+      
+      if (Object.keys(files).length > 0) {
+        toast.success('Files uploaded successfully', { 
+          icon: '📎',
+          duration: 2000 
+        });
+      }
+      
       setOpen(false);
       fetchLeads(); // Refresh list
     } catch (err) {
       console.error("Failed to submit lead:", err);
-      // Optionally handle error state here
+      const errorMessage = err.response?.data?.message || 'Failed to save lead. Please try again.';
+      
+      toast.error(errorMessage, { 
+        id: loadingToast,
+        icon: <X className="w-5 h-5 text-red-500" />,
+        duration: 5000
+      });
     }
   };
  
   const handleDelete = async (lead) => {
+    if (!window.confirm('Are you sure you want to delete this lead? This action cannot be undone.')) {
+      toast('Deletion cancelled', { icon: 'ℹ️' });
+      return;
+    }
+
+    const loadingToast = toast.loading('Deleting lead...');
+    
     try {
       await deleteLead(lead._id || lead.id);
+      
+      toast.success('Lead deleted successfully!', { 
+        id: loadingToast,
+        icon: <Check className="w-5 h-5 text-green-500" />,
+        duration: 3000
+      });
+      
       fetchLeads();
     } catch (err) {
       console.error("Failed to delete lead:", err);
+      const errorMessage = err.response?.data?.message || 'Failed to delete lead. Please try again.';
+      
+      toast.error(errorMessage, { 
+        id: loadingToast,
+        icon: <X className="w-5 h-5 text-red-500" />,
+        duration: 5000
+      });
     }
   };
  
   const handleView = (lead) => {
     setViewLead(lead);
     setIsViewMode(true);
+    toast.success('Viewing lead details', { 
+      icon: '👁️',
+      duration: 2000
+    });
   };
  
   const normalizedLeads = (Array.isArray(leads) ? leads : []).map((lead) => {
@@ -342,7 +417,31 @@ export default function LeadsPage() {
                 <p className="text-sm text-gray-500 mt-1">Leads list · Last updated today</p>
               </div>
               <div className="flex items-center gap-3">
-                <Button variant="ghost" className="text-gray-700" onClick={fetchLeads} disabled={loading}>
+                <Button 
+                  variant="ghost" 
+                  className="text-gray-700" 
+                  onClick={async () => {
+                    const loadingToast = toast.loading('Refreshing leads...');
+                    try {
+                      await fetchLeads();
+                      toast.success('Leads refreshed successfully', { 
+                        id: loadingToast,
+                        icon: <Check className="w-5 h-5 text-green-500" />,
+                        duration: 2000
+                      });
+                    } catch (err) {
+                      console.error('Failed to refresh leads:', err);
+                      const errorMessage = err.response?.data?.message || 'Failed to refresh leads. Please try again.';
+                      
+                      toast.error(errorMessage, { 
+                        id: loadingToast,
+                        icon: <AlertCircle className="w-5 h-5 text-red-500" />,
+                        duration: 5000
+                      });
+                    }
+                  }} 
+                  disabled={loading}
+                >
                   <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
                   Refresh
                 </Button>
@@ -429,10 +528,8 @@ export default function LeadsPage() {
                                 Edit
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={() => {
-                                  if (window.confirm("Are you sure you want to delete this lead?")) handleDelete(lead.raw)
-                                }}
-                                className="cursor-pointer text-red-600"
+                                onClick={() => handleDelete(lead.raw)}
+                                className="cursor-pointer text-red-600 hover:bg-red-50"
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 Delete
