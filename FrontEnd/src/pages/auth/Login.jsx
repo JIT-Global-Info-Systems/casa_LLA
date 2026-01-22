@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/context/AuthContext'
 import loginBg from '@/assets/logincasaw.avif'
+import toast from 'react-hot-toast'
 
 function Login() {
   const [email, setEmail] = useState('')
@@ -22,11 +23,13 @@ function Login() {
 
     try {
       await login({ email, password })
-
+      toast.success('Login successful! Redirecting...')
       // Redirect to dashboard on successful login
       navigate('/pages/dashboard')
     } catch (err) {
-      setError(err.message || 'An error occurred during login')
+      const errorMessage = err.response?.data?.message || err.message || 'An error occurred during login'
+      setError(errorMessage)
+      toast.error(errorMessage)
       console.error('Login error:', err)
     } finally {
       setIsLoading(false)
