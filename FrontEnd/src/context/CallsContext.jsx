@@ -59,6 +59,7 @@ export function CallsProvider({ children }) {
         }
     }
 
+    // Fetch calls on component mount
     useEffect(() => {
         fetchCalls()
     }, [fetchCalls])

@@ -28,6 +28,8 @@ const getStatusBadge = (status) => {
 export default function ApprovedLeads() {
   const [open, setOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
+  const [viewLead, setViewLead] = useState(null);
+  const [isViewMode, setIsViewMode] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -35,6 +37,14 @@ export default function ApprovedLeads() {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentStep, setCurrentStep] = useState(1);
+
+  const leadComments = [
+    selectedLead?.remark,
+    selectedLead?.comment,
+  ]
+    .map((v) => (typeof v === "string" ? v.trim() : ""))
+    .filter((text) => Boolean(text));
 
   const handleView = (lead) => {
     setSelectedLead(lead);

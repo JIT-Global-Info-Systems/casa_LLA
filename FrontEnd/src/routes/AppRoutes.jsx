@@ -16,7 +16,6 @@ import Leads from "@/pages/Leads";
 import Unauthorized from "@/pages/Unauthorized";
 import Calls from "@/pages/Calls";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
-import { AuthProvider } from "@/context/AuthContext";
 import { PERMISSIONS } from "@/config/rbac";
 // const Leads = () => (
 //   <div className="p-6">
@@ -38,9 +37,8 @@ const Reports = () => (
 
 function AppRoutes() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
+    <BrowserRouter>
+      <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
@@ -129,7 +127,6 @@ function AppRoutes() {
           </Route>
         </Routes>
       </BrowserRouter>
-    </AuthProvider>
   );
 }
 

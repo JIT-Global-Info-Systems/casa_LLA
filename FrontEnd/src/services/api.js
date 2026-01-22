@@ -349,7 +349,7 @@ export const locationsAPI = {
 export const callsAPI = {
   // Get all calls
   getAll: async () => {
-    const response = await apiRequest("/calls/all")
+    const response = await apiRequest("/leads/calls/all")
     return response.data || []
   },
  

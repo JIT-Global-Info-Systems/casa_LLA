@@ -11,7 +11,7 @@ import { toast } from "react-hot-toast";
 import axios from "axios";
 import Modal from "@/components/ui/modal";
 import LeadStepper from "@/components/ui/LeadStepper";
-
+ 
 const getStatusBadge = (status) => {
   switch (status?.toUpperCase()) {
     case 'PURCHASED':
@@ -24,6 +24,7 @@ const getStatusBadge = (status) => {
       return 'bg-gray-100 text-gray-800';
   }
 };
+ 
 
 const PurchasedLeads = () => {
   const [leads, setLeads] = useState([]);
@@ -35,7 +36,9 @@ const PurchasedLeads = () => {
   const [open, setOpen] = useState(false);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-
+  useEffect(()=>{
+    fetchPurchasedLeads()
+  },[])
   const fetchPurchasedLeads = async () => {
     const loadingToast = toast.loading('Loading purchased leads...');
     try {
@@ -47,14 +50,14 @@ const PurchasedLeads = () => {
           "Authorization": `Bearer ${localStorage.getItem("token")}`
         }
       });
-      
+     
       const leadsData = response.data?.data || [];
       setLeads(leadsData);
-      
+     
       if (leadsData.length === 0) {
         toast.success('No purchased leads found', { id: loadingToast });
       } else {
-        toast.success(`Loaded ${leadsData.length} purchased leads`, { 
+        toast.success(`Loaded ${leadsData.length} purchased leads`, {
           id: loadingToast,
           icon: '✅'
         });
@@ -63,7 +66,7 @@ const PurchasedLeads = () => {
       console.error("Error fetching purchased leads:", err);
       const errorMessage = err.response?.data?.message || 'Failed to fetch purchased leads. Please try again later.';
       setError(errorMessage);
-      toast.error(errorMessage, { 
+      toast.error(errorMessage, {
         id: loadingToast,
         duration: 5000
       });
@@ -71,12 +74,12 @@ const PurchasedLeads = () => {
       setLoading(false);
     }
   };
-
+ 
   const handleView = (lead) => {
     setSelectedLead(lead);
     setOpen(true);
   };
-
+ 
   const filteredLeads = leads.filter((lead) => {
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch = searchTerm === "" ||
@@ -85,20 +88,20 @@ const PurchasedLeads = () => {
       (lead.lead_id && lead.lead_id.toLowerCase().includes(searchLower)) ||
       (lead.location && lead.location.toLowerCase().includes(searchLower)) ||
       (lead.leadType && lead.leadType.toLowerCase().includes(searchLower));
-      
+     
     const matchesDate = !dateFrom && !dateTo ? true : (() => {
       const leadDate = new Date(lead.date || lead.purchaseDate || lead.createdAt || lead.updatedAt);
       const fromDateObj = dateFrom ? new Date(dateFrom) : new Date("1900-01-01");
       const toDateObj = dateTo ? new Date(dateTo) : new Date("2100-12-31");
       return leadDate >= fromDateObj && leadDate <= toDateObj;
     })();
-    
-    const matchesStatus = statusFilter === "all" || 
+   
+    const matchesStatus = statusFilter === "all" ||
       (lead.lead_status && lead.lead_status.toLowerCase() === statusFilter.toLowerCase());
-      
+     
     return matchesSearch && matchesDate && matchesStatus;
   });
-
+ 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -121,7 +124,7 @@ const PurchasedLeads = () => {
           </div>
         </div>
       </div>
-
+ 
       {/* Main Content */}
       <div className="max-w-[1600px] mx-auto px-8 py-6">
         <Card className="bg-white shadow-sm">
@@ -136,7 +139,7 @@ const PurchasedLeads = () => {
                 className="pl-10 border-gray-300"
               />
             </div>
-
+ 
             <div className="flex items-center gap-2">
               <Label className="text-sm text-gray-600 whitespace-nowrap">Status:</Label>
               <DropdownMenu>
@@ -177,7 +180,7 @@ const PurchasedLeads = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-
+ 
             <div className="flex items-center gap-2">
               <Label className="text-sm text-gray-600 whitespace-nowrap">From:</Label>
               <Input
@@ -187,7 +190,7 @@ const PurchasedLeads = () => {
                 className="w-[150px] border-gray-300"
               />
             </div>
-
+ 
             <div className="flex items-center gap-2">
               <Label className="text-sm text-gray-600 whitespace-nowrap">To:</Label>
               <Input
@@ -321,10 +324,10 @@ const PurchasedLeads = () => {
           )}
         </Card>
       </div>
-
+ 
       <Modal open={open} onClose={() => setOpen(false)} size="5xl">
         <div className="p-6">
-          <LeadStepper 
+          <LeadStepper
             onClose={() => setOpen(false)}
             initialData={selectedLead}
           />
@@ -334,3 +337,4 @@ const PurchasedLeads = () => {
   );
 }
 export default PurchasedLeads;
+ 
