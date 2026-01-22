@@ -1,5 +1,5 @@
 // const API_BASE_URL = 'http://13.201.132.94:5000/api';
-const API_BASE_URL = 'http://13.201.132.94:5000/api';
+const API_BASE_URL = 'http://localhost:5000/api';
  
 // Generic API request helper
 const apiRequest = async (endpoint, options = {}) => {
@@ -8,23 +8,36 @@ const apiRequest = async (endpoint, options = {}) => {
   // Get token from localStorage
   const token = localStorage.getItem('token');
  
-  const config = {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
-      ...options.headers,
-    },
-    ...options,
+  // Skip authentication for auth endpoints
+  const isAuthEndpoint = endpoint.startsWith('/auth/') || endpoint.startsWith('/users/create');
+ 
+  if (!token && !isAuthEndpoint) {
+    throw new Error('No authentication token found. Please login to make API calls.');
+  }
+ 
+  const headers = {
+    ...(token && !isAuthEndpoint && { 'Authorization': `Bearer ${token}` }),
+    ...options.headers,
   };
-//  const userId = 
+ 
+  // Only set Content-Type to application/json if not already set AND body is not FormData
+  if (!headers['Content-Type'] && !(options.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
+  }
+ 
+  const config = {
+    ...options,
+    headers,
+  };
+  //  const userId =
   try {
     const response = await fetch(url, config);
-   
+ 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
     }
-   
+ 
     return await response.json();
   } catch (error) {
     console.error('API Request Error:', error);
@@ -50,14 +63,20 @@ export const mediatorsAPI = {
   // Create new mediator with file uploads
   create: async (mediatorData, files = {}) => {
     const formData = new FormData();
-   
+ 
     // Add all text fields
     Object.keys(mediatorData).forEach(key => {
       if (mediatorData[key] !== null && mediatorData[key] !== undefined) {
-        formData.append(key, mediatorData[key]);
+        let value = mediatorData[key];
+        // Ensure address is a JSON string for backend parsing if it's the address field
+        // This matches the logic used in the update method
+        if (key === 'address') {
+          value = JSON.stringify(value);
+        }
+        formData.append(key, value);
       }
     });
-   
+ 
     // Add file uploads if present
     if (files.pan_upload) {
       formData.append('pan_upload', files.pan_upload);
@@ -65,11 +84,10 @@ export const mediatorsAPI = {
     if (files.aadhar_upload) {
       formData.append('aadhar_upload', files.aadhar_upload);
     }
-   
+ 
     return await apiRequest('/mediators/create', {
       method: 'POST',
       body: formData,
-      headers: {}, // Remove Content-Type to let browser set it with boundary
     });
   },
  
@@ -114,18 +132,6 @@ export const leadsAPI = {
     // We want to return the data array
     return response.data || [];
   },
-
-  // Get approved leads
-  getApproved: async () => {
-    const response = await apiRequest('/leads/approved');
-    return response.data || [];
-  },
-
-  // Get purchased leads
-  getPurchased: async () => {
-    const response = await apiRequest('/leads/purchased');
-    return response.data || [];
-  },
  
   // Get lead by ID
   getById: async (id) => {
@@ -138,7 +144,7 @@ export const leadsAPI = {
   // Create new lead
   create: async (leadData, files = {}) => {
     const hasFiles = Boolean(files?.fmb_sketch || files?.patta_chitta);
-
+ 
     // Backend supports JSON body OR multipart with a `data` JSON string
     if (!hasFiles) {
       return await apiRequest('/leads/create', {
@@ -146,17 +152,16 @@ export const leadsAPI = {
         body: JSON.stringify(leadData),
       });
     }
-
+ 
     const formData = new FormData();
     formData.append('data', JSON.stringify(leadData));
-
+ 
     if (files.fmb_sketch) formData.append('fmb_sketch', files.fmb_sketch);
     if (files.patta_chitta) formData.append('patta_chitta', files.patta_chitta);
-
+ 
     return await apiRequest('/leads/create', {
       method: 'POST',
       body: formData,
-      headers: {}, // let browser set boundary
     });
   },
  
@@ -166,7 +171,7 @@ export const leadsAPI = {
     if (files.fmb_sketch || files.patta_chitta) {
       const formData = new FormData();
       formData.append('data', JSON.stringify(leadData));
-      
+ 
       // Add file uploads if present
       if (files.fmb_sketch) {
         formData.append('fmb_sketch', files.fmb_sketch);
@@ -174,11 +179,10 @@ export const leadsAPI = {
       if (files.patta_chitta) {
         formData.append('patta_chitta', files.patta_chitta);
       }
-      
+ 
       return await apiRequest(`/leads/update/${id}`, {
         method: 'PUT',
         body: formData,
-        headers: {}, // Remove Content-Type to let browser set it with boundary
       });
     } else {
       // Regular JSON update
@@ -196,6 +200,22 @@ export const leadsAPI = {
     });
     // Return the deleted lead data from response
     return response.data || response;
+  },
+ 
+  // Get approved leads
+  getApproved: async () => {
+    const response = await apiRequest('/leads/approved');
+    // The API returns { count: number, data: [...] }
+    // We want to return the data array
+    return response.data || [];
+  },
+ 
+  // Get purchased leads
+  getPurchased: async () => {
+    const response = await apiRequest('/leads/purchased');
+    // The API returns { count: number, data: [...] }
+    // We want to return the data array
+    return response.data || [];
   },
 };
  
@@ -320,48 +340,49 @@ export const locationsAPI = {
  
   deleteZone: async (locationId, regionId, zoneId) => {
     return await apiRequest(`/locations/${locationId}/regions/${regionId}/zones/${zoneId}`, {
-      method: 'DELETE',
-    });
+      method: "DELETE",
+    })
   },
-};
+}
  
 // Calls API
 export const callsAPI = {
   // Get all calls
   getAll: async () => {
-    const response = await apiRequest('/calls/all');
-    return response.data || [];
+    const response = await apiRequest("/calls/all")
+    return response.data || []
   },
-
+ 
   // Get call by ID
   getById: async (id) => {
-    return await apiRequest(`/calls/${id}`);
+    const response = await apiRequest(`/calls/${id}`)
+    return response.data || response
   },
-
+ 
   // Create new call
   create: async (callData) => {
-    return await apiRequest('/calls/create', {
-      method: 'POST',
+    return await apiRequest("/calls/create", {
+      method: "POST",
       body: JSON.stringify(callData),
-    });
+    })
   },
-
+ 
   // Update call
   update: async (id, callData) => {
     return await apiRequest(`/calls/update/${id}`, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify(callData),
-    });
+    })
   },
-
+ 
   // Delete call
   delete: async (id) => {
     return await apiRequest(`/calls/delete/${id}`, {
-      method: 'DELETE',
-    });
+      method: "DELETE",
+    })
   },
-};
-
+}
+ 
 // Export other API modules as needed
 export const authAPI = {
   login: async (credentials) => {
@@ -370,7 +391,7 @@ export const authAPI = {
       body: JSON.stringify(credentials),
     });
   },
-
+ 
   register: async (userData) => {
     return await apiRequest('/auth/register', {
       method: 'POST',
@@ -378,7 +399,7 @@ export const authAPI = {
     });
   },
 };
-
+ 
 export default {
   mediatorsAPI,
   leadsAPI,
@@ -386,4 +407,5 @@ export default {
   locationsAPI,
   callsAPI,
   authAPI,
-};
+}
+ 
