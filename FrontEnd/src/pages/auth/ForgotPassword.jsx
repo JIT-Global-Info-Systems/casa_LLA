@@ -4,12 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { authAPI } from '@/services/api'
+import { toast } from 'react-hot-toast'
 
 function ForgotPassword() {
   const [email, setEmail] = useState('')
   const navigate = useNavigate()
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
   const validateEmail = (email) => {
@@ -19,35 +18,43 @@ function ForgotPassword() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setError('')
-    setSuccess('')
-
+    
     // Client-side validation
     if (!email) {
-      setError('Email is required')
+      toast.error('Email is required')
       return
     }
 
     if (!validateEmail(email)) {
-      setError('Please enter a valid email address')
+      toast.error('Please enter a valid email address')
       return
     }
 
+    const loadingToast = toast.loading('Sending password reset instructions...')
     setIsLoading(true)
 
     try {
       const response = await authAPI.forgotPassword(email)
-      setSuccess(response.message || 'If your email is registered, you will receive an OTP to reset your password')
+      
+      // Show success message
+      toast.success(response.message || 'Password reset link has been sent to your email', {
+        id: loadingToast,
+        duration: 4000
+      })
 
       // Clear email field after successful submission
       setEmail('')
 
-      // Redirect to verify OTP page after 2 seconds
+      // Redirect to verify OTP page after a short delay
       setTimeout(() => {
         navigate('/verify-otp', { state: { email } })
       }, 2000)
     } catch (err) {
-      setError(err.message || 'Error processing forgot password request')
+      const errorMessage = err.response?.data?.message || 'Failed to send password reset instructions. Please try again.'
+      toast.error(errorMessage, {
+        id: loadingToast,
+        duration: 5000
+      })
       console.error('Forgot password error:', err)
     } finally {
       setIsLoading(false)
@@ -90,17 +97,9 @@ function ForgotPassword() {
                 disabled={isLoading}
               />
 
-              {error && (
-                <div className="text-red-500 text-xs">
-                  {error}
-                </div>
-              )}
-
-              {success && (
-                <div className="text-green-600 text-xs">
-                  {success}
-                </div>
-              )}
+              <div className="h-4">
+                {/* Placeholder for layout consistency */}
+              </div>
 
               <Button
                 type="submit"
