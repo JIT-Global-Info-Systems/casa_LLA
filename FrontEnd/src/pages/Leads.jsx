@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Label } from "@/components/ui/label"
 import { locationsAPI } from "@/services/api"
 import { useMediators } from "../context/MediatorsContext.jsx"
+import { useUsers } from "../context/UsersContext.jsx"
 import { ChevronLeft, Upload, FileText, CheckCircle2, AlertCircle, Loader2 } from "lucide-react"
 import toast from "react-hot-toast"
 
@@ -14,6 +15,40 @@ const yesNo = (v) => (v ? "Yes" : "No")
 
 export default function Leads({ data = null, onSubmit, onClose }) {
   const { mediators, loading: mediatorsLoading, fetched: mediatorsFetched, fetchMediators } = useMediators()
+  const { users, loading: usersLoading, fetchUsers } = useUsers()
+  
+  // Define role hierarchy - lower number means higher priority
+  const roleHierarchy = {
+    'admin': 1,
+    'cmo_cro': 2,
+    'l1_md': 3,
+    'legal': 4,
+    'liaison': 5,
+    'feasibility_team': 6,
+    'land_executive': 7,
+    'tele_caller': 8
+  }
+
+  // Get current user role from localStorage
+  const getCurrentUserRole = () => {
+    return localStorage.getItem('userRole') || 'tele_caller' // Default to lowest role if not found
+  }
+
+  // Get filtered users based on role hierarchy
+  const getFilteredUsers = () => {
+    const currentUserRole = getCurrentUserRole()
+    const currentUserLevel = roleHierarchy[currentUserRole] || 8
+    
+    // Admin can assign to anyone
+    if (currentUserRole === 'admin') {
+      return users.sort((a, b) => (roleHierarchy[a.role] || 9) - (roleHierarchy[b.role] || 9))
+    }
+    
+    // Other users can only assign to lower priority roles (higher numbers)
+    return users
+      .filter(user => (roleHierarchy[user.role] || 9) > currentUserLevel)
+      .sort((a, b) => (roleHierarchy[a.role] || 9) - (roleHierarchy[b.role] || 9))
+  }
   const [formData, setFormData] = useState({
     // Basic Lead Information
     leadType: "mediator",
@@ -107,6 +142,7 @@ export default function Leads({ data = null, onSubmit, onClose }) {
     filePattaChitta: null,
 
     checkRequests: "",
+    currentRole: "",
   })
 
   const [masters, setMasters] = useState({ locations: [], regions: [], zones: [] })
@@ -219,7 +255,11 @@ export default function Leads({ data = null, onSubmit, onClose }) {
     if (!mediatorsFetched && !mediatorsLoading && !mediators.length) {
       fetchMediators()
     }
-  }, [fetchLocations, fetchMediators, mediatorsFetched, mediatorsLoading, mediators.length])
+    // Fetch users
+    if (!usersLoading && !users.length) {
+      fetchUsers()
+    }
+  }, [fetchLocations, fetchMediators, mediatorsFetched, mediatorsLoading, mediators.length, usersLoading, users.length, fetchUsers])
 
   useEffect(() => {
     if (!data) return
@@ -234,6 +274,7 @@ export default function Leads({ data = null, onSubmit, onClose }) {
       leadStatus: data.lead_status || prev.leadStatus,
       lead_stage: data.lead_stage || prev.lead_stage,
       mediatorId: data.mediatorId || prev.mediatorId,
+      currentRole: data.currentRole || prev.currentRole,
 
       // competitor
       competitorDeveloperName: firstCompetitor?.developerName || "",
@@ -409,6 +450,7 @@ export default function Leads({ data = null, onSubmit, onClose }) {
       sspde: formData.sspde,
       remark: formData.remark,
       lead_stage: formData.lead_stage,
+      currentRole: formData.currentRole,
 
       // backend field name
       lead_status: String(formData.leadStatus || "").toUpperCase(),
@@ -595,6 +637,33 @@ export default function Leads({ data = null, onSubmit, onClose }) {
             </div>
 
             <div className="space-y-2">
+              <Label>Current Role</Label>
+              <Select 
+                value={formData.currentRole} 
+                onValueChange={(value) => handleChange("currentRole", value)}
+                disabled={usersLoading}
+              >
+                <SelectTrigger className="bg-gray-50/50">
+                  {usersLoading ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <SelectValue placeholder="Loading users..." />
+                    </div>
+                  ) : (
+                    <SelectValue placeholder="Select user" />
+                  )}
+                </SelectTrigger>
+                <SelectContent className="bg-white z-50 shadow-xl border-gray-200">
+                  {getFilteredUsers().map((user) => (
+                    <SelectItem key={user.user_id} value={user.user_id}>
+                      {user.name} - {user.role.replace('_', ' ')}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2 hidden">
               <Label>Mediator ID (optional)</Label>
               <Input value={formData.mediatorId} onChange={(e) => handleChange("mediatorId", e.target.value)} className="bg-gray-50/50" />
             </div>
