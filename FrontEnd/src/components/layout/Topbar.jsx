@@ -1,9 +1,10 @@
 // import * as React from "react";
 // import { Link, useLocation, useNavigate } from "react-router-dom";
 // import { Bell, Menu } from "lucide-react";
-
+ 
 // import { navItems } from "./Sidebar";
 // import { Button } from "@/components/ui/button";
+// import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 // import {
 //   DropdownMenu,
 //   DropdownMenuContent,
@@ -15,7 +16,7 @@
 // import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 // import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 // import { useAuth } from "../../context/AuthContext";
-
+ 
 // const pageTitles = {
 //   "/pages": "Dashboard",
 //   "/pages/dashboard": "Dashboard",
@@ -27,14 +28,22 @@
 //   "/pages/documents": "Documents",
 //   "/pages/profile": "Profile",
 // };
-
+ 
+// const locations = [
+//   { label: "All Locations", value: "all" },
+//   { label: "Chennai", value: "chennai" },
+//   { label: "Bangalore", value: "bangalore" },
+//   { label: "Mysore", value: "mysore" },
+// ];
+ 
 // function Topbar() {
 //   const { user } = useAuth();
 //   const location = useLocation();
 //   const navigate = useNavigate()
 //   const title = pageTitles[location.pathname] || "Dashboard";
 //   const [mobileNavOpen, setMobileNavOpen] = React.useState(false);
-
+//   const [selectedLocation, setSelectedLocation] = React.useState("all");
+ 
 //   // Function to get initials from user name
 //   const getInitials = (name) => {
 //     if (!name || typeof name !== 'string') {
@@ -46,14 +55,14 @@
 //       .join("")
 //       .toUpperCase();
 //   };
-
+ 
 //   const isItemActive = (path) => {
 //     return (
 //       location.pathname === path ||
 //       (path === "/pages/dashboard" && location.pathname === "/pages")
 //     );
 //   };
-
+ 
 //   return (
 //     <header className="sticky top-0 z-30 h-16 border-b border-border bg-white shadow-sm">
 //       <div className="flex h-full items-center justify-between gap-4 px-4 sm:px-6">
@@ -80,7 +89,7 @@
 //                   {navItems.map((item) => {
 //                     const active = isItemActive(item.path);
 //                     const Icon = item.icon;
-
+ 
 //                     return (
 //                       <Link
 //                         key={item.path}
@@ -102,14 +111,14 @@
 //               </nav>
 //             </SheetContent>
 //           </Sheet>
-
+ 
 //           <div className="flex flex-col">
 //             <div className="text-base font-bold text-indigo-700">{title}</div>
 //             <div className="hidden text-xs text-slate-500 sm:block">
 //               Analytics dashboard
 //             </div>
 //           </div>
-
+ 
 //           <nav className="hidden md:flex items-center gap-1" aria-label="Primary">
 //             {navItems.map((item) => {
 //               const active = isItemActive(item.path);
@@ -130,12 +139,25 @@
 //             })}
 //           </nav>
 //         </div>
-
+ 
 //         <div className="flex items-center gap-2">
+//           <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+//             <SelectTrigger className="w-[140px]">
+//               <SelectValue placeholder="Location" />
+//             </SelectTrigger>
+//             <SelectContent className="bg-white border border-gray-200 shadow-lg">
+//               {locations.map((location) => (
+//                 <SelectItem key={location.value} value={location.value}>
+//                   {location.label}
+//                 </SelectItem>
+//               ))}
+//             </SelectContent>
+//           </Select>
+         
 //           <Button variant="ghost" size="icon" aria-label="Notifications">
 //             <Bell />
 //           </Button>
-
+ 
 //           <DropdownMenu>
 //             <DropdownMenuTrigger asChild>
 //               <Button
@@ -165,7 +187,7 @@
 //     </header>
 //   );
 // }
-
+ 
 // export default Topbar;
 
 
@@ -176,7 +198,7 @@ import { Bell, Menu } from "lucide-react";
  
 import { navItems } from "./Sidebar";
 import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -195,17 +217,19 @@ const pageTitles = {
   "/pages/leads": "Leads",
   "/pages/users": "Users",
   "/pages/approvedleads": "Approval",
-  "/pages/purchasedleads": "Purchased",
+  "/pages/purchasedleads":"Purchased",
   "/pages/mediators": "Mediators",
   "/pages/masters": "Masters",
   "/pages/documents": "Documents",
   "/pages/profile": "Profile",
+  "/pages/calls": "Calls",
 };
  
 const locations = [
   { label: "All Locations", value: "all" },
   { label: "Chennai", value: "chennai" },
   { label: "Bangalore", value: "bangalore" },
+  { label: "Mysore", value: "mysore" },
 ];
  
 function Topbar() {
@@ -313,13 +337,18 @@ function Topbar() {
         </div>
  
         <div className="flex items-center gap-2">
-          <Select
-            value={selectedLocation}
-            onChange={setSelectedLocation}
-            options={locations}
-            placeholder="Location"
-            className="w-[80px]"
-          />
+          <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Location" />
+            </SelectTrigger>
+            <SelectContent className="bg-white border border-gray-200 shadow-lg">
+              {locations.map((location) => (
+                <SelectItem key={location.value} value={location.value}>
+                  {location.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
          
           <Button variant="ghost" size="icon" aria-label="Notifications">
             <Bell />
@@ -355,4 +384,4 @@ function Topbar() {
   );
 }
  
-export default Topbar;
+export default Topbar

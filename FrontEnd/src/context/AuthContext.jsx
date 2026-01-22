@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { usersAPI } from '../services/api';
+import { usersAPI, authAPI } from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -19,15 +19,29 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const token = localStorage.getItem('token');
     const userId = localStorage.getItem('user_id');
+    const userData = localStorage.getItem('user');
 
-    if (token && userId) {
-      // Fetch user profile using token and user ID
+    if (token && userData) {
+      // Parse stored user data
+      try {
+        const parsedUser = JSON.parse(userData);
+        setUser({ ...parsedUser, token });
+      } catch (error) {
+        console.error('Failed to parse user data:', error);
+        setUser({ token }); // Fallback to token only
+      }
+      setLoading(false);
+    } else if (token && userId) {
+      // Fetch user profile using token and user ID (legacy support)
       const fetchUserProfile = async () => {
         try {
           console.log('Fetching user profile for ID:', userId);
           const response = await usersAPI.getById(userId);
           console.log('User profile response:', response);
-          setUser({ ...response, token });
+          const userData = { ...response, token };
+          setUser(userData);
+          // Store user data in localStorage for future use
+          localStorage.setItem('user', JSON.stringify(response));
         } catch (error) {
           console.error('Failed to fetch user profile:', error);
           setUser({ token }); // Fallback to token only
@@ -49,11 +63,19 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await usersAPI.login(credentials);
+      const response = await authAPI.login(credentials);
 
       if (response?.token) {
         localStorage.setItem('token', response.token);
-        setUser(response.user ?? { token: response.token });
+
+        // Store user data if available
+        if (response.user) {
+          localStorage.setItem('user_id', response.user.user_id);
+          localStorage.setItem('user', JSON.stringify(response.user));
+          setUser({ ...response.user, token: response.token });
+        } else {
+          setUser({ token: response.token });
+        }
       }
 
       return response;
@@ -69,7 +91,7 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
-      return await usersAPI.register(userData);
+      return await authAPI.register(userData);
     } catch (err) {
       setError(err.message);
       throw err;
@@ -80,6 +102,8 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user_id');
+    localStorage.removeItem('user');
     setUser(null);
     setError(null);
   };
@@ -94,6 +118,7 @@ export const AuthProvider = ({ children }) => {
         register,
         logout,
         isAuthenticated: Boolean(user),
+        userRole: user?.role,
       }}
     >
       {children}

@@ -14,7 +14,7 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow
+  TableRow,
 } from "@/components/ui/table";
 
 function Users() {
@@ -40,6 +40,7 @@ function Users() {
 
   useEffect(() => {
     fetchUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -48,33 +49,41 @@ function Users() {
 
   useEffect(() => {
     filterUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [users, searchTerm, roleFilter, statusFilter, fromDate, toDate]);
 
   const filterUsers = () => {
+    if (!users) return;
+
     let filtered = users;
 
     if (searchTerm) {
-      filtered = filtered.filter(user =>
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.phone_number.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(
+        (user) =>
+          user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (user.phone_number && user.phone_number.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
 
     if (roleFilter !== "all") {
-      filtered = filtered.filter(user => user.role === roleFilter);
+      filtered = filtered.filter((user) => user.role === roleFilter);
     }
 
     if (statusFilter !== "all") {
-      filtered = filtered.filter(user => user.status === statusFilter);
+      filtered = filtered.filter((user) => user.status === statusFilter);
     }
 
     if (fromDate) {
-      filtered = filtered.filter(user => new Date(user.created_at) >= new Date(fromDate));
+      filtered = filtered.filter(
+        (user) => new Date(user.created_at) >= new Date(fromDate)
+      );
     }
 
     if (toDate) {
-      filtered = filtered.filter(user => new Date(user.created_at) <= new Date(toDate));
+      filtered = filtered.filter(
+        (user) => new Date(user.created_at) <= new Date(toDate)
+      );
     }
 
     setFilteredUsers(filtered);
@@ -90,10 +99,11 @@ function Users() {
         password: "",
         role: "telecaller",
         phone_number: "",
-        status: "active"
+        status: "active",
       });
     } catch (err) {
-      // Error is handled by the context
+      // Error handled by context
+      console.error(err);
     }
   };
 
@@ -108,10 +118,10 @@ function Users() {
         password: "",
         role: "telecaller",
         phone_number: "",
-        status: "active"
+        status: "active",
       });
     } catch (err) {
-      // Error is handled by the context
+      console.error(err);
     }
   };
 
@@ -119,7 +129,7 @@ function Users() {
     try {
       await deleteUser(userId);
     } catch (err) {
-      // Error is handled by the context
+      console.error(err);
     }
   };
 
@@ -128,10 +138,10 @@ function Users() {
     setFormData({
       name: user.name,
       email: user.email,
-      password: "",
+      password: "", // Usually keep password blank on edit unless changing
       role: user.role,
       phone_number: user.phone_number,
-      status: user.status
+      status: user.status,
     });
     setMode("edit");
   };
@@ -146,7 +156,7 @@ function Users() {
       admin: "bg-red-100 text-red-700",
       manager: "bg-purple-100 text-purple-700",
       executive: "bg-orange-100 text-orange-700",
-      telecaller: "bg-blue-100 text-blue-700"
+      telecaller: "bg-blue-100 text-blue-700",
     };
     return colors[role] || "bg-blue-100 text-blue-700";
   };
@@ -311,9 +321,9 @@ function Users() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b bg-gray-50">
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         ID
-                      </th>
+                      </th> */}
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Name
                       </th>
@@ -343,9 +353,9 @@ function Users() {
                         key={user.user_id}
                         className="hover:bg-gray-50 transition-colors"
                       >
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {/* <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {user.user_id}
-                        </td>
+                        </td> */}
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {user.name}
                         </td>
@@ -537,7 +547,7 @@ function Users() {
                   placeholder="Enter email address"
                 />
               </div>
-              {/* <div className="grid gap-2">
+              <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <Input
                   id="password"
@@ -548,8 +558,8 @@ function Users() {
                   }
                   placeholder="Enter password"
                 />
-              </div> */}
-              <div className="grid gap-2">
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="phone">Phone</Label>
                 <Input
                   id="phone"
@@ -798,12 +808,12 @@ function Users() {
             <h2 className="text-xl font-semibold mb-6">User Details</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
-              <div className="space-y-1">
+              {/* <div className="space-y-1">
                 <Label className="font-medium text-gray-700">ID:</Label>
                 <div className="text-gray-900 border rounded px-3 py-2 bg-gray-50">
                   {selectedUser.user_id}
                 </div>
-              </div>
+              </div> */}
               <div className="space-y-1">
                 <Label className="font-medium text-gray-700">Name:</Label>
                 <div className="text-gray-900 border rounded px-3 py-2 bg-gray-50">
@@ -855,4 +865,3 @@ function Users() {
 }
 
 export default Users;
-

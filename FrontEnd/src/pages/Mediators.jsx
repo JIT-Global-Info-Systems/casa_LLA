@@ -147,7 +147,7 @@
 //         // Create new mediator
 //         await createMediator(apiData, files);
 //       }
-      
+
 //       setIsAddModalOpen(false);
 //       resetForm();
 //     } catch (error) {
@@ -228,7 +228,7 @@
 //           <p className="text-slate-600">Loading mediators...</p>
 //         </div>
 //       )}
-      
+
 //       {error && (
 //         <div className="bg-red-50 border border-red-200 rounded-md p-4">
 //           <p className="text-red-600">Error: {error}</p>
@@ -421,8 +421,8 @@
 //                             <MoreVertical className="h-4 w-4" />
 //                           </Button>
 //                         </DropdownMenuTrigger>
-//                         <DropdownMenuContent 
-//                           align="end" 
+//                         <DropdownMenuContent
+//                           align="end"
 //                           className="z-50 bg-white border border-slate-200 shadow-lg"
 //                         >
 //                           <DropdownMenuItem onClick={() => handleView(mediator)}>
@@ -814,8 +814,9 @@
 
 
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useMediators } from "../context/MediatorsContext.jsx";
+import { locationsAPI } from "@/services/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -845,8 +846,9 @@ import {
   Edit,
   Trash2,
   MoreVertical,
+  Search,
 } from "lucide-react";
- 
+
 function Mediators() {
   const { mediators, loading, error, fetchMediators, createMediator, updateMediator, deleteMediator } = useMediators();
   const [open, setOpen] = useState(false);
@@ -855,12 +857,23 @@ function Mediators() {
   const [isViewMode, setIsViewMode] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedExecutive, setSelectedExecutive] = useState("");
+  const [locations, setLocations] = useState([]);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
+  const fetchLocations = useCallback(async () => {
+    try {
+      const data = await locationsAPI.getAll();
+      setLocations(data);
+    } catch (error) {
+      console.error("Failed to fetch locations:", error);
+    }
+  }, []);
+
   useEffect(() => {
     fetchMediators();
-  }, []);
+    fetchLocations();
+  }, [fetchMediators, fetchLocations]);
 
   const [formData, setFormData] = useState({
     mediatorName: "",
@@ -904,15 +917,12 @@ function Mediators() {
       const toDate = dateTo ? new Date(dateTo) : new Date("2100-12-31");
       return mediatorDate >= fromDate && mediatorDate <= toDate;
     })();
- 
+
     return matchesSearch && matchesExecutive && matchesDateRange;
   });
- 
+
   const handleInputChange = (field, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleFileChange = (field, file) => {
@@ -957,6 +967,7 @@ function Mediators() {
     setDateFrom("");
     setDateTo("");
     fetchMediators();
+    fetchLocations();
   };
 
   const resetForm = () => {
@@ -973,13 +984,14 @@ function Mediators() {
       officeIndividual: "",
       address: "",
     });
+    setFiles({ pan_upload: null, aadhar_upload: null });
     setSelectedMediator(null);
     setFiles({
       pan_upload: null,
       aadhar_upload: null,
     });
   };
- 
+
   const handleEdit = (mediator) => {
     setSelectedMediator(mediator);
     setOpen(true);
@@ -1030,7 +1042,7 @@ function Mediators() {
       }
     }
   };
- 
+
   return (
     <div>
       {/* FORM VIEW */}
@@ -1201,27 +1213,19 @@ function Mediators() {
                       <ChevronDown className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-full bg-white">
-                    <DropdownMenuItem
-                      onClick={() => handleInputChange("location", "Mumbai")}
-                    >
-                      Mumbai
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleInputChange("location", "Delhi")}
-                    >
-                      Delhi
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleInputChange("location", "Bangalore")}
-                    >
-                      Bangalore
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleInputChange("location", "Chennai")}
-                    >
-                      Chennai
-                    </DropdownMenuItem>
+                  <DropdownMenuContent className="w-full bg-white max-h-[300px] overflow-y-auto">
+                    {locations.length > 0 ? (
+                      locations.map((loc) => (
+                        <DropdownMenuItem
+                          key={loc._id}
+                          onClick={() => handleInputChange("location", loc.location)}
+                        >
+                          {loc.location}
+                        </DropdownMenuItem>
+                      ))
+                    ) : (
+                      <div className="p-2 text-sm text-gray-500">No locations found</div>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
@@ -1512,7 +1516,28 @@ function Mediators() {
 
       {/* LIST VIEW */}
       {!open && !isViewMode && (
-        <div className="flex-1 space-y-6 p-6">
+        <div className="min-h-screen bg-gray-50">
+          {/* Header */}
+          <div className="bg-white border-b px-8 py-4">
+            <div className="flex items-center justify-between max-w-[1600px] mx-auto">
+              <div>
+                <h1 className="text-2xl font-semibold text-indigo-700">Mediators</h1>
+                <p className="text-sm text-gray-500 mt-1">Mediator list · Last updated today</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <Button variant="ghost" className="text-gray-700" onClick={handleRefresh} disabled={loading}>
+                  <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+                  Refresh
+                </Button>
+                <Button className="bg-indigo-600 hover:bg-indigo-700 text-white" onClick={handleCreate}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="max-w-[1600px] mx-auto px-8 py-6">
           {/* Loading and Error States */}
           {loading && (
             <div className="text-center py-8">
@@ -1527,125 +1552,54 @@ function Mediators() {
 
           {/* Main Content */}
           {!loading && !error && (
-            <>
-              {/* Header */}
-              <div className="flex items-center justify-between">
-                <div>
-                 
-                  
-                  {/* <div className="flex justify-between items-center mb-4"> */}
-            <div className="text-xl font-bold text-indigo-700">
-            Mediator
-              <div className="text-sm text-slate-500">
-              Mediator list · Last updated today
-              </div>
-            </div>
-
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={handleRefresh}>
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Refresh
-                  </Button>
-                  <Button onClick={handleCreate} size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add
-                  </Button>
-                </div>
-              </div>
-
+            <Card className="bg-white shadow-sm">
               {/* Filters */}
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex flex-wrap items-center gap-4">
-                    <div className="flex-1 min-w-[200px]">
-                      <div className="relative">
-                        <Input
-                          placeholder="Search mediators..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="pl-10"
-                        />
-                      </div>
-                    </div>
+              <div className="p-6 border-b flex flex-wrap gap-4 items-center">
+                <div className="relative flex-1 min-w-[250px]">
+                  <Input
+                    placeholder="Search mediators..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-4 border-gray-300"
+                  />
+                </div>
 
-                    <div className="flex items-center gap-2">
-                      <Label className="text-sm text-slate-600 whitespace-nowrap">
-                        Executive:
-                      </Label>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-[140px] justify-between bg-white"
-                          >
-                            <span className="truncate">
-                              {selectedExecutive || "Select"}
-                            </span>
-                            <ChevronDown className="h-4 w-4 ml-2 flex-shrink-0" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="bg-white">
-                          <DropdownMenuItem onClick={() => setSelectedExecutive("")}>
-                            All
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => setSelectedExecutive("Admin")}
-                          >
-                            Admin
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => setSelectedExecutive("Manager")}
-                          >
-                            Manager
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => setSelectedExecutive("Executive")}
-                          >
-                            Executive
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm text-gray-600 whitespace-nowrap">Executive:</Label>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="w-[140px] justify-between bg-white border-gray-300">
+                        <span className="truncate">{selectedExecutive || "Select"}</span>
+                        <ChevronDown className="h-4 w-4 ml-2 shrink-0" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="bg-white border shadow-lg">
+                      <DropdownMenuItem onClick={() => setSelectedExecutive("")}>All</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setSelectedExecutive("Admin")}>Admin</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setSelectedExecutive("Manager")}>Manager</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setSelectedExecutive("Executive")}>Executive</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
 
-                    <div className="flex items-center gap-2">
-                      <Label className="text-sm text-slate-600 whitespace-nowrap">
-                        From:
-                      </Label>
-                      <Input
-                        type="date"
-                        value={dateFrom}
-                        onChange={(e) => setDateFrom(e.target.value)}
-                        className="w-[140px]"
-                        size="sm"
-                      />
-                    </div>
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm text-gray-600 whitespace-nowrap">From:</Label>
+                  <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px] border-gray-300" />
+                </div>
 
-                    <div className="flex items-center gap-2">
-                      <Label className="text-sm text-slate-600 whitespace-nowrap">
-                        To:
-                      </Label>
-                      <Input
-                        type="date"
-                        value={dateTo}
-                        onChange={(e) => setDateTo(e.target.value)}
-                        className="w-[140px]"
-                        size="sm"
-                      />
-                    </div>
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm text-gray-600 whitespace-nowrap">To:</Label>
+                  <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px] border-gray-300" />
+                </div>
 
-                    <Button variant="outline" size="sm">
-                      <Filter className="h-4 w-4 mr-2" />
-                      Filter
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                <Button variant="outline" className="border-gray-300" disabled>
+                  <Filter className="h-4 w-4 mr-2" />
+                  Filter
+                </Button>
+              </div>
 
               {/* Table */}
-              <Card>
-                <CardContent className="p-0">
+              <CardContent className="p-0">
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
@@ -1676,47 +1630,47 @@ function Mediators() {
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="bg-white divide-y divide-slate-200">
+                      <tbody className="bg-white divide-y divide-gray-200">
                         {filteredMediators.map((mediator) => (
                           <tr
                             key={mediator._id}
-                            className="hover:bg-slate-50 transition-colors"
+                            className="hover:bg-gray-50 transition-colors"
                           >
-                            <td className="px-4 py-3 text-sm text-slate-900">
-                              {mediator._id}
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {mediator.mediator_id}
                             </td>
-                            <td className="px-4 py-3 text-sm text-slate-900">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                               {mediator.name}
                             </td>
-                            <td className="px-4 py-3 text-sm text-slate-600">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                               {mediator.category}
                             </td>
-                            <td className="px-4 py-3 text-sm text-slate-600">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                               {mediator.phone_primary}
                             </td>
-                            <td className="px-4 py-3 text-sm text-slate-600">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                               {mediator.email}
                             </td>
-                            <td className="px-4 py-3 text-sm text-slate-600">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                               {new Date(mediator.created_at).toLocaleDateString()}
                             </td>
-                            <td className="px-4 py-3 text-sm text-slate-600">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                               {mediator.linked_executive || 'N/A'}
                             </td>
-                            <td className="px-4 py-3 text-sm text-slate-600 text-right relative">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button
                                     variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
+                                    size="sm"
+                                    className="h-8 w-8 p-0"
                                   >
                                     <MoreVertical className="h-4 w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent
                                   align="end"
-                                  className="z-50 bg-white border border-slate-200 shadow-lg"
+                                  className="bg-white border shadow-lg"
                                 >
                                   <DropdownMenuItem onClick={() => handleView(mediator)}>
                                     <Eye className="h-4 w-4 mr-2" />
@@ -1726,7 +1680,7 @@ function Mediators() {
                                     <Edit className="h-4 w-4 mr-2" />
                                     Edit
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem className="text-red-600" onClick={() => handleDelete(mediator)}>
+                                  <DropdownMenuItem className="cursor-pointer text-red-600" onClick={() => handleDelete(mediator)}>
                                     <Trash2 className="h-4 w-4 mr-2" />
                                     Delete
                                   </DropdownMenuItem>
@@ -1740,34 +1694,22 @@ function Mediators() {
                   </div>
 
                   {/* Pagination */}
-                  <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200">
-                    <div className="text-sm text-slate-600">
-                      Showing {filteredMediators.length} result
-                      {filteredMediators.length !== 1 ? "s" : ""}
-                      {filteredMediators.length !== mediators.length &&
-                        ` (of ${mediators.length} total)`}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm" disabled>
-                        Previous
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        Next
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        Last
-                      </Button>
+                  <div className="px-6 py-4 border-t flex items-center justify-between">
+                    <p className="text-sm text-gray-600">Showing {filteredMediators.length} results</p>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" disabled className="text-gray-400">Previous</Button>
+                      <Button variant="outline" size="sm" disabled className="text-gray-400">Next</Button>
+                      <Button variant="outline" size="sm" disabled className="text-gray-400">Last</Button>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            </>
+              </CardContent>
+            </Card>
           )}
+          </div>
         </div>
       )}
     </div>
   );
 }
- 
+
 export default Mediators;
- 

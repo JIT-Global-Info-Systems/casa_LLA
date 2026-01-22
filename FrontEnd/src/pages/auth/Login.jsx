@@ -3,12 +3,14 @@ import { useNavigate } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/context/AuthContext'
 import loginBg from '@/assets/logincasaw.avif'
 
 function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const navigate = useNavigate()
+  const { login } = useAuth()
 
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -19,28 +21,7 @@ function Login() {
     setIsLoading(true)
 
     try {
-      const response = await fetch('http://13.201.132.94:5000/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed')
-      }
-
-      // Store user data in localStorage
-      localStorage.setItem('token', data.token)
-      localStorage.setItem('user_id', data.user.user_id)
-      localStorage.setItem('email', data.user.email)
-      localStorage.setItem('role', data.user.role)
+      await login({ email, password })
 
       // Redirect to dashboard on successful login
       navigate('/pages/dashboard')
@@ -53,20 +34,20 @@ function Login() {
   }
 
   return (
-    <div 
+    <div
   className="min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat relative pt-20 overflow-hidden"
-  style={{ 
-    backgroundImage: "url('https://images.pexels.com/photos/323705/pexels-photo-323705.jpeg')" 
+  style={{
+    backgroundImage: "url('https://images.pexels.com/photos/323705/pexels-photo-323705.jpeg')"
   }}
 >
       <div className="absolute inset-0 bg-black opacity-20"></div>
-      
+
       {/* Animated Clouds */}
       {/* <div className="absolute top-10 w-32 h-16 bg-white rounded-full opacity-70 animate-cloud-slow"></div>
       <div className="absolute top-20 w-40 h-20 bg-white rounded-full opacity-60 animate-cloud-medium"></div>
       <div className="absolute top-32 w-28 h-14 bg-white rounded-full opacity-80 animate-cloud-fast"></div>
       <div className="absolute top-40 w-36 h-18 bg-white rounded-full opacity-50 animate-cloud-slow"></div>
-      
+
       <style jsx>{`
         @keyframes cloud-slow {
           from { transform: translateX(-200px); }
@@ -92,7 +73,7 @@ function Login() {
       `}</style> */}
 
       {/* Test animaton */}
-        
+
 
       <Card className="w-full max-w-md shadow-2xl border-0 overflow-hidden relative z-10" style={{backgroundColor: '#99b1cef5'}}>
         <div className="flex">
@@ -107,7 +88,7 @@ function Login() {
                 </div>
                 <h2 className="text-lg font-bold text-gray-900">Sign In</h2>
               </div>
-              
+
               <form onSubmit={handleLogin} className="space-y-3">
                 <Input
                   label="Email Address"
@@ -117,7 +98,7 @@ function Login() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                 />
-                
+
                 <Input
                   label="Password"
                   type="password"
@@ -145,8 +126,8 @@ function Login() {
                     {error}
                   </div>
                 )}
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   className="w-full py-2 text-xs font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                   disabled={isLoading}
                 >
@@ -177,8 +158,8 @@ function Login() {
         </div>
       </Card>
     </div>
-    
-    
+
+
   )
 }
 

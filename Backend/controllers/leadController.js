@@ -2,118 +2,6 @@ const mongoose = require('mongoose');
 const Lead = require("../models/lead");
 const LeadHistory = require("../models/LeadHistory");
 
-// exports.createLead = async (req, res) => {
-//   try {
-//     const leadData = req.body;
-
-//     if (!leadData.contactNumber || !leadData.date) {
-//       return res.status(400).json({
-//         message: "contactNumber and date are required"
-//       });
-//     }
-
-//     // Check if a lead with the same contact number already exists
-//     const existingLead = await Lead.findOne({ contactNumber: leadData.contactNumber });
-//     if (existingLead) {
-//       return res.status(400).json({
-//         message: "A lead with this contact number already exists",
-//         existingLeadId: existingLead._id
-//       });
-//     }
-
-//     const { userId, note, role, competitorAnalysis = [], checkListPage = [], ...restLeadData } = leadData;
-    
-
-//         // Format checklist page
-//     const formattedCheckListPage = Array.isArray(checkListPage)
-//       ? checkListPage.map(item => ({
-//           landLocation: item.landLocation || "",
-//           landExtent: item.landExtent || "",
-//           landZone: item.landZone || "",
-//           classificationOfLand: item.classificationOfLand || "",
-//           googlePin: item.googlePin || "",
-//           approachRoadWidth: item.approachRoadWidth || "",
-//           ebLine: item.ebLine || "",
-//           soilType: item.soilType || "",
-//           quarryCrusher: item.quarryCrusher || "",
-//           sellingPrice: item.sellingPrice || "",
-//           guidelineValue: item.guidelineValue || "",
-//           locationSellingPrice: item.locationSellingPrice || "",
-//           marketingPrice: item.marketingPrice || "",
-
-//           fmbSketchPath: item.fmbSketchPath || "",
-//           pattaChittaPath: item.pattaChittaPath || "",
-
-//           roadWidth: item.roadWidth || "",
-//           govtLandAcquisition: item.govtLandAcquisition || "",
-//           railwayTrackNoc: item.railwayTrackNoc || "",
-//           bankIssues: item.bankIssues || "",
-//           dumpyardQuarryCheck: item.dumpyardQuarryCheck || "",
-//           waterbodyNearby: item.waterbodyNearby || "",
-//           nearbyHtLine: item.nearbyHtLine || "",
-//           templeLand: item.templeLand || "",
-//           futureGovtProjects: item.futureGovtProjects || "",
-//           farmLand: item.farmLand || "",
-//           totalSaleableArea: item.totalSaleableArea || "",
-//           landCleaning: item.landCleaning || "",
-//           subDivision: item.subDivision || "",
-//           soilTest: item.soilTest || "",
-//           waterList: item.waterList || "",
-//           ownerName: item.ownerName || "",
-//           consultantName: item.consultantName || "",
-//           notes: item.notes || "",
-
-//           projects: item.projects || "",
-//           googleLocation: item.googleLocation || ""
-//         }))
-//       : [];
-//     // Format competitor analysis data
-//     const formattedCompetitorAnalysis = Array.isArray(competitorAnalysis) 
-//       ? competitorAnalysis.map(comp => ({
-//           developerName: comp.developerName || '',
-//           projectName: comp.projectName || '',
-//           productType: comp.productType || '',
-//           location: comp.location || '',
-//           plotUnitSize: comp.plotUnitSize || '',
-//           landExtent: comp.landExtent || '',
-//           priceRange: comp.priceRange || '',
-//           approxPrice: comp.approxPrice || '',
-//           approxPriceCent: comp.approxPriceCent || '',
-//           totalPlotsUnits: comp.totalPlotsUnits || '',
-//           keyAmenities: Array.isArray(comp.keyAmenities) ? comp.keyAmenities : [],
-//           uspPositioning: comp.uspPositioning || '',
-//           timestamp: new Date()
-//         }))
-//       : [];
-    
-//     const lead = await Lead.create({
-//       ...restLeadData,
-//       leadType: restLeadData.leadType || "mediator",
-//       unit: restLeadData.unit || "Acre",
-//       transactionType: restLeadData.transactionType || "JV",
-//       sspde: restLeadData.sspde || "No",
-//       lead_status: "PENDINGG",
-//       calls: userId ? [{
-//         userId: userId,
-//         note: note || "Initial lead created",
-//         role: role,
-//         timestamp: new Date()
-//       }] : [],
-//       checkListPage: formattedCheckListPage,
-//       competitorAnalysis: formattedCompetitorAnalysis
-//     });
-
-//     return res.status(201).json({
-//       message: "Lead created successfully",
-//       data: lead
-//     });
-//   } catch (error) {
-//     return res.status(500).json({
-//       message: "Server error",
-//       error: error.message
-//     });
-//   }
-// };
 
 exports.createLead = async (req, res) => {
   try {
@@ -122,7 +10,7 @@ exports.createLead = async (req, res) => {
       typeof req.body.data === "string"
         ? JSON.parse(req.body.data)
         : req.body;
-        
+
     // Get user ID from JWT token
     if (!req.user || !req.user.user_id) {
       return res.status(401).json({
@@ -172,7 +60,7 @@ exports.createLead = async (req, res) => {
           pattaChittaPath
         }))
       : [];
-     const formattedCompetitorAnalysis = Array.isArray(competitorAnalysis) 
+     const formattedCompetitorAnalysis = Array.isArray(competitorAnalysis)
       ? competitorAnalysis.map(comp => ({
           developerName: comp.developerName || '',
           projectName: comp.projectName || '',
@@ -230,18 +118,18 @@ exports.updateLead = async (req, res) => {
     const { leadId } = req.params;
     const { userId, note, notes, role, competitorAnalysis, checkListPage, ...updateData } = req.body;
 
-    const update = { 
+    const update = {
       ...updateData,
       updated_by: req.user.user_id, // Set updated_by with user ID from JWT token
       updated_at: new Date() // Set updated_at timestamp
     };
-    
+
     // Initialize $push if not already set
     update.$push = update.$push || {};
-    
+
     // If competitorAnalysis is provided, format and update it
     if (competitorAnalysis !== undefined) {
-      const formattedCompetitorAnalysis = Array.isArray(competitorAnalysis) 
+      const formattedCompetitorAnalysis = Array.isArray(competitorAnalysis)
         ? competitorAnalysis.map(comp => ({
             developerName: comp.developerName || '',
             projectName: comp.projectName || '',
@@ -258,16 +146,16 @@ exports.updateLead = async (req, res) => {
             timestamp: new Date()
           }))
         : [];
-      
+
       update.competitorAnalysis = formattedCompetitorAnalysis;
     }
-    
+
     // If checkListPage is provided, format and update it
     if (checkListPage !== undefined) {
       // Get file paths if files were uploaded
       const fmbSketchPath = req.files?.fmb_sketch?.[0]?.path || '';
       const pattaChittaPath = req.files?.patta_chitta?.[0]?.path || '';
-      
+
       const formattedCheckListPage = Array.isArray(checkListPage)
         ? checkListPage.map(item => ({
             ...item,
@@ -275,10 +163,10 @@ exports.updateLead = async (req, res) => {
             ...(pattaChittaPath && { pattaChittaPath })
           }))
         : [];
-      
+
       update.checkListPage = formattedCheckListPage;
     }
-    
+
     // If notes is being updated, add a call entry
     if (notes !== undefined) {
       // update.notes = notes;
@@ -289,7 +177,7 @@ exports.updateLead = async (req, res) => {
         timestamp: new Date()
       };
     }
-    
+
     // If a new note is provided, add it to calls
     if (note && userId) {
       update.$push.calls = {
@@ -308,7 +196,7 @@ exports.updateLead = async (req, res) => {
     // Track changes to currentRole and assignedTo in LeadHistory
     if (update.currentRole || update.assignedTo) {
       const existingLead = await Lead.findById(leadId);
-      
+
       if (existingLead) {
         // Create a new history entry if either field is being updated
         const historyEntry = {
@@ -317,7 +205,7 @@ exports.updateLead = async (req, res) => {
           assignedTo: update.assignedTo || existingLead.assignedTo,
           createdBy: req.user.user_id
         };
-        
+
         await LeadHistory.create(historyEntry);
       }
     }
