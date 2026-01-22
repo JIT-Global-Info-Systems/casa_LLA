@@ -1201,11 +1201,11 @@ export default function Leads({ data = null, onSubmit, onClose }) {
           
           <CardContent>
             <div className="space-y-2">
-              <Label>Notes</Label>
+              <Label>Calls</Label>
               <Textarea 
                 value={formData.checkNotes} 
                 onChange={(e) => handleChange("checkNotes", e.target.value)} 
-                placeholder="Enter additional notes, observations, or important information about this lead..." 
+                placeholder="Enter additional notes,calls, observations, or important information about this lead..." 
                 rows={3} 
                 className="bg-gray-50 resize-y" 
               />
