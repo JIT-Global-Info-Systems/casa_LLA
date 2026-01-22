@@ -97,9 +97,9 @@ function Users() {
         name: "",
         email: "",
         password: "",
-        role: "telecaller",
+        role: "",
         phone_number: "",
-        status: "active",
+        
       });
     } catch (err) {
       // Error handled by context
@@ -387,7 +387,7 @@ function Users() {
                                 }
                               }}
                               id={`status-toggle-${user.user_id}`}
-                              className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-gray-300"
+                              className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-gray-300 h-4 w-8.5 [&>span]:h-3 [&>span]:w-3"
                             />
                             <Label
                               htmlFor={`status-toggle-${user.user_id}`}
@@ -521,7 +521,7 @@ function Users() {
             >
               ← Back to Users
             </Button>
-            <h2 className="text-xl font-semibold mb-6">Add New User</h2>
+            <h2 className="text-xl font-semibold mb-1">Add New User</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
               <div className="space-y-2">
@@ -547,7 +547,7 @@ function Users() {
                   placeholder="Enter email address"
                 />
               </div>
-              <div className="space-y-2">
+              {/* <div className="grid gap-2">
                 <Label htmlFor="password">Password</Label>
                 <Input
                   id="password"
@@ -558,8 +558,8 @@ function Users() {
                   }
                   placeholder="Enter password"
                 />
-              </div>
-              <div className="space-y-2">
+              </div> */}
+              <div className="grid gap-2">
                 <Label htmlFor="phone">Phone</Label>
                 <Input
                   id="phone"
@@ -581,7 +581,7 @@ function Users() {
                   <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] bg-white border shadow-lg">
                     <DropdownMenuItem
                       onClick={() =>
-                        setFormData({ ...formData, role: "telecaller" })
+                        setFormData({ ...formData, role: "tele_caller" })
                       }
                       className="cursor-pointer"
                     >
@@ -589,59 +589,82 @@ function Users() {
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() =>
-                        setFormData({ ...formData, role: "executive" })
+                        setFormData({ ...formData, role: "land_executive" })
                       }
                       className="cursor-pointer"
                     >
-                      Executive
+                      LandExecutive
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() =>
-                        setFormData({ ...formData, role: "manager" })
+                        setFormData({ ...formData, role: "feasibility_team" })
                       }
                       className="cursor-pointer"
                     >
-                      Manager
+                      Feasibility
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() =>
-                        setFormData({ ...formData, role: "admin" })
+                        setFormData({ ...formData, role: "l1_md" })
                       }
                       className="cursor-pointer"
                     >
-                      Admin
+                      Management
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setFormData({ ...formData, role: "cmo_cro" })
+                      }
+                      className="cursor-pointer"
+                    >
+                      Market Analysis 
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setFormData({ ...formData, role: "legal" })
+                      }
+                      className="cursor-pointer"
+                    >
+                      Legal
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setFormData({ ...formData, role: "liaison" })
+                      }
+                      className="cursor-pointer"
+                    >
+                      Liaison
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setFormData({ ...formData, role: "finance" })
+                      }
+                      className="cursor-pointer"
+                    >
+                      Finance
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setFormData({ ...formData, role: "management" })
+                      }
+                      className="cursor-pointer"
+                    >
+                      Management
+                    </DropdownMenuItem>
+                  
+
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setFormData({ ...formData, role: "all_team" })
+                      }
+                      className="cursor-pointer"
+                    >
+                      AllTeam
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="w-full justify-between capitalize">
-                      {formData.status || "Select status"}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] bg-white border shadow-lg">
-                    <DropdownMenuItem
-                      onClick={() =>
-                        setFormData({ ...formData, status: "active" })
-                      }
-                      className="cursor-pointer"
-                    >
-                      Active
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() =>
-                        setFormData({ ...formData, status: "inactive" })
-                      }
-                      className="cursor-pointer"
-                    >
-                      Inactive
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+             
             </div>
 
             <div className="flex justify-end gap-3 mt-4">
@@ -725,18 +748,29 @@ function Users() {
                   placeholder="Enter phone number"
                 />
               </div>
+              <div className="grid gap-2">
+                <Label htmlFor="phone">Phone</Label>
+                <Input
+                  id="phone"
+                  value={formData.phone_number}
+                  onChange={(e) =>
+                    setFormData({ ...formData, phone_number: e.target.value })
+                  }
+                  placeholder="Enter phone number"
+                />
+              </div>
               <div className="space-y-2">
                 <Label>Role</Label>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" className="w-full justify-between capitalize">
-                      {formData.role}
+                      {formData.role || "Select role"}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] bg-white border shadow-lg">
                     <DropdownMenuItem
                       onClick={() =>
-                        setFormData({ ...formData, role: "telecaller" })
+                        setFormData({ ...formData, role: "tele_caller" })
                       }
                       className="cursor-pointer"
                     >
@@ -744,27 +778,77 @@ function Users() {
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() =>
-                        setFormData({ ...formData, role: "executive" })
+                        setFormData({ ...formData, role: "land_executive" })
                       }
                       className="cursor-pointer"
                     >
-                      Executive
+                      LandExecutive
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() =>
-                        setFormData({ ...formData, role: "manager" })
+                        setFormData({ ...formData, role: "feasibility_team" })
                       }
                       className="cursor-pointer"
                     >
-                      Manager
+                      Feasibility
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() =>
-                        setFormData({ ...formData, role: "admin" })
+                        setFormData({ ...formData, role: "l1_md" })
                       }
                       className="cursor-pointer"
                     >
-                      Admin
+                      Management
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setFormData({ ...formData, role: "cmo_cro" })
+                      }
+                      className="cursor-pointer"
+                    >
+                      Market Analysis 
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setFormData({ ...formData, role: "legal" })
+                      }
+                      className="cursor-pointer"
+                    >
+                      Legal
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setFormData({ ...formData, role: "liaison" })
+                      }
+                      className="cursor-pointer"
+                    >
+                      Liaison
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setFormData({ ...formData, role: "finance" })
+                      }
+                      className="cursor-pointer"
+                    >
+                      Finance
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setFormData({ ...formData, role: "management" })
+                      }
+                      className="cursor-pointer"
+                    >
+                      Management
+                    </DropdownMenuItem>
+                  
+
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setFormData({ ...formData, role: "all_team" })
+                      }
+                      className="cursor-pointer"
+                    >
+                      AllTeam
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

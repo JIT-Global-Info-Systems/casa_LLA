@@ -120,7 +120,7 @@ const PurchasedLeads = () => {
         <div className="text-xl font-bold text-indigo-700">
           Purchased Leads
           <div className="text-sm text-slate-500">
-            Leads list · Last updated today
+          Purchased Leads list · Last updated today
           </div>
         </div>
         {/* <div className="flex items-center gap-2">
@@ -180,10 +180,7 @@ const PurchasedLeads = () => {
               />
             </div>
 
-            <Button variant="outline" size="sm">
-              <Filter className="h-4 w-4 mr-2" />
-              Filter
-            </Button>
+            
           </div>
         </CardContent>
       </Card>
@@ -208,7 +205,7 @@ const PurchasedLeads = () => {
                 {filteredLeads.length > 0 ? (
                   filteredLeads.map((lead) => (
                     <TableRow key={lead._id}>
-                      <TableCell className="font-medium">{lead._id.substring(0, 6)}...</TableCell>
+                      <TableCell className="font-medium">{lead.lead_id}</TableCell>
                       <TableCell>{lead.mediatorName || 'N/A'}</TableCell>
                       <TableCell>{lead.contactNumber || 'N/A'}</TableCell>
                       <TableCell>{lead.leadType || 'N/A'}</TableCell>

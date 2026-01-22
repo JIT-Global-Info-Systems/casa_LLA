@@ -1,5 +1,6 @@
 
 
+ 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import Modal from "@/components/ui/modal";
@@ -27,7 +28,7 @@ import {
 import LeadStepper from "@/components/ui/LeadStepper"
 import Leads from "./Leads"
 import { useLeads } from "../context/LeadsContext.jsx"
-
+ 
 export default function LeadsPage() {
   const [open, setOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
@@ -36,9 +37,9 @@ export default function LeadsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-
+ 
   const { leads, loading, error, fetchLeads, createLead, updateLead, deleteLead } = useLeads()
-
+ 
   const [currentStep, setCurrentStep] = useState(1)
   const leadComments = [
     selectedLead?.remark,
@@ -46,21 +47,21 @@ export default function LeadsPage() {
   ]
     .map((v) => (typeof v === "string" ? v.trim() : ""))
     .filter((text) => Boolean(text))
-
+ 
   useEffect(() => {
     fetchLeads()
   }, [])
-
+ 
   const handleCreate = () => {
     setSelectedLead(null);
     setOpen(true);
   };
-
+ 
   const handleEdit = (lead) => {
     setSelectedLead(lead);
     setOpen(true);
   };
-
+ 
   const handleLeadSubmit = async (leadPayload, files = {}) => {
     try {
       if (selectedLead) {
@@ -75,7 +76,7 @@ export default function LeadsPage() {
       // Optionally handle error state here
     }
   };
-
+ 
   const handleDelete = async (lead) => {
     try {
       await deleteLead(lead._id || lead.id);
@@ -84,12 +85,12 @@ export default function LeadsPage() {
       console.error("Failed to delete lead:", err);
     }
   };
-
+ 
   const handleView = (lead) => {
     setViewLead(lead);
     setIsViewMode(true);
   };
-
+ 
   const normalizedLeads = (Array.isArray(leads) ? leads : []).map((lead) => {
     const registeredDate =
       lead.registeredDate || lead.date || lead.createdAt || null;
@@ -113,7 +114,7 @@ export default function LeadsPage() {
       raw: lead,
     };
   });
-
+ 
   const filteredLeads = normalizedLeads.filter((lead) => {
     const matchesSearch =
       searchTerm === "" ||
@@ -121,7 +122,7 @@ export default function LeadsPage() {
       lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       lead.phone.includes(searchTerm) ||
       String(lead.id).toLowerCase().includes(searchTerm.toLowerCase());
-
+ 
     const matchesDateRange = (() => {
       if (!dateFrom && !dateTo) return true;
       if (!lead.registeredDate) return false;
@@ -130,10 +131,10 @@ export default function LeadsPage() {
       const toDate = dateTo ? new Date(dateTo) : new Date("2100-12-31");
       return leadDate >= fromDate && leadDate <= toDate;
     })();
-
+ 
     return matchesSearch && matchesDateRange;
   });
-
+ 
   return (
     <div className="flex-1 space-y-6 p-0">
       {open ? (
@@ -156,7 +157,7 @@ export default function LeadsPage() {
                     onStepChange={setCurrentStep}
                     className="w-full"
                   />
-
+ 
                   {/* <div className="flex justify-between items-center">
                     <h1 className="text-2xl font-bold">
                       {selectedLead ? "Edit Lead" : "Create Lead"}
@@ -165,7 +166,7 @@ export default function LeadsPage() {
                       ← Back to Leads
                     </Button>
                   </div> */}
-
+ 
                   <Leads
                     data={selectedLead}
                     onSubmit={handleLeadSubmit}
@@ -174,7 +175,7 @@ export default function LeadsPage() {
                     onStepChange={setCurrentStep}
                   />
                 </div>
-
+ 
                 {/* Right-side message thread (only show when editing) */}
                 {selectedLead && (
                   <div className="lg:col-span-1">
@@ -187,7 +188,7 @@ export default function LeadsPage() {
                           Message thread
                         </div>
                       </div>
-
+ 
                       <div className="p-4 space-y-3 max-h-[80vh] overflow-y-auto">
                         {leadComments.length === 0 ? (
                           <div className="text-sm text-slate-500">
@@ -222,9 +223,9 @@ export default function LeadsPage() {
             >
               ← Back to Leads
             </Button>
-
+ 
             <h2 className="text-xl font-semibold mb-6">Lead Details</h2>
-
+ 
             {viewLead && (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -235,7 +236,7 @@ export default function LeadsPage() {
                     {viewLead._id || viewLead.id || 'N/A'}
                   </div>
                 </div>
-
+ 
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">
                     Name
@@ -244,7 +245,7 @@ export default function LeadsPage() {
                     {viewLead.mediatorName || viewLead.ownerName || viewLead.name || viewLead.contactName || 'N/A'}
                   </div>
                 </div>
-
+ 
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">
                     Email
@@ -253,7 +254,7 @@ export default function LeadsPage() {
                     {viewLead.email || viewLead.contactEmail || 'N/A'}
                   </div>
                 </div>
-
+ 
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">
                     Phone
@@ -262,7 +263,7 @@ export default function LeadsPage() {
                     {viewLead.phone || viewLead.contactNumber || 'N/A'}
                   </div>
                 </div>
-
+ 
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">
                     Location
@@ -271,7 +272,7 @@ export default function LeadsPage() {
                     {viewLead.location || viewLead.address?.city || 'N/A'}
                   </div>
                 </div>
-
+ 
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">
                     Zone
@@ -280,7 +281,7 @@ export default function LeadsPage() {
                     {viewLead.zone || viewLead.region || 'N/A'}
                   </div>
                 </div>
-
+ 
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">
                     Status
@@ -289,7 +290,7 @@ export default function LeadsPage() {
                     {viewLead.status || viewLead.stageStatus || 'N/A'}
                   </div>
                 </div>
-
+ 
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">
                     Current Stage
@@ -298,7 +299,7 @@ export default function LeadsPage() {
                     {viewLead.stageName || viewLead.currentStage || 'N/A'}
                   </div>
                 </div>
-
+ 
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">
                     Registered Date
@@ -309,7 +310,7 @@ export default function LeadsPage() {
                       'N/A'}
                   </div>
                 </div>
-
+ 
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">
                     Remark
@@ -318,7 +319,7 @@ export default function LeadsPage() {
                     {viewLead.remark || 'N/A'}
                   </div>
                 </div>
-
+ 
                 <div className="col-span-2 space-y-2">
                   <Label className="text-sm font-medium text-slate-700">
                     Comment
@@ -352,7 +353,7 @@ export default function LeadsPage() {
               </div>
             </div>
           </div>
-
+ 
           <div className="max-w-[1600px] mx-auto px-8 py-6">
             <Card className="bg-white shadow-sm">
               <div className="p-6 border-b flex flex-wrap gap-4 items-center">
@@ -365,23 +366,20 @@ export default function LeadsPage() {
                     className="pl-10 border-gray-300"
                   />
                 </div>
-
+ 
                 <div className="flex items-center gap-2">
                   <Label className="text-sm text-gray-600 whitespace-nowrap">From:</Label>
                   <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px] border-gray-300" />
                 </div>
-
+ 
                 <div className="flex items-center gap-2">
                   <Label className="text-sm text-gray-600 whitespace-nowrap">To:</Label>
                   <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px] border-gray-300" />
                 </div>
-
-                <Button variant="outline" className="border-gray-300" disabled>
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filter
-                </Button>
+ 
+                
               </div>
-
+ 
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
@@ -447,11 +445,11 @@ export default function LeadsPage() {
                   </tbody>
                 </table>
               </div>
-
+ 
               {loading && <div className="text-center py-12 text-gray-500"><p>Loading leads...</p></div>}
               {error && <div className="text-center py-12 text-red-500"><p>Error: {error}</p></div>}
               {!loading && !error && filteredLeads.length === 0 && <div className="text-center py-12 text-gray-500"><p>No leads found matching your criteria.</p></div>}
-
+ 
               <div className="px-6 py-4 border-t flex items-center justify-between">
                 <p className="text-sm text-gray-600">Showing {filteredLeads.length} results</p>
                 <div className="flex gap-2">

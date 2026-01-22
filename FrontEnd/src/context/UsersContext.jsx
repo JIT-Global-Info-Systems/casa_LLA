@@ -1,8 +1,8 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { usersAPI } from '../services/api';
-
+ 
 const UsersContext = createContext(null);
-
+ 
 export const useUsers = () => {
   const context = useContext(UsersContext);
   if (!context) {
@@ -10,13 +10,13 @@ export const useUsers = () => {
   }
   return context;
 };
-
+ 
 export const UsersProvider = ({ children }) => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  const fetchUsers = useCallback(async () => {
+ 
+  const fetchUsers = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -27,9 +27,9 @@ export const UsersProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  const getUserById = useCallback(async (id) => {
+  };
+ 
+  const getUserById = async (id) => {
     try {
       setLoading(true);
       setError(null);
@@ -41,19 +41,19 @@ export const UsersProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  const createUser = useCallback(async (userData) => {
+  };
+ 
+  const createUser = async (userData) => {
     try {
       setLoading(true);
       setError(null);
-
+     
       // Add created_by field from localStorage or use a default value
       const createdBy = localStorage.getItem('userId') || userData.created_by || '65a9c4e7f1b2d12345678900';
       const userDataWithCreator = { ...userData, created_by: createdBy };
-
+     
       const response = await usersAPI.create(userDataWithCreator);
-
+     
       // Handle different response formats
       if (response.user) {
         setUsers(prev => [...prev, response.user]);
@@ -71,14 +71,14 @@ export const UsersProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  const updateUser = useCallback(async (id, userData) => {
+  };
+ 
+  const updateUser = async (id, userData) => {
     try {
       setLoading(true);
       setError(null);
       const response = await usersAPI.update(id, userData);
-
+      
       // Handle different response formats
       let updated;
       if (response.user) {
@@ -104,9 +104,9 @@ export const UsersProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  const deleteUser = useCallback(async (id) => {
+  };
+ 
+  const deleteUser = async (id) => {
     try {
       setLoading(true);
       setError(null);
@@ -120,10 +120,10 @@ export const UsersProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  const clearError = useCallback(() => setError(null), []);
-
+  };
+ 
+  const clearError = () => setError(null);
+ 
   return (
     <UsersContext.Provider
       value={{
@@ -142,6 +142,7 @@ export const UsersProvider = ({ children }) => {
     </UsersContext.Provider>
   );
 };
-
+ 
 export default UsersContext;
-
+ 
+ 

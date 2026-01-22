@@ -5,9 +5,9 @@ import App from './App.jsx'
 import { MediatorsProvider } from './context/MediatorsContext.jsx'
 
 createRoot(document.getElementById('root')).render(
-  <StrictMode>
+  // <StrictMode>
     <MediatorsProvider>
       <App />
     </MediatorsProvider>
-  </StrictMode>,
+  // </StrictMode>,
 )
