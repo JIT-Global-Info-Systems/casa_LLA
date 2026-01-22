@@ -1,13 +1,7 @@
 const bcrypt = require("bcrypt");
-<<<<<<< HEAD
-const jwt = require("jsonwebtoken");
-const User = require("../models/User");
-const Access = require("../models/Access");
-=======
 const User = require("../models/user");
 const Access = require("../models/access");
 const jwt = require("jsonwebtoken");
->>>>>>> 66bcf4fe60c5fad155c044e4f00cd13bdab7d1bf
 const { generateToken } = require("../utils/jwt");
 const { sendPasswordResetOtp } = require("../utils/mail");
 const crypto = require('crypto');
@@ -306,4 +300,3 @@ exports.changePassword = async (req, res) => {
     });
   }
 };
-
