@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { useNavigate } from "react-router-dom"
+import { useNavigate, Link } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -116,9 +116,9 @@ function Login() {
                     />
                     <span className="ml-2 text-xs text-gray-600">Remember me</span>
                   </label>
-                  <a href="#" className="text-xs text-blue-600 hover:text-blue-800 font-medium">
+                  <Link to="/forgot-password" className="text-xs text-blue-600 hover:text-blue-800 font-medium">
                     Forgot password?
-                  </a>
+                  </Link>
                 </div>
 
                 {error && (
