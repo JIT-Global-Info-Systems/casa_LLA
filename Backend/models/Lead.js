@@ -133,6 +133,11 @@ const leadSchema = new mongoose.Schema({
     type: String,
   },
   
+  currentRole: {
+    type: String,
+    default: 'user' // Default role can be set based on your requirements
+  },
+  
   lead_stage: {
     type: String,
     default: "new"

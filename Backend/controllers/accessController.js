@@ -1,4 +1,4 @@
-const Access = require("../models/Access");
+const Access = require("../models/access");
 
 exports.createOrUpdateAccess = async (req, res) => {
   try {
@@ -32,24 +32,19 @@ exports.createOrUpdateAccess = async (req, res) => {
 
 exports.getAccessByRole = async (req, res) => {
   try {
-    const { role } = req.params;
-
-    const access = await Access.findOne({ role });
-
-    if (!access) {
-      return res.status(404).json({
-        message: "Access not found for the specified role"
-      });
-    }
-
+    // Always fetch all access records
+    const allAccess = await Access.find({}).sort({ createdAt: -1 });
+    
     return res.status(200).json({
-      message: "Access retrieved successfully",
-      data: access
+      success: true,
+      count: allAccess.length,
+      message: "All access records retrieved successfully",
+      data: allAccess
     });
-
   } catch (error) {
     console.error("Get Access Error:", error);
     return res.status(500).json({
+      success: false,
       message: "Failed to retrieve access",
       error: error.message
     });

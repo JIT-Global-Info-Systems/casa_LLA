@@ -9,6 +9,6 @@ const { verifyToken } = require("../middleware/authMiddleware");
 
 // Admin / Manager only (can restrict further)
 router.post("/create", verifyToken, createOrUpdateAccess);
-router.get("/get/:role", verifyToken, getAccessByRole);
+router.get("/get", verifyToken, getAccessByRole);
 
 module.exports = router;

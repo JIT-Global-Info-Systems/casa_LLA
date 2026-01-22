@@ -41,6 +41,7 @@ exports.createLead = async (req, res) => {
       userId,
       note,
       role,
+      currentRole , // Default to 'user' if not provided
       competitorAnalysis = [],
       checkListPage = [],
       ...restLeadData
@@ -84,6 +85,7 @@ exports.createLead = async (req, res) => {
       checkListPage: formattedCheckListPage,
       competitorAnalysis: formattedCompetitorAnalysis,
       lead_status: "PENDING",
+      currentRole: currentRole, // Add currentRole to the lead
       created_by: createdBy
     });
 
@@ -122,12 +124,13 @@ exports.updateLead = async (req, res) => {
     }
 
     const { leadId } = req.params;
-    const { userId, note, notes, role, competitorAnalysis, checkListPage, ...updateData } = req.body;
+    const { userId, note, notes, role, currentRole, competitorAnalysis, checkListPage, ...updateData } = req.body;
 
     const update = {
       ...updateData,
       updated_by: req.user.user_id, // Set updated_by with user ID from JWT token
-      updated_at: new Date() // Set updated_at timestamp
+      updated_at: new Date(), // Set updated_at timestamp
+      ...(currentRole !== undefined && { currentRole }) // Update currentRole if provided
     };
 
     // Initialize $push if not already set
@@ -180,7 +183,7 @@ exports.updateLead = async (req, res) => {
         leadId: leadId,
         userId: userId || 'system',
         name: updateData.name || req.user?.name || 'System',
-        role: role || 'system',
+        role: currentRole || 'system',
         note: notes,
         created_by: req.user?.user_id || 'system'
       });
@@ -193,7 +196,7 @@ exports.updateLead = async (req, res) => {
         leadId: leadId,
         userId,
         name: updateData.name || req.user?.name || 'Unknown User',
-        role: role || 'user',
+        role: currentRole || 'user',
         note: note,
         created_by: req.user?.user_id || 'system'
       });
@@ -279,6 +282,23 @@ exports.softDeleteLead = async (req, res) => {
 
 exports.getAllLeads = async (req, res) => {
   try {
+    const leads = await Lead.find({})
+      .sort({ created_at: -1 });
+
+    return res.status(200).json({
+      count: leads.length,
+      data: leads
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Failed to fetch all leads",
+      error: error.message
+    });
+  }
+};
+
+exports.getPendingLeads = async (req, res) => {
+  try {
     const leads = await Lead.find({ lead_status: "PENDING" })
       .sort({ created_at: -1 });
 
@@ -288,12 +308,11 @@ exports.getAllLeads = async (req, res) => {
     });
   } catch (error) {
     return res.status(500).json({
-      message: "Server error",
+      message: "Failed to fetch pending leads",
       error: error.message
     });
   }
 };
-
 
 exports.getApprovedLeads = async (req, res) => {
   try {
@@ -350,10 +369,11 @@ exports.getLeadById = async (req, res) => {
       });
     }
 
-    // Find the lead and populate any referenced fields if needed
-    const [lead, history] = await Promise.all([
+    // Find the lead, history, and calls in parallel
+    const [lead, history, calls] = await Promise.all([
       Lead.findById(leadId),
-      LeadHistory.find({ leadId }).sort({ createdAt: -1 }) // Get history sorted by creation date (newest first)
+      LeadHistory.find({ leadId }).sort({ createdAt: -1 }), // Get history sorted by creation date (newest first)
+      Call.find({ leadId }).sort({ createdAt: -1 }) // Get calls sorted by creation date (newest first)
     ]);
 
     if (!lead) {
@@ -367,7 +387,8 @@ exports.getLeadById = async (req, res) => {
       success: true,
       data: {
         ...lead.toObject(),
-        history: history || []
+        history: history || [],
+        calls: calls || []
       }
     });
   } catch (error) {
@@ -396,7 +417,11 @@ exports.getAllCalls = async (req, res) => {
     }
 
     const calls = await Call.find(query)
-      .populate('leadId', 'name contactNumber')
+      .populate({
+        path: 'leadId',
+        select: '_id lead_id name contactNumber',
+        model: 'Lead'
+      })
       .populate('created_by', 'name email')
       .sort({ createdAt: -1 });
 
