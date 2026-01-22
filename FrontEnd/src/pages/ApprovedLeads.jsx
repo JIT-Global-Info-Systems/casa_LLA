@@ -57,10 +57,16 @@ export default function ApprovedLeads() {
   };
 
   useEffect(() => {
+    
     const fetchApprovedLeads = async () => {
       try {
         setLoading(true);
-        const response = await axios.get("http://localhost:5000/api/leads/approved");
+        const response = await axios.get("http://localhost:5000/api/leads/approved", {
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem("token")}`
+          }
+        });
         setLeads(response.data.data || []);
         setError(null);
       } catch (err) {
