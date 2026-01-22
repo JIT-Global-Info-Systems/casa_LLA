@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { authAPI } from '@/services/api'
+import { toast } from 'react-hot-toast'
 
 function ResetPassword() {
   const [newPassword, setNewPassword] = useState('')
@@ -11,8 +12,6 @@ function ResetPassword() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const navigate = useNavigate()
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
@@ -36,28 +35,28 @@ function ResetPassword() {
 
     // Client-side validation
     if (!newPassword) {
-      setError('New password is required')
+      toast.error('New password is required')
       return
     }
 
     if (!validatePassword(newPassword)) {
-      setError('Password must be at least 6 characters long')
+      toast.error('Password must be at least 6 characters long')
       return
     }
 
     if (!confirmPassword) {
-      setError('Please confirm your password')
+      toast.error('Please confirm your password')
       return
     }
 
     if (newPassword !== confirmPassword) {
-      setError('Passwords do not match')
+      toast.error('Passwords do not match')
       return
     }
 
     const resetToken = localStorage.getItem('reset_token')
     if (!resetToken) {
-      setError('Reset token not found. Please start the password reset process again.')
+      toast.error('Reset token not found. Please start the password reset process again.')
       return
     }
 
@@ -65,7 +64,7 @@ function ResetPassword() {
 
     try {
       const response = await authAPI.resetPassword(resetToken, newPassword)
-      setSuccess(response.message || 'Password reset successful')
+      toast.success(response.message || 'Password reset successfully! Redirecting to login...')
 
       // Clear reset token and email from localStorage
       localStorage.removeItem('reset_token')
@@ -76,7 +75,8 @@ function ResetPassword() {
         navigate('/login')
       }, 2000)
     } catch (err) {
-      setError(err.message || 'Error resetting password')
+      const errorMessage = err.response?.data?.message || err.message || 'Error resetting password'
+      toast.error(errorMessage)
       console.error('Reset password error:', err)
     } finally {
       setIsLoading(false)
