@@ -401,7 +401,11 @@ exports.getAllCalls = async (req, res) => {
     }
 
     const calls = await Call.find(query)
-      .populate('leadId', 'name contactNumber')
+      .populate({
+        path: 'leadId',
+        select: '_id lead_id name contactNumber',
+        model: 'Lead'
+      })
       .populate('created_by', 'name email')
       .sort({ createdAt: -1 });
 
