@@ -53,22 +53,38 @@ export default function ApprovedLeads() {
   };
 
   useEffect(() => {
-    
     const fetchApprovedLeads = async () => {
+      const loadingToast = toast.loading('Loading approved leads...');
+      setLoading(true);
+      
       try {
-        setLoading(true);
         const response = await axios.get("http://localhost:5000/api/leads/approved", {
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${localStorage.getItem("token")}`
           }
         });
-        setLeads(response.data.data || []);
+        
+        const leadsData = response.data.data || [];
+        setLeads(leadsData);
         setError(null);
+        
+        if (leadsData.length === 0) {
+          toast.success('No approved leads found', { id: loadingToast });
+        } else {
+          toast.success(`Loaded ${leadsData.length} approved leads`, { 
+            id: loadingToast,
+            icon: '✅'
+          });
+        }
       } catch (err) {
         console.error("Error fetching approved leads:", err);
-        setError("Failed to fetch approved leads. Please try again later.");
-        toast.error("Failed to fetch approved leads");
+        const errorMessage = err.response?.data?.message || 'Failed to fetch approved leads. Please try again later.';
+        setError(errorMessage);
+        toast.error(errorMessage, { 
+          id: loadingToast,
+          duration: 5000
+        });
       } finally {
         setLoading(false);
       }
