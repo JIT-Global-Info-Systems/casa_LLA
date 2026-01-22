@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
-const Lead = require("../models/lead");
+const Lead = require("../models/Lead");
 const LeadHistory = require("../models/LeadHistory");
+const Call = require("../models/Call");
 
 
 exports.createLead = async (req, res) => {
@@ -77,21 +78,26 @@ exports.createLead = async (req, res) => {
           timestamp: new Date()
         }))
       : [];
+    // Create the lead first
     const lead = await Lead.create({
       ...restLeadData,
       checkListPage: formattedCheckListPage,
       competitorAnalysis: formattedCompetitorAnalysis,
       lead_status: "PENDING",
-      created_by: createdBy, // Set created_by field with user ID from JWT token
-      calls: userId
-        ? [{
-            userId,
-            note: note || "Initial lead created",
-            role,
-            timestamp: new Date()
-          }]
-        : []
+      created_by: createdBy
     });
+
+    // Create call record if userId is provided
+    if (userId) {
+      await Call.create({
+        leadId: lead._id,
+        userId,
+        name: leadData.name || 'Unknown User', // Get name from leadData
+        role: role || 'user',
+        note: note || "Initial lead created",
+        created_by: createdBy
+      });
+    }
 
     return res.status(201).json({
       message: "Lead created successfully",
@@ -167,25 +173,30 @@ exports.updateLead = async (req, res) => {
       update.checkListPage = formattedCheckListPage;
     }
 
-    // If notes is being updated, add a call entry
+    // If notes is being updated, create a new call record
     if (notes !== undefined) {
-      // update.notes = notes;
-      update.$push.calls = {
+      const updateData = typeof req.body.data === "string" ? JSON.parse(req.body.data) : req.body;
+      await Call.create({
+        leadId: leadId,
         userId: userId || 'system',
-        note:  notes,
-        role: role,
-        timestamp: new Date()
-      };
+        name: updateData.name || req.user?.name || 'System',
+        role: role || 'system',
+        note: notes,
+        created_by: req.user?.user_id || 'system'
+      });
     }
 
-    // If a new note is provided, add it to calls
+    // If a new note is provided, create a new call record
     if (note && userId) {
-      update.$push.calls = {
+      const updateData = typeof req.body.data === "string" ? JSON.parse(req.body.data) : req.body;
+      await Call.create({
+        leadId: leadId,
         userId,
-        note,
-        role,
-        timestamp: new Date()
-      };
+        name: updateData.name || req.user?.name || 'Unknown User',
+        role: role || 'user',
+        note: note,
+        created_by: req.user?.user_id || 'system'
+      });
     }
 
     // If no $push operations were set, remove the empty $push
