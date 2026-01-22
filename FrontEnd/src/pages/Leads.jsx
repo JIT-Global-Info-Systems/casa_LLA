@@ -98,6 +98,7 @@ export default function Leads({ data = null, onSubmit, onClose }) {
     roadWidth: "",
     sspde: "No",
     leadStatus: "Pending",
+    status: "active",
     remark: "",
     lead_stage: "",
 
@@ -295,6 +296,7 @@ export default function Leads({ data = null, onSubmit, onClose }) {
       lead_stage: data.lead_stage || prev.lead_stage,
       mediatorId: data.mediatorId || prev.mediatorId,
       currentRole: data.currentRole || prev.currentRole,
+      status: data.status || prev.status,
 
       // competitor
       competitorDeveloperName: firstCompetitor?.developerName || "",
@@ -471,6 +473,7 @@ export default function Leads({ data = null, onSubmit, onClose }) {
       remark: formData.remark,
       lead_stage: formData.lead_stage,
       currentRole: formData.currentRole,
+      status: formData.status,
 
       // backend field name
       lead_status: String(formData.leadStatus || "").toUpperCase(),
@@ -963,6 +966,22 @@ export default function Leads({ data = null, onSubmit, onClose }) {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Status field - only show in edit mode */}
+              {data && (
+                <div className="space-y-2">
+                  <Label>Status</Label>
+                  <Select value={formData.status} onValueChange={(v) => handleChange("status", v)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white z-50 shadow-lg">
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             {/* </div> */}
 
             <div className="md:col-span-3 space-y-2">

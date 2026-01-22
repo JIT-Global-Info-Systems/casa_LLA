@@ -427,7 +427,14 @@ export const authAPI = {
     });
   },
 };
- 
+
+export const accessAPI = {
+  getAll: async () => {
+    const response = await apiRequest('/access/get');
+    return response.data;
+  }
+};
+
 export default {
   mediatorsAPI,
   leadsAPI,
@@ -435,4 +442,5 @@ export default {
   locationsAPI,
   callsAPI,
   authAPI,
+  accessAPI,
 }
