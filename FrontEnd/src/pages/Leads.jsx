@@ -13,7 +13,7 @@ import toast from "react-hot-toast"
 const yesNo = (v) => (v ? "Yes" : "No")
 
 export default function Leads({ data = null, onSubmit, onClose }) {
-  const { mediators, loading: mediatorsLoading, fetchMediators } = useMediators()
+  const { mediators, loading: mediatorsLoading, fetched: mediatorsFetched, fetchMediators } = useMediators()
   const [formData, setFormData] = useState({
     // Basic Lead Information
     leadType: "mediator",
@@ -215,8 +215,11 @@ export default function Leads({ data = null, onSubmit, onClose }) {
 
   useEffect(() => {
     fetchLocations()
-    fetchMediators()
-  }, [fetchLocations, fetchMediators])
+    // Only fetch mediators if they haven't been fetched yet
+    if (!mediatorsFetched && !mediatorsLoading && !mediators.length) {
+      fetchMediators()
+    }
+  }, [fetchLocations, fetchMediators, mediatorsFetched, mediatorsLoading, mediators.length])
 
   useEffect(() => {
     if (!data) return
@@ -873,7 +876,7 @@ export default function Leads({ data = null, onSubmit, onClose }) {
           </CardContent>
         </Card>
 
-    
+
 
         <Card className="border-0 shadow-md bg-white">
           <CardHeader>

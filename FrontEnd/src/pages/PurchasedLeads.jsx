@@ -53,7 +53,12 @@ const PurchasedLeads = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await axios.get("http://13.201.132.94:5000/api/leads/purchased");
+      const response = await axios.get("http://13.201.132.94:5000/api/leads/purchased",{
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("token")}`
+        }
+      });
       if (response.data && response.data.data) {
         setLeads(response.data.data);
       }

@@ -45,12 +45,33 @@ const userSchema = new mongoose.Schema({
   },
 
   updated_by: {
-  type: mongoose.Schema.Types.ObjectId,
-  ref: "User"
-},
-updated_at: {
-  type: Date
-}
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User"
+  },
+
+  resetPasswordOtp: {
+    type: String,
+    select: false
+  },
+  
+  resetPasswordOtpExpires: {
+    type: Date,
+    select: false
+  },
+  
+  resetPasswordToken: {
+    type: String,
+    select: false
+  },
+  
+  resetPasswordExpires: {
+    type: Date,
+    select: false
+  },
+
+  updated_at: {
+    type: Date
+  }
 
 });
 

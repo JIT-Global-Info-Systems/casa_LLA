@@ -12,4 +12,7 @@ const AccessSchema = new mongoose.Schema({
   }]
 }, { timestamps: true });
 
-module.exports = mongoose.model("Access", AccessSchema);
+// module.exports = mongoose.model("Access", AccessSchema);
+module.exports =
+  mongoose.models.Access ||
+  mongoose.model("Access", AccessSchema);

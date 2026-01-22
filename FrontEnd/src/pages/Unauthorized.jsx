@@ -33,7 +33,7 @@ const Unauthorized = () => {
             </Button>
 
             <Button
-              onClick={() => navigate("/dashboard")}
+              onClick={() => navigate("/pages/dashboard")}
               className="w-full"
             >
               <Home className="h-4 w-4 mr-2" />

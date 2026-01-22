@@ -57,10 +57,16 @@ export default function ApprovedLeads() {
   };
 
   useEffect(() => {
+    
     const fetchApprovedLeads = async () => {
       try {
         setLoading(true);
-        const response = await axios.get("http://13.201.132.94:5000/api/leads/approved");
+        const response = await axios.get("http://localhost:5000/api/leads/approved", {
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem("token")}`
+          }
+        });
         setLeads(response.data.data || []);
         setError(null);
       } catch (err) {
@@ -98,7 +104,7 @@ export default function ApprovedLeads() {
       {/* Top Bar */}
       <div className="flex items-center justify-between">
         <div className="text-xl font-bold text-indigo-700">
-          Approved Leads
+          Approval Leads
           <div className="text-sm text-slate-500">
             Leads list · Last updated today
           </div>
@@ -204,7 +210,7 @@ export default function ApprovedLeads() {
                 ) : filteredLeads.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-8 text-slate-500">
-                      No approved leads found
+                      No Approval leads found
                     </TableCell>
                   </TableRow>
                 ) : (

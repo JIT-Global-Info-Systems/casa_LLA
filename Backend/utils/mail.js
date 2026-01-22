@@ -29,3 +29,20 @@ exports.sendUserCredentials = async (to, name, password) => {
 
   await transporter.sendMail(mailOptions);
 };
+
+exports.sendPasswordResetOtp = async (to, name, otp) => {
+  const mailOptions = {
+    from: `"Password Reset" <zulaikha.a@jitglobalinfosystems.com>`,
+    to,
+    subject: "Password Reset OTP",
+    html: `
+      <p>Hello <b>${name}</b>,</p>
+      <p>We received a request to reset your password. Use the following OTP to proceed:</p>
+      <h2 style="color: #2563eb; font-size: 24px; font-weight: bold; text-align: center; margin: 20px 0;">${otp}</h2>
+      <p>This OTP is valid for 10 minutes.</p>
+      <p>If you didn't request this, please ignore this email or contact support.</p>
+    `
+  };
+
+  await transporter.sendMail(mailOptions);
+};

@@ -13,6 +13,7 @@ import Unauthorized from "@/pages/Unauthorized";
 import Calls from "@/pages/Calls";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { AuthProvider } from "@/context/AuthContext";
+import { PERMISSIONS } from "@/config/rbac";
 // const Leads = () => (
 //   <div className="p-6">
 //     <h1 className="text-2xl font-bold">Leads</h1>
@@ -42,7 +43,7 @@ function AppRoutes() {
           <Route path="/unauthorized" element={<Unauthorized />} />
           {/* Protected Routes */}
           <Route path="/pages" element={
-            <ProtectedRoute requiredPage="dashboard">
+            <ProtectedRoute requiredPermission={PERMISSIONS.PAGE_DASHBOARD}>
               <MainLayout />
             </ProtectedRoute>
           }>
@@ -50,69 +51,70 @@ function AppRoutes() {
             <Route path="dashboard" element={<Dashboard />} />
             {/* Lead Management Routes */}
             <Route path="leads" element={
-              <ProtectedRoute requiredPage="lead">
+              <ProtectedRoute requiredPermission={PERMISSIONS.PAGE_LEADS}>
                 <LeadsPage />
               </ProtectedRoute>
             } />
             <Route path="approvedLeads" element={
-              <ProtectedRoute requiredPage="lead">
+              <ProtectedRoute requiredPermission={PERMISSIONS.PAGE_LEADS}>
                 <ApprovedLeads />
               </ProtectedRoute>
             } />
             <Route path="purchasedLeads" element={
-              <ProtectedRoute requiredPage="lead">
+              <ProtectedRoute requiredPermission={PERMISSIONS.PAGE_LEADS}>
                 <PurchasedLeads />
               </ProtectedRoute>
             } />
             <Route path="leads/new" element={
-              <ProtectedRoute requiredPage="lead">
+              <ProtectedRoute requiredPermission={PERMISSIONS.LEAD_CREATE}>
                 <Leads />
               </ProtectedRoute>
             } />
             <Route path="leads/:id/edit" element={
-              <ProtectedRoute requiredPage="lead">
+              <ProtectedRoute requiredPermission={PERMISSIONS.LEAD_EDIT}>
                 <Leads />
               </ProtectedRoute>
             } />
 
             {/* User Management Routes */}
             <Route path="users" element={
-              <ProtectedRoute requiredPage="users">
+              <ProtectedRoute requiredPermission={PERMISSIONS.PAGE_USERS}>
                 <Users />
               </ProtectedRoute>
             } />
 
             {/* Document Management Routes */}
             <Route path="documents" element={
-              <ProtectedRoute requiredPage="documents">
+              <ProtectedRoute requiredPermission={PERMISSIONS.PAGE_DOCUMENTS}>
                 <Documents />
               </ProtectedRoute>
             } />
 
             {/* Other Routes */}
             <Route path="owners" element={
-              <ProtectedRoute requiredPage="owners">
+              <ProtectedRoute requiredPermission={PERMISSIONS.PAGE_OWNERS}>
                 <Owners />
               </ProtectedRoute>
             } />
             <Route path="mediators" element={
-              <ProtectedRoute requiredPage="mediator">
+              <ProtectedRoute requiredPermission={PERMISSIONS.PAGE_MEDIATORS}>
                 <Mediators />
               </ProtectedRoute>
             } />
             <Route path="masters" element={
-              <ProtectedRoute requiredPage="masters">
+              <ProtectedRoute requiredPermission={PERMISSIONS.PAGE_MASTERS}>
                 <Masters />
               </ProtectedRoute>
-            } />
+            } />  
+            
             <Route path="profile" element={<Profile />} />
             <Route path="calls" element={
-              <ProtectedRoute requiredPage="lead">
+              <ProtectedRoute requiredPermission={PERMISSIONS.PAGE_CALLS}>
                 <Calls />
               </ProtectedRoute>
             } />
             <Route path="reports" element={
-              <ProtectedRoute requiredPage="reports">
+              <ProtectedRoute requiredPermission={PERMISSIONS.PAGE_REPORTS}>
                 <Reports />
               </ProtectedRoute>
             } />

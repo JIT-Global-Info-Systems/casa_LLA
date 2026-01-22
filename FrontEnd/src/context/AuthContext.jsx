@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { usersAPI } from '../services/api';
+import { usersAPI, authAPI } from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -63,7 +63,7 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await usersAPI.login(credentials);
+      const response = await authAPI.login(credentials);
 
       if (response?.token) {
         localStorage.setItem('token', response.token);
@@ -72,7 +72,7 @@ export const AuthProvider = ({ children }) => {
         if (response.user) {
           localStorage.setItem('user_id', response.user.user_id);
           localStorage.setItem('user', JSON.stringify(response.user));
-          setUser({ ...response.user, token });
+          setUser({ ...response.user, token: response.token });
         } else {
           setUser({ token: response.token });
         }
@@ -91,7 +91,7 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
-      return await usersAPI.register(userData);
+      return await authAPI.register(userData);
     } catch (err) {
       setError(err.message);
       throw err;

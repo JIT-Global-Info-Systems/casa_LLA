@@ -147,7 +147,7 @@
 //         // Create new mediator
 //         await createMediator(apiData, files);
 //       }
-
+      
 //       setIsAddModalOpen(false);
 //       resetForm();
 //     } catch (error) {
@@ -228,7 +228,7 @@
 //           <p className="text-slate-600">Loading mediators...</p>
 //         </div>
 //       )}
-
+      
 //       {error && (
 //         <div className="bg-red-50 border border-red-200 rounded-md p-4">
 //           <p className="text-red-600">Error: {error}</p>
@@ -421,8 +421,8 @@
 //                             <MoreVertical className="h-4 w-4" />
 //                           </Button>
 //                         </DropdownMenuTrigger>
-//                         <DropdownMenuContent 
-//                           align="end" 
+//                         <DropdownMenuContent
+//                           align="end"
 //                           className="z-50 bg-white border border-slate-200 shadow-lg"
 //                         >
 //                           <DropdownMenuItem onClick={() => handleView(mediator)}>
@@ -814,9 +814,8 @@
 
 
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { useMediators } from "../context/MediatorsContext.jsx";
-import { locationsAPI } from "@/services/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -846,8 +845,9 @@ import {
   Edit,
   Trash2,
   MoreVertical,
+  Search,
 } from "lucide-react";
-
+ 
 function Mediators() {
   const { mediators, loading, error, fetchMediators, createMediator, updateMediator, deleteMediator } = useMediators();
   const [open, setOpen] = useState(false);
@@ -856,23 +856,12 @@ function Mediators() {
   const [isViewMode, setIsViewMode] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedExecutive, setSelectedExecutive] = useState("");
-  const [locations, setLocations] = useState([]);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
-  const fetchLocations = useCallback(async () => {
-    try {
-      const data = await locationsAPI.getAll();
-      setLocations(data);
-    } catch (error) {
-      console.error("Failed to fetch locations:", error);
-    }
-  }, []);
-
   useEffect(() => {
     fetchMediators();
-    fetchLocations();
-  }, [fetchMediators, fetchLocations]);
+  }, []);
 
   const [formData, setFormData] = useState({
     mediatorName: "",
@@ -916,15 +905,12 @@ function Mediators() {
       const toDate = dateTo ? new Date(dateTo) : new Date("2100-12-31");
       return mediatorDate >= fromDate && mediatorDate <= toDate;
     })();
-
+ 
     return matchesSearch && matchesExecutive && matchesDateRange;
   });
-
+ 
   const handleInputChange = (field, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleFileChange = (field, file) => {
@@ -969,7 +955,6 @@ function Mediators() {
     setDateFrom("");
     setDateTo("");
     fetchMediators();
-    fetchLocations();
   };
 
   const resetForm = () => {
@@ -986,13 +971,14 @@ function Mediators() {
       officeIndividual: "",
       address: "",
     });
+    setFiles({ pan_upload: null, aadhar_upload: null });
     setSelectedMediator(null);
     setFiles({
       pan_upload: null,
       aadhar_upload: null,
     });
   };
-
+ 
   const handleEdit = (mediator) => {
     setSelectedMediator(mediator);
     setOpen(true);
@@ -1043,7 +1029,7 @@ function Mediators() {
       }
     }
   };
-
+ 
   return (
     <div>
       {/* FORM VIEW */}
@@ -1214,19 +1200,27 @@ function Mediators() {
                       <ChevronDown className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-full bg-white max-h-[300px] overflow-y-auto">
-                    {locations.length > 0 ? (
-                      locations.map((loc) => (
-                        <DropdownMenuItem
-                          key={loc._id}
-                          onClick={() => handleInputChange("location", loc.location)}
-                        >
-                          {loc.location}
-                        </DropdownMenuItem>
-                      ))
-                    ) : (
-                      <div className="p-2 text-sm text-gray-500">No locations found</div>
-                    )}
+                  <DropdownMenuContent className="w-full bg-white">
+                    <DropdownMenuItem
+                      onClick={() => handleInputChange("location", "Mumbai")}
+                    >
+                      Mumbai
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleInputChange("location", "Delhi")}
+                    >
+                      Delhi
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleInputChange("location", "Bangalore")}
+                    >
+                      Bangalore
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleInputChange("location", "Chennai")}
+                    >
+                      Chennai
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
@@ -1712,5 +1706,6 @@ function Mediators() {
     </div>
   );
 }
-
+ 
 export default Mediators;
+ 

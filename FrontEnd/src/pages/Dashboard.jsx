@@ -216,36 +216,53 @@ function Dashboard() {
     startDate: "",
     endDate: "",
   });
-
+ 
   // Fetch all leads on component mount
   useEffect(() => {
     fetchLeads();
   }, []);
-
+ 
   // Calculate active leads count (PENDING leads from all leads API)
   const activeLeadsCount = leads?.filter(lead => {
     const status = lead.lead_status || lead.status;
     return status === 'PENDING' || status === 'pending';
   }).length || 0;
-
+ 
   // Calculate approved leads count
   const approvedLeadsCount = leads?.filter(lead => {
     const status = lead.lead_status || lead.status;
     return status === 'APPROVED' || status === 'approved';
   }).length || 0;
-
+ 
   // Calculate purchased leads count
   const purchasedLeadsCount = leads?.filter(lead => {
     const status = lead.lead_status || lead.status;
     return status === 'PURCHASED' || status === 'purchased';
   }).length || 0;
-
+ 
+  // Calculate lead stages count (filtering only valid stages: hot, warm, cold, management hot)
+  const leadStages = {
+    hot: 0,
+    warm: 0,
+    cold: 0,
+    management_hot: 0
+  };
+ 
+  leads?.forEach(lead => {
+    const stage = lead.lead_stage;
+    if (stage === 'hot') leadStages.hot++;
+    else if (stage === 'warm') leadStages.warm++;
+    else if (stage === 'cold') leadStages.cold++;
+    else if (stage === 'management hot' || stage === 'management_hot') leadStages.management_hot++;
+  });
+ 
   // Debug: log the leads data to see structure
   console.log('Leads data:', leads);
   console.log('Active leads count:', activeLeadsCount);
-  console.log('Approved leads count:', approvedLeadsCount);
+  console.log('Approval leads count:', approvedLeadsCount);
   console.log('Purchased leads count:', purchasedLeadsCount);
-
+  console.log('Lead stages:', leadStages);
+ 
   const donutCards = [
     {
       title: "Leads Status",
@@ -262,13 +279,13 @@ function Dashboard() {
     {
       title: "Leads Stages",
       dateRange: "2025-08-30 – 2025-11-30",
-      total: 193,
+      total: leadStages.hot + leadStages.warm + leadStages.cold + leadStages.management_hot,
       tone: "red",
       segments: [
-        { label: "Hot", value: 71, color: "#ef4444" },
-        { label: "Warm", value: 68, color: "#f59e0b" },
-        { label: "Cold", value: 54, color: "#3b82f6" },
-        { label: "Management Hot", value: 89, color: "#22c55e" },
+        { label: "Hot", value: leadStages.hot, color: "#ef4444" },
+        { label: "Warm", value: leadStages.warm, color: "#f59e0b" },
+        { label: "Cold", value: leadStages.cold, color: "#3b82f6" },
+        { label: "Management Hot", value: leadStages.management_hot, color: "#22c55e" },
       ],
     },
     {
@@ -369,5 +386,6 @@ function Dashboard() {
 }
  
 export default Dashboard;
+ 
  
  

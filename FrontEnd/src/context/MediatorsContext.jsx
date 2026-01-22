@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { mediatorsAPI } from '../services/api';
 
 const MediatorsContext = createContext(null);
@@ -15,21 +15,28 @@ export const MediatorsProvider = ({ children }) => {
   const [mediators, setMediators] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [fetched, setFetched] = useState(false);
 
-  const fetchMediators = useCallback(async () => {
+  const fetchMediators = async () => {
+    // Prevent multiple simultaneous calls
+    if (loading || fetched) {
+      return;
+    }
+    
     try {
       setLoading(true);
       setError(null);
       const response = await mediatorsAPI.getAll();
       setMediators(response);
+      setFetched(true);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
-  const getMediatorById = useCallback(async (id) => {
+  const getMediatorById = async (id) => {
     try {
       setLoading(true);
       setError(null);
@@ -40,14 +47,16 @@ export const MediatorsProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
-  const createMediator = useCallback(async (mediatorData, files = {}) => {
+  const createMediator = async (mediatorData, files = {}) => {
     try {
       setLoading(true);
       setError(null);
       const response = await mediatorsAPI.create(mediatorData, files);
       setMediators(prev => [...prev, response.data]);
+      // Reset fetched state to allow refetching if needed
+      setFetched(false);
       return response.data;
     } catch (err) {
       setError(err.message);
@@ -55,9 +64,9 @@ export const MediatorsProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
-  const updateMediator = useCallback(async (id, mediatorData) => {
+  const updateMediator = async (id, mediatorData) => {
     try {
       setLoading(true);
       setError(null);
@@ -70,6 +79,8 @@ export const MediatorsProvider = ({ children }) => {
         )
       );
 
+      // Reset fetched state to allow refetching if needed
+      setFetched(false);
       return response;
     } catch (err) {
       setError(err.message);
@@ -77,9 +88,9 @@ export const MediatorsProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
-  const deleteMediator = useCallback(async (id) => {
+  const deleteMediator = async (id) => {
     try {
       setLoading(true);
       setError(null);
@@ -100,9 +111,14 @@ export const MediatorsProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
-  const clearError = useCallback(() => setError(null), []);
+  const clearError = () => setError(null);
+
+  const refetchMediators = async () => {
+    setFetched(false);
+    await fetchMediators();
+  };
 
   return (
     <MediatorsContext.Provider
@@ -110,7 +126,9 @@ export const MediatorsProvider = ({ children }) => {
         mediators,
         loading,
         error,
+        fetched,
         fetchMediators,
+        refetchMediators,
         getMediatorById,
         createMediator,
         updateMediator,
