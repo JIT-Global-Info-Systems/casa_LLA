@@ -60,7 +60,7 @@ export default function ApprovedLeads() {
     const fetchApprovedLeads = async () => {
       try {
         setLoading(true);
-        const response = await axios.get("http://13.201.132.94:5000/api/leads/approved");
+        const response = await axios.get("http://localhost:5000/api/leads/approved");
         setLeads(response.data.data || []);
         setError(null);
       } catch (err) {
