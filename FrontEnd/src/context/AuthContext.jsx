@@ -21,10 +21,13 @@ export const AuthProvider = ({ children }) => {
     const userId = localStorage.getItem('user_id');
     const userData = localStorage.getItem('user');
 
+    console.log('AuthContext useEffect - token:', !!token, 'userId:', userId, 'userData:', !!userData);
+
     if (token && userData) {
       // Parse stored user data
       try {
         const parsedUser = JSON.parse(userData);
+        console.log('Parsed user data:', parsedUser);
         setUser({ ...parsedUser, token });
       } catch (error) {
         console.error('Failed to parse user data:', error);
@@ -52,9 +55,11 @@ export const AuthProvider = ({ children }) => {
 
       fetchUserProfile();
     } else if (token) {
+      console.log('Only token found, setting user with token');
       setUser({ token });
       setLoading(false);
     } else {
+      console.log('No token found, setting loading to false');
       setLoading(false);
     }
   }, []);
