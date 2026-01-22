@@ -377,10 +377,7 @@ export default function LeadsPage() {
                   <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px] border-gray-300" />
                 </div>
  
-                <Button variant="outline" className="border-gray-300" disabled>
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filter
-                </Button>
+                
               </div>
  
               <div className="overflow-x-auto">
