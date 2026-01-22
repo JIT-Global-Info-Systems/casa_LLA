@@ -19,31 +19,31 @@ import {
   Settings,
 } from "lucide-react";
 
-// export const navItems = [
-//   { path: "/pages/dashboard", label: "Dashboard", icon: LayoutDashboard, page: "dashboard" },
-//   { path: "/pages/leads", label: "Leads", icon: Users, page: "lead" },
-//   { path: "/pages/users", label: "Users", icon: UserRound, page: "users" },
-//   { path: "/pages/approvedleads", label: "Approved", icon: UserRound, page: "lead" },
-//   { path: "/pages/purchasedleads", label: "Purchased", icon: UserRound, page: "lead" },
-//   // { path: "/pages/documents", label: "Documents", icon: FileText, page: "documents" },
-//   // { path: "/pages/owners", label: "Approval", icon: Users, page: "owners" },
-//   { path: "/pages/mediators", label: "Mediators", icon: Handshake, page: "mediator" },
-//   { path: "/pages/masters", label: "Masters", icon: Settings, page: "masters" },
-//   // { path: "/pages/reports", label: "Reports", icon: BarChart3, page: "reports" },
-// ];
-
 export const navItems = [
-  { path: "/pages/dashboard", label: "Dashboard", icon: LayoutDashboard ,page: "dashboard"},
-  { path: "/pages/leads", label: "Leads", icon: Users , page: "lead"},
-  { path: "/pages/users", label: "Users", icon: UserRound , page: "users"},
-  { path: "/pages/approvedleads", label: "Approval", icon: UserRound ,page: "lead" },
-  { path: "/pages/purchasedleads", label: "Purchased", icon: UserRound , page: "lead"},
-  { path: "/pages/calls", label: "Call", icon: FileText,page: "calls" },
+  { path: "/pages/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { path: "/pages/leads", label: "Leads", icon: Users },
+  { path: "/pages/users", label: "Users", icon: UserRound },
+  { path: "/pages/approvedleads", label: "Approval", icon: UserRound },
+  { path: "/pages/purchasedleads", label: "Purchased", icon: UserRound },
+  { path: "/pages/calls", label: "Call", icon: FileText },
   // { path: "/pages/owners", label: "Approval", icon: Users },
-  { path: "/pages/mediators", label: "Mediators", icon: Handshake , page: "mediator"},
-  { path: "/pages/masters", label: "Masters", icon: Settings , page: "masters"  },
-  { path: "/pages/reports", label: "Reports", icon: BarChart3, page: "reports" },
+  { path: "/pages/mediators", label: "Mediators", icon: Handshake },
+  { path: "/pages/masters", label: "Masters", icon: Settings },
+  { path: "/pages/reports", label: "Reports", icon: BarChart3 },
 ]
+
+// export const navItems = [
+//   { path: "/pages/dashboard", label: "Dashboard", icon: LayoutDashboard ,page: "dashboard"},
+//   { path: "/pages/leads", label: "Leads", icon: Users , page: "lead"},
+//   { path: "/pages/users", label: "Users", icon: UserRound , page: "users"},
+//   { path: "/pages/approvedleads", label: "Approval", icon: UserRound ,page: "lead" },
+//   { path: "/pages/purchasedleads", label: "Purchased", icon: UserRound , page: "lead"},
+//   { path: "/pages/calls", label: "Call", icon: FileText,page: "calls" },
+//   // { path: "/pages/owners", label: "Approval", icon: Users },
+//   { path: "/pages/mediators", label: "Mediators", icon: Handshake , page: "mediator"},
+//   { path: "/pages/masters", label: "Masters", icon: Settings , page: "masters"  },
+//   { path: "/pages/reports", label: "Reports", icon: BarChart3, page: "reports" },
+// ]
 
 const documentsItems = [
   { hash: "#policies", label: "Policies", icon: ShieldCheck },
@@ -98,32 +98,7 @@ function Sidebar() {
             </div>
           </div>
         </div>
-        <div className="border-t border-indigo-600/60 pt-4">
-          <div className="px-3 text-[11px] font-semibold tracking-wider text-white/80">
-            MAIN NAVIGATION
-          </div>
-          <div className="mt-2 space-y-1">
-            {filteredNavItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = location.pathname === item.path;
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={cn(
-                    "group flex items-center gap-3 rounded-full px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                    isActive
-                      ? "bg-indigo-500/25 text-white"
-                      : "text-white/90 hover:bg-indigo-500/15 hover:text-white"
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span className="truncate">{item.label}</span>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
+      
         <div className="border-t border-indigo-600/60 pt-4">
           <div className="px-3 text-[11px] font-semibold tracking-wider text-white/80">
             DOCUMENTS
