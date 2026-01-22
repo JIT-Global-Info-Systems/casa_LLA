@@ -46,10 +46,6 @@ export default function ApprovedLeads() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const handleCreate = () => {
-    setSelectedLead(null);
-    setOpen(true);
-  };
 
   const handleEdit = (lead) => {
     setSelectedLead(lead);
@@ -165,10 +161,7 @@ export default function ApprovedLeads() {
               />
             </div>
 
-            <Button variant="outline" size="sm">
-              <Filter className="h-4 w-4 mr-2" />
-              Filter
-            </Button>
+           
           </div>
         </CardContent>
       </Card>
@@ -216,7 +209,8 @@ export default function ApprovedLeads() {
                 ) : (
                   filteredLeads.map((lead) => (
                     <TableRow key={lead._id}>
-                      <TableCell className="font-medium">{lead._id.substring(0, 6)}...</TableCell>
+                                           <TableCell className="font-medium">{lead.lead_id}</TableCell>
+
                       <TableCell>{lead.mediatorName || "N/A"}</TableCell>
                       <TableCell>{lead.contactNumber || "N/A"}</TableCell>
                       <TableCell>{lead.location || "N/A"}</TableCell>
