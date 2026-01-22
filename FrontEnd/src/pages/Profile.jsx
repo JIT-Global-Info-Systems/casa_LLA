@@ -13,6 +13,9 @@ function Profile() {
   const { user, loading } = useAuth();
   const [profile, setProfile] = useState(user || {});
 
+  console.log('Profile component - user:', user);
+  console.log('Profile component - profile:', profile);
+
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -22,6 +25,7 @@ function Profile() {
 
   useEffect(() => {
     if (user) {
+      console.log('Profile useEffect - updating profile with user data:', user);
       setProfile(user);
       setEditForm({
         name: user.name || '',
@@ -45,7 +49,12 @@ function Profile() {
   const handleEditProfile = async () => {
     try {
       console.log('Updating profile with:', editForm);
-      const response = await usersAPI.update(profile._id, editForm);
+      // Use user_id or _id whichever is available
+      const userId = profile.user_id || profile._id;
+      if (!userId) {
+        throw new Error('User ID not found in profile data');
+      }
+      const response = await usersAPI.update(userId, editForm);
       console.log('Profile update response:', response);
       
       // Update local state with the response data
@@ -103,13 +112,25 @@ function Profile() {
     return colors[role.toLowerCase()] || "bg-blue-100 text-blue-700 border-blue-200";
   };
 
-  // Show loading state
-  if (loading || !profile || !profile._id) {
+  // Show loading state - only check if loading, not for profile._id existence
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if no profile data is available
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-600 text-xl mb-4">Unable to load profile</div>
+          <p className="text-gray-600">Please try refreshing the page or contact support.</p>
         </div>
       </div>
     );
@@ -150,16 +171,16 @@ function Profile() {
                   </button>
                 </div>
                 <div className="pb-2">
-                  <h2 className="text-2xl font-bold text-gray-900">{profile.name}</h2>
-                  <p className="text-gray-600 mt-1">{profile.email}</p>
+                  <h2 className="text-2xl font-bold text-gray-900">{profile.name || 'Unknown User'}</h2>
+                  <p className="text-gray-600 mt-1">{profile.email || 'No email available'}</p>
                   <div className="flex flex-wrap gap-2 mt-3">
                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getRoleColor(profile.role)}`}>
                       <Shield className="h-3 w-3 mr-1" />
-                      {profile.role}
+                      {profile.role || 'User'}
                     </span>
                     <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
                       <CheckCircle2 className="h-3 w-3 mr-1" />
-                      {profile.status}
+                      {profile.status || 'Active'}
                     </span>
                   </div>
                 </div>
@@ -334,7 +355,7 @@ function Profile() {
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-500">Email Address</p>
-                  <p className="text-sm text-gray-900 mt-1">{profile.email}</p>
+                  <p className="text-sm text-gray-900 mt-1">{profile.email || 'No email available'}</p>
                 </div>
               </div>
               <div className="flex items-start gap-4">
@@ -343,7 +364,7 @@ function Profile() {
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-500">Phone Number</p>
-                  <p className="text-sm text-gray-900 mt-1">{profile.phone_number}</p>
+                  <p className="text-sm text-gray-900 mt-1">{profile.phone_number || 'No phone number'}</p>
                 </div>
               </div>
               <div className="flex items-start gap-4">
@@ -352,7 +373,7 @@ function Profile() {
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-500">Joined Date</p>
-                  <p className="text-sm text-gray-900 mt-1">{new Date(profile.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                  <p className="text-sm text-gray-900 mt-1">{profile.created_at ? new Date(profile.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Unknown join date'}</p>
                 </div>
               </div>
             </div>
@@ -373,7 +394,7 @@ function Profile() {
                   <p className="text-sm font-medium text-gray-500">Role</p>
                   <div className="mt-2">
                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getRoleColor(profile.role)}`}>
-                      {profile.role}
+                      {profile.role || 'User'}
                     </span>
                   </div>
                 </div>
@@ -386,7 +407,7 @@ function Profile() {
                   <p className="text-sm font-medium text-gray-500">Account Status</p>
                   <div className="mt-2">
                     <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
-                      {profile.status}
+                      {profile.status || 'Active'}
                     </span>
                   </div>
                 </div>
