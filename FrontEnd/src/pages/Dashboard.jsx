@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLeads } from "../context/LeadsContext";
+import { accessAPI } from "../services/api";
 import {
   Card,
   CardContent,
@@ -264,43 +265,143 @@ function Dashboard() {
   console.log('Lead stages:', leadStages);
   
   // Calculate work stages based on currentRole from leads API
-  const workStages = {
-    tele_callers: 0,
-    land_executive: 0,
-    l1_md: 0,
-    cmo_cro: 0,
-    feasibility_team: 0,
-    legal: 0,
-    liaison: 0,
-    finance: 0,
-    management:0
-  };
+  const [workStages, setWorkStages] = useState({});
+  const [workStagesLabels, setWorkStagesLabels] = useState({});
 
-  leads?.forEach(lead => {
-    const role = lead.currentRole;
-    if (role) {
-      const normalizedRole = role.toLowerCase().trim();
-      if (normalizedRole === 'tele callers' || normalizedRole === 'tele_callers' || normalizedRole === 'telecaller') {
-        workStages.tele_callers++;
-      } else if (normalizedRole === 'land executive' || normalizedRole === 'land_executive' || normalizedRole === 'landexecutive') {
-        workStages.land_executive++;
-      } else if (normalizedRole === 'l1 md' || normalizedRole === 'l1_md' || normalizedRole === 'l1md') {
-        workStages.l1_md++;
-      } else if (normalizedRole === 'cmo cro' || normalizedRole === 'cmo_cro' || normalizedRole === 'cmo' || normalizedRole === 'cro') {
-        workStages.cmo_cro++;
-      } else if (normalizedRole === 'feasibility team' || normalizedRole === 'feasibility_team' || normalizedRole === 'feasibility') {
-        workStages.feasibility_team++;
-      } else if (normalizedRole === 'legal') {
-        workStages.legal++;
-      } else if (normalizedRole === 'liaison') {
-        workStages.liaison++;
-      } else if (normalizedRole === 'finance') {
-        workStages.finance++;
-      } else if (normalizedRole === 'management') {
-        workStages.management++;
-      }
+  // Function to calculate work stages dynamically based on API response
+  // const calculateWorkStages = (leadsData, accessData = null) => {
+  //   const stages = {};
+    
+  //   // If access data provided by API, use it to create labels
+  //   if (accessData && accessData.data) {
+  //     // Initialize stages with API roles (exclude admin)
+  //     accessData.data.forEach(access => {
+  //       if (access.role !== 'admin') {
+  //         // Convert role key to display label
+  //         const displayLabel = access.role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  //         stages[displayLabel] = 0;
+  //       }
+  //     });
+      
+  //     // Count leads based on API roles
+  //     leadsData?.forEach(lead => {
+  //       const role = lead.currentRole;
+  //       if (role) {
+  //         const normalizedRole = role.toLowerCase().trim().replace(/\s+/g, '_');
+          
+  //         // Find matching role from API
+  //         const matchingAccess = accessData.data.find(access => 
+  //           access.role === normalizedRole && access.role !== 'admin'
+  //         );
+          
+  //         if (matchingAccess) {
+  //           const displayLabel = matchingAccess.role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  //           stages[displayLabel]++;
+  //         }
+  //       }
+  //     });
+  //   } else {
+  //     // Fallback to hardcoded labels if API not available
+  //     const defaultLabels = {
+  //       'Tele Callers': ['tele callers', 'tele_callers', 'telecaller'],
+  //       'Land Executive': ['land executive', 'land_executive', 'landexecutive'],
+  //       'L1 Md': ['l1 md', 'l1_md', 'l1md'],
+  //       'Cmo Cro': ['cmo cro', 'cmo_cro', 'cmo', 'cro'],
+  //       'Feasibility Team': ['feasibility team', 'feasibility_team', 'feasibility'],
+  //       'Legal': ['legal'],
+  //       'Liaison': ['liaison'],
+  //       'Finance': ['finance'],
+  //       'Management': ['management']
+  //     };
+      
+  //     // Initialize stages with default labels
+  //     Object.keys(defaultLabels).forEach(label => {
+  //       stages[label] = 0;
+  //     });
+      
+  //     // Count leads based on default labels
+  //     leadsData?.forEach(lead => {
+  //       const role = lead.currentRole;
+  //       if (role) {
+  //         const normalizedRole = role.toLowerCase().trim();
+  //         Object.entries(defaultLabels).forEach(([label, variations]) => {
+  //           if (variations.some(variation => normalizedRole === variation.toLowerCase().trim())) {
+  //             stages[label]++;
+  //           }
+  //         });
+  //       }
+  //     });
+  //   }
+//new api method for work stages
+const calculateWorkStages = (leadsData, accessData) => {
+  const stages = {};
+
+  if (!accessData || !Array.isArray(accessData)) return {};
+
+  // Step 1: Initialize all roles from API (except admin)
+  accessData.forEach(access => {
+    if (access.role !== "admin") {
+      stages[access.role] = 0;   // land_executive, tele_caller, etc
     }
   });
+
+  // Step 2: Count leads by currentRole
+  leadsData.forEach(lead => {
+    if (!lead.currentRole) return;
+
+    const role = lead.currentRole.trim(); // e.g. "land_executive"
+
+    if (stages.hasOwnProperty(role)) {
+      stages[role]++;
+    }
+  });
+
+  return stages;
+};
+
+
+  // Fetch access data for work stages labels
+  const fetchAccessData = async () => {
+    try {
+      console.log('🔑 Checking token in localStorage:', localStorage.getItem('token') ? 'Token exists' : 'No token found');
+      console.log('🌐 Making API call to access/get...');
+      const accessData = await accessAPI.getAll();
+      console.log('✅ Access API call successful:', accessData);
+      setWorkStagesLabels(accessData);
+      return accessData;
+    } catch (error) {
+      console.error('❌ Error fetching access data:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        stack: error.stack
+      });
+      // Return null to use fallback labels
+      return null;
+    }
+  };
+
+  // Update work stages when leads or labels change
+  useEffect(() => {
+    const updateWorkStages = async () => {
+      console.log('🔄 Starting work stages update...');
+      try {
+        const accessData = await fetchAccessData();
+        console.log('📊 Access data received:', accessData);
+        const calculatedStages = calculateWorkStages(leads, accessData);
+        console.log('📈 Calculated stages:', calculatedStages);
+        setWorkStages(calculatedStages);
+      } catch (error) {
+        console.error('❌ Error in work stages update:', error);
+      }
+    };
+
+    if (leads && leads.length > 0) {
+      console.log('🚀 Triggering work stages update...');
+      updateWorkStages();
+    } else {
+      console.log('⏳ Waiting for leads data...');
+    }
+  }, [leads]);
 
   // Debug: Check for currentRole field in leads
   if (leads && leads.length > 0) {
@@ -331,27 +432,39 @@ function Dashboard() {
       segments: [
         { label: "Hot", value: leadStages.hot, color: "#ef4444" },
         { label: "Warm", value: leadStages.warm, color: "#f59e0b" },
-        { label: "Cold", value: leadStages.cold, color: "#3b82f6" },
+        { label: "Cold", value: leadStages.cold, color: "#3b82f6"},
         { label: "Management Hot", value: leadStages.management_hot, color: "#22c55e" },
       ],
     },
     {
       title: "Work Stages",
       dateRange: "2025-08-30 – 2025-11-30",
-      total: workStages.tele_callers + workStages.land_executive + workStages.l1_md + workStages.cmo_cro + workStages.feasibility_team + workStages.legal + workStages.liaison + workStages.finance + workStages.management,
+      total: Object.values(workStages).reduce((sum, count) => sum + count, 0),
       tone: "purple",
-      segments: [
-        { label: "Tele Callers", value:workStages.tele_callers, color: "#0f172a" },
-        { label: "Land Executive", value: workStages.land_executive, color: "#22c55e" },
-        { label: "L1 MD", value:workStages.l1_md, color: "#3b82f6" },
-        { label: "CMO CRO", value:workStages.cmo_cro, color: "#f59e0b" },
-        { label: "Feasibility Team", value: workStages.feasibility_team, color: "#8b5cf6" },
-        { label: "Legal", value: workStages.legal, color: "#ec4899" },
-        { label: "Liaison", value: workStages.liaison, color: "#14b8a6" },
-        { label: "Finance", value: workStages.finance, color: "#f97316" },
-        { label: "Management", value: workStages.management, color: "#6366f1" }
-      ],
+      segments: Object.entries(workStages).map(([label, value], index) => ({
+        label: label.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        value: value,
+        color: [
+          "#0f172a", "#22c55e", "#3b82f6", "#f59e0b", 
+          "#8b5cf6", "#ec4899", "#14b8a6", "#f97316", "#6366f1"
+        ][index % 9]
+      })),
     },
+
+//   total: Object.values(workStages).reduce((s, v) => s + v, 0),
+//   tone: "purple",
+//   segments: Object.entries(workStages).map(([role, value], index) => ({
+//     label: role
+//       .replace(/_/g, " ")
+//       .replace(/\b\w/g, l => l.toUpperCase()),   // 👈 converts to Land Executive
+//     value,
+//     color: [
+//       "#0f172a", "#22c55e", "#3b82f6", "#f59e0b",
+//       "#8b5cf6", "#ec4899", "#14b8a6", "#f97316", "#6366f1"
+//     ][index % 9]
+//   })),
+// }
+
   ];
  
   return (
