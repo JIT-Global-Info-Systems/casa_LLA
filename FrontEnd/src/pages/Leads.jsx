@@ -298,7 +298,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       currentRole: data.currentRole || prev.currentRole,
       status: data.status || prev.status,
 
-      // competitor
+      // competitor..
       competitorDeveloperName: firstCompetitor?.developerName || "",
       competitorProjectName: firstCompetitor?.projectName || "",
       competitorProductType: firstCompetitor?.productType || "",
