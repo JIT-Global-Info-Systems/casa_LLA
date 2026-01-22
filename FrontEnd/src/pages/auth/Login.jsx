@@ -26,17 +26,17 @@ function Login() {
     try {
       await login({ email, password })
      
-      if (forcePasswordChange) {
-        navigate('/first-time-password-change', {
-          state: {
-            isFirstLogin: true,
-            message: 'This is your first login. Please change your password to continue.'
-          }
-        })
-      } else {
+      // if (forcePasswordChange) {
+      //   navigate('/first-time-password-change', {
+      //     state: {
+      //       isFirstLogin: true,
+      //       message: 'This is your first login. Please change your password to continue.'
+      //     }
+      //   })
+      // } else {
         toast.success('Login successful! Redirecting...')
         navigate('/pages/dashboard')
-      }
+      // }
     } catch (err) {
       const errorMessage = err.response?.data?.message || err.message || 'An error occurred during login'
       setError(errorMessage)
