@@ -296,7 +296,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       mediatorId: data.mediatorId || prev.mediatorId,
       currentRole: data.currentRole || prev.currentRole,
 
-      // competitor
+      // competitor..
       competitorDeveloperName: firstCompetitor?.developerName || "",
       competitorProjectName: firstCompetitor?.projectName || "",
       competitorProductType: firstCompetitor?.productType || "",
