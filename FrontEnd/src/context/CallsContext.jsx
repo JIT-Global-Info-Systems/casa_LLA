@@ -13,8 +13,12 @@ export function CallsProvider({ children }) {
         setLoading(true)
         setError(null)
         try {
-            const data = await callsAPI.getAll()
-            setCalls(data)
+            // Commented out API call to use dummy data only
+            // const data = await callsAPI.getAll()
+            // setCalls(data)
+            
+            // Using empty array to rely on dummy data from Calls component
+            setCalls([])
         } catch (err) {
             console.error("Failed to fetch calls:", err)
             setError(err.message)
@@ -59,9 +63,10 @@ export function CallsProvider({ children }) {
         }
     }
 
-    useEffect(() => {
-        fetchCalls()
-    }, [fetchCalls])
+    // Removed automatic fetchCalls on mount to use dummy data only
+    // useEffect(() => {
+    //     fetchCalls()
+    // }, [fetchCalls])
 
     return (
         <CallsContext.Provider

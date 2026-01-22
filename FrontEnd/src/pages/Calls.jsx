@@ -5,7 +5,6 @@ import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Search, RefreshCw, Calendar as CalendarIcon, Phone, User, Hash, FileText, MessageSquare } from "lucide-react"
 import { useCalls } from "@/context/CallsContext"
-import { useUsers } from "@/context/UsersContext"
 import {
     Table,
     TableBody,
@@ -25,7 +24,6 @@ import { format } from "date-fns"
 
 export default function Calls() {
     const { calls: apiCalls, loading, error, fetchCalls } = useCalls()
-    const { users } = useUsers()
 
     // Dummy data for demonstration (Easy to remove by deleting this array)
     const dummyCalls = [
@@ -48,6 +46,23 @@ export default function Calls() {
     ]
 
     const calls = useMemo(() => [...dummyCalls, ...apiCalls], [apiCalls])
+
+    // Extract unique users from call logs
+    const uniqueUsers = useMemo(() => {
+        const userMap = new Map()
+        calls.forEach(call => {
+            if (call.user_name && (call.user_id || call.user_name)) {
+                const userId = call.user_id || call.user_name
+                if (!userMap.has(userId)) {
+                    userMap.set(userId, {
+                        user_id: userId,
+                        name: call.user_name
+                    })
+                }
+            }
+        })
+        return Array.from(userMap.values())
+    }, [calls])
 
     const [searchTerm, setSearchTerm] = useState("")
     const [userFilter, setUserFilter] = useState("all")
@@ -130,9 +145,9 @@ export default function Calls() {
                                 </SelectTrigger>
                                 <SelectContent className="bg-white">
                                     <SelectItem value="all">All Users</SelectItem>
-                                    {users.map((user) => (
-                                        <SelectItem key={user.user_id || user.id} value={user.user_id || user.id}>
-                                            {user.name || user.username}
+                                    {uniqueUsers.map((user) => (
+                                        <SelectItem key={user.user_id} value={user.user_id}>
+                                            {user.name}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
