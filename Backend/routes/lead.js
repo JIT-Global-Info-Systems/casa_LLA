@@ -19,5 +19,7 @@ router.get("/approved", verifyToken, leadController.getApprovedLeads);
 router.get("/purchased", verifyToken, leadController.getPurchasedLeads);
 router.get("/:leadId", verifyToken, leadController.getLeadById);
 
+// Get all calls (optionally filtered by leadId)
+router.get("/calls/all", verifyToken, leadController.getAllCalls);
 
 module.exports = router;

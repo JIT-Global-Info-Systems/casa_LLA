@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
-const Lead = require("../models/lead");
+const Lead = require("../models/Lead");
 const LeadHistory = require("../models/LeadHistory");
+const Call = require("../models/Call");
 
 
 exports.createLead = async (req, res) => {
@@ -40,6 +41,7 @@ exports.createLead = async (req, res) => {
       userId,
       note,
       role,
+      currentRole , // Default to 'user' if not provided
       competitorAnalysis = [],
       checkListPage = [],
       ...restLeadData
@@ -77,21 +79,27 @@ exports.createLead = async (req, res) => {
           timestamp: new Date()
         }))
       : [];
+    // Create the lead first
     const lead = await Lead.create({
       ...restLeadData,
       checkListPage: formattedCheckListPage,
       competitorAnalysis: formattedCompetitorAnalysis,
       lead_status: "PENDING",
-      created_by: createdBy, // Set created_by field with user ID from JWT token
-      calls: userId
-        ? [{
-            userId,
-            note: note || "Initial lead created",
-            role,
-            timestamp: new Date()
-          }]
-        : []
+      currentRole: currentRole, // Add currentRole to the lead
+      created_by: createdBy
     });
+
+    // Create call record if userId is provided
+    if (userId) {
+      await Call.create({
+        leadId: lead._id,
+        userId,
+        name: leadData.name || 'Unknown User', // Get name from leadData
+        role: role || 'user',
+        note: note || "Initial lead created",
+        created_by: createdBy
+      });
+    }
 
     return res.status(201).json({
       message: "Lead created successfully",
@@ -116,12 +124,13 @@ exports.updateLead = async (req, res) => {
     }
 
     const { leadId } = req.params;
-    const { userId, note, notes, role, competitorAnalysis, checkListPage, ...updateData } = req.body;
+    const { userId, note, notes, role, currentRole, competitorAnalysis, checkListPage, ...updateData } = req.body;
 
     const update = {
       ...updateData,
       updated_by: req.user.user_id, // Set updated_by with user ID from JWT token
-      updated_at: new Date() // Set updated_at timestamp
+      updated_at: new Date(), // Set updated_at timestamp
+      ...(currentRole !== undefined && { currentRole }) // Update currentRole if provided
     };
 
     // Initialize $push if not already set
@@ -167,25 +176,30 @@ exports.updateLead = async (req, res) => {
       update.checkListPage = formattedCheckListPage;
     }
 
-    // If notes is being updated, add a call entry
+    // If notes is being updated, create a new call record
     if (notes !== undefined) {
-      // update.notes = notes;
-      update.$push.calls = {
+      const updateData = typeof req.body.data === "string" ? JSON.parse(req.body.data) : req.body;
+      await Call.create({
+        leadId: leadId,
         userId: userId || 'system',
-        note:  notes,
-        role: role,
-        timestamp: new Date()
-      };
+        name: updateData.name || req.user?.name || 'System',
+        role: currentRole || 'system',
+        note: notes,
+        created_by: req.user?.user_id || 'system'
+      });
     }
 
-    // If a new note is provided, add it to calls
+    // If a new note is provided, create a new call record
     if (note && userId) {
-      update.$push.calls = {
+      const updateData = typeof req.body.data === "string" ? JSON.parse(req.body.data) : req.body;
+      await Call.create({
+        leadId: leadId,
         userId,
-        note,
-        role,
-        timestamp: new Date()
-      };
+        name: updateData.name || req.user?.name || 'Unknown User',
+        role: currentRole || 'user',
+        note: note,
+        created_by: req.user?.user_id || 'system'
+      });
     }
 
     // If no $push operations were set, remove the empty $push
@@ -339,10 +353,11 @@ exports.getLeadById = async (req, res) => {
       });
     }
 
-    // Find the lead and populate any referenced fields if needed
-    const [lead, history] = await Promise.all([
+    // Find the lead, history, and calls in parallel
+    const [lead, history, calls] = await Promise.all([
       Lead.findById(leadId),
-      LeadHistory.find({ leadId }).sort({ createdAt: -1 }) // Get history sorted by creation date (newest first)
+      LeadHistory.find({ leadId }).sort({ createdAt: -1 }), // Get history sorted by creation date (newest first)
+      Call.find({ leadId }).sort({ createdAt: -1 }) // Get calls sorted by creation date (newest first)
     ]);
 
     if (!lead) {
@@ -356,13 +371,50 @@ exports.getLeadById = async (req, res) => {
       success: true,
       data: {
         ...lead.toObject(),
-        history: history || []
+        history: history || [],
+        calls: calls || []
       }
     });
   } catch (error) {
     return res.status(500).json({
       success: false,
       message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// Get all calls with optional leadId filter
+exports.getAllCalls = async (req, res) => {
+  try {
+    const { leadId } = req.query;
+    const query = {};
+    
+    if (leadId) {
+      if (!mongoose.Types.ObjectId.isValid(leadId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid lead ID format'
+        });
+      }
+      query.leadId = leadId;
+    }
+
+    const calls = await Call.find(query)
+      .populate('leadId', 'name contactNumber')
+      .populate('created_by', 'name email')
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      count: calls.length,
+      data: calls
+    });
+  } catch (error) {
+    console.error('Error fetching calls:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch calls',
       error: error.message
     });
   }

@@ -133,6 +133,11 @@ const leadSchema = new mongoose.Schema({
     type: String,
   },
   
+  currentRole: {
+    type: String,
+    default: 'user' // Default role can be set based on your requirements
+  },
+  
   lead_stage: {
     type: String,
     default: "new"
@@ -157,24 +162,6 @@ const leadSchema = new mongoose.Schema({
     type: Date
   },
   
-  calls: [{
-    userId: {
-      type: String,
-      required: true
-    },
-    note: {
-      type: String,
-      required: true
-    },
-    timestamp: {
-      type: Date,
-      default: Date.now
-    },
-    role: {
-      type: String,
-      required: true
-    }
-  }],
 
   competitorAnalysis: [{
     developerName: {
