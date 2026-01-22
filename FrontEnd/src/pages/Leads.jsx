@@ -717,7 +717,7 @@ export default function Leads({ data = null, onSubmit, onClose }) {
                   <SelectValue placeholder="Select stage" />
                 </SelectTrigger>
                 <SelectContent className="bg-white z-50 shadow-lg">
-                  <SelectItem value="new">New</SelectItem>
+                  {/* <SelectItem value="new">New</SelectItem> */}
                   <SelectItem value="warm">Warm</SelectItem>
                   <SelectItem value="hot">Hot</SelectItem>
                   <SelectItem value="cold">Cold</SelectItem>
