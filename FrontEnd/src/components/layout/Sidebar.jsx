@@ -256,7 +256,7 @@ export const navItems = [
   // { path: "/pages/owners", label: "Approval", icon: Users },
   { path: "/pages/mediators", label: "Mediators", icon: Handshake },
   { path: "/pages/masters", label: "Masters", icon: Settings },
-  // { path: "/pages/reports", label: "Reports", icon: BarChart3 },
+  { path: "/pages/reports", label: "Reports", icon: BarChart3 },
 ];
  
 const documentsItems = [
