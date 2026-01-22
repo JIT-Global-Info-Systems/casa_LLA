@@ -1,23 +1,24 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Lock, Eye, EyeOff, Mail, Phone, Calendar, Shield, CheckCircle2, Camera } from "lucide-react";
+import { Edit, Eye, EyeOff, Mail, Phone, Calendar, Shield, CheckCircle2, Camera } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { usersAPI } from "../services/api";
 
 function Profile() {
   const { user, loading } = useAuth();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState(user || {});
 
   console.log('Profile component - user:', user);
   console.log('Profile component - profile:', profile);
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [editForm, setEditForm] = useState({
     name: profile.name || '',
     phone: profile.phone_number || ''
@@ -34,18 +35,6 @@ function Profile() {
     }
   }, [user]);
 
-  const [passwordForm, setPasswordForm] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: ""
-  });
-
-  const [showPasswords, setShowPasswords] = useState({
-    current: false,
-    new: false,
-    confirm: false
-  });
-
   const handleEditProfile = async () => {
     try {
       console.log('Updating profile with:', editForm);
@@ -56,7 +45,7 @@ function Profile() {
       }
       const response = await usersAPI.update(userId, editForm);
       console.log('Profile update response:', response);
-      
+
       // Update local state with the response data
       if (response.user) {
         setProfile({ ...profile, ...response.user });
@@ -64,33 +53,13 @@ function Profile() {
         // Fallback: update local state with form data
         setProfile({ ...profile, name: editForm.name, phone_number: editForm.phone });
       }
-      
+
       setIsEditDialogOpen(false);
       alert("Profile updated successfully!");
     } catch (error) {
       console.error('Error updating profile:', error);
       alert("Failed to update profile: " + error.message);
     }
-  };
-
-  const handlePasswordChange = () => {
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      alert("New passwords do not match!");
-      return;
-    }
-
-    if (passwordForm.newPassword.length < 8) {
-      alert("Password must be at least 8 characters long!");
-      return;
-    }
-
-    alert("Password changed successfully!");
-    setPasswordForm({
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: ""
-    });
-    setIsPasswordDialogOpen(false);
   };
 
   const getInitials = (name) => {
@@ -186,93 +155,14 @@ function Profile() {
                 </div>
               </div>
               <div className="flex gap-3 mt-6 md:mt-0 md:pb-2">
-                <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" className="border-gray-300">
-                      <Lock className="mr-2 h-4 w-4" />
-                      Change Password
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="bg-white sm:max-w-[500px]">
-                    <DialogHeader>
-                      <DialogTitle className="text-xl font-semibold flex items-center gap-2">
-                        <Lock className="h-5 w-5 text-indigo-600" />
-                        Change Password
-                      </DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="current-password">Current Password</Label>
-                        <div className="relative">
-                          <Input
-                            id="current-password"
-                            type={showPasswords.current ? "text" : "password"}
-                            value={passwordForm.currentPassword}
-                            onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
-                            placeholder="Enter current password"
-                            className="pr-10"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowPasswords({ ...showPasswords, current: !showPasswords.current })}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                          >
-                            {showPasswords.current ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </button>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="new-password">New Password</Label>
-                        <div className="relative">
-                          <Input
-                            id="new-password"
-                            type={showPasswords.new ? "text" : "password"}
-                            value={passwordForm.newPassword}
-                            onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-                            placeholder="Enter new password"
-                            className="pr-10"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowPasswords({ ...showPasswords, new: !showPasswords.new })}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                          >
-                            {showPasswords.new ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </button>
-                        </div>
-                        <p className="text-xs text-gray-500">Must be at least 8 characters long</p>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="confirm-password">Confirm New Password</Label>
-                        <div className="relative">
-                          <Input
-                            id="confirm-password"
-                            type={showPasswords.confirm ? "text" : "password"}
-                            value={passwordForm.confirmPassword}
-                            onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-                            placeholder="Confirm new password"
-                            className="pr-10"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowPasswords({ ...showPasswords, confirm: !showPasswords.confirm })}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                          >
-                            {showPasswords.confirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex justify-end gap-3">
-                      <Button variant="outline" onClick={() => setIsPasswordDialogOpen(false)}>
-                        Cancel
-                      </Button>
-                      <Button onClick={handlePasswordChange} className="bg-indigo-600 hover:bg-indigo-700">
-                        Update Password
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                <Button
+                  variant="outline"
+                  className="border-gray-300"
+                  onClick={() => navigate('/pages/change-password')}
+                >
+                  <Lock className="mr-2 h-4 w-4" />
+                  Change Password
+                </Button>
 
                 <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                   <DialogTrigger asChild>
@@ -420,7 +310,7 @@ function Profile() {
                   <p className="text-sm font-medium text-gray-500">Password</p>
                   <p className="text-sm text-gray-900 mt-1">••••••••</p>
                   <button
-                    onClick={() => setIsPasswordDialogOpen(true)}
+                    onClick={() => navigate('/pages/change-password')}
                     className="text-xs text-indigo-600 hover:text-indigo-700 font-medium mt-1"
                   >
                     Change password

@@ -6,6 +6,10 @@ import LeadsPage from "@/pages/LeadsPage";
 import Documents from "@/pages/Documents";
 import Mediators from "@/pages/Mediators";
 import Login from "@/pages/auth/Login";
+import ForgotPassword from "@/pages/auth/ForgotPassword";
+import VerifyOtp from "@/pages/auth/VerifyOtp";
+import ResetPassword from "@/pages/auth/ResetPassword";
+import ChangePassword from "@/pages/auth/ChangePassword";
 import ApprovedLeads from "@/pages/ApprovedLeads";
 import PurchasedLeads from "@/pages/PurchasedLeads";
 import Leads from "@/pages/Leads";
@@ -40,6 +44,9 @@ function AppRoutes() {
           {/* Public Routes */}
           <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/verify-otp" element={<VerifyOtp />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/unauthorized" element={<Unauthorized />} />
           {/* Protected Routes */}
           <Route path="/pages" element={
@@ -105,9 +112,10 @@ function AppRoutes() {
               <ProtectedRoute requiredPermission={PERMISSIONS.PAGE_MASTERS}>
                 <Masters />
               </ProtectedRoute>
-            } />  
-            
+            } />
+
             <Route path="profile" element={<Profile />} />
+            <Route path="change-password" element={<ChangePassword />} />
             <Route path="calls" element={
               <ProtectedRoute requiredPermission={PERMISSIONS.PAGE_CALLS}>
                 <Calls />

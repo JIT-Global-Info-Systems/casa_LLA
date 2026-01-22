@@ -398,6 +398,34 @@ export const authAPI = {
       body: JSON.stringify(userData),
     });
   },
+
+  forgotPassword: async (email) => {
+    return await apiRequest('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  },
+
+  verifyOtp: async (email, otp) => {
+    return await apiRequest('/auth/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify({ email, otp }),
+    });
+  },
+
+  resetPassword: async (token, newPassword) => {
+    return await apiRequest('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, newPassword }),
+    });
+  },
+
+  changePassword: async (oldPassword, newPassword) => {
+    return await apiRequest('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ oldPassword, newPassword }),
+    });
+  },
 };
  
 export default {

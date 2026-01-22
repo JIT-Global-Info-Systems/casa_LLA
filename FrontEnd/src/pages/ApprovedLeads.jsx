@@ -53,7 +53,7 @@ export default function ApprovedLeads() {
   };
 
   useEffect(() => {
-    
+
     const fetchApprovedLeads = async () => {
       try {
         setLoading(true);
