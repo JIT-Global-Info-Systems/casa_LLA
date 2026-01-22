@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { useNavigate, Link } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -32,7 +32,7 @@ function Login() {
       setIsLoading(false)
     }
   }
-}
+
   return (
     <div
   className="min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat relative pt-20 overflow-hidden"
@@ -147,6 +147,6 @@ function Login() {
 
 
   )
-
+}
 
 export default Login
