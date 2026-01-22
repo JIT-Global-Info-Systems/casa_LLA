@@ -41,18 +41,6 @@ export default function ApprovedLeads() {
     setOpen(true);
   };
 
-<<<<<<< HEAD
-  useEffect(() => {
-
-    const fetchApprovedLeads = async () => {
-      try {
-        setLoading(true);
-        const response = await axios.get("http://localhost:5000/api/leads/approved", {
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${localStorage.getItem("token")}`
-          }
-=======
   const fetchApprovedLeads = async () => {
     const loadingToast = toast.loading('Loading approved leads...');
     setLoading(true);
@@ -75,7 +63,6 @@ export default function ApprovedLeads() {
         toast.success(`Loaded ${leadsData.length} approved leads`, { 
           id: loadingToast,
           icon: '✅'
->>>>>>> 891e3c9246daf12ac1ab44d7a52a26b5a7b8f20e
         });
       }
     } catch (err) {
