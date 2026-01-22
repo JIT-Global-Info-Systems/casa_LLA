@@ -282,6 +282,23 @@ exports.softDeleteLead = async (req, res) => {
 
 exports.getAllLeads = async (req, res) => {
   try {
+    const leads = await Lead.find({})
+      .sort({ created_at: -1 });
+
+    return res.status(200).json({
+      count: leads.length,
+      data: leads
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Failed to fetch all leads",
+      error: error.message
+    });
+  }
+};
+
+exports.getPendingLeads = async (req, res) => {
+  try {
     const leads = await Lead.find({ lead_status: "PENDING" })
       .sort({ created_at: -1 });
 
@@ -291,12 +308,11 @@ exports.getAllLeads = async (req, res) => {
     });
   } catch (error) {
     return res.status(500).json({
-      message: "Server error",
+      message: "Failed to fetch pending leads",
       error: error.message
     });
   }
 };
-
 
 exports.getApprovedLeads = async (req, res) => {
   try {
@@ -401,7 +417,11 @@ exports.getAllCalls = async (req, res) => {
     }
 
     const calls = await Call.find(query)
-      .populate('leadId', 'name contactNumber')
+      .populate({
+        path: 'leadId',
+        select: '_id lead_id name contactNumber',
+        model: 'Lead'
+      })
       .populate('created_by', 'name email')
       .sort({ createdAt: -1 });
 
