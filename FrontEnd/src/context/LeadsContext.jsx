@@ -22,9 +22,13 @@ export const LeadsProvider = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
+      console.log('Fetching leads from API...');
       const response = await leadsAPI.getAll();
+      console.log('API response:', response);
       setLeads(response.data ?? response);
+      console.log('Leads set:', response.data ?? response);
     } catch (err) {
+      console.error('Error fetching leads:', err);
       setError(err.message);
     } finally {
       setLoading(false);

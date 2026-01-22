@@ -14,7 +14,7 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow
+  TableRow,
 } from "@/components/ui/table";
 
 function Users() {
@@ -40,6 +40,7 @@ function Users() {
 
   useEffect(() => {
     fetchUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -48,33 +49,41 @@ function Users() {
 
   useEffect(() => {
     filterUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [users, searchTerm, roleFilter, statusFilter, fromDate, toDate]);
 
   const filterUsers = () => {
+    if (!users) return;
+
     let filtered = users;
 
     if (searchTerm) {
-      filtered = filtered.filter(user =>
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.phone_number.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(
+        (user) =>
+          user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (user.phone_number && user.phone_number.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
 
     if (roleFilter !== "all") {
-      filtered = filtered.filter(user => user.role === roleFilter);
+      filtered = filtered.filter((user) => user.role === roleFilter);
     }
 
     if (statusFilter !== "all") {
-      filtered = filtered.filter(user => user.status === statusFilter);
+      filtered = filtered.filter((user) => user.status === statusFilter);
     }
 
     if (fromDate) {
-      filtered = filtered.filter(user => new Date(user.created_at) >= new Date(fromDate));
+      filtered = filtered.filter(
+        (user) => new Date(user.created_at) >= new Date(fromDate)
+      );
     }
 
     if (toDate) {
-      filtered = filtered.filter(user => new Date(user.created_at) <= new Date(toDate));
+      filtered = filtered.filter(
+        (user) => new Date(user.created_at) <= new Date(toDate)
+      );
     }
 
     setFilteredUsers(filtered);
@@ -90,10 +99,11 @@ function Users() {
         password: "",
         role: "telecaller",
         phone_number: "",
-        status: "active"
+        status: "active",
       });
     } catch (err) {
-      // Error is handled by the context
+      // Error handled by context
+      console.error(err);
     }
   };
 
@@ -108,10 +118,10 @@ function Users() {
         password: "",
         role: "telecaller",
         phone_number: "",
-        status: "active"
+        status: "active",
       });
     } catch (err) {
-      // Error is handled by the context
+      console.error(err);
     }
   };
 
@@ -119,7 +129,7 @@ function Users() {
     try {
       await deleteUser(userId);
     } catch (err) {
-      // Error is handled by the context
+      console.error(err);
     }
   };
 
@@ -128,10 +138,10 @@ function Users() {
     setFormData({
       name: user.name,
       email: user.email,
-      password: "",
+      password: "", // Usually keep password blank on edit unless changing
       role: user.role,
       phone_number: user.phone_number,
-      status: user.status
+      status: user.status,
     });
     setMode("edit");
   };
@@ -146,7 +156,7 @@ function Users() {
       admin: "bg-red-100 text-red-700",
       manager: "bg-purple-100 text-purple-700",
       executive: "bg-orange-100 text-orange-700",
-      telecaller: "bg-blue-100 text-blue-700"
+      telecaller: "bg-blue-100 text-blue-700",
     };
     return colors[role] || "bg-blue-100 text-blue-700";
   };
@@ -855,4 +865,3 @@ function Users() {
 }
 
 export default Users;
-

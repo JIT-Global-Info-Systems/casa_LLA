@@ -136,7 +136,7 @@ export default function LeadsPage() {
   });
  
   return (
-    <div className="flex-1 space-y-6 p-6">
+    <div className="flex-1 space-y-6 p-0">
       {open ? (
         /* Full page view when editing/creating */
         <div className="min-h-screen bg-gray-50 p-4">
@@ -468,4 +468,3 @@ export default function LeadsPage() {
     </div>
   );
 }
- 

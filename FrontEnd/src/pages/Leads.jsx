@@ -876,7 +876,7 @@ export default function Leads({ data = null, onSubmit, onClose }) {
           </CardContent>
         </Card>
 
-    
+
 
         <Card className="border-0 shadow-md bg-white">
           <CardHeader>

@@ -98,7 +98,7 @@ export default function ApprovedLeads() {
       {/* Top Bar */}
       <div className="flex items-center justify-between">
         <div className="text-xl font-bold text-indigo-700">
-          Approved Leads
+          Approval Leads
           <div className="text-sm text-slate-500">
             Leads list · Last updated today
           </div>
@@ -204,7 +204,7 @@ export default function ApprovedLeads() {
                 ) : filteredLeads.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-8 text-slate-500">
-                      No approved leads found
+                      No Approval leads found
                     </TableCell>
                   </TableRow>
                 ) : (

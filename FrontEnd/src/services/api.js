@@ -1,6 +1,6 @@
 // const API_BASE_URL = 'http://13.201.132.94:5000/api';
-const API_BASE_URL = 'http://localhost:5000/api';
- 
+const API_BASE_URL = 'http://13.201.132.94:5000/api';
+
 // Generic API request helper
 const apiRequest = async (endpoint, options = {}) => {
   const url = `${API_BASE_URL}${endpoint}`;
@@ -408,4 +408,3 @@ export default {
   callsAPI,
   authAPI,
 }
- 

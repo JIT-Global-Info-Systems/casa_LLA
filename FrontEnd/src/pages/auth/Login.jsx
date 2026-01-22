@@ -3,12 +3,14 @@ import { useNavigate } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/context/AuthContext'
 import loginBg from '@/assets/logincasaw.avif'
 
 function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const navigate = useNavigate()
+  const { login } = useAuth()
 
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -19,30 +21,7 @@ function Login() {
     setIsLoading(true)
 
     try {
-      const response = await fetch('http://13.201.132.94:5000/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
-      })
-
-      const data = await response.json()
-      console.log(email, password);
-
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed')
-      }
-
-      // Store user data in localStorage
-      localStorage.setItem('token', data.token)
-      localStorage.setItem('user_id', data.user.user_id)
-      localStorage.setItem('email', data.user.email)
-      localStorage.setItem('role', data.user.role)
+      await login({ email, password })
 
       // Redirect to dashboard on successful login
       navigate('/pages/dashboard')
