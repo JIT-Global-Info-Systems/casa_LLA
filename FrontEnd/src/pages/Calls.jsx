@@ -21,6 +21,7 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { format } from "date-fns"
+import { toast } from "react-hot-toast"
 
 export default function Calls() {
     const { calls: apiCalls, loading, error, fetchCalls } = useCalls()
@@ -69,8 +70,19 @@ export default function Calls() {
     const [toDate, setToDate] = useState("")
 
     useEffect(() => {
-        fetchCalls()
-    }, [fetchCalls])
+        const loadCalls = async () => {
+            try {
+                await fetchCalls()
+                if (apiCalls.length > 0) {
+                    toast.success(`Loaded ${apiCalls.length} calls`)
+                }
+            } catch (err) {
+                toast.error('Failed to load calls. Please try again.')
+                console.error('Error loading calls:', err)
+            }
+        }
+        loadCalls()
+    }, [fetchCalls, apiCalls.length])
     const filteredCalls = useMemo(() => {
         return calls.filter((call) => {
             const userName = call.name || call.created_by?.name || ""
@@ -109,16 +121,24 @@ export default function Calls() {
                         </p>
                     </div>
                     <div className="flex items-center gap-3">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={fetchCalls}
-                            disabled={loading}
-                            className="bg-white hover:bg-slate-50 border-slate-200"
-                        >
-                            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-                            Refresh
-                        </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={async () => {
+                                    try {
+                                        await fetchCalls()
+                                        toast.success(`Refreshed ${apiCalls.length} calls`)
+                                    } catch (err) {
+                                        toast.error('Failed to refresh calls')
+                                        console.error('Error refreshing calls:', err)
+                                    }
+                                }}
+                                disabled={loading}
+                                className="bg-white hover:bg-slate-50 border-slate-200"
+                            >
+                                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+                                Refresh
+                            </Button>
                     </div>
                 </div>
 
@@ -197,7 +217,24 @@ export default function Calls() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {loading ? (
+                                {error ? (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="text-center py-8 text-red-500">
+                                            <div className="flex flex-col items-center justify-center space-y-2">
+                                                <span>Failed to load calls. Please try again.</span>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={fetchCalls}
+                                                    className="mt-2"
+                                                >
+                                                    <RefreshCw className="h-4 w-4 mr-2" />
+                                                    Retry
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ) : loading ? (
                                     <TableRow>
                                         <TableCell colSpan={5} className="h-48 text-center">
                                             <div className="flex flex-col items-center justify-center gap-3">
