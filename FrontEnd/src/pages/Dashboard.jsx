@@ -346,11 +346,11 @@ function Dashboard() {
   //     });
   //   }
 //new api method for work stages
-const calculateWorkStages = (leadsData, accessData) => {
+  const calculateWorkStages = (leadsData, accessData) => {
   const stages = {};
-
+ 
   if (!accessData || !Array.isArray(accessData)) return {};
-
+ 
   // Step 1: Initialize all roles from API (except admin)
   accessData.forEach(access => {
     if (access.role !== "admin") {
@@ -358,20 +358,26 @@ const calculateWorkStages = (leadsData, accessData) => {
     }
   });
 
-  // Step 2: Count leads by currentRole
-  leadsData.forEach(lead => {
-    if (!lead.currentRole) return;
+    // Step 1: Initialize all roles from API (except admin)
+    accessData.forEach(access => {
+      if (access.role !== "admin") {
+        stages[access.role] = 0;   // land_executive, tele_caller, etc
+      }
+    });
 
-    const role = lead.currentRole.trim(); // e.g. "land_executive"
+    // Step 2: Count leads by currentRole
+    leadsData.forEach(lead => {
+      if (!lead.currentRole) return;
 
-    if (stages.hasOwnProperty(role)) {
-      stages[role]++;
-    }
-  });
+      const role = lead.currentRole.trim(); // e.g. "land_executive"
 
-  return stages;
-};
+      if (stages.hasOwnProperty(role)) {
+        stages[role]++;
+      }
+    });
 
+    return stages;
+  };
 
   // Fetch access data for work stages labels
   const fetchAccessData = async () => {
@@ -414,7 +420,7 @@ const calculateWorkStages = (leadsData, accessData) => {
     } else {
       console.log('⏳ Waiting for leads data...');
     }
-  }, []);
+  }, [leads]);
 
   // Debug: Check for currentRole field in leads
   if (leads && leads.length > 0) {
