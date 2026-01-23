@@ -259,3 +259,96 @@ exports.updateZone = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
+// Delete a location (hard delete)
+exports.deleteLocation = async (req, res) => {
+  try {
+    const { location_id } = req.params;
+    
+    // Completely remove the location document from the database
+    const result = await Location.findByIdAndDelete(location_id);
+    
+    if (!result) {
+      return res.status(404).json({ message: "Location not found" });
+    }
+
+    res.status(200).json({
+      message: "Location and all its regions and zones have been deleted successfully",
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// Delete a region and all its zones
+exports.deleteRegion = async (req, res) => {
+  try {
+    const { location_id, region_id } = req.params;
+
+    const location = await Location.findById(location_id);
+    if (!location) {
+      return res.status(404).json({ message: "Location not found" });
+    }
+
+    const regionIndex = location.regions.findIndex(
+      r => r._id.toString() === region_id
+    );
+
+    if (regionIndex === -1) {
+      return res.status(404).json({ message: "Region not found" });
+    }
+
+    // Remove the region (this will also remove all its zones due to schema)
+    location.regions.splice(regionIndex, 1);
+    location.updated_by = req.user.user_id;
+    location.updated_at = new Date();
+
+    await location.save();
+
+    res.status(200).json({
+      message: "Region and all its zones have been deleted successfully",
+      location
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// Delete a zone
+exports.deleteZone = async (req, res) => {
+  try {
+    const { location_id, region_id, zone_id } = req.params;
+
+    const location = await Location.findById(location_id);
+    if (!location) {
+      return res.status(404).json({ message: "Location not found" });
+    }
+
+    const region = location.regions.id(region_id);
+    if (!region) {
+      return res.status(404).json({ message: "Region not found" });
+    }
+
+    const zoneIndex = region.zones.findIndex(
+      z => z._id.toString() === zone_id
+    );
+
+    if (zoneIndex === -1) {
+      return res.status(404).json({ message: "Zone not found" });
+    }
+
+    // Remove the zone
+    region.zones.splice(zoneIndex, 1);
+    location.updated_by = req.user.user_id;
+    location.updated_at = new Date();
+
+    await location.save();
+
+    res.status(200).json({
+      message: "Zone deleted successfully",
+      location
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
