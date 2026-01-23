@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const leadCounterSchema = new mongoose.Schema({
   _id: { type: String, required: true },
@@ -98,6 +98,14 @@ const leadSchema = new mongoose.Schema({
   },
 
   nonRefundable: {
+    type: String
+  },
+
+  area: {
+    type: String
+  },
+
+  yield: {
     type: String
   },
 
@@ -269,4 +277,4 @@ leadSchema.pre('save', async function() {
 
 const Lead = mongoose.model("Lead", leadSchema);
 
-module.exports = Lead;
+export default Lead;
