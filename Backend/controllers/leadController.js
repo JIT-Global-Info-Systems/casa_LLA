@@ -97,6 +97,7 @@ exports.createLead = async (req, res) => {
         name: leadData.name || 'Unknown User', // Get name from leadData
         role: role || 'user',
         note: note || "Initial lead created",
+        location: leadData.location,
         created_by: createdBy
       });
     }
@@ -282,7 +283,14 @@ exports.softDeleteLead = async (req, res) => {
 
 exports.getAllLeads = async (req, res) => {
   try {
-    const leads = await Lead.find({})
+    const { location } = req.query;
+    const query = {};
+    
+    if (location) {
+      query.location = { $regex: new RegExp(`^${location}$`, 'i') };
+    }
+    
+    const leads = await Lead.find(query)
       .sort({ created_at: -1 });
 
     return res.status(200).json({
@@ -299,7 +307,14 @@ exports.getAllLeads = async (req, res) => {
 
 exports.getPendingLeads = async (req, res) => {
   try {
-    const leads = await Lead.find({ lead_status: "PENDING" })
+    const { location } = req.query;
+    const query = { lead_status: "PENDING" };
+    
+    if (location) {
+      query.location = { $regex: new RegExp(`^${location}$`, 'i') };
+    }
+    
+    const leads = await Lead.find(query)
       .sort({ created_at: -1 });
 
     return res.status(200).json({
@@ -316,10 +331,17 @@ exports.getPendingLeads = async (req, res) => {
 
 exports.getApprovedLeads = async (req, res) => {
   try {
-    const leads = await Lead.find({
+    const { location } = req.query;
+    const query = {
       lead_status: "APPROVED",
       status: "active"
-    }).sort({ created_at: -1 });
+    };
+    
+    if (location) {
+      query.location = { $regex: new RegExp(`^${location}$`, 'i') };
+    }
+    
+    const leads = await Lead.find(query).sort({ created_at: -1 });
 
     return res.status(200).json({
       message: "Approved leads fetched successfully",
@@ -338,10 +360,17 @@ exports.getApprovedLeads = async (req, res) => {
 
 exports.getPurchasedLeads = async (req, res) => {
   try {
-    const leads = await Lead.find({
+    const { location } = req.query;
+    const query = {
       lead_status: "PURCHASED",
       status: "active"
-    }).sort({ created_at: -1 });
+    };
+    
+    if (location) {
+      query.location = { $regex: new RegExp(`^${location}$`, 'i') };
+    }
+    
+    const leads = await Lead.find(query).sort({ created_at: -1 });
 
     return res.status(200).json({
       message: "Purchased leads fetched successfully",
@@ -403,7 +432,7 @@ exports.getLeadById = async (req, res) => {
 // Get all calls with optional leadId filter
 exports.getAllCalls = async (req, res) => {
   try {
-    const { leadId } = req.query;
+    const { leadId, location } = req.query;
     const query = {};
     
     if (leadId) {
@@ -414,6 +443,10 @@ exports.getAllCalls = async (req, res) => {
         });
       }
       query.leadId = leadId;
+    }
+    
+    if (location) {
+      query.location = { $regex: new RegExp(location, 'i') };
     }
 
     const calls = await Call.find(query)
