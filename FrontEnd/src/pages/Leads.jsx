@@ -97,7 +97,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     frontage: "",
     roadWidth: "",
     sspde: "No",
-    leadStatus: "Pending",
+    leadStatus: "",
     status: "active",
     remark: "",
     lead_stage: "",
@@ -186,6 +186,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     if (!dataToValidate.landName?.trim()) nextErrors.landName = "Land name is required"
     if (!dataToValidate.sourceCategory) nextErrors.sourceCategory = "Source category is required"
     if (!dataToValidate.source) nextErrors.source = "Source is required"
+    if (!dataToValidate.lead_stage) nextErrors.lead_stage = "Lead stage is required"
 
     // Numeric fields (soft validation)
     ;["extent", "fsi", "asp", "revenue", "rate", "builderShare"].forEach((k) => {
@@ -966,9 +967,9 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
             </div>
 
             <div className="space-y-2">
-              <Label>Lead Stage</Label>
+              <Label className="text-black">Lead Stage</Label>
               <Select value={formData.lead_stage} onValueChange={(v) => handleChange("lead_stage", v)}>
-                <SelectTrigger>
+                <SelectTrigger className={errors.lead_stage ? "border-red-500 focus:border-red-500" : ""}>
                   <SelectValue placeholder="Select stage" />
                 </SelectTrigger>
                 <SelectContent className="bg-white z-50 shadow-lg">
@@ -979,7 +980,12 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                   <SelectItem value="management_hot">Management Hot</SelectItem>
                 </SelectContent>
               </Select>
+              {errors.lead_stage && (
+                <p className="text-red-500 text-sm">{errors.lead_stage}</p>
+              )}
             </div>
+            
+            
 
             <div className="space-y-2">
               <Label>Source</Label>

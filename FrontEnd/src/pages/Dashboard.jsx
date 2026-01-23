@@ -212,7 +212,7 @@ function WideMetricCard({ icon: Icon, label, value }) {
 /* -------------------- DASHBOARD -------------------- */
 
 function Dashboard() {
-  const { leads, fetchLeads, loading } = useLeads();
+  const { leads, approvedLeads, purchasedLeads, fetchLeads, fetchApprovedLeads, fetchPurchasedLeads, loading } = useLeads();
   const [filters, setFilters] = useState({
     location: "all",
     zone: "all",
@@ -224,7 +224,11 @@ function Dashboard() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        await fetchLeads();
+        await Promise.all([
+          fetchLeads(),
+          fetchApprovedLeads(),
+          fetchPurchasedLeads()
+        ]);
         if (leads?.length > 0) {
           toast.success(`Loaded ${leads.length} leads`);
         } else if (leads?.length === 0) {
@@ -245,17 +249,9 @@ function Dashboard() {
     return status === "PENDING" || status === "pending";
   }).length || 0;
 
-  // Calculate approved leads count
-  const approvedLeadsCount = leads?.filter((lead) => {
-    const status = lead.lead_status || lead.status;
-    return status === "APPROVED" || status === "approved";
-  }).length || 0;
-
-  // Calculate purchased leads count
-  const purchasedLeadsCount = leads?.filter((lead) => {
-    const status = lead.lead_status || lead.status;
-    return status === "PURCHASED" || status === "purchased";
-  }).length || 0;
+  // Use separate API data for approved and purchased counts
+  const approvedLeadsCount = approvedLeads?.length || 0;
+  const purchasedLeadsCount = purchasedLeads?.length || 0;
 
   // Calculate lead stages count (filtering only valid stages: hot, warm, cold, management hot)
   const leadStages = {
@@ -518,7 +514,11 @@ const calculateWorkStages = (leadsData, accessData) => {
               size="sm"
               onClick={async () => {
                 try {
-                  await fetchLeads();
+                  await Promise.all([
+                    fetchLeads(),
+                    fetchApprovedLeads(),
+                    fetchPurchasedLeads()
+                  ]);
                   toast.success("Dashboard data refreshed");
                 } catch (error) {
                   console.error("Error refreshing data:", error);
