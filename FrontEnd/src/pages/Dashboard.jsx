@@ -237,7 +237,7 @@ function Dashboard() {
     };
 
     loadData();
-  }, [fetchLeads]);
+  }, []);
 
   // Calculate active leads count (PENDING leads from all leads API)
   const activeLeadsCount = leads?.filter((lead) => {
@@ -418,7 +418,7 @@ const calculateWorkStages = (leadsData, accessData) => {
     } else {
       console.log('⏳ Waiting for leads data...');
     }
-  }, [leads]);
+  }, []);
 
   // Debug: Check for currentRole field in leads
   if (leads && leads.length > 0) {
