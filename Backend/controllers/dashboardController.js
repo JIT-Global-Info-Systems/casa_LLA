@@ -2,11 +2,19 @@ import Lead from "../models/Lead.js";
 
 export const getDashboardStats = async (req, res) => {
   try {
+    const { location } = req.query;
+    
+    // Create a base match stage that will be used in all aggregations
+    const matchStage = location ? { location } : {};
+    
     const dashboardData = await Lead.aggregate([
+      // Add a $match stage at the beginning to filter by location if provided
+      ...(Object.keys(matchStage).length ? [{ $match: matchStage }] : []),
       {
         $facet: {
           // 1️⃣ Lead Status Count
           leadStatusCounts: [
+            ...(Object.keys(matchStage).length ? [{ $match: matchStage }] : []),
             {
               $group: {
                 _id: "$lead_status",
@@ -17,6 +25,7 @@ export const getDashboardStats = async (req, res) => {
 
           // 2️⃣ Lead Stage Count
           leadStageCounts: [
+            ...(Object.keys(matchStage).length ? [{ $match: matchStage }] : []),
             {
               $group: {
                 _id: "$lead_stage",
@@ -27,6 +36,7 @@ export const getDashboardStats = async (req, res) => {
 
           // 3️⃣ Work Stage (Current Role)
           workStageCounts: [
+            ...(Object.keys(matchStage).length ? [{ $match: matchStage }] : []),
             {
               $group: {
                 _id: "$currentRole",
@@ -37,19 +47,28 @@ export const getDashboardStats = async (req, res) => {
 
           // 4️⃣ Approved Leads
           approvedLeads: [
-            { $match: { lead_status: "APPROVED" } },
+            { $match: { 
+              lead_status: "APPROVED",
+              ...(location && { location })
+            }},
             { $count: "count" }
           ],
 
           // 5️⃣ Pending Leads
           pendingLeads: [
-            { $match: { lead_status: "PENDING" } },
+            { $match: { 
+              lead_status: "PENDING",
+              ...(location && { location })
+            }},
             { $count: "count" }
           ],
 
           // 6️⃣ Purchased Leads
           purchasedLeads: [
-            { $match: { lead_status: "PURCHASED" } },
+            { $match: { 
+              lead_status: "PURCHASED",
+              ...(location && { location })
+            }},
             { $count: "count" }
           ]
         }
