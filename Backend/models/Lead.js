@@ -101,6 +101,14 @@ const leadSchema = new mongoose.Schema({
     type: String
   },
 
+  area: {
+    type: String
+  },
+
+  yield: {
+    type: String
+  },
+
   landmark: {
     type: String
   },
