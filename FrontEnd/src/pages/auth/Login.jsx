@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { useNavigate } from "react-router-dom"
+import React, { useState, useEffect } from 'react'
+import { useNavigate, useLocation } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -13,10 +13,19 @@ function Login() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const navigate = useNavigate()
-  const { login, forcePasswordChange } = useAuth()
+  const location = useLocation()
+  const { login, forcePasswordChange, isAuthenticated, loading } = useAuth()
 
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (!loading && isAuthenticated) {
+      const from = location.state?.from?.pathname || '/pages/dashboard'
+      navigate(from, { replace: true })
+    }
+  }, [isAuthenticated, loading, navigate, location.state])
 
   const handleLogin = async (e) => {
     e.preventDefault()
@@ -25,18 +34,17 @@ function Login() {
 
     try {
       await login({ email, password })
-     
-      // if (forcePasswordChange) {
-      //   navigate('/first-time-password-change', {
-      //     state: {
-      //       isFirstLogin: true,
-      //       message: 'This is your first login. Please change your password to continue.'
-      //     }
-      //   })
-      // } else {
-        toast.success('Login successful! Redirecting...')
-        navigate('/pages/dashboard')
-      // }
+      
+      // Get the intended destination from location state, or default to dashboard
+      const from = location.state?.from?.pathname || '/pages/dashboard'
+      
+      toast.success('Login successful! Redirecting...')
+      
+      // Small delay to show the success message
+      setTimeout(() => {
+        navigate(from, { replace: true })
+      }, 500)
+      
     } catch (err) {
       const errorMessage = err.response?.data?.message || err.message || 'An error occurred during login'
       setError(errorMessage)

@@ -3,8 +3,13 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 
 const PasswordChangeProtectedRoute = ({ children }) => {
-  const { forcePasswordChange, isAuthenticated } = useAuth();
+  const { forcePasswordChange, isAuthenticated, loading } = useAuth();
   const location = useLocation();
+
+  // Return null while checking authentication to prevent flash
+  if (loading) {
+    return null;
+  }
 
   // If user is not authenticated, redirect to login
   if (!isAuthenticated) {

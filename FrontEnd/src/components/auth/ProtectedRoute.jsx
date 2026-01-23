@@ -1,4 +1,4 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { hasPermission } from "@/config/rbac";
 
@@ -8,15 +8,16 @@ const ProtectedRoute = ({
   fallbackPath = "/unauthorized"
 }) => {
   const { user, isAuthenticated, loading } = useAuth();
+  const location = useLocation();
 
   // Return null while checking authentication to prevent flash
   if (loading) {
     return null;
   }
 
-  // If user is not authenticated, redirect to login
+  // If user is not authenticated, redirect to login with return path
   if (!isAuthenticated || !user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   // Check if user has the required permission

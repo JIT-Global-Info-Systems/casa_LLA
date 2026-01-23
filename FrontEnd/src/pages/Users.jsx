@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Search, Plus, Edit, Trash2, Eye, MoreVertical, RefreshCw } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Eye, MoreVertical, RefreshCw, ChevronLeft } from "lucide-react";
 import { useUsers } from "../context/UsersContext";
 // Import the Table components
 import {
@@ -877,70 +877,84 @@ function Users() {
       )}
 
       {mode === "view" && selectedUser && (
-        <div className="min-h-screen bg-gray-50 p-6">
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setMode("list");
-                setSelectedUser(null);
-              }}
-              className="mb-4"
-            >
-              ← Back to Users
-            </Button>
-            <h2 className="text-xl font-semibold mb-6">User Details</h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
-              {/* <div className="space-y-1">
-                <Label className="font-medium text-gray-700">ID:</Label>
-                <div className="text-gray-900 border rounded px-3 py-2 bg-gray-50">
-                  {selectedUser.user_id}
-                </div>
-              </div> */}
-              <div className="space-y-1">
-                <Label className="font-medium text-gray-700">Name:</Label>
-                <div className="text-gray-900 border rounded px-3 py-2 bg-gray-50">
-                  {selectedUser.name}
-                </div>
-              </div>
-              <div className="space-y-1">
-                <Label className="font-medium text-gray-700">Email:</Label>
-                <div className="text-gray-900 border rounded px-3 py-2 bg-gray-50">
-                  {selectedUser.email}
-                </div>
-              </div>
-              <div className="space-y-1">
-                <Label className="font-medium text-gray-700">Phone:</Label>
-                <div className="text-gray-900 border rounded px-3 py-2 bg-gray-50">
-                  {selectedUser.phone_number}
-                </div>
-              </div>
-              <div className="space-y-1">
-                <Label className="font-medium text-gray-700">Role:</Label>
-                <div className="text-gray-900 border rounded px-3 py-2 bg-gray-50">
-                  <span
-                    className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(
-                      selectedUser.role
-                    )} capitalize`}
-                  >
-                    {selectedUser.role}
-                  </span>
-                </div>
-              </div>
-              <div className="space-y-1">
-                <Label className="font-medium text-gray-700">Status:</Label>
-                <div className="text-gray-900 border rounded px-3 py-2 bg-gray-50 capitalize">
-                  {selectedUser.status}
-                </div>
-              </div>
-              <div className="space-y-1">
-                <Label className="font-medium text-gray-700">Created:</Label>
-                <div className="text-gray-900 border rounded px-3 py-2 bg-gray-50">
-                  {new Date(selectedUser.created_at).toLocaleString()}
+        <div className="min-h-screen bg-slate-50/50 p-4 md:p-8">
+          <div className="max-w-7xl mx-auto space-y-6">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-4">
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={() => {
+                    setMode("list");
+                    setSelectedUser(null);
+                  }} 
+                  className="bg-white shadow-sm hover:bg-gray-100"
+                >
+                  <ChevronLeft className="h-5 w-5 text-gray-600" />
+                </Button>
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900 tracking-tight">View User</h1>
+                  <p className="text-gray-500 text-sm mt-1">View the user details below.</p>
                 </div>
               </div>
             </div>
+
+            <Card className="border-0 shadow-md bg-white overflow-hidden">
+              <div className="h-2 bg-indigo-500 w-full" />
+              <CardHeader>
+                <CardTitle className="text-xl text-gray-800">User Information</CardTitle>
+                <CardDescription>Personal and account details.</CardDescription>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-gray-700 font-medium">Name</Label>
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                    {selectedUser.name || "-"}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-gray-700 font-medium">Email</Label>
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                    {selectedUser.email || "-"}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-gray-700 font-medium">Phone Number</Label>
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                    {selectedUser.phone_number || "-"}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-gray-700 font-medium">Role</Label>
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                    <span
+                      className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${getCategoryColor(
+                        selectedUser.role
+                      )} capitalize`}
+                    >
+                      {selectedUser.role}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-gray-700 font-medium">Status</Label>
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
+                    {selectedUser.status || "-"}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-gray-700 font-medium">Created Date</Label>
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                    {selectedUser.created_at ? new Date(selectedUser.created_at).toLocaleDateString() : "-"}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       )}
