@@ -26,7 +26,7 @@
 //   "/pages/mediators": "Mediators",
 //   "/pages/masters": "Masters",
 //   "/pages/documents": "Documents",
-//   "/pages/profile": "Profile",
+//   "/profile": "Profile",
 // };
 
 // const locations = [
@@ -176,7 +176,7 @@
 //             <DropdownMenuContent align="end" className="bg-white border border-gray-200 shadow-lg">
 //               <DropdownMenuLabel className="text-slate-900">Account</DropdownMenuLabel>
 //               <DropdownMenuSeparator className="bg-gray-200" />
-//               <DropdownMenuItem className="text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 cursor-pointer" onClick={() => navigate('/pages/profile')}>Profile</DropdownMenuItem>
+//               <DropdownMenuItem className="text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 cursor-pointer" onClick={() => navigate('/profile')}>Profile</DropdownMenuItem>
 //               <DropdownMenuItem className="text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 cursor-pointer">Settings</DropdownMenuItem>
 //               <DropdownMenuSeparator className="bg-gray-200" />
 //               <DropdownMenuItem className="text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 cursor-pointer" onClick={() => navigate('/')}>Logout</DropdownMenuItem>
@@ -223,7 +223,7 @@ const pageTitles = {
   "/pages/mediators": "Mediators",
   "/pages/masters": "Masters",
   "/pages/documents": "Documents",
-  "/pages/profile": "Profile",
+  "/pages/Profile": "Profile",
   "/pages/calls": "Calls",
 };
 
@@ -404,7 +404,7 @@ function Topbar() {
             <DropdownMenuContent align="end" className="bg-white border border-gray-200 shadow-lg">
               <DropdownMenuLabel className="text-slate-900">Account</DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-gray-200" />
-              <DropdownMenuItem className="text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 cursor-pointer" onClick={() => navigate('/pages/profile')}>Profile</DropdownMenuItem>
+              <DropdownMenuItem className="text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 cursor-pointer" onClick={() => navigate('/pages/Profile')}>Profile</DropdownMenuItem>
               <DropdownMenuItem className="text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 cursor-pointer">Settings</DropdownMenuItem>
               <DropdownMenuSeparator className="bg-gray-200" />
               <DropdownMenuItem className="text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 cursor-pointer" onClick={() => navigate('/')}>Logout</DropdownMenuItem>
