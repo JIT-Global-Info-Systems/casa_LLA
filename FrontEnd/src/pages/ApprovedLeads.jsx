@@ -56,7 +56,7 @@ export default function ApprovedLeads() {
     setLoading(true);
     
     try {
-      const response = await axios.get("http://localhost:5000/api/leads/approved", {
+      const response = await axios.get("http://13.201.132.94:5000/api/leads/approved", {
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${localStorage.getItem("token")}`
