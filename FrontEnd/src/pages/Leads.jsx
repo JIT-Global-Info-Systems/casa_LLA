@@ -225,6 +225,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
   const fetchLocations = useCallback(async () => {
     setLoading((prev) => ({ ...prev, locations: true, regions: true, zones: true }))
     setApiError(null)
+    const loadingToast = toast.loading('Loading locations...')
+    
     try {
       const locationsData = await locationsAPI.getAll()
       const transformedLocations = locationsData.map((loc) => ({
@@ -261,25 +263,52 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       })
 
       setMasters({ locations: transformedLocations, regions: transformedRegions, zones: transformedZones })
+      toast.success('Locations loaded successfully', { id: loadingToast })
     } catch (err) {
       console.error("Failed to fetch locations:", err)
-      setApiError("Failed to load locations. Please try again.")
-      toast.error("Failed to load locations")
+      const errorMsg = err.response?.data?.message || "Failed to load locations. Please try again."
+      setApiError(errorMsg)
+      toast.error(errorMsg, { id: loadingToast })
     } finally {
       setLoading((prev) => ({ ...prev, locations: false, regions: false, zones: false }))
     }
   }, [])
 
   useEffect(() => {
-    fetchLocations()
-    // Only fetch mediators if they haven't been fetched yet
-    if (!mediatorsFetched && !mediatorsLoading && !mediators.length) {
-      fetchMediators()
+    const loadData = async () => {
+      try {
+        await fetchLocations()
+        
+        // Only fetch mediators if they haven't been fetched yet
+        if (!mediatorsFetched && !mediatorsLoading && !mediators.length) {
+          const mediatorsToast = toast.loading('Loading mediators...')
+          try {
+            await fetchMediators()
+            toast.success('Mediators loaded successfully', { id: mediatorsToast })
+          } catch (err) {
+            console.error('Failed to load mediators:', err)
+            toast.error('Failed to load mediators. Some features may be limited.', { id: mediatorsToast })
+          }
+        }
+        
+        // Fetch users
+        if (!usersLoading && !users.length) {
+          const usersToast = toast.loading('Loading users...')
+          try {
+            await fetchUsers()
+            toast.success('Users loaded successfully', { id: usersToast })
+          } catch (err) {
+            console.error('Failed to load users:', err)
+            toast.error('Failed to load users. Some features may be limited.', { id: usersToast })
+          }
+        }
+      } catch (error) {
+        console.error('Initial data loading error:', error)
+        toast.error('Failed to load initial data. Please refresh the page.')
+      }
     }
-    // Fetch users
-    if (!usersLoading && !users.length) {
-      fetchUsers()
-    }
+    
+    loadData()
   }, [fetchLocations, fetchMediators, mediatorsFetched, mediatorsLoading, mediators.length, usersLoading, users.length, fetchUsers])
 
   useEffect(() => {
@@ -355,6 +384,25 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
   const handleCheckboxChange = (key, checked) => setFormData((prev) => ({ ...prev, [key]: checked }))
 
   const handleFileChange = (key, file) => {
+    if (file) {
+      // Validate file type
+      const validTypes = ['image/jpeg', 'image/png', 'application/pdf']
+      if (!validTypes.includes(file.type)) {
+        toast.error('Invalid file type. Please upload a JPG, PNG, or PDF file.')
+        return
+      }
+      
+      // Validate file size (5MB max)
+      const maxSize = 5 * 1024 * 1024 // 5MB
+      if (file.size > maxSize) {
+        toast.error('File size too large. Maximum size is 5MB.')
+        return
+      }
+      
+      toast.success(`${key === 'fileFMBSketch' ? 'FMB Sketch' : 'Patta/Chitta'} file selected: ${file.name}`, {
+        duration: 2000
+      })
+    }
     setFormData((prev) => ({ ...prev, [key]: file || null }))
   }
 
@@ -489,12 +537,20 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     const validationErrors = validateForm(formData)
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors)
-      toast.error("Please fix the validation errors")
+      const errorMessages = Object.values(validationErrors).join('\n')
+      toast.error("Please fix the following errors:\n" + errorMessages, {
+        duration: 5000,
+        style: {
+          whiteSpace: 'pre-line',
+          maxWidth: '500px'
+        }
+      })
       return
     }
 
     setLoading((prev) => ({ ...prev, submit: true }))
     setApiError(null)
+    const submitToast = toast.loading(data ? 'Updating lead...' : 'Creating lead...')
 
     try {
       const leadPayload = toLeadPayload()
@@ -503,13 +559,37 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
         ...(formData.checkPattaChitta && formData.filePattaChitta ? { patta_chitta: formData.filePattaChitta } : {}),
       }
 
-      if (onSubmit) await onSubmit(leadPayload, files)
-      toast.success(data ? "Lead updated successfully" : "Lead created successfully")
+      if (onSubmit) {
+        await onSubmit(leadPayload, files)
+        toast.success(data ? 'Lead updated successfully!' : 'Lead created successfully!', { 
+          id: submitToast,
+          duration: 3000
+        })
+        
+        // Show success message for file uploads if any
+        if (Object.keys(files).length > 0) {
+          toast.success('Files uploaded successfully', { duration: 2000 })
+        }
+      }
     } catch (error) {
       console.error("Submit error:", error)
-      const errorMessage = error?.message || "Failed to submit lead. Please try again."
+      let errorMessage = "Failed to submit lead. Please try again."
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+      
       setApiError(errorMessage)
-      toast.error(errorMessage)
+      toast.error(errorMessage, { 
+        id: submitToast,
+        duration: 5000,
+        style: {
+          whiteSpace: 'pre-line',
+          maxWidth: '500px'
+        }
+      })
     } finally {
       setLoading((prev) => ({ ...prev, submit: false }))
     }
