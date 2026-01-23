@@ -229,7 +229,7 @@ const pageTitles = {
 
 
 function Topbar() {
-  const { user, userRole } = useAuth();
+  const { user, userRole, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate()
   const title = pageTitles[location.pathname] || "Dashboard";
@@ -238,6 +238,12 @@ function Topbar() {
   const [locations, setLocations] = React.useState([
     { label: "All Locations", value: "all" }
   ]);
+
+  // Handle logout
+  const handleLogout = () => {
+    logout();
+    navigate('/login', { replace: true });
+  };
 
   // Fetch locations from API
   React.useEffect(() => {
@@ -407,7 +413,7 @@ function Topbar() {
               <DropdownMenuItem className="text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 cursor-pointer" onClick={() => navigate('/pages/profile')}>Profile</DropdownMenuItem>
               <DropdownMenuItem className="text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 cursor-pointer">Settings</DropdownMenuItem>
               <DropdownMenuSeparator className="bg-gray-200" />
-              <DropdownMenuItem className="text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 cursor-pointer" onClick={() => navigate('/')}>Logout</DropdownMenuItem>
+              <DropdownMenuItem className="text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 cursor-pointer" onClick={handleLogout}>Logout</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
