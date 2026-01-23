@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { authAPI } from '@/services/api'
+import { toast } from 'react-hot-toast'
 import { useAuth } from '@/context/AuthContext'
 
 function ChangePassword() {
@@ -43,32 +44,32 @@ function ChangePassword() {
 
     // Client-side validation
     if (!oldPassword) {
-      setError('Current password is required')
+      toast.error('Current password is required')
       return
     }
 
     if (!newPassword) {
-      setError('New password is required')
+      toast.error('New password is required')
       return
     }
 
     if (!validatePassword(newPassword)) {
-      setError('New password must be at least 6 characters long')
+      toast.error('New password must be at least 6 characters long')
       return
     }
 
     if (!confirmPassword) {
-      setError('Please confirm your new password')
+      toast.error('Please confirm your new password')
       return
     }
 
     if (newPassword !== confirmPassword) {
-      setError('New passwords do not match')
+      toast.error('New passwords do not match')
       return
     }
 
     if (oldPassword === newPassword) {
-      setError('New password must be different from current password')
+      toast.error('New password must be different from current password')
       return
     }
 
@@ -76,7 +77,7 @@ function ChangePassword() {
 
     try {
       const response = await authAPI.changePassword(oldPassword, newPassword)
-      setSuccess(response.message || 'Password updated successfully')
+      toast.success(response.message || 'Password updated successfully! Redirecting to profile...')
 
       // If this was a first login, mark password as changed
       if (isFirstLogin) {
@@ -97,7 +98,8 @@ function ChangePassword() {
         }
       }, 2000)
     } catch (err) {
-      setError(err.message || 'Error updating password')
+      const errorMessage = err.response?.data?.message || err.message || 'Error updating password'
+      toast.error(errorMessage)
       console.error('Change password error:', err)
     } finally {
       setIsLoading(false)
@@ -220,17 +222,6 @@ function ChangePassword() {
                 </div>
               </div>
 
-              {error && (
-                <div className="text-red-500 text-sm">
-                  {error}
-                </div>
-              )}
-
-              {success && (
-                <div className="text-green-600 text-sm">
-                  {success}
-                </div>
-              )}
 
               <div className="flex space-x-3">
                 <Button

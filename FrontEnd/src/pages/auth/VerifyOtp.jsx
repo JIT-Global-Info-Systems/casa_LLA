@@ -4,14 +4,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { authAPI } from '@/services/api'
+import { toast } from 'react-hot-toast'
 
 function VerifyOtp() {
   const [email, setEmail] = useState('')
   const [otp, setOtp] = useState('')
   const navigate = useNavigate()
   const location = useLocation()
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
@@ -25,6 +24,7 @@ function VerifyOtp() {
         setEmail(storedEmail)
       } else {
         // No email found, redirect to forgot password
+        toast.error('Please request a new OTP')
         navigate('/forgot-password')
       }
     }
@@ -37,30 +37,33 @@ function VerifyOtp() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setError('')
-    setSuccess('')
-
+    
     // Client-side validation
     if (!email) {
-      setError('Email is required')
+      toast.error('Email is required')
       return
     }
 
     if (!otp) {
-      setError('OTP is required')
+      toast.error('OTP is required')
       return
     }
 
     if (!validateOtp(otp)) {
-      setError('OTP must be exactly 6 digits')
+      toast.error('OTP must be exactly 6 digits')
       return
     }
 
+    const loadingToast = toast.loading('Verifying OTP...')
     setIsLoading(true)
 
     try {
       const response = await authAPI.verifyOtp(email, otp)
-      setSuccess(response.message || 'OTP verified successfully')
+      
+      toast.success(response.message || 'OTP verified successfully', {
+        id: loadingToast,
+        duration: 3000
+      })
 
       // Store reset token and email for next step
       if (response.resetToken) {
@@ -73,7 +76,11 @@ function VerifyOtp() {
         navigate('/reset-password')
       }, 1000)
     } catch (err) {
-      setError(err.message || 'Error verifying OTP')
+      const errorMessage = err.response?.data?.message || 'Invalid OTP. Please try again.'
+      toast.error(errorMessage, {
+        id: loadingToast,
+        duration: 5000
+      })
       console.error('Verify OTP error:', err)
     } finally {
       setIsLoading(false)
@@ -81,15 +88,21 @@ function VerifyOtp() {
   }
 
   const handleResendOtp = async () => {
-    setError('')
-    setSuccess('')
+    const loadingToast = toast.loading('Sending new OTP...')
     setIsLoading(true)
 
     try {
       const response = await authAPI.forgotPassword(email)
-      setSuccess(response.message || 'OTP has been resent to your email')
+      toast.success(response.message || 'New OTP has been sent to your email', {
+        id: loadingToast,
+        duration: 4000
+      })
     } catch (err) {
-      setError(err.message || 'Error resending OTP')
+      const errorMessage = err.response?.data?.message || 'Failed to resend OTP. Please try again.'
+      toast.error(errorMessage, {
+        id: loadingToast,
+        duration: 5000
+      })
       console.error('Resend OTP error:', err)
     } finally {
       setIsLoading(false)
@@ -149,17 +162,9 @@ function VerifyOtp() {
                 disabled={isLoading}
               />
 
-              {error && (
-                <div className="text-red-500 text-xs">
-                  {error}
-                </div>
-              )}
-
-              {success && (
-                <div className="text-green-600 text-xs">
-                  {success}
-                </div>
-              )}
+              <div className="h-4">
+                {/* Placeholder for layout consistency */}
+              </div>
 
               <Button
                 type="submit"

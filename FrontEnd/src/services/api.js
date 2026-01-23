@@ -1,4 +1,4 @@
-// const API_BASE_URL = 'http://13.201.132.94:5000/api';
+// const API_BASE_URL = 'http://localhost:5000/api';
 const API_BASE_URL = 'http://localhost:5000/api';
 
 // Generic API request helper
@@ -423,6 +423,10 @@ export const authAPI = {
   changePassword: async (oldPassword, newPassword) => {
     return await apiRequest('/auth/change-password', {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
       body: JSON.stringify({ oldPassword, newPassword }),
     });
   },
