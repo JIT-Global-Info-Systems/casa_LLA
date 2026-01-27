@@ -100,7 +100,7 @@ function Users() {
         password: "",
         role: "",
         phone_number: "",
-        
+        status: "active"
       });
     } catch (err) {
       toast.error(err.message || 'Could not add user. Please try again.');

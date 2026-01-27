@@ -27,6 +27,7 @@ import {
   Cell,
   ResponsiveContainer,
 } from "recharts";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import toast from "react-hot-toast";
 
@@ -34,51 +35,11 @@ import { Select } from "@/components/ui/select";
 import DateFilter from "@/components/ui/datefilter";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
+import { locationsAPI } from "@/services/api";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
-/* -------------------- FILTER DATA -------------------- */
 
-const locations = [
-  { label: "All Locations", value: "all" },
-  { label: "Chennai", value: "chennai" },
-  { label: "Bangalore", value: "bangalore" },
-  { label: "Hyderabad", value: "hyderabad" },
-];
-
-// const zones = [
-//   { label: "All Zones", value: "all" },
-//   { label: "North Zone", value: "north" },
-//   { label: "South Zone", value: "south" },
-//   { label: "East Zone", value: "east" },
-//   { label: "West Zone", value: "west" },
-// ];
-
-/* -------------------- FILTER BAR -------------------- */
-
-function DashboardFilters({ filters, setFilters }) {
-  return (
-    <div className="flex flex-wrap gap-3">
-      {/* <Select
-        label="Location"
-        value={filters.location}
-        onChange={(value) =>
-          setFilters((prev) => ({ ...prev, location: value }))
-        }
-        options={locations}
-        placeholder="Location"
-      /> */}
-
-      {/* <Select
-        label="Zone"
-        value={filters.zone}
-        onChange={(value) =>
-          setFilters((prev) => ({ ...prev, zone: value }))
-        }
-        options={zones}
-        placeholder="Zone"
-      /> */}
-    </div>
-  );
-}
 
 /* -------------------- DONUT CHART -------------------- */
 
@@ -221,6 +182,38 @@ function Dashboard() {
     startDate: "",
     endDate: "",
   });
+  const [locations, setLocations] = useState([
+    { label: "All Locations", value: "all" }
+  ]);
+  const [selectedLocation, setSelectedLocation] = useState("all");
+const [fromDate , setFromDate ] = useState("")
+const [toDate , setToDate ] = useState("")
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const locationsData = await locationsAPI.getAll();
+        const formattedLocations = [
+          { label: "All Locations", value: "all" },
+          ...locationsData.map(loc => ({
+            label: loc.name || loc.location_name || loc.location || 'Unknown',
+            value: loc._id || loc.id || loc.name || loc.location_name || loc.location || 'unknown'
+          }))
+        ];
+        setLocations(formattedLocations);
+      } catch (error) {
+        console.error('Failed to fetch locations:', error);
+        // Keep default locations if API fails
+        setLocations([
+          { label: "All Locations", value: "all" },
+          { label: "Chennai", value: "chennai" },
+          { label: "Bangalore", value: "bangalore" },
+          { label: "Mysore", value: "mysore" }
+        ]);
+      }
+    };
+
+    fetchLocations();
+  }, []);
 
   // Fetch all leads on component mount
   useEffect(() => {
@@ -244,7 +237,7 @@ function Dashboard() {
   // Calculate active leads count (PENDING leads from all leads API)
   const activeLeadsCount = leads?.filter((lead) => {
     const status = lead.lead_status || lead.status;
-    return status === "PENDING" || status === "pending";
+    return status !== "Approved" || status === "Purchased";
   }).length || 0;
 
   // Calculate approved leads count
@@ -276,82 +269,12 @@ function Dashboard() {
       leadStages.management_hot++;
   });
  
-  // Debug: log the leads data to see structure
-  console.log('Leads data:', leads);
-  console.log('Active leads count:', activeLeadsCount);
-  console.log('Approval leads count:', approvedLeadsCount);
-  console.log('Purchased leads count:', purchasedLeadsCount);
-  console.log('Lead stages:', leadStages);
-  
+
   // Calculate work stages based on currentRole from leads API
   const [workStages, setWorkStages] = useState({});
   const [workStagesLabels, setWorkStagesLabels] = useState({});
 
-  // Function to calculate work stages dynamically based on API response
-  // const calculateWorkStages = (leadsData, accessData = null) => {
-  //   const stages = {};
-    
-  //   // If access data provided by API, use it to create labels
-  //   if (accessData && accessData.data) {
-  //     // Initialize stages with API roles (exclude admin)
-  //     accessData.data.forEach(access => {
-  //       if (access.role !== 'admin') {
-  //         // Convert role key to display label
-  //         const displayLabel = access.role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-  //         stages[displayLabel] = 0;
-  //       }
-  //     });
-      
-  //     // Count leads based on API roles
-  //     leadsData?.forEach(lead => {
-  //       const role = lead.currentRole;
-  //       if (role) {
-  //         const normalizedRole = role.toLowerCase().trim().replace(/\s+/g, '_');
-          
-  //         // Find matching role from API
-  //         const matchingAccess = accessData.data.find(access => 
-  //           access.role === normalizedRole && access.role !== 'admin'
-  //         );
-          
-  //         if (matchingAccess) {
-  //           const displayLabel = matchingAccess.role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-  //           stages[displayLabel]++;
-  //         }
-  //       }
-  //     });
-  //   } else {
-  //     // Fallback to hardcoded labels if API not available
-  //     const defaultLabels = {
-  //       'Tele Callers': ['tele callers', 'tele_callers', 'telecaller'],
-  //       'Land Executive': ['land executive', 'land_executive', 'landexecutive'],
-  //       'L1 Md': ['l1 md', 'l1_md', 'l1md'],
-  //       'Cmo Cro': ['cmo cro', 'cmo_cro', 'cmo', 'cro'],
-  //       'Feasibility Team': ['feasibility team', 'feasibility_team', 'feasibility'],
-  //       'Legal': ['legal'],
-  //       'Liaison': ['liaison'],
-  //       'Finance': ['finance'],
-  //       'Management': ['management']
-  //     };
-      
-  //     // Initialize stages with default labels
-  //     Object.keys(defaultLabels).forEach(label => {
-  //       stages[label] = 0;
-  //     });
-      
-  //     // Count leads based on default labels
-  //     leadsData?.forEach(lead => {
-  //       const role = lead.currentRole;
-  //       if (role) {
-  //         const normalizedRole = role.toLowerCase().trim();
-  //         Object.entries(defaultLabels).forEach(([label, variations]) => {
-  //           if (variations.some(variation => normalizedRole === variation.toLowerCase().trim())) {
-  //             stages[label]++;
-  //           }
-  //         });
-  //       }
-  //     });
-  //   }
-//new api method for work stages
+
 const calculateWorkStages = (leadsData, accessData) => {
   const stages = {};
 
@@ -432,7 +355,7 @@ const calculateWorkStages = (leadsData, accessData) => {
  
   const donutCards = [
     {
-      title: "Leads Status",
+      title: "Leads Stages",
       dateRange: "2025-08-30 – 2025-11-30",
       total: activeLeadsCount + approvedLeadsCount + purchasedLeadsCount,
       tone: "blue",
@@ -444,7 +367,7 @@ const calculateWorkStages = (leadsData, accessData) => {
       ],
     },
     {
-      title: "Leads Stages",
+      title: "Leads status",
       dateRange: "2025-08-30 – 2025-11-30",
       total: leadStages.hot + leadStages.warm + leadStages.cold + leadStages.management_hot,
       tone: "red",
@@ -456,11 +379,11 @@ const calculateWorkStages = (leadsData, accessData) => {
       ],
     },
     {
-      title: "Work Stages",
+      title: "Work Stages with Profile",
       dateRange: "2025-08-30 – 2025-11-30",
       total: Object.values(workStages).reduce((sum, count) => sum + count, 0),
       tone: "purple",
-      segments: Object.entries(workStages).map(([label, value], index) => ({
+      segments: Object.entries(workStages).reverse().map(([label, value], index) => ({
         label: label.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
         value: value,
         color: [
@@ -490,31 +413,63 @@ const calculateWorkStages = (leadsData, accessData) => {
     <div className="min-h-full bg-background">
       <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6">
         {/* HEADER + FILTERS */}
-        <div className="relative mb-4">
-          <div>
-            <div className="text-xl font-bold text-indigo-700">
-              Dashboard
-            </div>
-            <div className="text-sm text-slate-500">
-              CRM Analytics Overview
-            </div>
-          </div>
+        <div className="mb-4 flex items-start justify-between">
+  
+  {/* LEFT SIDE - Title */}
+  <div>
+    <div className="text-xl font-bold text-indigo-700">
+      Dashboard
+    </div>
+    <div className="text-sm text-slate-500">
+      CRM Analytics Overview
+    </div>
+  </div>
 
-          <div className="absolute top-0 right-0">
-            <DateFilter
-              startDate={filters.startDate}
-              endDate={filters.endDate}
-              onDateChange={(dates) =>
-                setFilters((prev) => ({ ...prev, startDate: dates.startDate, endDate: dates.endDate }))
-              }
-            />
-          </div>
-        </div>
+  {/* RIGHT SIDE - Filters */}
+  <div className="flex items-center gap-3">
+    
+    {/* Location */}
+    <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+      <SelectTrigger className="w-[140px]">
+        <SelectValue placeholder="Location" />
+      </SelectTrigger>
+      <SelectContent className="bg-white border border-gray-200 shadow-lg">
+        {locations.map((location) => (
+          <SelectItem key={location.value} value={location.value}>
+            {location.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+
+    {/* From Date */}
+    <div className="flex items-center gap-2">
+      <Label className="text-sm text-gray-600 whitespace-nowrap">From</Label>
+      <Input
+        type="date"
+        value={fromDate}
+        onChange={(e) => setFromDate(e.target.value)}
+        className="w-full"
+      />
+    </div>
+
+    {/* To Date */}
+    <div className="flex items-center gap-2">
+      <Label className="text-sm text-gray-600 whitespace-nowrap">To</Label>
+      <Input
+        type="date"
+        value={toDate}
+        onChange={(e) => setToDate(e.target.value)}
+        className="w-[150px]"
+      />
+    </div>
+  </div>
+</div>
 
         {/* FILTERS */}
         <div className="flex flex-col gap-4">
-          <div className="flex justify-between items-center">
-            <DashboardFilters filters={filters} setFilters={setFilters} />
+          <div className="flex justify-end items-center">
+            {/* <DashboardFilters filters={filters} setFilters={setFilters} /> */}
             <Button
               variant="outline"
               size="sm"
@@ -560,7 +515,7 @@ const calculateWorkStages = (leadsData, accessData) => {
  
         <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
           <WideMetricCard icon={Users} label="Leads to allocate" value={69} />
-          <WideMetricCard icon={FileCheck2} label="Leads to approve" value={20} />
+          <WideMetricCard icon={FileCheck2} label="Leads to purchase" value={purchasedLeadsCount} />
         </section>
  
         {/* NOTES */}

@@ -144,7 +144,7 @@ export default function Calls() {
 
                 {/* Filters Card */}
                 <Card className="border-none shadow-sm bg-white p-6">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="space-y-2">
                             <Label className="text-xs font-semibold uppercase tracking-wider text-slate-500">Search</Label>
                             <div className="relative">
@@ -158,7 +158,7 @@ export default function Calls() {
                             </div>
                         </div>
 
-                        <div className="space-y-2">
+                        {/* <div className="space-y-2">
                             <Label className="text-xs font-semibold uppercase tracking-wider text-slate-500">User</Label>
                             <Select value={userFilter} onValueChange={setUserFilter}>
                                 <SelectTrigger className="border-slate-200 focus:ring-indigo-500">
@@ -173,7 +173,7 @@ export default function Calls() {
                                     ))}
                                 </SelectContent>
                             </Select>
-                        </div>
+                        </div> */}
 
                         <div className="space-y-2">
                             <Label className="text-xs font-semibold uppercase tracking-wider text-slate-500">From Date</Label>
