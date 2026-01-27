@@ -396,51 +396,18 @@ export default function LeadsPage() {
                       </div>
                     </div>
 
-                    {/* Wild Cards Section */}
-                    <div className="h-[40vh] rounded-lg border bg-slate-50">
+                    {/* Yield Section */}
+                    <div className="h-auto rounded-lg border bg-slate-50">
                       <div className="px-4 py-3 border-b bg-white rounded-t-lg">
                         <div className="text-sm font-semibold text-slate-800">
-                          Wild Cards
-                        </div>
-                        <div className="text-xs text-slate-500">
-                          Additional information & actions
+                          Yield
                         </div>
                       </div>
 
-                      <div className="p-4 space-y-3 max-h-[32vh] overflow-y-auto">
+                      <div className="p-4">
                         <div className="w-full border bg-white px-3 py-2 rounded-md shadow-sm">
-                          <p className="text-xs font-medium text-slate-600 mb-2">Quick Actions</p>
-                          <div className="space-y-2">
-                            <button className="w-full text-left text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-2 py-1 rounded transition-colors">
-                              📞 Schedule Call
-                            </button>
-                            <button className="w-full text-left text-xs bg-green-50 hover:bg-green-100 text-green-700 px-2 py-1 rounded transition-colors">
-                              📅 Schedule Site Visit
-                            </button>
-                            <button className="w-full text-left text-xs bg-yellow-50 hover:bg-yellow-100 text-yellow-700 px-2 py-1 rounded transition-colors">
-                              📋 Generate Report
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="w-full border bg-white px-3 py-2 rounded-md shadow-sm">
-                          <p className="text-xs font-medium text-slate-600 mb-1">Status</p>
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                            <span className="text-xs text-slate-700">Active Lead</span>
-                          </div>
-                        </div>
-
-                        <div className="w-full border bg-white px-3 py-2 rounded-md shadow-sm">
-                          <p className="text-xs font-medium text-slate-600 mb-1">Priority</p>
-                          <span className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
-                            Medium Priority
-                          </span>
-                        </div>
-
-                        <div className="w-full border bg-white px-3 py-2 rounded-md shadow-sm">
-                          <p className="text-xs font-medium text-slate-600 mb-1">Next Follow-up</p>
-                          <p className="text-xs text-slate-700">Tomorrow, 2:00 PM</p>
+                          <p className="text-xs font-medium text-slate-600 mb-1">Yield Value</p>
+                          <p className="text-sm text-slate-700">{selectedLead?.yield || '-'}</p>
                         </div>
                       </div>
                     </div>
@@ -528,51 +495,18 @@ export default function LeadsPage() {
                     </div>
                   </div>
 
-                  {/* yield Cards Section */}
-                  <div className="h-[40vh] rounded-lg border bg-slate-50">
+                  {/* Yield Section */}
+                  <div className="h-auto rounded-lg border bg-slate-50">
                     <div className="px-4 py-3 border-b bg-white rounded-t-lg">
                       <div className="text-sm font-semibold text-slate-800">
-                        yield Cards
-                      </div>
-                      <div className="text-xs text-slate-500">
-                        Additional information & actions
+                        Yield
                       </div>
                     </div>
 
-                    <div className="p-4 space-y-3 max-h-[32vh] overflow-y-auto">
+                    <div className="p-4">
                       <div className="w-full border bg-white px-3 py-2 rounded-md shadow-sm">
-                        <p className="text-xs font-medium text-slate-600 mb-2">Quick Actions</p>
-                        <div className="space-y-2">
-                          <button className="w-full text-left text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-2 py-1 rounded transition-colors">
-                            📞 Schedule Call
-                          </button>
-                          <button className="w-full text-left text-xs bg-green-50 hover:bg-green-100 text-green-700 px-2 py-1 rounded transition-colors">
-                            📅 Schedule Site Visit
-                          </button>
-                          <button className="w-full text-left text-xs bg-yellow-50 hover:bg-yellow-100 text-yellow-700 px-2 py-1 rounded transition-colors">
-                            📋 Generate Report
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="w-full border bg-white px-3 py-2 rounded-md shadow-sm">
-                        <p className="text-xs font-medium text-slate-600 mb-1">Status</p>
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                          <span className="text-xs text-slate-700">Active Lead</span>
-                        </div>
-                      </div>
-
-                      <div className="w-full border bg-white px-3 py-2 rounded-md shadow-sm">
-                        <p className="text-xs font-medium text-slate-600 mb-1">Priority</p>
-                        <span className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
-                          Medium Priority
-                        </span>
-                      </div>
-
-                      <div className="w-full border bg-white px-3 py-2 rounded-md shadow-sm">
-                        <p className="text-xs font-medium text-slate-600 mb-1">Next Follow-up</p>
-                        <p className="text-xs text-slate-700">Tomorrow, 2:00 PM</p>
+                        <p className="text-xs font-medium text-slate-600 mb-1">Yield Value</p>
+                        <p className="text-sm text-slate-700">{viewLead?.yield || '-'}</p>
                       </div>
                     </div>
                   </div>
