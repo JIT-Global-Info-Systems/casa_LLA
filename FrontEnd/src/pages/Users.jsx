@@ -531,7 +531,7 @@ function Users() {
                   <ChevronLeft className="h-5 w-5 text-gray-600" />
                 </Button>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Add New User</h1>
+                  <h1 className="text-2xl font-bold text-indigo-600 tracking-tight">Add New User</h1>
                   <p className="text-gray-500 text-sm mt-1">Fill in the details below to create a new user</p>
                 </div>
               </div>
@@ -699,7 +699,7 @@ function Users() {
                   <ChevronLeft className="h-5 w-5 text-gray-600" />
                 </Button>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Edit User</h1>
+                  <h1 className="text-2xl font-bold text-indigo-600 tracking-tight">Edit User</h1>
                   <p className="text-gray-500 text-sm mt-1">Update the user details below</p>
                 </div>
               </div>
@@ -877,7 +877,7 @@ function Users() {
                   <ChevronLeft className="h-5 w-5 text-gray-600" />
                 </Button>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900 tracking-tight">View User</h1>
+                  <h1 className="text-2xl font-bold text-indigo-600 tracking-tight">View User</h1>
                   <p className="text-gray-500 text-sm mt-1">View the user details below</p>
                 </div>
               </div>

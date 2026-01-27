@@ -12,12 +12,23 @@ function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [rememberMe, setRememberMe] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
   const { login, forcePasswordChange, isAuthenticated, loading } = useAuth()
 
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+
+  // Load remembered email on component mount
+  useEffect(() => {
+    const stored = localStorage.getItem('rememberMe')
+    const storedEmail = localStorage.getItem('rememberedEmail')
+    if (stored && storedEmail) {
+      setEmail(storedEmail)
+      setRememberMe(true)
+    }
+  }, [])
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -33,7 +44,7 @@ function Login() {
     setIsLoading(true)
 
     try {
-      const response = await login({ email, password })
+      const response = await login({ email, password }, rememberMe)
       
       // Check if password change is required
       if (response?.user?.firstLogin) {
@@ -157,6 +168,8 @@ function Login() {
               <input
                 type="checkbox"
                 className="w-4 h-4 border-gray-300 rounded"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
               />
               <span className="ml-2 text-xs text-gray-600">Remember me</span>
             </label>
