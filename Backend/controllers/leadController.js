@@ -85,7 +85,7 @@ exports.createLead = async (req, res) => {
       ...restLeadData,
       checkListPage: formattedCheckListPage,
       competitorAnalysis: formattedCompetitorAnalysis,
-      lead_status: "PENDING",
+      lead_status: "",
       currentRole: currentRole, // Add currentRole to the lead
       created_by: createdBy
     });
