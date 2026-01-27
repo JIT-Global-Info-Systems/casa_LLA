@@ -33,20 +33,25 @@ function Login() {
     setIsLoading(true)
 
     try {
-      await login({ email, password })
+      const response = await login({ email, password })
+      
+      // Check if password change is required
+      if (response?.user?.firstLogin) {
+        navigate('/first-time-password-change', { 
+          replace: true,
+          state: { isFirstLogin: true }
+        })
+        return
+      }
       
       // Get the intended destination from location state, or default to dashboard
       const from = location.state?.from?.pathname || '/pages/dashboard'
       
-      toast.success('Login successful! Redirecting...')
-      
-      // Small delay to show the success message
-      setTimeout(() => {
-        navigate(from, { replace: true })
-      }, 500)
+      // Navigate to intended destination
+      navigate(from, { replace: true })
       
     } catch (err) {
-      const errorMessage = err.response?.data?.message || err.message || 'An error occurred during login'
+      const errorMessage = err.message || 'Could not log in. Please try again.'
       setError(errorMessage)
       toast.error(errorMessage)
       console.error('Login error:', err)

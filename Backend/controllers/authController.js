@@ -13,7 +13,7 @@ exports.login = async (req, res) => {
     // 1️⃣ Validate input
     if (!email || !password) {
       return res.status(400).json({
-        message: "Email and password are required"
+        message: "Please enter your email and password"
       });
     }
 
@@ -22,14 +22,14 @@ exports.login = async (req, res) => {
 
     if (!user) {
       return res.status(401).json({
-        message: "Invalid email or password"
+        message: "Incorrect email or password"
       });
     }
 
     // 3️⃣ Check status
     if (user.status !== "active") {
       return res.status(403).json({
-        message: "Account is inactive"
+        message: "Your account has been deactivated. Please contact support."
       });
     }
 
@@ -38,7 +38,7 @@ exports.login = async (req, res) => {
 
     if (!isMatch) {
       return res.status(401).json({
-        message: "Invalid email or password"
+        message: "Incorrect email or password"
       });
     }
 
@@ -53,7 +53,7 @@ exports.login = async (req, res) => {
 
     // 8️⃣ Send response
     res.status(200).json({
-      message: "Login successful",
+      message: "Welcome back",
       token,
       user: {
         id: user._id,
@@ -67,7 +67,7 @@ exports.login = async (req, res) => {
   } catch (error) {
     console.error("Login Error:", error);
     res.status(500).json({
-      message: "Server error",
+      message: "Could not sign in. Please try again.",
       error: error.message
     });
   }
@@ -86,7 +86,7 @@ exports.forgotPassword = async (req, res) => {
     if (!email) {
       return res.status(400).json({
         success: false,
-        message: "Email is required"
+        message: "Please enter your email address"
       });
     }
 
@@ -111,14 +111,14 @@ exports.forgotPassword = async (req, res) => {
     // Always return success to prevent email enumeration
     res.status(200).json({
       success: true,
-      message: "If your email is registered, you will receive an OTP to reset your password"
+      message: "If this email is registered, you will receive a verification code shortly"
     });
     
   } catch (error) {
     console.error("Forgot Password Error:", error);
     res.status(500).json({
       success: false,
-      message: "Error processing forgot password request"
+      message: "Could not process your request. Please try again."
     });
   }
 };
@@ -131,7 +131,7 @@ exports.verifyOtp = async (req, res) => {
     if (!email || !otp) {
       return res.status(400).json({
         success: false,
-        message: "Email and OTP are required"
+        message: "Please enter your email and verification code"
       });
     }
 
@@ -145,7 +145,7 @@ exports.verifyOtp = async (req, res) => {
     if (!user) {
       return res.status(400).json({
         success: false,
-        message: "Invalid or expired OTP"
+        message: "Verification code is incorrect or has expired"
       });
     }
 
@@ -169,7 +169,7 @@ exports.verifyOtp = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "OTP verified successfully",
+      message: "Verification successful",
       resetToken
     });
 
@@ -177,7 +177,7 @@ exports.verifyOtp = async (req, res) => {
     console.error("Verify OTP Error:", error);
     res.status(500).json({
       success: false,
-      message: "Error verifying OTP"
+      message: "Could not verify code. Please try again."
     });
   }
 };
@@ -190,15 +190,7 @@ exports.resetPassword = async (req, res) => {
     if (!token || !newPassword) {
       return res.status(400).json({
         success: false,
-        message: "token and new password are required"
-      });
-    }
-
-    // Validate input
-    if (!token || !newPassword) {
-      return res.status(400).json({
-        success: false,
-        message: "Reset token and new password are required"
+        message: "Please enter your new password"
       });
     }
 
@@ -217,7 +209,7 @@ exports.resetPassword = async (req, res) => {
     if (!user) {
       return res.status(400).json({
         success: false,
-        message: "Invalid or expired reset token"
+        message: "Reset link has expired. Please request a new one."
       });
     }
 
@@ -233,13 +225,13 @@ exports.resetPassword = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Password reset successful"
+      message: "Password changed successfully"
     });
   } catch (error) {
     console.error("Reset Password Error:", error);
     res.status(500).json({
       success: false,
-      message: "Server error",
+      message: "Could not reset password. Please try again.",
       error: error.message
     });
   }
@@ -254,7 +246,7 @@ exports.changePassword = async (req, res) => {
     if (!oldPassword || !newPassword) {
       return res.status(400).json({
         success: false,
-        message: "Old password and new password are required"
+        message: "Please enter both your current and new password"
       });
     }
 
@@ -263,7 +255,7 @@ exports.changePassword = async (req, res) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: "User not found"
+        message: "Account not found"
       });
     }
 
@@ -272,7 +264,7 @@ exports.changePassword = async (req, res) => {
     if (!isMatch) {
       return res.status(400).json({
         success: false,
-        message: "Old password is incorrect"
+        message: "Current password is incorrect"
       });
     }
 
@@ -290,14 +282,14 @@ exports.changePassword = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Password updated successfully"
+      message: "Password changed successfully"
     });
 
   } catch (error) {
     console.error("Reset Password Error:", error);
     res.status(500).json({
       success: false,
-      message: "Server error",
+      message: "Could not change password. Please try again.",
       error: error.message
     });
   }

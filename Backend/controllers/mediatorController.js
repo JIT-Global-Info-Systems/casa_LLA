@@ -1,4 +1,4 @@
-const Mediator = require("../models/mediator");
+const Mediator = require("../models/Mediator");
 
 exports.createMediator = async (req, res) => {
   try {
@@ -21,14 +21,14 @@ exports.createMediator = async (req, res) => {
 
     if (!req.files?.pan_upload || !req.files?.aadhar_upload) {
       return res.status(400).json({
-        message: "PAN and Aadhar images are required"
+        message: "Please upload both PAN and Aadhaar documents"
       });
     }
 
     const existingMediator = await Mediator.findOne({ email });
     if (existingMediator) {
       return res.status(409).json({
-        message: "Mediator with this email already exists"
+        message: "This email is already registered"
       });
     }
 
@@ -55,7 +55,7 @@ exports.createMediator = async (req, res) => {
     });
   } catch (error) {
     return res.status(500).json({
-      message: "Server error",
+      message: "Could not create mediator. Please try again.",
       error: error.message
     });
   }
@@ -132,17 +132,50 @@ exports.updateMediator = async (req, res) => {
     });
   } catch (error) {
     return res.status(500).json({
-      message: "Server error",
+      message: "Could not update mediator. Please try again.",
       error: error.message
     });
   }
 };
 
-exports.softDeleteMediator = async (req, res) => {
+// exports.softDeleteMediator = async (req, res) => {
+//   try {
+//     const { mediatorId } = req.params;
+
+//     const mediator = await Mediator.findById(mediatorId);
+//     if (!mediator) {
+//       return res.status(404).json({
+//         message: "Mediator not found"
+//       });
+//     }
+
+//     if (mediator.status === "inactive") {
+//       return res.status(400).json({
+//         message: "Mediator already inactive"
+//       });
+//     }
+
+//     mediator.status = "inactive";
+//     await mediator.save();
+
+//     return res.status(200).json({
+//       message: "Mediator soft deleted successfully",
+//       data: mediator
+//     });
+//   } catch (error) {
+//     return res.status(500).json({
+//       message: "Server error",
+//       error: error.message
+//     });
+//   }
+// };
+
+exports.deleteMediator = async (req, res) => {
   try {
     const { mediatorId } = req.params;
 
-    const mediator = await Mediator.findById(mediatorId);
+    const mediator = await Mediator.findByIdAndDelete(mediatorId);
+
     if (!mediator) {
       return res.status(404).json({
         message: "Mediator not found"
@@ -151,7 +184,7 @@ exports.softDeleteMediator = async (req, res) => {
 
     if (mediator.status === "inactive") {
       return res.status(400).json({
-        message: "Mediator already inactive"
+        message: "This mediator is already inactive"
       });
     }
 
@@ -159,16 +192,18 @@ exports.softDeleteMediator = async (req, res) => {
     await mediator.save();
 
     return res.status(200).json({
-      message: "Mediator soft deleted successfully",
+      message: "Mediator deleted successfully",
       data: mediator
     });
+
   } catch (error) {
     return res.status(500).json({
-      message: "Server error",
+      message: "Could not delete mediator. Please try again.",
       error: error.message
     });
   }
 };
+
 
 exports.getAllMediators = async (req, res) => {
   try {
@@ -190,7 +225,7 @@ exports.getAllMediators = async (req, res) => {
     });
   } catch (error) {
     return res.status(500).json({
-      message: "Server error",
+      message: "Could not load mediators. Please try again.",
       error: error.message
     });
   }

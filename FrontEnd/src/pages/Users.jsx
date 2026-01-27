@@ -7,15 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Search, Plus, Edit, Trash2, Eye, MoreVertical, RefreshCw, ChevronLeft } from "lucide-react";
 import { useUsers } from "../context/UsersContext";
-// Import the Table components
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import LoadingState from "@/components/ui/LoadingState";
+import ErrorState from "@/components/ui/ErrorState";
+import EmptyState from "@/components/ui/EmptyState";
+import ConfirmModal from "@/components/ui/ConfirmModal";
+import { useEntityAction } from "@/hooks/useEntityAction";
+import toast from "react-hot-toast";
 
 function Users() {
   // Get users data and functions from context
@@ -39,6 +36,9 @@ function Users() {
     phone_number: "",
     status: "active"
   });
+
+  // Entity action hook for status-aware delete
+  const { handleDelete, canPerformAction, confirmModal } = useEntityAction('user');
 
   useEffect(() => {
     fetchUsers();
@@ -105,6 +105,7 @@ function Users() {
   const handleAddUser = async () => {
     try {
       await createUser(formData);
+      toast.success('User added successfully');
       setMode("list");
       setFormData({
         name: "",
@@ -112,10 +113,10 @@ function Users() {
         password: "",
         role: "",
         phone_number: "",
-        
+        status: "active"
       });
     } catch (err) {
-      // Error handled by context
+      toast.error(err.message || 'Could not add user. Please try again.');
       console.error(err);
     }
   };
@@ -123,6 +124,7 @@ function Users() {
   const handleEditUser = async () => {
     try {
       await updateUser(selectedUser.user_id, formData);
+      toast.success('User updated successfully');
       setMode("list");
       setSelectedUser(null);
       setFormData({
@@ -134,16 +136,26 @@ function Users() {
         status: "active",
       });
     } catch (err) {
+      toast.error(err.message || 'Could not update user. Please try again.');
       console.error(err);
     }
   };
 
-  const handleDeleteUser = async (userId) => {
-    try {
-      await deleteUser(userId);
-    } catch (err) {
-      console.error(err);
+  const handleDeleteUser = (user) => {
+    // Check if delete is allowed
+    const deleteState = canPerformAction(user, 'delete');
+    
+    if (!deleteState.enabled) {
+      // User is already inactive/deleted - don't show error
+      // UI should have disabled the button with tooltip
+      return;
     }
+
+    // Perform delete with status check
+    handleDelete(user, async () => {
+      await deleteUser(user.user_id);
+      fetchUsers(); // Refresh list
+    }, user.name);
   };
 
   const openEditDialog = (user) => {
@@ -395,7 +407,9 @@ function Users() {
                                 try {
                                   const newStatus = checked ? "active" : "inactive";
                                   await updateUser(user.user_id, { status: newStatus });
+                                  toast.success(`User ${checked ? 'activated' : 'deactivated'} successfully`);
                                 } catch (error) {
+                                  toast.error('Could not update status. Please try again.');
                                   console.error("Error updating user status:", error);
                                 }
                               }}
@@ -446,19 +460,17 @@ function Users() {
                                 Edit
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={() => {
-                                  if (
-                                    window.confirm(
-                                      `Are you sure you want to delete "${user.name}"?`
-                                    )
-                                  ) {
-                                    handleDeleteUser(user.user_id);
-                                  }
-                                }}
+                                onClick={() => handleDeleteUser(user)}
+                                disabled={!canPerformAction(user, 'delete').enabled}
                                 className="cursor-pointer text-red-600"
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 Delete
+                                {!canPerformAction(user, 'delete').enabled && (
+                                  <span className="ml-2 text-xs text-gray-500">
+                                    ({canPerformAction(user, 'delete').reason})
+                                  </span>
+                                )}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -468,24 +480,6 @@ function Users() {
                   </tbody>
                 </table>
               </div>
-
-              {loading && (
-                <div className="text-center py-12 text-gray-500">
-                  <p>Loading users...</p>
-                </div>
-              )}
-
-              {error && (
-                <div className="text-center py-12 text-red-500">
-                  <p>Error: {error}</p>
-                </div>
-              )}
-
-              {!loading && !error && filteredUsers.length === 0 && (
-                <div className="text-center py-12 text-gray-500">
-                  <p>No users found matching your criteria.</p>
-                </div>
-              )}
 
               {/* Footer */}
               <div className="px-6 py-4 border-t flex items-center justify-between">
@@ -968,6 +962,19 @@ function Users() {
           </div>
         </div>
       )}
+      
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={confirmModal.onClose}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        description={confirmModal.description}
+        confirmText={confirmModal.confirmText}
+        cancelText="Cancel"
+        variant={confirmModal.variant}
+        loading={confirmModal.loading}
+      />
     </div>
   );
 }

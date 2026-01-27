@@ -17,7 +17,7 @@ exports.createUser = async (req, res) => {
     // Basic validation
     if (!name || !email || !role) {
       return res.status(400).json({
-        message: "Name, email and role are required"
+        message: "Please enter name, email, and role"
       });
     }
 
@@ -25,7 +25,7 @@ exports.createUser = async (req, res) => {
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(409).json({
-        message: "User with this email already exists"
+        message: "This email is already registered"
       });
     }
 
@@ -50,7 +50,7 @@ exports.createUser = async (req, res) => {
     });
 
     return res.status(201).json({
-      message: "User created successfully and credentials emailed",
+      message: "User created and login details sent via email",
       data: {
         id: user._id,
         name: user.name,
@@ -61,7 +61,7 @@ exports.createUser = async (req, res) => {
     });
   } catch (error) {
     return res.status(500).json({
-      message: "User creation failed. Email was not sent.",
+      message: "Could not create user. Please try again.",
       error: error.message
     });
   }
@@ -108,7 +108,7 @@ exports.updateUser = async (req, res) => {
   } catch (error) {
     console.error("Update User Error:", error);
     res.status(500).json({
-      message: "Server error",
+      message: "Could not update user. Please try again.",
       error: error.message
     });
   }
@@ -121,7 +121,7 @@ exports.getAllUsers = async (req, res) => {
       .sort({ created_at: -1 });
 
     res.status(200).json({
-      message: "Users fetched successfully",
+      message: "Users loaded successfully",
       count: users.length,
       users: users.map(user => ({
         user_id: user._id,
@@ -137,7 +137,7 @@ exports.getAllUsers = async (req, res) => {
   } catch (error) {
     console.error("Get Users Error:", error);
     res.status(500).json({
-      message: "Server error",
+      message: "Could not load users. Please try again.",
       error: error.message
     });
   }
@@ -159,7 +159,7 @@ exports.deleteUser = async (req, res) => {
     // 2️⃣ Check if already inactive
     if (user.status === "inactive") {
       return res.status(200).json({
-        message: "User is already inactive"
+        message: "This user is already inactive"
       });
     }
 
@@ -171,12 +171,12 @@ exports.deleteUser = async (req, res) => {
     await user.save();
 
     res.status(200).json({
-      message: "User deactivated successfully"
+      message: "User removed successfully"
     });
   } catch (error) {
     console.error("Delete User Error:", error);
     res.status(500).json({
-      message: "Server error",
+      message: "Could not remove user. Please try again.",
       error: error.message
     });
   }
@@ -191,7 +191,7 @@ exports.getUserById = async (req, res) => {
     // Validate Mongo ID
     if (!mongoose.Types.ObjectId.isValid(user_id)) {
       return res.status(400).json({
-        message: "Invalid user id"
+        message: "Invalid user ID"
       });
     }
 
@@ -207,14 +207,14 @@ exports.getUserById = async (req, res) => {
     }
 
     return res.status(200).json({
-      message: "User fetched successfully",
+      message: "User loaded successfully",
       data: user
     });
 
   } catch (error) {
     console.error("Get User By ID Error:", error);
     return res.status(500).json({
-      message: "Failed to fetch user",
+      message: "Could not load user. Please try again.",
       error: error.message
     });
   }

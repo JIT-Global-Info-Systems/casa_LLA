@@ -76,10 +76,10 @@ export default function Calls() {
             try {
                 await fetchCalls()
                 if (apiCalls.length > 0) {
-                    toast.success(`Loaded ${apiCalls.length} calls`)
+                    toast.success(`${apiCalls.length} calls loaded`)
                 }
             } catch (err) {
-                toast.error('Failed to load calls. Please try again.')
+                toast.error('Could not load calls. Please try again.')
                 console.error('Error loading calls:', err)
             }
         }
@@ -140,9 +140,9 @@ export default function Calls() {
                                 onClick={async () => {
                                     try {
                                         await fetchCalls()
-                                        toast.success(`Refreshed ${apiCalls.length} calls`)
+                                        toast.success(`${apiCalls.length} calls refreshed`)
                                     } catch (err) {
-                                        toast.error('Failed to refresh calls')
+                                        toast.error('Could not refresh calls. Please try again.')
                                         console.error('Error refreshing calls:', err)
                                     }
                                 }}
@@ -157,7 +157,7 @@ export default function Calls() {
 
                 {/* Filters Card */}
                 <Card className="border-none shadow-sm bg-white p-6">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="space-y-2">
                             <Label className="text-xs font-semibold uppercase tracking-wider text-slate-500">Search</Label>
                             <div className="relative">
@@ -171,7 +171,7 @@ export default function Calls() {
                             </div>
                         </div>
 
-                        <div className="space-y-2">
+                        {/* <div className="space-y-2">
                             <Label className="text-xs font-semibold uppercase tracking-wider text-slate-500">User</Label>
                             <Select value={userFilter} onValueChange={setUserFilter}>
                                 <SelectTrigger className="border-slate-200 focus:ring-indigo-500">
@@ -186,7 +186,7 @@ export default function Calls() {
                                     ))}
                                 </SelectContent>
                             </Select>
-                        </div>
+                        </div> */}
 
                         <div className="space-y-2">
                             <Label className="text-xs font-semibold uppercase tracking-wider text-slate-500">From Date</Label>
