@@ -181,38 +181,69 @@ function Dashboard() {
     startDate: "",
     endDate: "",
   });
-  const [locations, setLocations] = useState([
-    { label: "All Locations", value: "all" }
-  ]);
-  const [selectedLocation, setSelectedLocation] = useState("all");
-const [fromDate , setFromDate ] = useState("")
-const [toDate , setToDate ] = useState("")
-  useEffect(() => {
-    const fetchLocations = async () => {
-      try {
-        const locationsData = await locationsAPI.getAll();
-        const formattedLocations = [
-          { label: "All Locations", value: "all" },
-          ...locationsData.map(loc => ({
-            label: loc.name || loc.location_name || loc.location || 'Unknown',
-            value: loc._id || loc.id || loc.name || loc.location_name || loc.location || 'unknown'
-          }))
-        ];
-        setLocations(formattedLocations);
-      } catch (error) {
-        console.error('Failed to fetch locations:', error);
-        // Keep default locations if API fails
-        setLocations([
-          { label: "All Locations", value: "all" },
-          { label: "Chennai", value: "chennai" },
-          { label: "Bangalore", value: "bangalore" },
-          { label: "Mysore", value: "mysore" }
-        ]);
-      }
-    };
+  const [dashboardData, setDashboardData] = useState({
+    leadStatusCounts: {},
+    leadStageCounts: {},
+    workStageCounts: {},
+    totals: {
+      approvedLeads: 0,
+      pendingLeads: 0,
+      purchasedLeads: 0
+    }
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-    fetchLocations();
-  }, []);
+  // State for date range
+  const [dateRange, setDateRange] = useState({
+    from: '',
+    to: ''
+  });
+
+  // Fetch dashboard data from API
+  const fetchDashboardData = async () => {
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      // Build query parameters
+      const params = new URLSearchParams();
+      if (dateRange.from) params.append('fromDate', dateRange.from);
+      if (dateRange.to) params.append('toDate', dateRange.to);
+
+      const url = `http://localhost:5000/api/dashboard${params.toString() ? `?${params.toString()}` : ''}`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setDashboardData(data.data);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+      setError('Failed to load dashboard data');
+      toast.error('Failed to load dashboard data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fetch data when date range changes
+  useEffect(() => {
+    fetchDashboardData();
+  }, [dateRange]);
 
   // Fetch all leads on component mount
   useEffect(() => {
@@ -424,46 +455,19 @@ const calculateWorkStages = (leadsData, accessData) => {
     </div>
   </div>
 
-  {/* RIGHT SIDE - Filters */}
-  <div className="flex items-center gap-3">
-    
-    {/* Location */}
-    <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-      <SelectTrigger className="w-[140px]">
-        <SelectValue placeholder="Location" />
-      </SelectTrigger>
-      <SelectContent className="bg-white border border-gray-200 shadow-lg">
-        {locations.map((location) => (
-          <SelectItem key={location.value} value={location.value}>
-            {location.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-
-    {/* From Date */}
-    <div className="flex items-center gap-2">
-      <Label className="text-sm text-gray-600 whitespace-nowrap">From</Label>
-      <Input
-        type="date"
-        value={fromDate}
-        onChange={(e) => setFromDate(e.target.value)}
-        className="w-full"
-      />
-    </div>
-
-    {/* To Date */}
-    <div className="flex items-center gap-2">
-      <Label className="text-sm text-gray-600 whitespace-nowrap">To</Label>
-      <Input
-        type="date"
-        value={toDate}
-        onChange={(e) => setToDate(e.target.value)}
-        className="w-[150px]"
-      />
-    </div>
-  </div>
-</div>
+          <div className="absolute top-0 right-0">
+            <DateFilter
+              startDate={dateRange.from}
+              endDate={dateRange.to}
+              onDateChange={({ startDate, endDate }) => {
+                setDateRange({
+                  from: startDate,
+                  to: endDate
+                });
+              }}
+            />
+          </div>
+        </div>
 
         {/* FILTERS */}
         <div className="flex flex-col gap-4">
