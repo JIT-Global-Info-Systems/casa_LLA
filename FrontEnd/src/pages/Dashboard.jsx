@@ -232,6 +232,12 @@ function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // State for date range
+  const [dateRange, setDateRange] = useState({
+    from: '',
+    to: ''
+  });
+
   // Fetch dashboard data from API
   const fetchDashboardData = async () => {
     try {
@@ -241,7 +247,14 @@ function Dashboard() {
         throw new Error('No authentication token found');
       }
 
-      const response = await fetch('http://localhost:5000/api/dashboard', {
+      // Build query parameters
+      const params = new URLSearchParams();
+      if (dateRange.from) params.append('fromDate', dateRange.from);
+      if (dateRange.to) params.append('toDate', dateRange.to);
+
+      const url = `http://localhost:5000/api/dashboard${params.toString() ? `?${params.toString()}` : ''}`;
+      
+      const response = await fetch(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -265,10 +278,10 @@ function Dashboard() {
     }
   };
 
-  // Fetch data on component mount
+  // Fetch data when date range changes
   useEffect(() => {
     fetchDashboardData();
-  }, []);
+  }, [dateRange]);
 
   // Extract data from API response
   const { 
@@ -375,11 +388,14 @@ function Dashboard() {
 
           <div className="absolute top-0 right-0">
             <DateFilter
-              startDate={filters.startDate}
-              endDate={filters.endDate}
-              onDateChange={(dates) =>
-                setFilters((prev) => ({ ...prev, startDate: dates.startDate, endDate: dates.endDate }))
-              }
+              startDate={dateRange.from}
+              endDate={dateRange.to}
+              onDateChange={({ startDate, endDate }) => {
+                setDateRange({
+                  from: startDate,
+                  to: endDate
+                });
+              }}
             />
           </div>
         </div>
