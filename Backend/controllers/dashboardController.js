@@ -57,7 +57,7 @@ export const getDashboardStats = async (req, res) => {
           // 5️⃣ Pending Leads
           pendingLeads: [
             { $match: { 
-              lead_status: "PENDING",
+              lead_status: {$ne: "APPROVED"}||{$ne: "PURCHASED"},
               ...(location && { location })
             }},
             { $count: "count" }

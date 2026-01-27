@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Search, Plus, Edit, Trash2, Eye, MoreVertical, RefreshCw, ChevronLeft } from "lucide-react";
 import { useUsers } from "../context/UsersContext";
+import { toast } from "react-hot-toast";
 // Import the Table components
 import {
   Table,
@@ -92,6 +93,7 @@ function Users() {
   const handleAddUser = async () => {
     try {
       await createUser(formData);
+      toast.success("User created successfully!");
       setMode("list");
       setFormData({
         name: "",
@@ -99,17 +101,17 @@ function Users() {
         password: "",
         role: "",
         phone_number: "",
-        
+        status: "active"
       });
-    } catch (err) {
-      // Error handled by context
-      console.error(err);
+    } catch (error) {
+      toast.error(error.message || "Failed to create user");
     }
   };
 
   const handleEditUser = async () => {
     try {
       await updateUser(selectedUser.user_id, formData);
+      toast.success("User updated successfully!");
       setMode("list");
       setSelectedUser(null);
       setFormData({
@@ -120,16 +122,19 @@ function Users() {
         phone_number: "",
         status: "active",
       });
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+      toast.error(error.message || "Failed to update user");
     }
   };
 
   const handleDeleteUser = async (userId) => {
-    try {
-      await deleteUser(userId);
-    } catch (err) {
-      console.error(err);
+    if (window.confirm("Are you sure you want to delete this user?")) {
+      try {
+        await deleteUser(userId);
+        toast.success("User deleted successfully!");
+      } catch (error) {
+        toast.error(error.message || "Failed to delete user");
+      }
     }
   };
 
