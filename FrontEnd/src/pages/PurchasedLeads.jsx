@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
 import { Search, MoreVertical, RefreshCw, Eye, ChevronDown, AlertCircle } from "lucide-react";
 import { toast } from "react-hot-toast";
+import { formatCallDate } from "@/utils/dateUtils";
 import axios from "axios";
 import Leads from "./Leads";
 import LeadStepper from "@/components/ui/LeadStepper";
@@ -183,7 +184,7 @@ const PurchasedLeads = () => {
                                 <p className="text-xs text-slate-600">{call.role || 'No role'}</p>
                               </div>
                               <p className="text-xs text-slate-500">
-                                {new Date(call.created_at || call.createdAt).toLocaleDateString()}
+                                {formatCallDate(call)}
                               </p>
                             </div>
                             {call.note && (

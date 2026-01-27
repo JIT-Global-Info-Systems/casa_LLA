@@ -36,6 +36,7 @@ import {
   ChevronLeft,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { formatDisplayDate } from "@/utils/dateUtils";
  
 function Mediators() {
   const { mediators, loading, error, fetchMediators, createMediator, updateMediator, deleteMediator } = useMediators();
@@ -894,7 +895,7 @@ function Mediators() {
                               {mediator.email}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                              {new Date(mediator.created_at).toLocaleDateString()}
+                              {formatDisplayDate(mediator.created_at)}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                               {mediator.linked_executive || 'N/A'}
