@@ -1,5 +1,5 @@
 // const API_BASE_URL = 'http://13.201.132.94:5000/api';
-const API_BASE_URL = 'http://13.201.132.94:5000/api';
+const API_BASE_URL = 'http://localhost:5000/api';
 
 // Generic API request helper
 const apiRequest = async (endpoint, options = {}) => {
@@ -127,7 +127,7 @@ export const mediatorsAPI = {
 export const leadsAPI = {
   // Get all leads
   getAll: async () => {
-    const response = await apiRequest('/leads/pending');
+    const response = await apiRequest('/leads/all');
     // The API returns { count: number, data: [...] }
     // We want to return the data array
     return response.data || [];
@@ -316,13 +316,13 @@ export const locationsAPI = {
       body: JSON.stringify(regionData),
     });
   },
- 
+
   deleteRegion: async (locationId, regionId) => {
-    return await apiRequest(`/locations/${locationId}/regions/${regionId}`, {
+    return await apiRequest(`/locations/${locationId}/regions/delete/${regionId}`, {
       method: 'DELETE',
     });
   },
- 
+
   // Zone operations
   addZone: async (locationId, regionId, zoneData) => {
     return await apiRequest(`/locations/${locationId}/regions/${regionId}/zones`, {
@@ -330,18 +330,57 @@ export const locationsAPI = {
       body: JSON.stringify(zoneData),
     });
   },
- 
+
   updateZone: async (locationId, regionId, zoneId, zoneData) => {
     return await apiRequest(`/locations/update/${locationId}/regions/${regionId}/zones/${zoneId}`, {
       method: 'PUT',
       body: JSON.stringify(zoneData),
     });
   },
- 
+
   deleteZone: async (locationId, regionId, zoneId) => {
     return await apiRequest(`/locations/${locationId}/regions/${regionId}/zones/${zoneId}`, {
       method: "DELETE",
     })
+  },
+}
+
+// Types API
+export const typesAPI = {
+  // Get all types
+  getAll: async () => {
+    const response = await apiRequest('/types/');
+    // The API returns { message: string, count: number, data: [...] }
+    // We want to return the data array
+    return response.data || [];
+  },
+
+  // Get type by ID
+  getById: async (id) => {
+    return await apiRequest(`/types/${id}`);
+  },
+
+  // Create new type
+  create: async (typeData) => {
+    return await apiRequest('/types', {
+      method: 'POST',
+      body: JSON.stringify(typeData),
+    });
+  },
+
+  // Update type
+  update: async (id, typeData) => {
+    return await apiRequest(`/types/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(typeData),
+    });
+  },
+
+  // Delete type
+  delete: async (id) => {
+    return await apiRequest(`/types/${id}`, {
+      method: 'DELETE',
+    });
   },
 }
  
@@ -444,6 +483,7 @@ export default {
   leadsAPI,
   usersAPI,
   locationsAPI,
+  typesAPI,
   callsAPI,
   authAPI,
   accessAPI,

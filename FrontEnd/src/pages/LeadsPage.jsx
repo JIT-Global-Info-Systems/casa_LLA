@@ -1,6 +1,4 @@
-
-
-
+//Leads table
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import Modal from "@/components/ui/modal";
@@ -168,23 +166,23 @@ export default function LeadsPage() {
  
   const normalizedLeads = (Array.isArray(leads) ? leads : []).map((lead) => {
     const registeredDate =
-      lead.registeredDate || lead.date || lead.createdAt || null;
+      lead.date || lead.createdAt || lead.created_at || null;
     return {
-      id: lead.id || lead._id || "N/A",
+      id: lead._id || lead.id || lead.lead_id || "N/A",
       name:
         lead.mediatorName ||
         lead.ownerName ||
         lead.name ||
         lead.contactName ||
         "N/A",
-        lead_id:lead.lead_id,
+      lead_id: lead.lead_id || "N/A",
       email: lead.email || lead.contactEmail || "—",
-      phone: lead.phone || lead.contactNumber || "",
+      phone: lead.contactNumber || lead.phone || "",
       location: lead.location || lead.address?.city || "N/A",
       zone: lead.zone || lead.region || "N/A",
-      property:lead.propertyType,
-      status: lead.status || lead.stageStatus || "Pending",
-      stageName: lead.stageName || lead.currentStage || "Not Started",
+      property: lead.propertyType || "—",
+      status: lead.lead_status || lead.status || "Pending",
+      stageName: lead.lead_stage || lead.currentStage || "Not Started",
       registeredDate,
       raw: lead,
     };
@@ -222,16 +220,6 @@ export default function LeadsPage() {
                   className={`${selectedLead ? "lg:col-span-2" : "lg:col-span-3"
                     } space-y-4`}
                 >
-                  <LeadStepper
-                    stageName={
-                      selectedLead?.leadStatus ||
-                      selectedLead?.stageName ||
-                      "Tele Caller"
-                    }
-                    currentStep={currentStep}
-                    onStepChange={setCurrentStep}
-                    className="w-full"
-                  />
  
                   {/* <div className="flex justify-between items-center">
                     <h1 className="text-2xl font-bold">
@@ -251,25 +239,77 @@ export default function LeadsPage() {
                   />
                 </div>
  
-                {/* Right-side message thread (only show when editing) */}
+                {/* Right-side Communication History and Wild Cards (show when editing) */}
                 {selectedLead && (
-                  <div className="lg:col-span-1">
-                    <div className="h-full rounded-lg border bg-slate-50 sticky top-4">
+                  <div className="lg:col-span-1 space-y-4 sticky top-4 h-fit">
+                    {/* Communication History - 40% height */}
+                    <div className="h-[40vh] rounded-lg border bg-slate-50">
                       <div className="px-4 py-3 border-b bg-white rounded-t-lg">
                         <div className="text-sm font-semibold text-slate-800">
-                          Notes
+                          Communication History
                         </div>
                         <div className="text-xs text-slate-500">
                           Message thread
                         </div>
                       </div>
- 
-                      <div className="p-4 space-y-3 max-h-[80vh] overflow-y-auto">
-                        {leadComments.length === 0 ? (
+
+                      <div className="p-4 space-y-3 max-h-[32vh] overflow-y-auto">
+                        {/* Display calls history if available */}
+                        {selectedLead?.calls && selectedLead.calls.length > 0 && 
+                          selectedLead.calls.map((call, index) => (
+                            <div
+                              key={call._id || index}
+                              className="w-full border bg-white px-3 py-2 rounded-md shadow-sm"
+                            >
+                              <div className="flex justify-between items-start mb-1">
+                                <div>
+                                  <p className="text-sm font-medium text-slate-800">{call.name || 'Unknown User'}</p>
+                                  <p className="text-xs text-slate-600">{call.role || 'No role'}</p>
+                                </div>
+                                <p className="text-xs text-slate-500">
+                                  {new Date(call.created_at || call.createdAt).toLocaleDateString()}
+                                </p>
+                              </div>
+                              {call.note && (
+                                <p className="text-xs text-slate-700 mt-1">{call.note}</p>
+                              )}
+                            </div>
+                          ))
+                        }
+
+                        {/* Display notes from different sources without headers */}
+                        {selectedLead?.remark && (
+                          <div className="w-full border bg-white px-3 py-2 text-sm text-slate-800 rounded-md shadow-sm">
+                            <p className="text-xs font-medium text-slate-600 mb-1">Remark:</p>
+                            {selectedLead.remark}
+                          </div>
+                        )}
+                        {selectedLead?.comment && (
+                          <div className="w-full border bg-white px-3 py-2 text-sm text-slate-800 rounded-md shadow-sm">
+                            <p className="text-xs font-medium text-slate-600 mb-1">Comment:</p>
+                            {selectedLead.comment}
+                          </div>
+                        )}
+                        {selectedLead?.checkNotes && (
+                          <div className="w-full border bg-white px-3 py-2 text-sm text-slate-800 rounded-md shadow-sm">
+                            <p className="text-xs font-medium text-slate-600 mb-1">Additional Notes:</p>
+                            {selectedLead.checkNotes}
+                          </div>
+                        )}
+                        {selectedLead?.checkListPage?.[0]?.notes && (
+                          <div className="w-full border bg-white px-3 py-2 text-sm text-slate-800 rounded-md shadow-sm">
+                            <p className="text-xs font-medium text-slate-600 mb-1">Site Visit Notes:</p>
+                            {selectedLead.checkListPage[0].notes}
+                          </div>
+                        )}
+
+                        {/* Fallback to leadComments if no other data */}
+                        {(!selectedLead?.calls?.length && !selectedLead?.remark && !selectedLead?.comment && !selectedLead?.checkNotes && !selectedLead?.checkListPage?.[0]?.notes) && leadComments.length === 0 ? (
                           <div className="text-sm text-slate-500">
                             No comments
                           </div>
                         ) : (
+                          (!selectedLead?.calls?.length && !selectedLead?.remark && !selectedLead?.comment && !selectedLead?.checkNotes && !selectedLead?.checkListPage?.[0]?.notes) &&
                           leadComments.map((text, idx) => (
                             <div
                               key={`${idx}-${text}`}
@@ -279,6 +319,55 @@ export default function LeadsPage() {
                             </div>
                           ))
                         )}
+                      </div>
+                    </div>
+
+                    {/* Wild Cards Section */}
+                    <div className="h-[40vh] rounded-lg border bg-slate-50">
+                      <div className="px-4 py-3 border-b bg-white rounded-t-lg">
+                        <div className="text-sm font-semibold text-slate-800">
+                          Wild Cards
+                        </div>
+                        <div className="text-xs text-slate-500">
+                          Additional information & actions
+                        </div>
+                      </div>
+
+                      <div className="p-4 space-y-3 max-h-[32vh] overflow-y-auto">
+                        <div className="w-full border bg-white px-3 py-2 rounded-md shadow-sm">
+                          <p className="text-xs font-medium text-slate-600 mb-2">Quick Actions</p>
+                          <div className="space-y-2">
+                            <button className="w-full text-left text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-2 py-1 rounded transition-colors">
+                              📞 Schedule Call
+                            </button>
+                            <button className="w-full text-left text-xs bg-green-50 hover:bg-green-100 text-green-700 px-2 py-1 rounded transition-colors">
+                              📅 Schedule Site Visit
+                            </button>
+                            <button className="w-full text-left text-xs bg-yellow-50 hover:bg-yellow-100 text-yellow-700 px-2 py-1 rounded transition-colors">
+                              📋 Generate Report
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="w-full border bg-white px-3 py-2 rounded-md shadow-sm">
+                          <p className="text-xs font-medium text-slate-600 mb-1">Status</p>
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <span className="text-xs text-slate-700">Active Lead</span>
+                          </div>
+                        </div>
+
+                        <div className="w-full border bg-white px-3 py-2 rounded-md shadow-sm">
+                          <p className="text-xs font-medium text-slate-600 mb-1">Priority</p>
+                          <span className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+                            Medium Priority
+                          </span>
+                        </div>
+
+                        <div className="w-full border bg-white px-3 py-2 rounded-md shadow-sm">
+                          <p className="text-xs font-medium text-slate-600 mb-1">Next Follow-up</p>
+                          <p className="text-xs text-slate-700">Tomorrow, 2:00 PM</p>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -302,15 +391,16 @@ export default function LeadsPage() {
                 </div>
 
                 {/* Right-side calls and notes thread (show when viewing) */}
-                <div className="lg:col-span-1">
-                  <div className="h-full rounded-lg border bg-slate-50 sticky top-4">
+                <div className="lg:col-span-1 space-y-4 sticky top-4 h-fit">
+                  {/* Communication History - 40% height */}
+                  <div className="h-[40vh] rounded-lg border bg-slate-50">
                     <div className="px-4 py-3 border-b bg-white rounded-t-lg">
                       <div className="text-sm font-semibold text-slate-800">
                         Communication History
                       </div>
                     </div>
 
-                    <div className="p-4 space-y-3 max-h-[80vh] overflow-y-auto">
+                    <div className="p-4 space-y-3 max-h-[32vh] overflow-y-auto">
                       {/* Display calls history if available */}
                       {viewLead?.calls && viewLead.calls.length > 0 && 
                         viewLead.calls.map((call, index) => (
@@ -359,6 +449,55 @@ export default function LeadsPage() {
                           {viewLead.checkListPage[0].notes}
                         </div>
                       )}
+                    </div>
+                  </div>
+
+                  {/* Wild Cards Section */}
+                  <div className="h-[40vh] rounded-lg border bg-slate-50">
+                    <div className="px-4 py-3 border-b bg-white rounded-t-lg">
+                      <div className="text-sm font-semibold text-slate-800">
+                        Wild Cards
+                      </div>
+                      <div className="text-xs text-slate-500">
+                        Additional information & actions
+                      </div>
+                    </div>
+
+                    <div className="p-4 space-y-3 max-h-[32vh] overflow-y-auto">
+                      <div className="w-full border bg-white px-3 py-2 rounded-md shadow-sm">
+                        <p className="text-xs font-medium text-slate-600 mb-2">Quick Actions</p>
+                        <div className="space-y-2">
+                          <button className="w-full text-left text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-2 py-1 rounded transition-colors">
+                            📞 Schedule Call
+                          </button>
+                          <button className="w-full text-left text-xs bg-green-50 hover:bg-green-100 text-green-700 px-2 py-1 rounded transition-colors">
+                            📅 Schedule Site Visit
+                          </button>
+                          <button className="w-full text-left text-xs bg-yellow-50 hover:bg-yellow-100 text-yellow-700 px-2 py-1 rounded transition-colors">
+                            📋 Generate Report
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="w-full border bg-white px-3 py-2 rounded-md shadow-sm">
+                        <p className="text-xs font-medium text-slate-600 mb-1">Status</p>
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <span className="text-xs text-slate-700">Active Lead</span>
+                        </div>
+                      </div>
+
+                      <div className="w-full border bg-white px-3 py-2 rounded-md shadow-sm">
+                        <p className="text-xs font-medium text-slate-600 mb-1">Priority</p>
+                        <span className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+                          Medium Priority
+                        </span>
+                      </div>
+
+                      <div className="w-full border bg-white px-3 py-2 rounded-md shadow-sm">
+                        <p className="text-xs font-medium text-slate-600 mb-1">Next Follow-up</p>
+                        <p className="text-xs text-slate-700">Tomorrow, 2:00 PM</p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -456,19 +595,25 @@ export default function LeadsPage() {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredLeads.map((lead) => (
                       <tr key={lead.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{lead.raw?.lead_id ?? lead.id}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{lead.lead_id || lead.id}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{lead.name}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.phone || "—"}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.location}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.zone}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.raw?.propertyType || "—"}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.property || "—"}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
                           <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${String(lead.status).toLowerCase() === "approved" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
                             {lead.status}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {lead.registeredDate ? new Date(lead.registeredDate).toISOString().split("T")[0] : "—"}
+                          {lead.registeredDate ? 
+                            (new Date(lead.registeredDate).toString() !== 'Invalid Date' ? 
+                              new Date(lead.registeredDate).toISOString().split("T")[0] : 
+                              lead.registeredDate
+                            ) : 
+                            "—"
+                          }
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <DropdownMenu>
