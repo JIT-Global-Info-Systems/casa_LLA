@@ -45,7 +45,7 @@ const apiRequest = async (endpoint, options = {}, retryCount = 0) => {
   const token = localStorage.getItem('token');
  
   // Skip authentication for auth endpoints
-  const isAuthEndpoint = endpoint.startsWith('/auth/') || endpoint.startsWith('/users/create');
+  const isAuthEndpoint = endpoint.startsWith('/auth/');
  
   if (!token && !isAuthEndpoint) {
     throw new Error('Your session has expired. Please log in again.');
@@ -300,7 +300,7 @@ export const usersAPI = {
     return response.data || response;
   },
  
-  // Create new user (no auth required)
+  // Create new user (requires authentication)
   create: async (userData) => {
     return await apiRequest('/users/create', {
       method: 'POST',

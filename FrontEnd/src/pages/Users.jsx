@@ -13,6 +13,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import { useEntityAction } from "@/hooks/useEntityAction";
 import toast from "react-hot-toast";
+import { formatDate, formatDisplayDate, safeDate } from "@/utils/dateUtils";
 
 function Users() {
   // Get users data and functions from context
@@ -75,15 +76,19 @@ function Users() {
     }
 
     if (fromDate) {
-      filtered = filtered.filter(
-        (user) => new Date(user.created_at) >= new Date(fromDate)
-      );
+      filtered = filtered.filter((user) => {
+        const userDate = safeDate(user.created_at);
+        const filterDate = safeDate(fromDate);
+        return userDate && filterDate && userDate >= filterDate;
+      });
     }
 
     if (toDate) {
-      filtered = filtered.filter(
-        (user) => new Date(user.created_at) <= new Date(toDate)
-      );
+      filtered = filtered.filter((user) => {
+        const userDate = safeDate(user.created_at);
+        const filterDate = safeDate(toDate);
+        return userDate && filterDate && userDate <= filterDate;
+      });
     }
 
     setFilteredUsers(filtered);
@@ -434,7 +439,7 @@ function Users() {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            {new Date(user.created_at).toISOString().split("T")[0]}
+                            {formatDate(user.created_at)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
                             <DropdownMenu>
@@ -964,7 +969,7 @@ function Users() {
                 <div className="space-y-2">
                   <Label className="text-gray-700 font-medium">Created Date</Label>
                   <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                    {selectedUser.created_at ? new Date(selectedUser.created_at).toLocaleDateString() : "-"}
+                    {formatDisplayDate(selectedUser.created_at)}
                   </div>
                 </div>
               </CardContent>

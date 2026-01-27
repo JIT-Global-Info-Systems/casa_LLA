@@ -36,6 +36,7 @@ import {
   Search,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { formatDisplayDate } from "@/utils/dateUtils";
  
 function Mediators() {
   const { mediators, loading, error, fetchMediators, createMediator, updateMediator, deleteMediator } = useMediators();
@@ -689,7 +690,7 @@ function Mediators() {
                     Created Date
                   </Label>
                   <div className="text-sm text-slate-900 bg-gray-50 p-2 rounded">
-                    {viewMediator.created_at ? new Date(viewMediator.created_at).toLocaleDateString() : 'N/A'}
+                    {formatDisplayDate(viewMediator.created_at)}
                   </div>
                 </div>
 
@@ -842,7 +843,7 @@ function Mediators() {
                               {mediator.email}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                              {new Date(mediator.created_at).toLocaleDateString()}
+                              {formatDisplayDate(mediator.created_at)}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                               {mediator.linked_executive || 'N/A'}
