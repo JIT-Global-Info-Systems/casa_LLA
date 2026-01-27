@@ -127,7 +127,7 @@ export const mediatorsAPI = {
 export const leadsAPI = {
   // Get all leads
   getAll: async () => {
-    const response = await apiRequest('/leads/pending');
+    const response = await apiRequest('/leads/all');
     // The API returns { count: number, data: [...] }
     // We want to return the data array
     return response.data || [];
