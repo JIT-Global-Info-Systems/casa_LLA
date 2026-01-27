@@ -198,7 +198,6 @@ import { Bell, Menu } from "lucide-react";
 
 import { navItems } from "./Sidebar";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -211,7 +210,6 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "../../context/AuthContext";
 import { hasAccess } from "@/config/rbac";
-import { locationsAPI } from "@/services/api";
 
 const pageTitles = {
   "/pages": "Dashboard",
@@ -232,12 +230,10 @@ function Topbar() {
   const { user, userRole, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate()
-  const title = pageTitles[location.pathname] || "Dashboard";
+  // const title = pageTitles[location.pathname] || "Dashboard";
   const [mobileNavOpen, setMobileNavOpen] = React.useState(false);
-  const [selectedLocation, setSelectedLocation] = React.useState("all");
-  const [locations, setLocations] = React.useState([
-    { label: "All Locations", value: "all" }
-  ]);
+
+ 
 
   // Handle logout
   const handleLogout = () => {
@@ -245,33 +241,8 @@ function Topbar() {
     navigate('/login', { replace: true });
   };
 
-  // Fetch locations from API
-  React.useEffect(() => {
-    const fetchLocations = async () => {
-      try {
-        const locationsData = await locationsAPI.getAll();
-        const formattedLocations = [
-          { label: "All Locations", value: "all" },
-          ...locationsData.map(loc => ({
-            label: loc.name || loc.location_name || loc.location || 'Unknown',
-            value: loc._id || loc.id || loc.name || loc.location_name || loc.location || 'unknown'
-          }))
-        ];
-        setLocations(formattedLocations);
-      } catch (error) {
-        console.error('Failed to fetch locations:', error);
-        // Keep default locations if API fails
-        setLocations([
-          { label: "All Locations", value: "all" },
-          { label: "Chennai", value: "chennai" },
-          { label: "Bangalore", value: "bangalore" },
-          { label: "Mysore", value: "mysore" }
-        ]);
-      }
-    };
+ 
 
-    fetchLocations();
-  }, []);
 
   // Filter navigation items based on user role
   const filteredNavItems = navItems.filter(item => {
@@ -376,7 +347,7 @@ function Topbar() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+          {/* <Select value={selectedLocation} onValueChange={setSelectedLocation}>
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Location" />
             </SelectTrigger>
@@ -387,7 +358,7 @@ function Topbar() {
                 </SelectItem>
               ))}
             </SelectContent>
-          </Select>
+          </Select> */}
           {/* <Button variant="ghost" size="icon" aria-label="Notifications">
             <Bell />
           </Button> */}

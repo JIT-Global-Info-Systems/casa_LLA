@@ -86,12 +86,12 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     sourceCategory: "",
     source: "",
     extent: "",
-    unit: "Acre",
+    unit: "",
     propertyType: "",
     fsi: "",
     asp: "",
     revenue: "",
-    transactionType: "JV",
+    transactionType: " ",
     rate: "",
     builderShare: "",
     refundable: "",
@@ -100,7 +100,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     frontage: "",
     roadWidth: "",
     sspde: "No",
-    leadStatus: "Pending",
+    leadStatus: "Enquired",
     status: "active",
     remark: "",
     lead_stage: "",
@@ -1242,19 +1242,19 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-white z-50 shadow-lg">
-                      <SelectItem value="Pending">Enquired</SelectItem>
-                      <SelectItem value="Approved">Lead Allocated</SelectItem>
-                      <SelectItem value="Rejected">First Called</SelectItem>
-                      <SelectItem value="Cancelled">Site Visit</SelectItem>
-                      <SelectItem value="Lost">Owner Meeting</SelectItem>
-                      <SelectItem value="Won">Negotiation Started</SelectItem>
-                      <SelectItem value="Purchased">Negotiation End</SelectItem>
-                      <SelectItem value="Rejected">Due Diligence Started</SelectItem>
-                      <SelectItem value="Cancelled">Due Diligence End</SelectItem>
-                      <SelectItem value="Lost">Approved</SelectItem>
-                      <SelectItem value="Lost">Purchased</SelectItem>
-                      <SelectItem value="Won">Lost</SelectItem>
-                      <SelectItem value="Purchased">Hold</SelectItem>
+                      <SelectItem value="Enquired">Enquired</SelectItem>
+                      <SelectItem value="Lead_Allocated">Lead Allocated</SelectItem>
+                      <SelectItem value="First_Called">First Called</SelectItem>
+                      <SelectItem value="Site_Visit">Site Visit</SelectItem>
+                      <SelectItem value="Owner_Meeting">Owner Meeting</SelectItem>
+                      <SelectItem value="Negotiation_Started">Negotiation Started</SelectItem>
+                      <SelectItem value="Negotiation_End">Negotiation End</SelectItem>
+                      <SelectItem value="Due_Diligence_Started">Due Diligence Started</SelectItem>
+                      <SelectItem value="Due_Diligence_End">Due Diligence End</SelectItem>
+                      <SelectItem value="Approved">Approved</SelectItem>
+                      <SelectItem value="Purchased">Purchased</SelectItem>
+                      <SelectItem value="Lost">Lost</SelectItem>
+                      <SelectItem value="Hold">Hold</SelectItem>
                     </SelectContent>
                   </Select>
               )}
