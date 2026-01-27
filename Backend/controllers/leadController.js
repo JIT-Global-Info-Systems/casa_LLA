@@ -333,7 +333,12 @@ exports.getAllLeads = async (req, res) => {
 exports.getPendingLeads = async (req, res) => {
   try {
     const { location } = req.query;
-    const query = { lead_status: "PENDING" };
+    const query = {
+      $or: [
+        { lead_status: { $ne: "APPROVED" } },
+        { lead_status: { $ne: "PURCHASED" } }
+      ]
+    };
     
     if (location) {
       query.location = { $regex: new RegExp(`^${location}$`, 'i') };
