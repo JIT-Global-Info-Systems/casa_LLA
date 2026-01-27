@@ -36,6 +36,8 @@ export default function LeadsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
  
   const { leads, loading, error, fetchLeads, createLead, updateLead, deleteLead, getLeadById } = useLeads()
  
@@ -278,6 +280,17 @@ export default function LeadsPage() {
  
     return matchesSearch && matchesDateRange;
   });
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, dateFrom, dateTo]);
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedLeads = filteredLeads.slice(startIndex, endIndex);
  
   return (
     <div className="flex-1 space-y-6 p-0">
@@ -666,7 +679,7 @@ export default function LeadsPage() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredLeads.map((lead) => (
+                    {paginatedLeads.map((lead) => (
                       <tr key={lead.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{lead.lead_id || lead.id}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{lead.name}</td>
@@ -733,11 +746,29 @@ export default function LeadsPage() {
               {!loading && !error && filteredLeads.length === 0 && <div className="text-center py-12 text-gray-500"><p>No leads found matching your criteria.</p></div>}
  
               <div className="px-6 py-4 border-t flex items-center justify-between">
-                <p className="text-sm text-gray-600">Showing {filteredLeads.length} results</p>
+                <p className="text-sm text-gray-600">Showing {startIndex + 1} to {Math.min(endIndex, filteredLeads.length)} of {filteredLeads.length} results</p>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" disabled className="text-gray-400">Previous</Button>
-                  <Button variant="outline" size="sm" disabled className="text-gray-400">Next</Button>
-                  <Button variant="outline" size="sm" disabled className="text-gray-400">Last</Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(currentPage - 1)}
+                    className="text-gray-700"
+                  >
+                    Previous
+                  </Button>
+                  <span className="px-3 py-1 text-sm text-gray-600 flex items-center">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                    className="text-gray-700"
+                  >
+                    Next
+                  </Button>
                 </div>
               </div>
             </Card>

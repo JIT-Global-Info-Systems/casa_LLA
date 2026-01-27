@@ -38,6 +38,8 @@ export default function ApprovedLeads() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentStep, setCurrentStep] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const handleView = (lead) => {
     setSelectedLead(lead);
@@ -154,6 +156,17 @@ export default function ApprovedLeads() {
 
     return matchesSearch && matchesDate && matchesStatus;
   });
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, dateFrom, dateTo, statusFilter]);
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedLeads = filteredLeads.slice(startIndex, endIndex);
 
   return (
     <div className="flex-1 space-y-6 p-0">
@@ -419,7 +432,7 @@ export default function ApprovedLeads() {
                         </td>
                       </tr>
                     ) : (
-                      filteredLeads.map((lead) => (
+                      paginatedLeads.map((lead) => (
                         <tr key={lead._id} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                             {lead.lead_id || 'N/A'}
@@ -475,14 +488,27 @@ export default function ApprovedLeads() {
               {filteredLeads.length > 0 && (
                 <div className="px-6 py-3 flex items-center justify-between border-t border-gray-200">
                   <div className="text-sm text-gray-700">
-                    Showing <span className="font-medium">1</span> to <span className="font-medium">{filteredLeads.length}</span> of{' '}
-                    <span className="font-medium">{leads.length}</span> results
+                    Showing <span className="font-medium">{startIndex + 1}</span> to <span className="font-medium">{Math.min(endIndex, filteredLeads.length)}</span> of{' '}
+                    <span className="font-medium">{filteredLeads.length}</span> results
                   </div>
                   <div className="flex space-x-2">
-                    <Button variant="outline" size="sm" disabled>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage(currentPage - 1)}
+                    >
                       Previous
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <span className="px-3 py-1 text-sm text-gray-600 flex items-center">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage(currentPage + 1)}
+                    >
                       Next
                     </Button>
                   </div>

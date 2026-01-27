@@ -29,6 +29,8 @@ function Users() {
   const [toDate, setToDate] = useState("");
   const [mode, setMode] = useState("list"); // 'list' | 'add' | 'edit' | 'view'
   const [selectedUser, setSelectedUser] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -51,6 +53,17 @@ function Users() {
     filterUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [users, searchTerm, roleFilter, statusFilter, fromDate, toDate]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, roleFilter, statusFilter, fromDate, toDate]);
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
 
   const filterUsers = () => {
     if (!users) return;
@@ -348,7 +361,7 @@ function Users() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredUsers.map((user) => (
+                    {paginatedUsers.map((user) => (
                       <tr
                         key={user.user_id}
                         className="hover:bg-gray-50 transition-colors"
@@ -477,32 +490,29 @@ function Users() {
               {/* Footer */}
               <div className="px-6 py-4 border-t flex items-center justify-between">
                 <p className="text-sm text-gray-600">
-                  Showing {filteredUsers.length} results
+                  Showing {startIndex + 1} to {Math.min(endIndex, filteredUsers.length)} of {filteredUsers.length} results
                 </p>
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled
-                    className="text-gray-400"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(currentPage - 1)}
+                    className="text-gray-700"
                   >
                     Previous
                   </Button>
+                  <span className="px-3 py-1 text-sm text-gray-600 flex items-center">
+                    Page {currentPage} of {totalPages}
+                  </span>
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled
-                    className="text-gray-400"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                    className="text-gray-700"
                   >
                     Next
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled
-                    className="text-gray-400"
-                  >
-                    Last
                   </Button>
                 </div>
               </div>
