@@ -454,7 +454,7 @@ const calculateWorkStages = (leadsData, accessData) => {
       ],
     },
     {
-      title: "Work Stages",
+      title: "Work Stages with Profile",
       dateRange: "2025-08-30 – 2025-11-30",
       total: Object.values(workStages).reduce((sum, count) => sum + count, 0),
       tone: "purple",

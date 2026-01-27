@@ -966,7 +966,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
             </div>
 
             <div className="space-y-2">
-              <Label>Lead Stage</Label>
+              <Label>Lead Status</Label>
               <Select value={formData.lead_stage} onValueChange={(v) => handleChange("lead_stage", v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select stage" />
@@ -1208,7 +1208,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
             {/* <div className="md:col-span-3 p-4 bg-yellow-50 rounded-lg border border-yellow-200"> */}
               <div className="space-y-2">
-                <Label className="text-yellow-800">Lead Status</Label>
+                <Label className="text-yellow-800">Lead Stages</Label>
                 {viewMode ? (
                   <div className="p-2 bg-white border border-yellow-300 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
                     {formData.leadStatus || "-"}
@@ -1219,13 +1219,19 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-white z-50 shadow-lg">
-                      <SelectItem value="Pending">Pending</SelectItem>
-                      <SelectItem value="Approved">Approved</SelectItem>
-                      <SelectItem value="Rejected">Rejected</SelectItem>
-                      <SelectItem value="Cancelled">Cancelled</SelectItem>
-                      <SelectItem value="Lost">Lost</SelectItem>
-                      <SelectItem value="Won">Won</SelectItem>
-                      <SelectItem value="Purchased">Purchased</SelectItem>
+                      <SelectItem value="Pending">Enquired</SelectItem>
+                      <SelectItem value="Approved">Lead Allocated</SelectItem>
+                      <SelectItem value="Rejected">First Called</SelectItem>
+                      <SelectItem value="Cancelled">Site Visit</SelectItem>
+                      <SelectItem value="Lost">Owner Meeting</SelectItem>
+                      <SelectItem value="Won">Negotiation Started</SelectItem>
+                      <SelectItem value="Purchased">Negotiation End</SelectItem>
+                      <SelectItem value="Rejected">Due Diligence Started</SelectItem>
+                      <SelectItem value="Cancelled">Due Diligence End</SelectItem>
+                      <SelectItem value="Lost">Approved</SelectItem>
+                      <SelectItem value="Lost">Purchased</SelectItem>
+                      <SelectItem value="Won">Lost</SelectItem>
+                      <SelectItem value="Purchased">Hold</SelectItem>
                     </SelectContent>
                   </Select>
                 )}

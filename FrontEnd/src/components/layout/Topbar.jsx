@@ -347,12 +347,12 @@ function Topbar() {
             </SheetContent>
           </Sheet>
 
-          <div className="flex flex-col">
-            <div className="text-base font-bold text-indigo-700">{title}</div>
+          {/* <div className="flex flex-col"> */}
+            {/* <div className="text-base font-bold text-indigo-700">{title}</div>
             <div className="hidden text-xs text-slate-500 sm:block">
               Analytics dashboard
-            </div>
-          </div>
+            </div> */}
+          {/* </div> */}
 
           <nav className="hidden md:flex items-center gap-1" aria-label="Primary">
             {filteredNavItems.map((item) => {
