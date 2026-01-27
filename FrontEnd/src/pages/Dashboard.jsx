@@ -219,239 +219,114 @@ function Dashboard() {
     startDate: "",
     endDate: "",
   });
-
-  // Fetch all leads on component mount
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        await fetchLeads();
-        if (leads?.length > 0) {
-          toast.success(`Loaded ${leads.length} leads`);
-        } else if (leads?.length === 0) {
-          toast("No leads found", { icon: "" });
-        }
-      } catch (error) {
-        console.error("Error loading dashboard data:", error);
-        toast.error("Failed to load dashboard data");
-      }
-    };
-
-    loadData();
-  }, []);
-
-  // Calculate active leads count (PENDING leads from all leads API)
-  const activeLeadsCount = leads?.filter((lead) => {
-    const status = lead.lead_status || lead.status;
-    return status === "PENDING" || status === "pending";
-  }).length || 0;
-
-  // Calculate approved leads count
-  const approvedLeadsCount = leads?.filter((lead) => {
-    const status = lead.lead_status || lead.status;
-    return status === "APPROVED" || status === "approved";
-  }).length || 0;
-
-  // Calculate purchased leads count
-  const purchasedLeadsCount = leads?.filter((lead) => {
-    const status = lead.lead_status || lead.status;
-    return status === "PURCHASED" || status === "purchased";
-  }).length || 0;
-
-  // Calculate lead stages count (filtering only valid stages: hot, warm, cold, management hot)
-  const leadStages = {
-    hot: 0,
-    warm: 0,
-    cold: 0,
-    management_hot: 0,
-  };
-
-  leads?.forEach((lead) => {
-    const stage = lead.lead_stage;
-    if (stage === "hot") leadStages.hot++;
-    else if (stage === "warm") leadStages.warm++;
-    else if (stage === "cold") leadStages.cold++;
-    else if (stage === "management hot" || stage === "management_hot")
-      leadStages.management_hot++;
-  });
- 
-  // Debug: log the leads data to see structure
-  console.log('Leads data:', leads);
-  console.log('Active leads count:', activeLeadsCount);
-  console.log('Approval leads count:', approvedLeadsCount);
-  console.log('Purchased leads count:', purchasedLeadsCount);
-  console.log('Lead stages:', leadStages);
-  
-  // Calculate work stages based on currentRole from leads API
-  const [workStages, setWorkStages] = useState({});
-  const [workStagesLabels, setWorkStagesLabels] = useState({});
-
-  // Function to calculate work stages dynamically based on API response
-  // const calculateWorkStages = (leadsData, accessData = null) => {
-  //   const stages = {};
-    
-  //   // If access data provided by API, use it to create labels
-  //   if (accessData && accessData.data) {
-  //     // Initialize stages with API roles (exclude admin)
-  //     accessData.data.forEach(access => {
-  //       if (access.role !== 'admin') {
-  //         // Convert role key to display label
-  //         const displayLabel = access.role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-  //         stages[displayLabel] = 0;
-  //       }
-  //     });
-      
-  //     // Count leads based on API roles
-  //     leadsData?.forEach(lead => {
-  //       const role = lead.currentRole;
-  //       if (role) {
-  //         const normalizedRole = role.toLowerCase().trim().replace(/\s+/g, '_');
-          
-  //         // Find matching role from API
-  //         const matchingAccess = accessData.data.find(access => 
-  //           access.role === normalizedRole && access.role !== 'admin'
-  //         );
-          
-  //         if (matchingAccess) {
-  //           const displayLabel = matchingAccess.role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-  //           stages[displayLabel]++;
-  //         }
-  //       }
-  //     });
-  //   } else {
-  //     // Fallback to hardcoded labels if API not available
-  //     const defaultLabels = {
-  //       'Tele Callers': ['tele callers', 'tele_callers', 'telecaller'],
-  //       'Land Executive': ['land executive', 'land_executive', 'landexecutive'],
-  //       'L1 Md': ['l1 md', 'l1_md', 'l1md'],
-  //       'Cmo Cro': ['cmo cro', 'cmo_cro', 'cmo', 'cro'],
-  //       'Feasibility Team': ['feasibility team', 'feasibility_team', 'feasibility'],
-  //       'Legal': ['legal'],
-  //       'Liaison': ['liaison'],
-  //       'Finance': ['finance'],
-  //       'Management': ['management']
-  //     };
-      
-  //     // Initialize stages with default labels
-  //     Object.keys(defaultLabels).forEach(label => {
-  //       stages[label] = 0;
-  //     });
-      
-  //     // Count leads based on default labels
-  //     leadsData?.forEach(lead => {
-  //       const role = lead.currentRole;
-  //       if (role) {
-  //         const normalizedRole = role.toLowerCase().trim();
-  //         Object.entries(defaultLabels).forEach(([label, variations]) => {
-  //           if (variations.some(variation => normalizedRole === variation.toLowerCase().trim())) {
-  //             stages[label]++;
-  //           }
-  //         });
-  //       }
-  //     });
-  //   }
-//new api method for work stages
-const calculateWorkStages = (leadsData, accessData) => {
-  const stages = {};
-
-  if (!accessData || !Array.isArray(accessData)) return {};
-
-  // Step 1: Initialize all roles from API (except admin)
-  accessData.forEach(access => {
-    if (access.role !== "admin") {
-      stages[access.role] = 0;   // land_executive, tele_caller, etc
+  const [dashboardData, setDashboardData] = useState({
+    leadStatusCounts: {},
+    leadStageCounts: {},
+    workStageCounts: {},
+    totals: {
+      approvedLeads: 0,
+      pendingLeads: 0,
+      purchasedLeads: 0
     }
   });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Step 2: Count leads by currentRole
-  leadsData.forEach(lead => {
-    if (!lead.currentRole) return;
-
-    const role = lead.currentRole.trim(); // e.g. "land_executive"
-
-    if (stages.hasOwnProperty(role)) {
-      stages[role]++;
-    }
-  });
-
-  return stages;
-};
-
-
-  // Fetch access data for work stages labels
-  const fetchAccessData = async () => {
+  // Fetch dashboard data from API
+  const fetchDashboardData = async () => {
     try {
-      console.log('🔑 Checking token in localStorage:', localStorage.getItem('token') ? 'Token exists' : 'No token found');
-      console.log('🌐 Making API call to access/get...');
-      const accessData = await accessAPI.getAll();
-      console.log('✅ Access API call successful:', accessData);
-      setWorkStagesLabels(accessData);
-      return accessData;
-    } catch (error) {
-      console.error('❌ Error fetching access data:', error);
-      console.error('❌ Error details:', {
-        message: error.message,
-        stack: error.stack
+      setIsLoading(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await fetch('http://localhost:5000/api/dashboard', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
       });
-      // Return null to use fallback labels
-      return null;
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setDashboardData(data.data);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+      setError('Failed to load dashboard data');
+      toast.error('Failed to load dashboard data');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Update work stages when leads or labels change
+  // Fetch data on component mount
   useEffect(() => {
-    const updateWorkStages = async () => {
-      console.log('🔄 Starting work stages update...');
-      try {
-        const accessData = await fetchAccessData();
-        console.log('📊 Access data received:', accessData);
-        const calculatedStages = calculateWorkStages(leads, accessData);
-        console.log('📈 Calculated stages:', calculatedStages);
-        setWorkStages(calculatedStages);
-      } catch (error) {
-        console.error('❌ Error in work stages update:', error);
-      }
-    };
-
-    if (leads && leads.length > 0) {
-      console.log('🚀 Triggering work stages update...');
-      updateWorkStages();
-    } else {
-      console.log('⏳ Waiting for leads data...');
-    }
+    fetchDashboardData();
   }, []);
 
-  // Debug: Check for currentRole field in leads
-  if (leads && leads.length > 0) {
-    console.log('Sample lead structure:', leads[0]);
-    console.log('Available fields:', Object.keys(leads[0]));
-    console.log('Current role values:', leads.map(lead => lead.currentRole).filter(Boolean));
-    console.log('Work stages calculated:', workStages);
-  }
- 
+  // Extract data from API response
+  const { 
+    leadStatusCounts = {},
+    leadStageCounts = {},
+    workStageCounts = {},
+    totals = {}
+  } = dashboardData;
+
+  // Use API response data directly without mapping
+  const activeLeadsCount = leadStatusCounts.PENDING || 0;
+  const approvedLeadsCount = totals.approvedLeads || 0;
+  const purchasedLeadsCount = totals.purchasedLeads || 0;
+
+  // Use leadStageCounts directly from API
+  const leadStages = {
+    ...leadStageCounts,
+    // Ensure all expected keys exist with default 0
+    hot: leadStageCounts.hot || 0,
+    warm: leadStageCounts.warm || 0,
+    cold: leadStageCounts.cold || 0,
+    management_hot: leadStageCounts.management_hot || leadStageCounts['management hot'] || 0,
+    step1: leadStageCounts.step1 || 0
+  };
+
+  // Use workStageCounts directly from API
+  const workStages = { ...workStageCounts };
+
+  // Debug log to see the actual API response structure
+  console.log('Dashboard API Response:', {
+    leadStatusCounts,
+    leadStageCounts,
+    workStageCounts,
+    totals
+  });
+
   const donutCards = [
     {
       title: "Leads Status",
       dateRange: "2025-08-30 – 2025-11-30",
       total: activeLeadsCount + approvedLeadsCount + purchasedLeadsCount,
       tone: "blue",
-      segments: [
-        { label: "Active", value: activeLeadsCount, color: "#22c55e" },
-        { label: "Approved", value: approvedLeadsCount, color: "#f59e0b" },
-        { label: "Purchased", value: purchasedLeadsCount, color: "#ef4444" },
-        // { label: "Pushed", value: leadsByStatus.pushed || 0, color: "#3b82f6" },
-      ],
+      segments: Object.entries(leadStatusCounts).map(([status, count]) => ({
+        label: status,
+        value: count,
+        color: ["#22c55e", "#f59e0b", "#ef4444", "#3b82f6", "#8b5cf6"][Object.keys(leadStatusCounts).indexOf(status) % 5] || "#94a3b8"
+      })),
     },
     {
       title: "Leads Stages",
       dateRange: "2025-08-30 – 2025-11-30",
       total: leadStages.hot + leadStages.warm + leadStages.cold + leadStages.management_hot,
       tone: "red",
-      segments: [
-        { label: "Hot", value: leadStages.hot, color: "#ef4444" },
-        { label: "Warm", value: leadStages.warm, color: "#f59e0b" },
-        { label: "Cold", value: leadStages.cold, color: "#3b82f6"},
-        { label: "Management Hot", value: leadStages.management_hot, color: "#22c55e" },
-      ],
+      segments: Object.entries(leadStageCounts).map(([stage, count]) => ({
+        label: stage.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        value: count,
+        color: ["#ef4444", "#f59e0b", "#3b82f6", "#22c55e", "#8b5cf6"][Object.keys(leadStageCounts).indexOf(stage) % 5] || "#94a3b8"
+      })),
     },
     {
       title: "Work Stages",
@@ -542,23 +417,24 @@ const calculateWorkStages = (leadsData, accessData) => {
         </section>
  
         {/* STATUS CARDS */}
-        <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-4">
+        {/* <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-4">
           <StatusCard icon={BadgeCheck} label="Active records" value={activeLeadsCount} tone="success" />
           <StatusCard icon={FileText} label="Site visit pending" value={1738} tone="info" />
           <StatusCard icon={CalendarClock} label="Owner meet pending" value={130} tone="warning" />
           <StatusCard icon={AlertTriangle} label="Critical overdue" value={12} tone="destructive" />
-        </section>
+        </section> */}
  
         {/* WIDE CARDS */}
-        <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
+        {/* <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
           <WideMetricCard icon={ClipboardList} label="Open tasks" value={6} />
           <WideMetricCard icon={Bell} label="Due in 2 days" value={0} />
           <WideMetricCard icon={AlertTriangle} label="Overdue" value={4} />
-        </section>
+        </section> */}
  
         <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <WideMetricCard icon={Users} label="Leads to allocate" value={69} />
-          <WideMetricCard icon={FileCheck2} label="Leads to approve" value={20} />
+          <WideMetricCard icon={Users} label="Approved Leads" value={totals.approvedLeads} />
+          <WideMetricCard icon={FileCheck2} label="Purchased Leads" value={totals.purchasedLeads} />
+          <WideMetricCard icon={FileCheck2} label="Pending Leads" value={totals.pendingLeads} />
         </section>
  
         {/* NOTES */}
