@@ -102,7 +102,7 @@ const STAGES = [
   { id: "admin", label: "Admin" },
 ]
 
-export default function LeadStepper({ stageName, currentStep = 1, onStepChange, className }) {
+export default function LeadStepper({ stageName, currentStep = 1, onStepChange, className, isNewLead = false }) {
   // Normalize stageName to match against STAGES
   const findStepIndex = (name) => {
     if (!name) return 0
@@ -116,12 +116,17 @@ export default function LeadStepper({ stageName, currentStep = 1, onStepChange, 
     const indexByLabel = STAGES.findIndex(s => s.label.toLowerCase().replace(/[\s_/]/g, '') === normalized)
     if (indexByLabel !== -1) return indexByLabel + 1
 
-    return 1 // Default to first step
+    return 0 // Return 0 if no match found
   }
 
-  const stepFromStage = findStepIndex(stageName)
-  // If currentStep is 1 (default) and we have a valid step from stage, use the stage step
-  const activeStep = (currentStep === 1 && stepFromStage > 0) ? stepFromStage : (currentStep || stepFromStage)
+  // For new leads, always show all steps as grey (activeStep = 0)
+  // For existing leads, use the stage name or current step
+  let activeStep = 0
+  
+  if (!isNewLead) {
+    const stepFromStage = findStepIndex(stageName)
+    activeStep = (currentStep === 1 && stepFromStage > 0) ? stepFromStage : (currentStep || stepFromStage)
+  }
 
   const handleStepClick = (stepNumber) => {
     if (onStepChange) {
