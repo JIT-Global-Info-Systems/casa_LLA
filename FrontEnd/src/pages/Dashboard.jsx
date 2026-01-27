@@ -494,7 +494,7 @@ const [toDate , setToDate ] = useState("")
  
         <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
           <WideMetricCard icon={Users} label="Approved Leads" value={totals.approvedLeads} />
-          <WideMetricCard icon={FileCheck2} label="Purchased Leads" value={totals.purchasedLeads} />
+          <WideMetricCard icon={FileCheck2} label="Purchased Leads" value={purchasedLeadsCount} />
           <WideMetricCard icon={FileCheck2} label="Pending Leads" value={totals.pendingLeads} />
         </section>
  
