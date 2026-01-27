@@ -388,9 +388,9 @@ function Topbar() {
               ))}
             </SelectContent>
           </Select>
-          <Button variant="ghost" size="icon" aria-label="Notifications">
+          {/* <Button variant="ghost" size="icon" aria-label="Notifications">
             <Bell />
-          </Button>
+          </Button> */}
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

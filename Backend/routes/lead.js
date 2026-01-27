@@ -13,7 +13,7 @@ router.put("/update/:leadId",verifyToken, upload.fields([
   { name: "fmb_sketch", maxCount: 1 },
   { name: "patta_chitta", maxCount: 1 }
 ]), verifyToken, leadController.updateLead);
-router.delete("/delete/:leadId", verifyToken, leadController.softDeleteLead);
+router.delete("/delete/:leadId", verifyToken, leadController.deleteLead);
 router.get("/pending", verifyToken, leadController.getPendingLeads);
 router.get("/all", verifyToken, leadController.getAllLeads);
 router.get("/approved", verifyToken, leadController.getApprovedLeads);
