@@ -1,3 +1,4 @@
+//view mode popups (not a popup).... 
 import { useState, useEffect, useCallback } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -9,6 +10,7 @@ import { locationsAPI } from "@/services/api"
 import { useMediators } from "../context/MediatorsContext.jsx"
 import { useUsers } from "../context/UsersContext.jsx"
 import { ChevronLeft, Upload, FileText, CheckCircle2, AlertCircle, Loader2 } from "lucide-react"
+import LeadStepper from "@/components/ui/LeadStepper"
 import toast from "react-hot-toast"
 
 const yesNo = (v) => (v ? "Yes" : "No")
@@ -16,17 +18,35 @@ const yesNo = (v) => (v ? "Yes" : "No")
 export default function Leads({ data = null, onSubmit, onClose, viewMode = false }) {
   const { mediators, loading: mediatorsLoading, fetched: mediatorsFetched, fetchMediators } = useMediators()
   const { users, loading: usersLoading, fetchUsers } = useUsers()
-  
+
+  // Static roles for assignment (matching LeadStepper)
+  const STATIC_ROLES = [
+    "tele_caller",
+    "land_executive", 
+    "analytics_team",
+    "feasibility_team",
+    "field_study_product_team",
+    "management_md_1st_level",
+    "cmo_cro",
+    "legal",
+    "liaison", 
+    "finance",
+    "admin"
+  ]
+
   // Define role hierarchy - lower number means higher priority
   const roleHierarchy = {
     'admin': 1,
     'cmo_cro': 2,
-    'l1_md': 3,
+    'management_md_1st_level': 3,
     'legal': 4,
     'liaison': 5,
-    'feasibility_team': 6,
-    'land_executive': 7,
-    'tele_caller': 8
+    'finance': 6,
+    'feasibility_team': 7,
+    'analytics_team': 8,
+    'field_study_product_team': 9,
+    'land_executive': 10,
+    'tele_caller': 11
   }
 
   // Get current user role from localStorage
@@ -34,40 +54,23 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     return localStorage.getItem('userRole') || 'tele_caller' // Default to lowest role if not found
   }
 
-  // Get filtered users based on role hierarchy
-  const getFilteredUsers = () => {
+  // Get static roles filtered by hierarchy
+  const getFilteredStaticRoles = () => {
     const currentUserRole = getCurrentUserRole()
-    const currentUserLevel = roleHierarchy[currentUserRole] || 8
+    const currentUserLevel = roleHierarchy[currentUserRole] || 11
+
+    // For now, show all static roles (remove filtering to debug)
+    return STATIC_ROLES.sort((a, b) => (roleHierarchy[a] || 12) - (roleHierarchy[b] || 12))
     
     // Admin can assign to anyone
     if (currentUserRole === 'admin') {
-      return users.sort((a, b) => (roleHierarchy[a.role] || 9) - (roleHierarchy[b.role] || 9))
+      return STATIC_ROLES.sort((a, b) => (roleHierarchy[a] || 12) - (roleHierarchy[b] || 12))
     }
-    
-    // Other users can only assign to lower priority roles (higher numbers)
-    return users
-      .filter(user => (roleHierarchy[user.role] || 9) > currentUserLevel)
-      .sort((a, b) => (roleHierarchy[a.role] || 9) - (roleHierarchy[b.role] || 9))
-  }
 
-  // Get unique roles based on role hierarchy
-  const getFilteredRoles = () => {
-    const currentUserRole = getCurrentUserRole()
-    const currentUserLevel = roleHierarchy[currentUserRole] || 8
-    
-    // Get all unique roles from users
-    const allRoles = [...new Set(users.map(user => user.role))]
-    
-    // Filter roles based on hierarchy
-    const availableRoles = allRoles.filter(role => {
-      if (currentUserRole === 'admin') {
-        return true // Admin can assign any role
-      }
-      return (roleHierarchy[role] || 9) > currentUserLevel
-    })
-    
-    // Sort roles by hierarchy
-    return availableRoles.sort((a, b) => (roleHierarchy[a] || 9) - (roleHierarchy[b] || 9))
+    // Other users can only assign to lower priority roles (higher numbers)
+    return STATIC_ROLES
+      .filter(role => (roleHierarchy[role] || 12) > currentUserLevel)
+      .sort((a, b) => (roleHierarchy[a] || 12) - (roleHierarchy[b] || 12))
   }
   const [formData, setFormData] = useState({
     // Basic Lead Information
@@ -103,7 +106,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     lead_stage: "",
 
     // Yield Calculation (UI-only for now; backend schema doesn’t store these fields yet)
-    yield:"",
+    yield: "",
 
     // Competitor Analysis (mapped to competitorAnalysis[] on submit)
     competitorDeveloperName: "",
@@ -164,6 +167,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
     checkRequests: "",
     currentRole: "",
+    assignedTo: "",
   })
 
   const [masters, setMasters] = useState({ locations: [], regions: [], zones: [] })
@@ -187,11 +191,11 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     if (!dataToValidate.sourceCategory) nextErrors.sourceCategory = "Source category is required"
     if (!dataToValidate.source) nextErrors.source = "Source is required"
 
-    // Numeric fields (soft validation)
-    ;["extent", "fsi", "asp", "revenue", "rate", "builderShare"].forEach((k) => {
-      const v = dataToValidate[k]
-      if (v && isNaN(parseFloat(v))) nextErrors[k] = `${k} must be a number`
-    })
+      // Numeric fields (soft validation)
+      ;["extent", "fsi", "asp", "revenue", "rate", "builderShare"].forEach((k) => {
+        const v = dataToValidate[k]
+        if (v && isNaN(parseFloat(v))) nextErrors[k] = `${k} must be a number`
+      })
 
     // Files: backend allows only JPG/PNG/JPEG and 2MB
     const validateFile = (fileKey, file) => {
@@ -226,7 +230,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     setLoading((prev) => ({ ...prev, locations: true, regions: true, zones: true }))
     setApiError(null)
     const loadingToast = toast.loading('Loading locations...')
-    
+
     try {
       const locationsData = await locationsAPI.getAll()
       const transformedLocations = locationsData.map((loc) => ({
@@ -278,7 +282,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     const loadData = async () => {
       try {
         await fetchLocations()
-        
+
         // Only fetch mediators if they haven't been fetched yet
         if (!mediatorsFetched && !mediatorsLoading && !mediators.length) {
           const mediatorsToast = toast.loading('Loading mediators...')
@@ -290,7 +294,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
             toast.error('Failed to load mediators. Some features may be limited.', { id: mediatorsToast })
           }
         }
-        
+
         // Fetch users
         if (!usersLoading && !users.length) {
           const usersToast = toast.loading('Loading users...')
@@ -307,9 +311,17 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
         toast.error('Failed to load initial data. Please refresh the page.')
       }
     }
-    
+
     loadData()
   }, [fetchLocations, fetchMediators, mediatorsFetched, mediatorsLoading, mediators.length, usersLoading, users.length, fetchUsers])
+
+  useEffect(() => {
+    // Auto-set currentRole from localStorage when creating new lead (not editing)
+    if (!data) {
+      const userRole = getCurrentUserRole()
+      handleChange("currentRole", userRole)
+    }
+  }, [data])
 
   useEffect(() => {
     if (!data) return
@@ -325,6 +337,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       lead_stage: data.lead_stage || prev.lead_stage,
       mediatorId: data.mediatorId || prev.mediatorId,
       currentRole: data.currentRole || prev.currentRole,
+      assignedTo: data.assignedTo || prev.assignedTo, // Now storing role string, not user ID
       status: data.status || prev.status,
 
       // competitor..
@@ -391,14 +404,14 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
         toast.error('Invalid file type. Please upload a JPG, PNG, or PDF file.')
         return
       }
-      
+
       // Validate file size (5MB max)
       const maxSize = 5 * 1024 * 1024 // 5MB
       if (file.size > maxSize) {
         toast.error('File size too large. Maximum size is 5MB.')
         return
       }
-      
+
       toast.success(`${key === 'fileFMBSketch' ? 'FMB Sketch' : 'Patta/Chitta'} file selected: ${file.name}`, {
         duration: 2000
       })
@@ -433,6 +446,9 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
   )
 
   const toLeadPayload = () => {
+    // Always get currentRole from localStorage to ensure it's never missing
+    const currentRoleValue = getCurrentUserRole()
+
     const competitorAnalysis = [
       {
         developerName: formData.competitorDeveloperName || "",
@@ -520,11 +536,16 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       sspde: formData.sspde,
       remark: formData.remark,
       lead_stage: formData.lead_stage,
-      currentRole: formData.currentRole,
       status: formData.status,
 
       // backend field name
       lead_status: String(formData.leadStatus || "").toUpperCase(),
+
+      // CRITICAL: Always send currentRole from localStorage to prevent validation errors
+      currentRole: currentRoleValue,
+      
+      // Send assignedTo field (backend needs to support this)
+      assignedTo: formData.assignedTo,
 
       // structured sections
       competitorAnalysis,
@@ -561,11 +582,11 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
       if (onSubmit) {
         await onSubmit(leadPayload, files)
-        toast.success(data ? 'Lead updated successfully!' : 'Lead created successfully!', { 
+        toast.success(data ? 'Lead updated successfully!' : 'Lead created successfully!', {
           id: submitToast,
           duration: 3000
         })
-        
+
         // Show success message for file uploads if any
         if (Object.keys(files).length > 0) {
           toast.success('Files uploaded successfully', { duration: 2000 })
@@ -574,15 +595,15 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     } catch (error) {
       console.error("Submit error:", error)
       let errorMessage = "Failed to submit lead. Please try again."
-      
+
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message
       } else if (error.message) {
         errorMessage = error.message
       }
-      
+
       setApiError(errorMessage)
-      toast.error(errorMessage, { 
+      toast.error(errorMessage, {
         id: submitToast,
         duration: 5000,
         style: {
@@ -642,15 +663,22 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
               </Button>
             )}
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+              <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
                 {viewMode ? "View Lead" : data ? "Edit Lead" : "New Lead"}
               </h1>
               <p className="text-gray-500 text-sm mt-1">
-                {viewMode ? "View the lead details below." : "Fill in the details below to create a new property lead."}
+                {viewMode ? "View the lead details below." : "Fill in the details below to create a new property lead"}
               </p>
             </div>
           </div>
         </div>
+
+        {/* Lead Stepper */}
+        <LeadStepper 
+          stageName={formData.currentRole?.replace(/_/g, ' ') || "Tele Caller"}
+          currentStep={1}
+          className="w-full"
+        />
 
         {apiError && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
@@ -692,9 +720,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                           handleChange("mediatorId", "")
                         }
                       }}
-                      className={`px-4 py-1.5 rounded-md text-sm font-medium capitalize transition-all ${
-                        formData.leadType === type ? "bg-white text-indigo-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
-                      }`}
+                      className={`px-4 py-1.5 rounded-md text-sm font-medium capitalize transition-all ${formData.leadType === type ? "bg-white text-indigo-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                        }`}
                     >
                       {type}
                     </button>
@@ -733,8 +760,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                 </div>
               ) : (
                 formData.leadType === "mediator" ? (
-                  <Select 
-                    value={formData.mediatorName} 
+                  <Select
+                    value={formData.mediatorName}
                     onValueChange={(value) => {
                       handleChange("mediatorName", value)
                       // Also set the mediator ID when a mediator is selected
@@ -781,31 +808,27 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
             </div>
 
             <div className="space-y-2">
-              <Label>Current Role</Label>
+              <Label>{viewMode ? "Current Role" : "Assign to"}</Label>
               {viewMode ? (
                 <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
-                  {formData.currentRole?.replace('_', ' ') || "-"}
+                  {formData.currentRole?.replace(/_/g, ' ') || "-"}
                 </div>
               ) : (
-                <Select 
-                  value={formData.currentRole} 
-                  onValueChange={(value) => handleChange("currentRole", value)}
-                  disabled={usersLoading}
+                <Select
+                  value={formData.assignedTo}
+                  onValueChange={(value) => {
+                    handleChange("assignedTo", value)
+                  }}
                 >
                   <SelectTrigger className="bg-gray-50/50">
-                    {usersLoading ? (
-                      <div className="flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <SelectValue placeholder="Loading roles..." />
-                      </div>
-                    ) : (
-                      <SelectValue placeholder="Select role" />
-                    )}
+                    <SelectValue placeholder="Select role to assign">
+                      {formData.assignedTo?.replace(/_/g, ' ') || "Select role to assign"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent className="bg-white z-50 shadow-xl border-gray-200">
-                    {getFilteredRoles().map((role) => (
+                    {getFilteredStaticRoles().map((role) => (
                       <SelectItem key={role} value={role}>
-                        {role.replace('_', ' ')}
+                        {role.replace(/_/g, ' ')}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -844,7 +867,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
               <div className="space-y-2">
                 <Label className="text-indigo-900 font-semibold">Location</Label>
                 {viewMode ? (
-                  <div className="p-2 bg-white border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  <div className="p-2 bg-white border border-gray-200 rounded-md text-gray-800 min-h-40px flex items-center">
                     {formData.location || "-"}
                   </div>
                 ) : (
@@ -1207,45 +1230,45 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
             </div>
 
             {/* <div className="md:col-span-3 p-4 bg-yellow-50 rounded-lg border border-yellow-200"> */}
-              <div className="space-y-2">
-                <Label className="text-yellow-800">Lead Status</Label>
-                {viewMode ? (
-                  <div className="p-2 bg-white border border-yellow-300 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
-                    {formData.leadStatus || "-"}
-                  </div>
-                ) : (
-                  <Select value={formData.leadStatus} onValueChange={(v) => handleChange("leadStatus", v)}>
-                    <SelectTrigger className="bg-white border-yellow-300">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white z-50 shadow-lg">
-                      <SelectItem value="Pending">Pending</SelectItem>
-                      <SelectItem value="Approved">Approved</SelectItem>
-                      <SelectItem value="Rejected">Rejected</SelectItem>
-                      <SelectItem value="Cancelled">Cancelled</SelectItem>
-                      <SelectItem value="Lost">Lost</SelectItem>
-                      <SelectItem value="Won">Won</SelectItem>
-                      <SelectItem value="Purchased">Purchased</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              </div>
-
-              {/* Status field - only show in edit mode */}
-              {data && (
-                <div className="space-y-2">
-                  <Label>Status</Label>
-                  <Select value={formData.status} onValueChange={(v) => handleChange("status", v)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white z-50 shadow-lg">
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                    </SelectContent>
-                  </Select>
+            <div className="space-y-2">
+              <Label className="text-yellow-800">Lead Status</Label>
+              {viewMode ? (
+                <div className="p-2 bg-white border border-yellow-300 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
+                  {formData.leadStatus || "-"}
                 </div>
+              ) : (
+                <Select value={formData.leadStatus} onValueChange={(v) => handleChange("leadStatus", v)}>
+                  <SelectTrigger className="bg-white border-yellow-300">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white z-50 shadow-lg">
+                    <SelectItem value="Pending">Pending</SelectItem>
+                    <SelectItem value="Approved">Approved</SelectItem>
+                    <SelectItem value="Rejected">Rejected</SelectItem>
+                    <SelectItem value="Cancelled">Cancelled</SelectItem>
+                    <SelectItem value="Lost">Lost</SelectItem>
+                    <SelectItem value="Won">Won</SelectItem>
+                    <SelectItem value="Purchased">Purchased</SelectItem>
+                  </SelectContent>
+                </Select>
               )}
+            </div>
+
+            {/* Status field - only show in edit mode */}
+            {data && (
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select value={formData.status} onValueChange={(v) => handleChange("status", v)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white z-50 shadow-lg">
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             {/* </div> */}
 
             <div className="md:col-span-3 space-y-2">
@@ -1567,10 +1590,10 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className={`border-2 border-dashed rounded-xl p-6 transition-all ${formData.checkFMBSketch ? "border-indigo-400 bg-indigo-50/30" : "border-gray-200 bg-gray-50"}`}>
                   <div className="flex items-center gap-3 mb-3">
-                    <input 
-                      type="checkbox" 
-                      checked={formData.checkFMBSketch} 
-                      onChange={(e) => handleCheckboxChange("checkFMBSketch", e.target.checked)} 
+                    <input
+                      type="checkbox"
+                      checked={formData.checkFMBSketch}
+                      onChange={(e) => handleCheckboxChange("checkFMBSketch", e.target.checked)}
                       className="w-5 h-5 text-indigo-600 rounded"
                       disabled={viewMode}
                     />
@@ -1583,7 +1606,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                           <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">FMB Sketch Document</Label>
                           <div className="p-3 bg-white border border-gray-200 rounded-md">
                             <p className="text-sm text-gray-600 truncate">{data.checkListPage[0].fmbSketchPath}</p>
-                            <button 
+                            <button
                               className="mt-2 text-xs text-indigo-600 hover:text-indigo-800 underline"
                               onClick={() => window.open(`/uploads/${data.checkListPage[0].fmbSketchPath}`, '_blank')}
                             >
@@ -1609,10 +1632,10 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
                 <div className={`border-2 border-dashed rounded-xl p-6 transition-all ${formData.checkPattaChitta ? "border-indigo-400 bg-indigo-50/30" : "border-gray-200 bg-gray-50"}`}>
                   <div className="flex items-center gap-3 mb-3">
-                    <input 
-                      type="checkbox" 
-                      checked={formData.checkPattaChitta} 
-                      onChange={(e) => handleCheckboxChange("checkPattaChitta", e.target.checked)} 
+                    <input
+                      type="checkbox"
+                      checked={formData.checkPattaChitta}
+                      onChange={(e) => handleCheckboxChange("checkPattaChitta", e.target.checked)}
                       className="w-5 h-5 text-indigo-600 rounded"
                       disabled={viewMode}
                     />
@@ -1625,7 +1648,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                           <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Patta / Chitta Document</Label>
                           <div className="p-3 bg-white border border-gray-200 rounded-md">
                             <p className="text-sm text-gray-600 truncate">{data.checkListPage[0].pattaChittaPath}</p>
-                            <button 
+                            <button
                               className="mt-2 text-xs text-indigo-600 hover:text-indigo-800 underline"
                               onClick={() => window.open(`/uploads/${data.checkListPage[0].pattaChittaPath}`, '_blank')}
                             >
@@ -1720,12 +1743,12 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
             <CardContent>
               <div className="space-y-2">
                 <Label>Calls & Notes</Label>
-                <Textarea 
-                  value={formData.checkNotes} 
-                  onChange={(e) => handleChange("checkNotes", e.target.value)} 
-                  placeholder="Enter additional notes, calls, observations, or important information about this lead..." 
-                  rows={3} 
-                  className="bg-gray-50 resize-y" 
+                <Textarea
+                  value={formData.checkNotes}
+                  onChange={(e) => handleChange("checkNotes", e.target.value)}
+                  placeholder="Enter additional notes, calls, observations, or important information about this lead..."
+                  rows={3}
+                  className="bg-gray-50 resize-y"
                 />
               </div>
             </CardContent>

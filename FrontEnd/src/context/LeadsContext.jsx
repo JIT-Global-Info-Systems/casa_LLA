@@ -25,8 +25,10 @@ export const LeadsProvider = ({ children }) => {
       console.log('Fetching leads from API...');
       const response = await leadsAPI.getAll();
       console.log('API response:', response);
-      setLeads(response.data ?? response);
-      console.log('Leads set:', response.data ?? response);
+      // Handle both response formats: { data: [...] } or direct array
+      const leadsData = response.data || response;
+      setLeads(Array.isArray(leadsData) ? leadsData : []);
+      console.log('Leads set:', Array.isArray(leadsData) ? leadsData : []);
     } catch (err) {
       console.error('Error fetching leads:', err);
       setError(err.message);
