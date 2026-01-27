@@ -114,7 +114,7 @@ export default function LeadStepper({ stageName, currentStep = 1, onStepChange, 
  
   return (
     <div className={`overflow-x-auto ${className || ''}`}>
-      <div className="flex mb-2 min-w-[900px] items-center">
+      <div className="flex mb-2 min-w-[600px] items-center">
         {LEAD_STAGES.map((label, index) => {
           const step = index + 1
           const active = step <= activeStep
@@ -131,7 +131,7 @@ export default function LeadStepper({ stageName, currentStep = 1, onStepChange, 
                   {active > step ? <Check size={14} /> : step}
                 </button>
  
-                <span className="text-[11px] text-center mt-1 w-24 text-gray-600 cursor-pointer hover:text-indigo-600"
+                <span className="text-[11px] text-center mt-1 w-20 text-gray-600 cursor-pointer hover:text-indigo-600"
                       onClick={() => handleStepClick(step)}>
                   {label}
                 </span>
