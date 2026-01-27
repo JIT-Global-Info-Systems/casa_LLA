@@ -12,7 +12,7 @@ const ProtectedRoute = ({
 
   // Return null while checking authentication to prevent flash
   if (loading) {
-    return null;
+    return <div>Loading...</div>;
   }
 
   // If user is not authenticated, redirect to login with return path
