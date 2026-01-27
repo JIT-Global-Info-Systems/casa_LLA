@@ -22,8 +22,8 @@ export const LeadsProvider = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
-      console.log('Fetching leads from API...');
       const response = await leadsAPI.getAll();
+      setLeads(response.data ?? response);
       console.log('API response:', response);
       // Handle both response formats: { data: [...] } or direct array
       const leadsData = response.data || response;
@@ -32,6 +32,7 @@ export const LeadsProvider = ({ children }) => {
     } catch (err) {
       console.error('Error fetching leads:', err);
       setError(err.message);
+      // Don't throw - let UI handle the error state
     } finally {
       setLoading(false);
     }
@@ -44,6 +45,7 @@ export const LeadsProvider = ({ children }) => {
       const response = await leadsAPI.getApproved();
       setApprovedLeads(response.data ?? response);
     } catch (err) {
+      console.error('Error fetching approved leads:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -57,6 +59,7 @@ export const LeadsProvider = ({ children }) => {
       const response = await leadsAPI.getPurchased();
       setPurchasedLeads(response.data ?? response);
     } catch (err) {
+      console.error('Error fetching purchased leads:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -64,11 +67,20 @@ export const LeadsProvider = ({ children }) => {
   };
 
   const fetchAllLeadStatuses = async () => {
-    await Promise.all([
-      fetchLeads(),
-      fetchApprovedLeads(),
-      fetchPurchasedLeads()
-    ]);
+    try {
+      setLoading(true);
+      setError(null);
+      await Promise.all([
+        fetchLeads(),
+        fetchApprovedLeads(),
+        fetchPurchasedLeads()
+      ]);
+    } catch (err) {
+      console.error('Error fetching all lead statuses:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getLeadById = async (id) => {
@@ -76,8 +88,25 @@ export const LeadsProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       const response = await leadsAPI.getById(id);
-      return response.data ?? response;
+      let leadData = response.data ?? response;
+      
+      // Extract the latest assignedTo from history array
+      if (leadData.history && Array.isArray(leadData.history) && leadData.history.length > 0) {
+        // Sort history by createdAt in descending order to get the latest
+        const sortedHistory = leadData.history.sort((a, b) => 
+          new Date(b.createdAt || b.created_at) - new Date(a.createdAt || a.created_at)
+        );
+        
+        // Get the latest assignment
+        const latestAssignment = sortedHistory[0];
+        if (latestAssignment && latestAssignment.assignedTo) {
+          leadData.assignedTo = latestAssignment.assignedTo;
+        }
+      }
+      
+      return leadData;
     } catch (err) {
+      console.error('Error fetching lead:', err);
       setError(err.message);
       throw err;
     } finally {
@@ -93,6 +122,7 @@ export const LeadsProvider = ({ children }) => {
       setLeads(prev => [...prev, response.data ?? response]);
       return response;
     } catch (err) {
+      console.error('Error creating lead:', err);
       setError(err.message);
       throw err;
     } finally {
@@ -117,6 +147,7 @@ export const LeadsProvider = ({ children }) => {
 
       return response;
     } catch (err) {
+      console.error('Error updating lead:', err);
       setError(err.message);
       throw err;
     } finally {
@@ -133,6 +164,7 @@ export const LeadsProvider = ({ children }) => {
         prev.filter(lead => lead._id !== id && lead.id !== id)
       );
     } catch (err) {
+      console.error('Error deleting lead:', err);
       setError(err.message);
       throw err;
     } finally {

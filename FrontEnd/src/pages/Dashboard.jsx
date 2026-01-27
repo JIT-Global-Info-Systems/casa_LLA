@@ -29,6 +29,8 @@ import {
 } from "recharts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+import toast from "react-hot-toast";
+
 import DateFilter from "@/components/ui/datefilter";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
@@ -477,10 +479,10 @@ const calculateWorkStages = (leadsData, accessData) => {
               onClick={async () => {
                 try {
                   await fetchLeads();
-                  toast.success("Dashboard data refreshed");
+                  toast.success("Data refreshed");
                 } catch (error) {
                   console.error("Error refreshing data:", error);
-                  toast.error("Failed to refresh data");
+                  toast.error("Could not refresh data. Please try again.");
                 }
               }}
               disabled={loading}

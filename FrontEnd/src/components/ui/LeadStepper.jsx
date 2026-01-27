@@ -71,7 +71,7 @@
 //                   {label}
 //                 </span>
 //               </div>
-              
+
 //               {/* Connecting line */}
 //               {!isLast && (
 //                 <div className="w-8 h-px bg-gray-400 mx-1" />
@@ -86,57 +86,74 @@
 
 
 import { Check } from "lucide-react"
- 
-const LEAD_STAGES = [
-  "Tele Caller",
-  "Land Executive",
-  "Analytics Team",
-  "Feasibility Team",
-  "Field study / Product Team",
-  "Management (MD 1st Level)",
-  "CMO / CRO",
-  "Legal",
-  "Liaison",
-  "Finance",
-  "Admin",
+
+const STAGES = [
+  { id: "tele_caller", label: "Tele Caller" },
+  { id: "land_executive", label: "Land Executive" },
+  { id: "analytics_team", label: "Analytics Team" },
+  { id: "feasibility_team", label: "Feasibility Team" },
+  { id: "field_study_product_team", label: "Field study / Product Team" },
+  { id: "management_md_1st_level", label: "Management (MD 1st Level)" },
+  { id: "l1_md", label: "L1 MD" },
+  { id: "cmo_cro", label: "CMO / CRO" },
+  { id: "legal", label: "Legal" },
+  { id: "liaison", label: "Liaison" },
+  { id: "finance", label: "Finance" },
+  { id: "admin", label: "Admin" },
 ]
- 
+
 export default function LeadStepper({ stageName, currentStep = 1, onStepChange, className }) {
-  // Find current step number from stage name
-  const stepFromStage = LEAD_STAGES.indexOf(stageName) + 1 || 1
-  const activeStep = currentStep || stepFromStage
- 
+  // Normalize stageName to match against STAGES
+  const findStepIndex = (name) => {
+    if (!name) return 0
+    const normalized = name.toLowerCase().replace(/[\s_/]/g, '')
+
+    // First try to match by id
+    const indexById = STAGES.findIndex(s => s.id.toLowerCase().replace(/[\s_/]/g, '') === normalized)
+    if (indexById !== -1) return indexById + 1
+
+    // Then try to match by label
+    const indexByLabel = STAGES.findIndex(s => s.label.toLowerCase().replace(/[\s_/]/g, '') === normalized)
+    if (indexByLabel !== -1) return indexByLabel + 1
+
+    return 1 // Default to first step
+  }
+
+  const stepFromStage = findStepIndex(stageName)
+  // If currentStep is 1 (default) and we have a valid step from stage, use the stage step
+  const activeStep = (currentStep === 1 && stepFromStage > 0) ? stepFromStage : (currentStep || stepFromStage)
+
   const handleStepClick = (stepNumber) => {
     if (onStepChange) {
       onStepChange(stepNumber)
     }
   }
- 
+
   return (
     <div className={`overflow-x-auto ${className || ''}`}>
       <div className="flex mb-2 min-w-[900px] items-center">
-        {LEAD_STAGES.map((label, index) => {
+        {STAGES.map((s, index) => {
           const step = index + 1
           const active = step <= activeStep
-          const isLast = index === LEAD_STAGES.length - 1
- 
+          const isLast = index === STAGES.length - 1
+
           return (
-            <div key={step} className="flex items-center">
+            <div key={s.id} className="flex items-center">
               <div className="flex flex-col items-center">
                 <button
                   onClick={() => handleStepClick(step)}
                   className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors z-10
-                  ${active >= step ? "bg-indigo-600 text-white hover:bg-indigo-700" : "bg-gray-200 text-gray-600 hover:bg-gray-300"}`}
+                  ${active ? "bg-indigo-600 text-white hover:bg-indigo-700" : "bg-gray-200 text-gray-600 hover:bg-gray-300"}`}
                 >
                   {active > step ? <Check size={14} /> : step}
                 </button>
- 
+
                 <span className="text-[11px] text-center mt-1 w-24 text-gray-600 cursor-pointer hover:text-indigo-600"
-                      onClick={() => handleStepClick(step)}>
-                  {label}
+                  onClick={() => handleStepClick(step)}>
+                  {s.label}
                 </span>
               </div>
-             
+
               {/* Connecting line */}
               {!isLast && (
                 <div className="w-8 h-px bg-gray-400 mx-1" />
@@ -148,5 +165,4 @@ export default function LeadStepper({ stageName, currentStep = 1, onStepChange, 
     </div>
   )
 }
- 
- 
+

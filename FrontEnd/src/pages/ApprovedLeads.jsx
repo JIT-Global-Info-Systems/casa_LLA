@@ -2,17 +2,16 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
-import { Search, MoreVertical, RefreshCw, Eye, ChevronDown, AlertCircle } from "lucide-react";
+import { Search, MoreVertical, RefreshCw, Eye, ChevronDown, AlertCircle, Edit } from "lucide-react";
 import { toast } from "react-hot-toast";
 import axios from "axios";
 import Modal from "@/components/ui/modal";
 import Leads from "./Leads";
 import LeadStepper from "@/components/ui/LeadStepper";
- 
+
 const getStatusBadge = (status) => {
   switch (status?.toUpperCase()) {
     case 'APPROVED':
@@ -25,12 +24,12 @@ const getStatusBadge = (status) => {
       return 'bg-gray-100 text-gray-800';
   }
 };
- 
+
 export default function ApprovedLeads() {
   const [open, setOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
-  const [viewLead, setViewLead] = useState(null);
   const [isViewMode, setIsViewMode] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -39,24 +38,67 @@ export default function ApprovedLeads() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentStep, setCurrentStep] = useState(1);
- 
-  const leadComments = [
-    selectedLead?.remark,
-    selectedLead?.comment,
-  ]
-    .map((v) => (typeof v === "string" ? v.trim() : ""))
-    .filter((text) => Boolean(text));
- 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   const handleView = (lead) => {
     setSelectedLead(lead);
     setIsViewMode(true);
+    setIsEditMode(false);
     // Don't open modal for view mode - this prevents the popup from showing
   };
- 
+
+  const handleEdit = (lead) => {
+    setSelectedLead(lead);
+    setIsEditMode(true);
+    setIsViewMode(false);
+  };
+
+  const handleEditSubmit = async (leadPayload, files) => {
+    const editToast = toast.loading('Updating lead...');
+    try {
+      const formData = new FormData();
+      
+      // Add all lead data
+      Object.keys(leadPayload).forEach(key => {
+        if (key === 'competitorAnalysis' || key === 'checkListPage') {
+          formData.append(key, JSON.stringify(leadPayload[key]));
+        } else {
+          formData.append(key, leadPayload[key]);
+        }
+      });
+
+      // Add files if any
+      Object.keys(files).forEach(key => {
+        formData.append(key, files[key]);
+      });
+
+      await axios.put(
+        `http://13.201.132.94:5000/api/leads/update/${selectedLead._id}`,
+        formData,
+        {
+          headers: {
+            "Authorization": `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "multipart/form-data"
+          }
+        }
+      );
+
+      toast.success('Lead updated successfully!', { id: editToast });
+      setIsEditMode(false);
+      setSelectedLead(null);
+      fetchApprovedLeads(); // Refresh the list
+    } catch (err) {
+      console.error("Error updating lead:", err);
+      const errorMessage = err.response?.data?.message || 'Failed to update lead. Please try again.';
+      toast.error(errorMessage, { id: editToast });
+    }
+  };
+
   const fetchApprovedLeads = async () => {
-    const loadingToast = toast.loading('Loading approved leads...');
+    const loadingToast = toast.loading('Loading leads...');
     setLoading(true);
-   
+
     try {
       const response = await axios.get("http://13.201.132.94:5000/api/leads/approved", {
         headers: {
@@ -64,22 +106,22 @@ export default function ApprovedLeads() {
           "Authorization": `Bearer ${localStorage.getItem("token")}`
         }
       });
-     
+
       const leadsData = response.data.data || [];
       setLeads(leadsData);
       setError(null);
-     
+
       if (leadsData.length === 0) {
         toast.success('No approved leads found', { id: loadingToast });
       } else {
-        toast.success(`Loaded ${leadsData.length} approved leads`, {
+        toast.success(`${leadsData.length} leads loaded`, {
           id: loadingToast,
           icon: '✅'
         });
       }
     } catch (err) {
       console.error("Error fetching approved leads:", err);
-      const errorMessage = err.response?.data?.message || 'Failed to fetch approved leads. Please try again later.';
+      const errorMessage = err.response?.data?.message || 'Could not load leads. Please try again.';
       setError(errorMessage);
       toast.error(errorMessage, {
         id: loadingToast,
@@ -89,11 +131,11 @@ export default function ApprovedLeads() {
       setLoading(false);
     }
   };
- 
+
   useEffect(() => {
     fetchApprovedLeads();
   }, []);
- 
+
   const filteredLeads = leads.filter((lead) => {
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch = searchTerm === "" ||
@@ -101,51 +143,72 @@ export default function ApprovedLeads() {
       (lead.contactNumber && lead.contactNumber.includes(searchTerm)) ||
       (lead.lead_id && lead.lead_id.toLowerCase().includes(searchLower)) ||
       (lead.location && lead.location.toLowerCase().includes(searchLower));
-     
+
     const matchesDate = !dateFrom && !dateTo ? true : (() => {
       const leadDate = new Date(lead.date || lead.createdAt || lead.updatedAt);
       const fromDateObj = dateFrom ? new Date(dateFrom) : new Date("1900-01-01");
       const toDateObj = dateTo ? new Date(dateTo) : new Date("2100-12-31");
       return leadDate >= fromDateObj && leadDate <= toDateObj;
     })();
-   
+
     const matchesStatus = statusFilter === "all" ||
       (lead.lead_status && lead.lead_status.toLowerCase() === statusFilter.toLowerCase());
- 
+
     return matchesSearch && matchesDate && matchesStatus;
   });
- 
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, dateFrom, dateTo, statusFilter]);
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedLeads = filteredLeads.slice(startIndex, endIndex);
+
   return (
     <div className="flex-1 space-y-6 p-0">
-      {isViewMode ? (
-        /* VIEW MODE - Use the Leads component with viewMode */
+      {isViewMode || isEditMode ? (
+        /* VIEW/EDIT MODE - Use the Leads component with viewMode */
         <div className="min-h-screen bg-gray-50 p-4">
           <div className="w-full">
             <div className="bg-white rounded-lg shadow-md p-6">
-              {/* LeadStepper - Full width */}
-              <div className="mb-6">
-                <LeadStepper
-                  stageName={
-                    selectedLead?.leadStatus ||
-                    selectedLead?.stageName ||
-                    selectedLead?.lead_stage ||
-                    "Tele Caller"
-                  }
-                  currentStep={currentStep}
-                  onStepChange={setCurrentStep}
-                  className="w-full"
-                />
-              </div>
-             
+              {/* LeadStepper - Only show in view mode, hide in edit mode */}
+              {isViewMode && (
+                <div className="mb-6">
+                  <LeadStepper
+                    stageName={
+                      selectedLead?.assignedTo ||
+                      selectedLead?.currentRole ||
+                      selectedLead?.leadStatus ||
+                      selectedLead?.stageName ||
+                      selectedLead?.lead_stage ||
+                      "Tele Caller"
+                    }
+                    currentStep={currentStep}
+                    onStepChange={setCurrentStep}
+                    className="w-full"
+                  />
+                </div>
+              )}
+
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2">
                   <Leads
                     data={selectedLead}
-                    viewMode={true}
-                    onClose={() => setIsViewMode(false)}
+                    viewMode={isViewMode}
+                    onSubmit={isEditMode ? handleEditSubmit : undefined}
+                    onClose={() => {
+                      setIsViewMode(false);
+                      setIsEditMode(false);
+                      setSelectedLead(null);
+                    }}
+                    editableFields={isEditMode ? ['leadStatus'] : null}
                   />
                 </div>
- 
+
                 {/* Right-side calls and notes thread (show when viewing) */}
                 <div className="lg:col-span-1">
                   <div className="h-full rounded-lg border bg-slate-50 sticky top-4">
@@ -154,7 +217,7 @@ export default function ApprovedLeads() {
                         Calls History
                       </div>
                     </div>
- 
+
                     <div className="p-4 space-y-3 max-h-[80vh] overflow-y-auto">
                       {/* Display calls history if available */}
                       {selectedLead?.calls && selectedLead.calls.length > 0 &&
@@ -178,7 +241,7 @@ export default function ApprovedLeads() {
                           </div>
                         ))
                       }
- 
+
                       {/* Display notes from different sources without headers */}
                       {selectedLead?.remark && (
                         <div className="w-full border bg-white px-3 py-2 text-sm text-slate-800 rounded-md shadow-sm">
@@ -234,7 +297,7 @@ export default function ApprovedLeads() {
               </div>
             </div>
           </div>
- 
+
           {/* Main Content */}
           <div className="max-w-[1600px] mx-auto px-8 py-6">
             <Card className="bg-white shadow-sm">
@@ -249,7 +312,7 @@ export default function ApprovedLeads() {
                     className="pl-10 border-gray-300"
                   />
                 </div>
- 
+
                 <div className="flex items-center gap-2">
                   <Label className="text-sm text-gray-600 whitespace-nowrap">Status:</Label>
                   <DropdownMenu>
@@ -290,28 +353,28 @@ export default function ApprovedLeads() {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
- 
+
                 <div className="flex items-center gap-2">
                   <Label className="text-sm text-gray-600 whitespace-nowrap">From:</Label>
                   <Input
                     type="date"
                     value={dateFrom}
-                    onChange={(e) => setFromDate(e.target.value)}
+                    onChange={(e) => setDateFrom(e.target.value)}
                     className="w-[150px] border-gray-300"
                   />
                 </div>
- 
+
                 <div className="flex items-center gap-2">
                   <Label className="text-sm text-gray-600 whitespace-nowrap">To:</Label>
                   <Input
                     type="date"
                     value={dateTo}
-                    onChange={(e) => setToDate(e.target.value)}
+                    onChange={(e) => setDateTo(e.target.value)}
                     className="w-[150px] border-gray-300"
                   />
                 </div>
               </div>
- 
+
               {/* Table */}
               <div className="overflow-x-auto">
                 <table className="w-full">
@@ -369,7 +432,7 @@ export default function ApprovedLeads() {
                         </td>
                       </tr>
                     ) : (
-                      filteredLeads.map((lead) => (
+                      paginatedLeads.map((lead) => (
                         <tr key={lead._id} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                             {lead.lead_id || 'N/A'}
@@ -407,6 +470,10 @@ export default function ApprovedLeads() {
                                   <Eye className="mr-2 h-4 w-4" />
                                   <span>View</span>
                                 </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleEdit(lead)}>
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  <span>Edit</span>
+                                </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </td>
@@ -416,19 +483,32 @@ export default function ApprovedLeads() {
                   </tbody>
                 </table>
               </div>
-         
+
               {/* Pagination */}
               {filteredLeads.length > 0 && (
                 <div className="px-6 py-3 flex items-center justify-between border-t border-gray-200">
                   <div className="text-sm text-gray-700">
-                    Showing <span className="font-medium">1</span> to <span className="font-medium">{filteredLeads.length}</span> of{' '}
-                    <span className="font-medium">{leads.length}</span> results
+                    Showing <span className="font-medium">{startIndex + 1}</span> to <span className="font-medium">{Math.min(endIndex, filteredLeads.length)}</span> of{' '}
+                    <span className="font-medium">{filteredLeads.length}</span> results
                   </div>
                   <div className="flex space-x-2">
-                    <Button variant="outline" size="sm" disabled>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage(currentPage - 1)}
+                    >
                       Previous
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <span className="px-3 py-1 text-sm text-gray-600 flex items-center">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage(currentPage + 1)}
+                    >
                       Next
                     </Button>
                   </div>
@@ -438,7 +518,7 @@ export default function ApprovedLeads() {
           </div>
         </div>
       )}
- 
+
       {/* Modal - Only show when not in view mode */}
       {!isViewMode && open && (
         <Modal open={open} onClose={() => setOpen(false)} size="7xl">
@@ -453,7 +533,7 @@ export default function ApprovedLeads() {
               <Leads
                 data={selectedLead}
                 viewMode={true}
-                onSubmit={() => {}}
+                onSubmit={() => { }}
                 onClose={() => setOpen(false)}
               />
             </div>
@@ -463,4 +543,3 @@ export default function ApprovedLeads() {
     </div>
   );
 }
- 
