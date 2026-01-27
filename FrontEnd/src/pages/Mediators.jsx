@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import Modal from "@/components/ui/modal";
+import ConfirmModal from "@/components/ui/ConfirmModal";
+import { useEntityAction } from "@/hooks/useEntityAction";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +35,7 @@ import {
   MoreVertical,
   Search,
 } from "lucide-react";
+import toast from "react-hot-toast";
  
 function Mediators() {
   const { mediators, loading, error, fetchMediators, createMediator, updateMediator, deleteMediator } = useMediators();
@@ -44,6 +47,9 @@ function Mediators() {
   const [selectedExecutive, setSelectedExecutive] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  
+  // Entity action hook for status-aware delete
+  const { handleDelete, canPerformAction, confirmModal } = useEntityAction('mediator');
 
   useEffect(() => {
     fetchMediators();
@@ -206,14 +212,20 @@ function Mediators() {
     setIsViewMode(true);
   };
 
-  const handleDelete = async (mediator) => {
-    if (window.confirm(`Are you sure you want to delete ${mediator.name}?`)) {
-      try {
-        await deleteMediator(mediator._id);
-      } catch (error) {
-        console.error("Error deleting mediator:", error);
-      }
+  const handleDeleteMediator = (mediator) => {
+    // Check if delete is allowed
+    const deleteState = canPerformAction(mediator, 'delete');
+    
+    if (!deleteState.enabled) {
+      // Mediator is already inactive/deleted - don't show error
+      return;
     }
+
+    // Perform delete with status check
+    handleDelete(mediator, async () => {
+      await deleteMediator(mediator._id);
+      fetchMediators(); // Refresh list
+    }, mediator.name);
   };
  
   return (
@@ -858,7 +870,11 @@ function Mediators() {
                                     <Edit className="h-4 w-4 mr-2" />
                                     Edit
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem className="cursor-pointer text-red-600" onClick={() => handleDelete(mediator)}>
+                                  <DropdownMenuItem 
+                                    className="cursor-pointer text-red-600" 
+                                    onClick={() => handleDeleteMediator(mediator)}
+                                    disabled={!canPerformAction(mediator, 'delete').enabled}
+                                  >
                                     <Trash2 className="h-4 w-4 mr-2" />
                                     Delete
                                   </DropdownMenuItem>
@@ -886,6 +902,19 @@ function Mediators() {
           </div>
         </div>
       )}
+      
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={confirmModal.onClose}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        description={confirmModal.description}
+        confirmText={confirmModal.confirmText}
+        cancelText="Cancel"
+        variant={confirmModal.variant}
+        loading={confirmModal.loading}
+      />
     </div>
   );
 }

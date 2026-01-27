@@ -22,14 +22,12 @@ export const LeadsProvider = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
-      console.log('Fetching leads from API...');
       const response = await leadsAPI.getAll();
-      console.log('API response:', response);
       setLeads(response.data ?? response);
-      console.log('Leads set:', response.data ?? response);
     } catch (err) {
       console.error('Error fetching leads:', err);
       setError(err.message);
+      // Don't throw - let UI handle the error state
     } finally {
       setLoading(false);
     }
@@ -42,6 +40,7 @@ export const LeadsProvider = ({ children }) => {
       const response = await leadsAPI.getApproved();
       setApprovedLeads(response.data ?? response);
     } catch (err) {
+      console.error('Error fetching approved leads:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -55,6 +54,7 @@ export const LeadsProvider = ({ children }) => {
       const response = await leadsAPI.getPurchased();
       setPurchasedLeads(response.data ?? response);
     } catch (err) {
+      console.error('Error fetching purchased leads:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -62,11 +62,20 @@ export const LeadsProvider = ({ children }) => {
   };
 
   const fetchAllLeadStatuses = async () => {
-    await Promise.all([
-      fetchLeads(),
-      fetchApprovedLeads(),
-      fetchPurchasedLeads()
-    ]);
+    try {
+      setLoading(true);
+      setError(null);
+      await Promise.all([
+        fetchLeads(),
+        fetchApprovedLeads(),
+        fetchPurchasedLeads()
+      ]);
+    } catch (err) {
+      console.error('Error fetching all lead statuses:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getLeadById = async (id) => {
@@ -76,6 +85,7 @@ export const LeadsProvider = ({ children }) => {
       const response = await leadsAPI.getById(id);
       return response.data ?? response;
     } catch (err) {
+      console.error('Error fetching lead:', err);
       setError(err.message);
       throw err;
     } finally {
@@ -91,6 +101,7 @@ export const LeadsProvider = ({ children }) => {
       setLeads(prev => [...prev, response.data ?? response]);
       return response;
     } catch (err) {
+      console.error('Error creating lead:', err);
       setError(err.message);
       throw err;
     } finally {
@@ -115,6 +126,7 @@ export const LeadsProvider = ({ children }) => {
 
       return response;
     } catch (err) {
+      console.error('Error updating lead:', err);
       setError(err.message);
       throw err;
     } finally {
@@ -131,6 +143,7 @@ export const LeadsProvider = ({ children }) => {
         prev.filter(lead => lead._id !== id && lead.id !== id)
       );
     } catch (err) {
+      console.error('Error deleting lead:', err);
       setError(err.message);
       throw err;
     } finally {

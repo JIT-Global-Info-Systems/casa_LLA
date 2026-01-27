@@ -51,7 +51,7 @@ const PurchasedLeads = () => {
   }, [])
  
   const fetchPurchasedLeads = async () => {
-    const loadingToast = toast.loading('Loading purchased leads...');
+    const loadingToast = toast.loading('Loading leads...');
     try {
       setLoading(true);
       setError(null);
@@ -68,14 +68,14 @@ const PurchasedLeads = () => {
       if (leadsData.length === 0) {
         toast.success('No purchased leads found', { id: loadingToast });
       } else {
-        toast.success(`Loaded ${leadsData.length} purchased leads`, {
+        toast.success(`${leadsData.length} leads loaded`, {
           id: loadingToast,
           icon: '✅'
         });
       }
     } catch (err) {
       console.error("Error fetching purchased leads:", err);
-      const errorMessage = err.response?.data?.message || 'Failed to fetch purchased leads. Please try again later.';
+      const errorMessage = err.response?.data?.message || 'Could not load leads. Please try again.';
       setError(errorMessage);
       toast.error(errorMessage, {
         id: loadingToast,

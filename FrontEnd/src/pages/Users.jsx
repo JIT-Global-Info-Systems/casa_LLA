@@ -7,15 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Search, Plus, Edit, Trash2, Eye, MoreVertical, RefreshCw, ChevronLeft } from "lucide-react";
 import { useUsers } from "../context/UsersContext";
-// Import the Table components
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import LoadingState from "@/components/ui/LoadingState";
+import ErrorState from "@/components/ui/ErrorState";
+import EmptyState from "@/components/ui/EmptyState";
+import ConfirmModal from "@/components/ui/ConfirmModal";
+import { useEntityAction } from "@/hooks/useEntityAction";
+import toast from "react-hot-toast";
 
 function Users() {
   // Get users data and functions from context
@@ -37,6 +34,9 @@ function Users() {
     phone_number: "",
     status: "active"
   });
+
+  // Entity action hook for status-aware delete
+  const { handleDelete, canPerformAction, confirmModal } = useEntityAction('user');
 
   useEffect(() => {
     fetchUsers();
@@ -92,6 +92,7 @@ function Users() {
   const handleAddUser = async () => {
     try {
       await createUser(formData);
+      toast.success('User added successfully');
       setMode("list");
       setFormData({
         name: "",
@@ -102,7 +103,7 @@ function Users() {
         
       });
     } catch (err) {
-      // Error handled by context
+      toast.error(err.message || 'Could not add user. Please try again.');
       console.error(err);
     }
   };
@@ -110,6 +111,7 @@ function Users() {
   const handleEditUser = async () => {
     try {
       await updateUser(selectedUser.user_id, formData);
+      toast.success('User updated successfully');
       setMode("list");
       setSelectedUser(null);
       setFormData({
@@ -121,16 +123,26 @@ function Users() {
         status: "active",
       });
     } catch (err) {
+      toast.error(err.message || 'Could not update user. Please try again.');
       console.error(err);
     }
   };
 
-  const handleDeleteUser = async (userId) => {
-    try {
-      await deleteUser(userId);
-    } catch (err) {
-      console.error(err);
+  const handleDeleteUser = (user) => {
+    // Check if delete is allowed
+    const deleteState = canPerformAction(user, 'delete');
+    
+    if (!deleteState.enabled) {
+      // User is already inactive/deleted - don't show error
+      // UI should have disabled the button with tooltip
+      return;
     }
+
+    // Perform delete with status check
+    handleDelete(user, async () => {
+      await deleteUser(user.user_id);
+      fetchUsers(); // Refresh list
+    }, user.name);
   };
 
   const openEditDialog = (user) => {
@@ -318,161 +330,163 @@ function Users() {
 
               {/* Table */}
               <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b bg-gray-50">
-                      {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        ID
-                      </th> */}
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Name
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Role
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Phone
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Email
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Registered Date
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Action
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredUsers.map((user) => (
-                      <tr
-                        key={user.user_id}
-                        className="hover:bg-gray-50 transition-colors"
-                      >
-                        {/* <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {user.user_id}
-                        </td> */}
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {user.name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <span
-                            className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${getCategoryColor(
-                              user.role
-                            )} capitalize`}
-                          >
-                            {user.role}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {user.phone_number}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {user.email}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <div className="flex items-center justify-center gap-3">
-                            <Switch
-                              checked={user.status === "active"}
-                              onCheckedChange={async (checked) => {
-                                try {
-                                  const newStatus = checked ? "active" : "inactive";
-                                  await updateUser(user.user_id, { status: newStatus });
-                                } catch (error) {
-                                  console.error("Error updating user status:", error);
-                                }
-                              }}
-                              id={`status-toggle-${user.user_id}`}
-                              className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-gray-300 h-4 w-8.5 [&>span]:h-3 [&>span]:w-3"
-                            />
-                            <Label
-                              htmlFor={`status-toggle-${user.user_id}`}
-                              className={`text-sm font-medium cursor-pointer ${user.status === "active"
-                                  ? "text-green-700"
-                                  : "text-gray-500"
-                                }`}
+                {loading && <LoadingState message="Loading users..." />}
+                
+                {!loading && error && (
+                  <ErrorState 
+                    message={error} 
+                    onRetry={fetchUsers}
+                  />
+                )}
+
+                {!loading && !error && filteredUsers.length === 0 && (
+                  <EmptyState
+                    title="No users found"
+                    message="No users match your search criteria."
+                    action={() => {
+                      setSearchTerm("");
+                      setRoleFilter("all");
+                      setStatusFilter("all");
+                      setFromDate("");
+                      setToDate("");
+                    }}
+                    actionLabel="Clear filters"
+                  />
+                )}
+
+                {!loading && !error && filteredUsers.length > 0 && (
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b bg-gray-50">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Name
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Role
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Phone
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Email
+                        </th>
+                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Registered Date
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Action
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {filteredUsers.map((user) => (
+                        <tr
+                          key={user.user_id}
+                          className="hover:bg-gray-50 transition-colors"
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {user.name}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            <span
+                              className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${getCategoryColor(
+                                user.role
+                              )} capitalize`}
                             >
-                              {user.status === "active" ? "Active" : "Inactive"}
-                            </Label>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {new Date(user.created_at).toISOString().split("T")[0]}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0"
-                              >
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent
-                              align="end"
-                              className="bg-white border shadow-lg"
-                            >
-                              <DropdownMenuItem
-                                onClick={() => openViewDialog(user)}
-                                className="cursor-pointer"
-                              >
-                                <Eye className="h-4 w-4 mr-2" />
-                                View
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => openEditDialog(user)}
-                                className="cursor-pointer"
-                              >
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  if (
-                                    window.confirm(
-                                      `Are you sure you want to delete "${user.name}"?`
-                                    )
-                                  ) {
-                                    handleDeleteUser(user.user_id);
+                              {user.role}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {user.phone_number}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {user.email}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            <div className="flex items-center justify-center gap-3">
+                              <Switch
+                                checked={user.status === "active"}
+                                onCheckedChange={async (checked) => {
+                                  try {
+                                    const newStatus = checked ? "active" : "inactive";
+                                    await updateUser(user.user_id, { status: newStatus });
+                                    toast.success(`User ${checked ? 'activated' : 'deactivated'} successfully`);
+                                  } catch (error) {
+                                    toast.error('Could not update status. Please try again.');
+                                    console.error("Error updating user status:", error);
                                   }
                                 }}
-                                className="cursor-pointer text-red-600"
+                                id={`status-toggle-${user.user_id}`}
+                                className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-gray-300 h-4 w-8.5 [&>span]:h-3 [&>span]:w-3"
+                              />
+                              <Label
+                                htmlFor={`status-toggle-${user.user_id}`}
+                                className={`text-sm font-medium cursor-pointer ${user.status === "active"
+                                    ? "text-green-700"
+                                    : "text-gray-500"
+                                  }`}
                               >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                                {user.status === "active" ? "Active" : "Inactive"}
+                              </Label>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {new Date(user.created_at).toISOString().split("T")[0]}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent
+                                align="end"
+                                className="bg-white border shadow-lg"
+                              >
+                                <DropdownMenuItem
+                                  onClick={() => openViewDialog(user)}
+                                  className="cursor-pointer"
+                                >
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => openEditDialog(user)}
+                                  className="cursor-pointer"
+                                >
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleDeleteUser(user)}
+                                  disabled={!canPerformAction(user, 'delete').enabled}
+                                  className="cursor-pointer text-red-600"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete
+                                  {!canPerformAction(user, 'delete').enabled && (
+                                    <span className="ml-2 text-xs text-gray-500">
+                                      ({canPerformAction(user, 'delete').reason})
+                                    </span>
+                                  )}
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </div>
-
-              {loading && (
-                <div className="text-center py-12 text-gray-500">
-                  <p>Loading users...</p>
-                </div>
-              )}
-
-              {error && (
-                <div className="text-center py-12 text-red-500">
-                  <p>Error: {error}</p>
-                </div>
-              )}
-
-              {!loading && !error && filteredUsers.length === 0 && (
-                <div className="text-center py-12 text-gray-500">
-                  <p>No users found matching your criteria.</p>
-                </div>
-              )}
 
               {/* Footer */}
               <div className="px-6 py-4 border-t flex items-center justify-between">
@@ -958,6 +972,19 @@ function Users() {
           </div>
         </div>
       )}
+      
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={confirmModal.onClose}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        description={confirmModal.description}
+        confirmText={confirmModal.confirmText}
+        cancelText="Cancel"
+        variant={confirmModal.variant}
+        loading={confirmModal.loading}
+      />
     </div>
   );
 }

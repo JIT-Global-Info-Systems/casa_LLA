@@ -519,10 +519,10 @@ const calculateWorkStages = (leadsData, accessData) => {
               onClick={async () => {
                 try {
                   await fetchLeads();
-                  toast.success("Dashboard data refreshed");
+                  toast.success("Data refreshed");
                 } catch (error) {
                   console.error("Error refreshing data:", error);
-                  toast.error("Failed to refresh data");
+                  toast.error("Could not refresh data. Please try again.");
                 }
               }}
               disabled={loading}

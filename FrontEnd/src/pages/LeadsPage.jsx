@@ -3,9 +3,8 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import Modal from "@/components/ui/modal";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
@@ -28,6 +27,8 @@ import {
 import LeadStepper from "@/components/ui/LeadStepper"
 import Leads from "./Leads"
 import { useLeads } from "../context/LeadsContext.jsx"
+import ConfirmModal from "@/components/ui/ConfirmModal";
+import { useEntityAction } from "@/hooks/useEntityAction";
 import toast from "react-hot-toast"
  
 export default function LeadsPage() {
@@ -40,6 +41,9 @@ export default function LeadsPage() {
   const [dateTo, setDateTo] = useState("");
  
   const { leads, loading, error, fetchLeads, createLead, updateLead, deleteLead } = useLeads()
+  
+  // Entity action hook for status-aware delete
+  const { handleDelete, canPerformAction, confirmModal } = useEntityAction('lead')
  
   const [currentStep, setCurrentStep] = useState(1)
   const leadComments = [
@@ -54,14 +58,14 @@ export default function LeadsPage() {
       const loadingToast = toast.loading('Loading leads...');
       try {
         await fetchLeads();
-        toast.success('Leads loaded successfully', { 
+        toast.success('Leads loaded', { 
           id: loadingToast,
           icon: <Check className="w-5 h-5 text-green-500" />,
           duration: 2000
         });
       } catch (err) {
         console.error('Failed to load leads:', err);
-        const errorMessage = err.response?.data?.message || 'Failed to load leads. Please try again.';
+        const errorMessage = err.response?.data?.message || 'Could not load leads. Please try again.';
         
         toast.error(errorMessage, { 
           id: loadingToast,
@@ -77,13 +81,11 @@ export default function LeadsPage() {
   const handleCreate = () => {
     setSelectedLead(null);
     setOpen(true);
-    toast.success('Creating a new lead', { icon: '📝' });
   };
  
   const handleEdit = (lead) => {
     setSelectedLead(lead);
     setOpen(true);
-    toast('Editing lead details', { icon: '✏️' });
   };
  
   const handleLeadSubmit = async (leadPayload, files = {}) => {
@@ -98,7 +100,7 @@ export default function LeadsPage() {
       }
       
       toast.success(
-        isUpdate ? 'Lead updated successfully!' : 'Lead created successfully!',
+        isUpdate ? 'Lead updated successfully' : 'Lead created successfully',
         { 
           id: loadingToast,
           icon: <Check className="w-5 h-5 text-green-500" />,
@@ -114,10 +116,10 @@ export default function LeadsPage() {
       }
       
       setOpen(false);
-      fetchLeads(); // Refresh list
+      fetchLeads();
     } catch (err) {
       console.error("Failed to submit lead:", err);
-      const errorMessage = err.response?.data?.message || 'Failed to save lead. Please try again.';
+      const errorMessage = err.response?.data?.message || 'Could not save lead. Please try again.';
       
       toast.error(errorMessage, { 
         id: loadingToast,
@@ -127,43 +129,25 @@ export default function LeadsPage() {
     }
   };
  
-  const handleDelete = async (lead) => {
-    if (!window.confirm('Are you sure you want to delete this lead? This action cannot be undone.')) {
-      toast('Deletion cancelled', { icon: 'ℹ️' });
+  const handleDeleteLead = (lead) => {
+    // Check if delete is allowed
+    const deleteState = canPerformAction(lead, 'delete');
+    
+    if (!deleteState.enabled) {
+      // Lead is already inactive/deleted - don't show error
       return;
     }
 
-    const loadingToast = toast.loading('Deleting lead...');
-    
-    try {
+    // Perform delete with status check
+    handleDelete(lead, async () => {
       await deleteLead(lead._id || lead.id);
-      
-      toast.success('Lead deleted successfully!', { 
-        id: loadingToast,
-        icon: <Check className="w-5 h-5 text-green-500" />,
-        duration: 3000
-      });
-      
-      fetchLeads();
-    } catch (err) {
-      console.error("Failed to delete lead:", err);
-      const errorMessage = err.response?.data?.message || 'Failed to delete lead. Please try again.';
-      
-      toast.error(errorMessage, { 
-        id: loadingToast,
-        icon: <X className="w-5 h-5 text-red-500" />,
-        duration: 5000
-      });
-    }
+      fetchLeads(); // Refresh list
+    });
   };
  
   const handleView = (lead) => {
     setViewLead(lead);
     setIsViewMode(true);
-    toast.success('Viewing lead details', { 
-      icon: '👁️',
-      duration: 2000
-    });
   };
  
   const normalizedLeads = (Array.isArray(leads) ? leads : []).map((lead) => {
@@ -383,14 +367,14 @@ export default function LeadsPage() {
                     const loadingToast = toast.loading('Refreshing leads...');
                     try {
                       await fetchLeads();
-                      toast.success('Leads refreshed successfully', { 
+                      toast.success('Leads refreshed', { 
                         id: loadingToast,
                         icon: <Check className="w-5 h-5 text-green-500" />,
                         duration: 2000
                       });
                     } catch (err) {
                       console.error('Failed to refresh leads:', err);
-                      const errorMessage = err.response?.data?.message || 'Failed to refresh leads. Please try again.';
+                      const errorMessage = err.response?.data?.message || 'Could not refresh leads. Please try again.';
                       
                       toast.error(errorMessage, { 
                         id: loadingToast,
@@ -487,7 +471,8 @@ export default function LeadsPage() {
                                 Edit
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={() => handleDelete(lead.raw)}
+                                onClick={() => handleDeleteLead(lead.raw)}
+                                disabled={!canPerformAction(lead.raw, 'delete').enabled}
                                 className="cursor-pointer text-red-600 hover:bg-red-50"
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
@@ -518,6 +503,19 @@ export default function LeadsPage() {
           </div>
         </div>
       )}
+      
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={confirmModal.onClose}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        description={confirmModal.description}
+        confirmText={confirmModal.confirmText}
+        cancelText="Cancel"
+        variant={confirmModal.variant}
+        loading={confirmModal.loading}
+      />
     </div>
   );
 }

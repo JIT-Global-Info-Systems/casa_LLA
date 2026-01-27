@@ -1,8 +1,44 @@
 // const API_BASE_URL = 'http://13.201.132.94:5000/api';
 const API_BASE_URL = 'http://13.201.132.94:5000/api';
+const REQUEST_TIMEOUT = 30000; // 30 seconds
+const MAX_RETRIES = 2;
 
-// Generic API request helper
-const apiRequest = async (endpoint, options = {}) => {
+// Helper to extract user-friendly error messages
+const getErrorMessage = (error, statusCode) => {
+  // Handle network errors
+  if (!statusCode) {
+    return 'Could not connect. Please check your internet connection.';
+  }
+
+  // Handle specific status codes
+  switch (statusCode) {
+    case 401:
+      return 'Your session has expired. Please log in again.';
+    case 403:
+      return 'You do not have permission to perform this action.';
+    case 404:
+      return 'The requested information could not be found.';
+    case 500:
+    case 502:
+    case 503:
+      return 'Could not complete your request. Please try again.';
+    default:
+      return error.message || 'Something went wrong. Please try again.';
+  }
+};
+
+// Helper to handle timeout
+const fetchWithTimeout = (url, options, timeout = REQUEST_TIMEOUT) => {
+  return Promise.race([
+    fetch(url, options),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Request timed out')), timeout)
+    )
+  ]);
+};
+
+// Generic API request helper with retry logic
+const apiRequest = async (endpoint, options = {}, retryCount = 0) => {
   const url = `${API_BASE_URL}${endpoint}`;
  
   // Get token from localStorage
@@ -12,7 +48,7 @@ const apiRequest = async (endpoint, options = {}) => {
   const isAuthEndpoint = endpoint.startsWith('/auth/') || endpoint.startsWith('/users/create');
  
   if (!token && !isAuthEndpoint) {
-    throw new Error('No authentication token found. Please login to make API calls.');
+    throw new Error('Your session has expired. Please log in again.');
   }
  
   const headers = {
@@ -29,17 +65,44 @@ const apiRequest = async (endpoint, options = {}) => {
     ...options,
     headers,
   };
-  //  const userId =
+
   try {
-    const response = await fetch(url, config);
+    const response = await fetchWithTimeout(url, config);
  
+    // Handle 401 - clear auth and redirect to login
+    if (response.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user_id');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+      throw new Error('Your session has expired. Please log in again.');
+    }
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      const errorMessage = getErrorMessage(
+        { message: errorData.message },
+        response.status
+      );
+      const error = new Error(errorMessage);
+      error.statusCode = response.status;
+      throw error;
     }
  
     return await response.json();
   } catch (error) {
+    // Retry logic for network errors or 5xx errors
+    const shouldRetry = (
+      retryCount < MAX_RETRIES &&
+      (!error.statusCode || error.statusCode >= 500)
+    );
+
+    if (shouldRetry) {
+      // Exponential backoff: wait 1s, then 2s
+      await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+      return apiRequest(endpoint, options, retryCount + 1);
+    }
+
     console.error('API Request Error:', error);
     throw error;
   }

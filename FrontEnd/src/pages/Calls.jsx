@@ -74,10 +74,10 @@ export default function Calls() {
             try {
                 await fetchCalls()
                 if (apiCalls.length > 0) {
-                    toast.success(`Loaded ${apiCalls.length} calls`)
+                    toast.success(`${apiCalls.length} calls loaded`)
                 }
             } catch (err) {
-                toast.error('Failed to load calls. Please try again.')
+                toast.error('Could not load calls. Please try again.')
                 console.error('Error loading calls:', err)
             }
         }
@@ -127,9 +127,9 @@ export default function Calls() {
                                 onClick={async () => {
                                     try {
                                         await fetchCalls()
-                                        toast.success(`Refreshed ${apiCalls.length} calls`)
+                                        toast.success(`${apiCalls.length} calls refreshed`)
                                     } catch (err) {
-                                        toast.error('Failed to refresh calls')
+                                        toast.error('Could not refresh calls. Please try again.')
                                         console.error('Error refreshing calls:', err)
                                     }
                                 }}

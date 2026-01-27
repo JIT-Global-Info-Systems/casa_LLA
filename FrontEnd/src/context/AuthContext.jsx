@@ -19,56 +19,59 @@ export const AuthProvider = ({ children }) => {
   const [forcePasswordChange, setForcePasswordChange] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userId = localStorage.getItem('user_id');
-    const userData = localStorage.getItem('user');
-
-    console.log('AuthContext useEffect - token:', !!token, 'userId:', userId, 'userData:', !!userData);
-
-    if (token && userData) {
-      // Parse stored user data
+    const initAuth = async () => {
       try {
-        const parsedUser = JSON.parse(userData);
-        console.log('Parsed user data:', parsedUser);
-        setUser({ ...parsedUser, token });
-        // Check if it's first login from stored data
-        if (parsedUser.firstLogin) {
-          setIsFirstLogin(true);
-          setForcePasswordChange(true);
+        const token = localStorage.getItem('token');
+        const userId = localStorage.getItem('user_id');
+        const userData = localStorage.getItem('user');
+
+        if (!token) {
+          setLoading(false);
+          return;
+        }
+
+        if (userData) {
+          // Parse stored user data
+          try {
+            const parsedUser = JSON.parse(userData);
+            setUser({ ...parsedUser, token });
+            // Check if it's first login from stored data
+            if (parsedUser.firstLogin) {
+              setIsFirstLogin(true);
+              setForcePasswordChange(true);
+            }
+          } catch (parseError) {
+            console.error('Failed to parse user data:', parseError);
+            setUser({ token }); // Fallback to token only
+          }
+        } else if (userId) {
+          // Fetch user profile using token and user ID (legacy support)
+          try {
+            const response = await usersAPI.getById(userId);
+            const userData = { ...response, token };
+            setUser(userData);
+            // Store user data in localStorage for future use
+            localStorage.setItem('user', JSON.stringify(response));
+          } catch (fetchError) {
+            console.error('Failed to fetch user profile:', fetchError);
+            setUser({ token }); // Fallback to token only
+          }
+        } else {
+          setUser({ token });
         }
       } catch (error) {
-        console.error('Failed to parse user data:', error);
-        setUser({ token }); // Fallback to token only
+        console.error('Auth initialization error:', error);
+        setError('Could not verify your session. Please log in again.');
+        // Clear invalid auth data
+        localStorage.removeItem('token');
+        localStorage.removeItem('user_id');
+        localStorage.removeItem('user');
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    } else if (token && userId) {
-      // Fetch user profile using token and user ID (legacy support)
-      const fetchUserProfile = async () => {
-        try {
-          console.log('Fetching user profile for ID:', userId);
-          const response = await usersAPI.getById(userId);
-          console.log('User profile response:', response);
-          const userData = { ...response, token };
-          setUser(userData);
-          // Store user data in localStorage for future use
-          localStorage.setItem('user', JSON.stringify(response));
-        } catch (error) {
-          console.error('Failed to fetch user profile:', error);
-          setUser({ token }); // Fallback to token only
-        } finally {
-          setLoading(false);
-        }
-      };
+    };
 
-      fetchUserProfile();
-    } else if (token) {
-      console.log('Only token found, setting user with token');
-      setUser({ token });
-      setLoading(false);
-    } else {
-      console.log('No token found, setting loading to false');
-      setLoading(false);
-    }
+    initAuth();
   }, []);
 
   const login = async (credentials) => {
