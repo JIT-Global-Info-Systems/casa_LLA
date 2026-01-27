@@ -876,7 +876,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
               )}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2 hidden">
               <Label>Current Role (Action By)</Label>
               <div className="p-2 bg-gray-100 border border-gray-200 rounded-md text-gray-700 min-h-[40px] flex items-center capitalize font-medium">
                 {formData.currentRole?.replace(/_/g, ' ') || getCurrentUserRole().replace(/_/g, ' ')}
