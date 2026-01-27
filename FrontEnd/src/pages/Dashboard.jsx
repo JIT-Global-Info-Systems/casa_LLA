@@ -336,7 +336,7 @@ const [toDate , setToDate ] = useState("")
  
   const donutCards = [
     {
-      title: "Leads Status",
+      title: "Leads Stages",
       dateRange: "2025-08-30 – 2025-11-30",
       total: activeLeadsCount + approvedLeadsCount + purchasedLeadsCount,
       tone: "blue",
@@ -347,7 +347,7 @@ const [toDate , setToDate ] = useState("")
       })),
     },
     {
-      title: "Leads Stages",
+      title: "Leads Status",
       dateRange: "2025-08-30 – 2025-11-30",
       total: leadStages.hot + leadStages.warm + leadStages.cold + leadStages.management_hot,
       tone: "red",
