@@ -86,12 +86,12 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     sourceCategory: "",
     source: "",
     extent: "",
-    unit: "Acre",
+    unit: "",
     propertyType: "",
     fsi: "",
     asp: "",
     revenue: "",
-    transactionType: "JV",
+    transactionType: " ",
     rate: "",
     builderShare: "",
     refundable: "",
@@ -100,7 +100,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     frontage: "",
     roadWidth: "",
     sspde: "No",
-    leadStatus: "Pending",
+    leadStatus: "Enquired",
     status: "active",
     remark: "",
     lead_stage: "",
@@ -989,10 +989,10 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
             </div>
 
             <div className="space-y-2">
-              <Label>Lead Stage</Label>
+              <Label>Lead Status</Label>
               <Select value={formData.lead_stage} onValueChange={(v) => handleChange("lead_stage", v)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select stage" />
+                  <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent className="bg-white z-50 shadow-lg">
                   {/* <SelectItem value="new">New</SelectItem> */}
@@ -1231,7 +1231,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
             {/* <div className="md:col-span-3 p-4 bg-yellow-50 rounded-lg border border-yellow-200"> */}
             <div className="space-y-2">
-              <Label className="text-yellow-800">Lead Status</Label>
+              <Label className="text-yellow-800">Lead Stage</Label>
               {viewMode ? (
                 <div className="p-2 bg-white border border-yellow-300 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
                   {formData.leadStatus || "-"}
@@ -1242,15 +1242,21 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-white z-50 shadow-lg">
-                    <SelectItem value="Pending">Pending</SelectItem>
-                    <SelectItem value="Approved">Approved</SelectItem>
-                    <SelectItem value="Rejected">Rejected</SelectItem>
-                    <SelectItem value="Cancelled">Cancelled</SelectItem>
-                    <SelectItem value="Lost">Lost</SelectItem>
-                    <SelectItem value="Won">Won</SelectItem>
-                    <SelectItem value="Purchased">Purchased</SelectItem>
-                  </SelectContent>
-                </Select>
+                      <SelectItem value="Enquired">Enquired</SelectItem>
+                      <SelectItem value="Lead_Allocated">Lead Allocated</SelectItem>
+                      <SelectItem value="First_Called">First Called</SelectItem>
+                      <SelectItem value="Site_Visit">Site Visit</SelectItem>
+                      <SelectItem value="Owner_Meeting">Owner Meeting</SelectItem>
+                      <SelectItem value="Negotiation_Started">Negotiation Started</SelectItem>
+                      <SelectItem value="Negotiation_End">Negotiation End</SelectItem>
+                      <SelectItem value="Due_Diligence_Started">Due Diligence Started</SelectItem>
+                      <SelectItem value="Due_Diligence_End">Due Diligence End</SelectItem>
+                      <SelectItem value="Approved">Approved</SelectItem>
+                      <SelectItem value="Purchased">Purchased</SelectItem>
+                      <SelectItem value="Lost">Lost</SelectItem>
+                      <SelectItem value="Hold">Hold</SelectItem>
+                    </SelectContent>
+                  </Select>
               )}
             </div>
 

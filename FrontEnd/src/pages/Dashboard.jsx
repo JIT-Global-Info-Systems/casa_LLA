@@ -27,56 +27,16 @@ import {
   Cell,
   ResponsiveContainer,
 } from "recharts";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-import { Select } from "@/components/ui/select";
 import DateFilter from "@/components/ui/datefilter";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
+import { locationsAPI } from "@/services/api";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
-/* -------------------- FILTER DATA -------------------- */
 
-const locations = [
-  { label: "All Locations", value: "all" },
-  { label: "Chennai", value: "chennai" },
-  { label: "Bangalore", value: "bangalore" },
-  { label: "Hyderabad", value: "hyderabad" },
-];
-
-// const zones = [
-//   { label: "All Zones", value: "all" },
-//   { label: "North Zone", value: "north" },
-//   { label: "South Zone", value: "south" },
-//   { label: "East Zone", value: "east" },
-//   { label: "West Zone", value: "west" },
-// ];
-
-/* -------------------- FILTER BAR -------------------- */
-
-function DashboardFilters({ filters, setFilters }) {
-  return (
-    <div className="flex flex-wrap gap-3">
-      {/* <Select
-        label="Location"
-        value={filters.location}
-        onChange={(value) =>
-          setFilters((prev) => ({ ...prev, location: value }))
-        }
-        options={locations}
-        placeholder="Location"
-      /> */}
-
-      {/* <Select
-        label="Zone"
-        value={filters.zone}
-        onChange={(value) =>
-          setFilters((prev) => ({ ...prev, zone: value }))
-        }
-        options={zones}
-        placeholder="Zone"
-      /> */}
-    </div>
-  );
-}
 
 /* -------------------- DONUT CHART -------------------- */
 
@@ -283,70 +243,175 @@ function Dashboard() {
     fetchDashboardData();
   }, [dateRange]);
 
-  // Extract data from API response
-  const { 
-    leadStatusCounts = {},
-    leadStageCounts = {},
-    workStageCounts = {},
-    totals = {}
-  } = dashboardData;
+  // Fetch all leads on component mount
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        await fetchLeads();
+        if (leads?.length > 0) {
+          toast.success(`Loaded ${leads.length} leads`);
+        } else if (leads?.length === 0) {
+          toast("No leads found", { icon: "" });
+        }
+      } catch (error) {
+        console.error("Error loading dashboard data:", error);
+        toast.error("Failed to load dashboard data");
+      }
+    };
 
-  // Use API response data directly without mapping
-  const activeLeadsCount = leadStatusCounts.PENDING || 0;
-  const approvedLeadsCount = totals.approvedLeads || 0;
-  const purchasedLeadsCount = totals.purchasedLeads || 0;
+    loadData();
+  }, []);
 
-  // Use leadStageCounts directly from API
+  // Calculate active leads count (PENDING leads from all leads API)
+  const activeLeadsCount = leads?.filter((lead) => {
+    const status = lead.lead_status || lead.status;
+    return status !== "Approved" || status === "Purchased";
+  }).length || 0;
+
+  // Calculate approved leads count
+  const approvedLeadsCount = leads?.filter((lead) => {
+    const status = lead.lead_status || lead.status;
+    return status === "APPROVED" || status === "approved";
+  }).length || 0;
+
+  // Calculate purchased leads count
+  const purchasedLeadsCount = leads?.filter((lead) => {
+    const status = lead.lead_status || lead.status;
+    return status === "PURCHASED" || status === "purchased";
+  }).length || 0;
+
+  // Calculate lead stages count (filtering only valid stages: hot, warm, cold, management hot)
   const leadStages = {
-    ...leadStageCounts,
-    // Ensure all expected keys exist with default 0
-    hot: leadStageCounts.hot || 0,
-    warm: leadStageCounts.warm || 0,
-    cold: leadStageCounts.cold || 0,
-    management_hot: leadStageCounts.management_hot || leadStageCounts['management hot'] || 0,
-    step1: leadStageCounts.step1 || 0
+    hot: 0,
+    warm: 0,
+    cold: 0,
+    management_hot: 0,
   };
 
-  // Use workStageCounts directly from API
-  const workStages = { ...workStageCounts };
+  leads?.forEach((lead) => {
+    const stage = lead.lead_stage;
+    if (stage === "hot") leadStages.hot++;
+    else if (stage === "warm") leadStages.warm++;
+    else if (stage === "cold") leadStages.cold++;
+    else if (stage === "management hot" || stage === "management_hot")
+      leadStages.management_hot++;
+  });
+ 
 
-  // Debug log to see the actual API response structure
-  console.log('Dashboard API Response:', {
-    leadStatusCounts,
-    leadStageCounts,
-    workStageCounts,
-    totals
+  // Calculate work stages based on currentRole from leads API
+  const [workStages, setWorkStages] = useState({});
+  const [workStagesLabels, setWorkStagesLabels] = useState({});
+
+
+const calculateWorkStages = (leadsData, accessData) => {
+  const stages = {};
+
+  if (!accessData || !Array.isArray(accessData)) return {};
+
+  // Step 1: Initialize all roles from API (except admin)
+  accessData.forEach(access => {
+    if (access.role !== "admin") {
+      stages[access.role] = 0;   // land_executive, tele_caller, etc
+    }
   });
 
+  // Step 2: Count leads by currentRole
+  leadsData.forEach(lead => {
+    if (!lead.currentRole) return;
+
+    const role = lead.currentRole.trim(); // e.g. "land_executive"
+
+    if (stages.hasOwnProperty(role)) {
+      stages[role]++;
+    }
+  });
+
+  return stages;
+};
+
+
+  // Fetch access data for work stages labels
+  const fetchAccessData = async () => {
+    try {
+      console.log('🔑 Checking token in localStorage:', localStorage.getItem('token') ? 'Token exists' : 'No token found');
+      console.log('🌐 Making API call to access/get...');
+      const accessData = await accessAPI.getAll();
+      console.log('✅ Access API call successful:', accessData);
+      setWorkStagesLabels(accessData);
+      return accessData;
+    } catch (error) {
+      console.error('❌ Error fetching access data:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        stack: error.stack
+      });
+      // Return null to use fallback labels
+      return null;
+    }
+  };
+
+  // Update work stages when leads or labels change
+  useEffect(() => {
+    const updateWorkStages = async () => {
+      console.log('🔄 Starting work stages update...');
+      try {
+        const accessData = await fetchAccessData();
+        console.log('📊 Access data received:', accessData);
+        const calculatedStages = calculateWorkStages(leads, accessData);
+        console.log('📈 Calculated stages:', calculatedStages);
+        setWorkStages(calculatedStages);
+      } catch (error) {
+        console.error('❌ Error in work stages update:', error);
+      }
+    };
+
+    if (leads && leads.length > 0) {
+      console.log('🚀 Triggering work stages update...');
+      updateWorkStages();
+    } else {
+      console.log('⏳ Waiting for leads data...');
+    }
+  }, []);
+
+  // Debug: Check for currentRole field in leads
+  if (leads && leads.length > 0) {
+    console.log('Sample lead structure:', leads[0]);
+    console.log('Available fields:', Object.keys(leads[0]));
+    console.log('Current role values:', leads.map(lead => lead.currentRole).filter(Boolean));
+    console.log('Work stages calculated:', workStages);
+  }
+ 
   const donutCards = [
-    {
-      title: "Leads Status",
-      dateRange: "2025-08-30 – 2025-11-30",
-      total: activeLeadsCount + approvedLeadsCount + purchasedLeadsCount,
-      tone: "blue",
-      segments: Object.entries(leadStatusCounts).map(([status, count]) => ({
-        label: status,
-        value: count,
-        color: ["#22c55e", "#f59e0b", "#ef4444", "#3b82f6", "#8b5cf6"][Object.keys(leadStatusCounts).indexOf(status) % 5] || "#94a3b8"
-      })),
-    },
     {
       title: "Leads Stages",
       dateRange: "2025-08-30 – 2025-11-30",
-      total: leadStages.hot + leadStages.warm + leadStages.cold + leadStages.management_hot,
-      tone: "red",
-      segments: Object.entries(leadStageCounts).map(([stage, count]) => ({
-        label: stage.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-        value: count,
-        color: ["#ef4444", "#f59e0b", "#3b82f6", "#22c55e", "#8b5cf6"][Object.keys(leadStageCounts).indexOf(stage) % 5] || "#94a3b8"
-      })),
+      total: activeLeadsCount + approvedLeadsCount + purchasedLeadsCount,
+      tone: "blue",
+      segments: [
+        { label: "Active", value: activeLeadsCount, color: "#22c55e" },
+        { label: "Approved", value: approvedLeadsCount, color: "#f59e0b" },
+        { label: "Purchased", value: purchasedLeadsCount, color: "#ef4444" },
+        // { label: "Pushed", value: leadsByStatus.pushed || 0, color: "#3b82f6" },
+      ],
     },
     {
-      title: "Work Stages",
+      title: "Leads status",
+      dateRange: "2025-08-30 – 2025-11-30",
+      total: leadStages.hot + leadStages.warm + leadStages.cold + leadStages.management_hot,
+      tone: "red",
+      segments: [
+        { label: "Hot", value: leadStages.hot, color: "#ef4444" },
+        { label: "Warm", value: leadStages.warm, color: "#f59e0b" },
+        { label: "Cold", value: leadStages.cold, color: "#3b82f6"},
+        { label: "Management Hot", value: leadStages.management_hot, color: "#22c55e" },
+      ],
+    },
+    {
+      title: "Work Stages with Profile",
       dateRange: "2025-08-30 – 2025-11-30",
       total: Object.values(workStages).reduce((sum, count) => sum + count, 0),
       tone: "purple",
-      segments: Object.entries(workStages).map(([label, value], index) => ({
+      segments: Object.entries(workStages).reverse().map(([label, value], index) => ({
         label: label.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
         value: value,
         color: [
@@ -376,15 +441,17 @@ function Dashboard() {
     <div className="min-h-full bg-background">
       <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6">
         {/* HEADER + FILTERS */}
-        <div className="relative mb-4">
-          <div>
-            <div className="text-xl font-bold text-indigo-700">
-              Dashboard
-            </div>
-            <div className="text-sm text-slate-500">
-              CRM Analytics Overview
-            </div>
-          </div>
+        <div className="mb-4 flex items-start justify-between">
+  
+  {/* LEFT SIDE - Title */}
+  <div>
+    <div className="text-xl font-bold text-indigo-700">
+      Dashboard
+    </div>
+    <div className="text-sm text-slate-500">
+      CRM Analytics Overview
+    </div>
+  </div>
 
           <div className="absolute top-0 right-0">
             <DateFilter
@@ -402,8 +469,8 @@ function Dashboard() {
 
         {/* FILTERS */}
         <div className="flex flex-col gap-4">
-          <div className="flex justify-between items-center">
-            <DashboardFilters filters={filters} setFilters={setFilters} />
+          <div className="flex justify-end items-center">
+            {/* <DashboardFilters filters={filters} setFilters={setFilters} /> */}
             <Button
               variant="outline"
               size="sm"
@@ -433,24 +500,23 @@ function Dashboard() {
         </section>
  
         {/* STATUS CARDS */}
-        {/* <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-4">
+        <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-4">
           <StatusCard icon={BadgeCheck} label="Active records" value={activeLeadsCount} tone="success" />
           <StatusCard icon={FileText} label="Site visit pending" value={1738} tone="info" />
           <StatusCard icon={CalendarClock} label="Owner meet pending" value={130} tone="warning" />
           <StatusCard icon={AlertTriangle} label="Critical overdue" value={12} tone="destructive" />
-        </section> */}
+        </section>
  
         {/* WIDE CARDS */}
-        {/* <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
           <WideMetricCard icon={ClipboardList} label="Open tasks" value={6} />
           <WideMetricCard icon={Bell} label="Due in 2 days" value={0} />
           <WideMetricCard icon={AlertTriangle} label="Overdue" value={4} />
-        </section> */}
+        </section>
  
         <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <WideMetricCard icon={Users} label="Approved Leads" value={totals.approvedLeads} />
-          <WideMetricCard icon={FileCheck2} label="Purchased Leads" value={totals.purchasedLeads} />
-          <WideMetricCard icon={FileCheck2} label="Pending Leads" value={totals.pendingLeads} />
+          <WideMetricCard icon={Users} label="Leads to allocate" value={69} />
+          <WideMetricCard icon={FileCheck2} label="Leads to purchase" value={purchasedLeadsCount} />
         </section>
  
         {/* NOTES */}
