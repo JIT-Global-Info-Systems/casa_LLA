@@ -23,7 +23,7 @@ import {
   X,
   AlertCircle
 } from "lucide-react";
-import LeadStepper from "@/components/ui/LeadStepper"
+// import LeadStepper from "@/components/ui/LeadStepper"
 import Leads from "./Leads"
 import { useLeads } from "../context/LeadsContext.jsx"
 import toast from "react-hot-toast"
@@ -37,9 +37,10 @@ export default function LeadsPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
  
-  const { leads, loading, error, fetchLeads, createLead, updateLead, deleteLead } = useLeads()
+  const { leads, loading, error, fetchLeads, createLead, updateLead, deleteLead, getLeadById } = useLeads()
  
   const [currentStep, setCurrentStep] = useState(1)
+  const [isFetchingLead, setIsFetchingLead] = useState(false)
   const leadComments = [
     selectedLead?.remark,
     selectedLead?.comment,
@@ -71,6 +72,43 @@ export default function LeadsPage() {
     
     loadLeads();
   }, [])
+
+  // Update currentStep when selectedLead changes, based on assignedTo
+  useEffect(() => {
+    const getStepFromAssignedTo = (lead) => {
+      if (lead?.assignedTo) {
+        const roleToStepMap = {
+          'tele_caller': 1,
+          'land_executive': 2,
+          'analytics_team': 3,
+          'feasibility_team': 4,
+          'field_study_product_team': 5,
+          'management_md_1st_level': 6,
+          'l1_md': 7,
+          'cmo_cro': 8,
+          'legal': 9,
+          'liaison': 10,
+          'finance': 11,
+          'admin': 12
+        }
+        
+        const stepNumber = roleToStepMap[lead.assignedTo]
+        if (stepNumber) {
+          return stepNumber
+        }
+      }
+      return 1 // Default to step 1
+    }
+
+    if (selectedLead) {
+      setCurrentStep(getStepFromAssignedTo(selectedLead))
+    } else if (viewLead) {
+      setCurrentStep(getStepFromAssignedTo(viewLead))
+    } else if (selectedLead === null) {
+      // Reset to step 1 when creating new lead
+      setCurrentStep(1)
+    }
+  }, [selectedLead, viewLead])
  
   const handleCreate = () => {
     setSelectedLead(null);
@@ -78,10 +116,28 @@ export default function LeadsPage() {
     toast.success('Creating a new lead', { icon: '📝' });
   };
  
-  const handleEdit = (lead) => {
-    setSelectedLead(lead);
-    setOpen(true);
-    toast('Editing lead details', { icon: '✏️' });
+  const handleEdit = async (lead) => {
+    setIsFetchingLead(true);
+    try {
+      const loadingToast = toast.loading('Loading lead details...');
+      const fullLeadData = await getLeadById(lead._id || lead.id);
+      setSelectedLead(fullLeadData);
+      setOpen(true);
+      toast.success('Lead loaded for editing', { 
+        id: loadingToast,
+        icon: '✏️',
+        duration: 2000
+      });
+    } catch (err) {
+      console.error('Failed to fetch lead details:', err);
+      const errorMessage = err.response?.data?.message || 'Failed to load lead details. Please try again.';
+      toast.error(errorMessage, { 
+        icon: <AlertCircle className="w-5 h-5 text-red-500" />,
+        duration: 5000
+      });
+    } finally {
+      setIsFetchingLead(false);
+    }
   };
  
   const handleLeadSubmit = async (leadPayload, files = {}) => {
@@ -155,13 +211,28 @@ export default function LeadsPage() {
     }
   };
  
-  const handleView = (lead) => {
-    setViewLead(lead);
-    setIsViewMode(true);
-    toast.success('Viewing lead details', { 
-      icon: '👁️',
-      duration: 2000
-    });
+  const handleView = async (lead) => {
+    setIsFetchingLead(true);
+    try {
+      const loadingToast = toast.loading('Loading lead details...');
+      const fullLeadData = await getLeadById(lead._id || lead.id);
+      setViewLead(fullLeadData);
+      setIsViewMode(true);
+      toast.success('Viewing lead details', { 
+        id: loadingToast,
+        icon: '👁️',
+        duration: 2000
+      });
+    } catch (err) {
+      console.error('Failed to fetch lead details:', err);
+      const errorMessage = err.response?.data?.message || 'Failed to load lead details. Please try again.';
+      toast.error(errorMessage, { 
+        icon: <AlertCircle className="w-5 h-5 text-red-500" />,
+        duration: 5000
+      });
+    } finally {
+      setIsFetchingLead(false);
+    }
   };
  
   const normalizedLeads = (Array.isArray(leads) ? leads : []).map((lead) => {
@@ -387,6 +458,8 @@ export default function LeadsPage() {
                     data={viewLead}
                     viewMode={true}
                     onClose={() => setIsViewMode(false)}
+                    currentStep={currentStep}
+                    onStepChange={setCurrentStep}
                   />
                 </div>
 
@@ -623,11 +696,19 @@ export default function LeadsPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="bg-white border shadow-lg">
-                              <DropdownMenuItem onClick={() => handleView(lead.raw)} className="cursor-pointer">
+                              <DropdownMenuItem 
+                                onClick={() => handleView(lead.raw)} 
+                                className="cursor-pointer"
+                                disabled={isFetchingLead}
+                              >
                                 <Eye className="h-4 w-4 mr-2" />
                                 View
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleEdit(lead.raw)} className="cursor-pointer">
+                              <DropdownMenuItem 
+                                onClick={() => handleEdit(lead.raw)} 
+                                className="cursor-pointer"
+                                disabled={isFetchingLead}
+                              >
                                 <Edit className="h-4 w-4 mr-2" />
                                 Edit
                               </DropdownMenuItem>

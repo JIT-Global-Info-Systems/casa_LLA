@@ -52,6 +52,9 @@ export const AuthProvider = ({ children }) => {
           setUser(userData);
           // Store user data in localStorage for future use
           localStorage.setItem('user', JSON.stringify(response));
+          if (response.role) {
+            localStorage.setItem('userRole', response.role);
+          }
         } catch (error) {
           console.error('Failed to fetch user profile:', error);
           setUser({ token }); // Fallback to token only
@@ -84,6 +87,9 @@ export const AuthProvider = ({ children }) => {
         if (response.user) {
           localStorage.setItem('user_id', response.user.id || response.user.user_id);
           localStorage.setItem('user', JSON.stringify(response.user));
+          if (response.user.role) {
+            localStorage.setItem('userRole', response.user.role);
+          }
           setUser({ ...response.user, token: response.token });
 
           // Check if it's first login
@@ -127,6 +133,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('token');
     localStorage.removeItem('user_id');
     localStorage.removeItem('user');
+    localStorage.removeItem('userRole');
     setUser(null);
     setError(null);
     setIsFirstLogin(false);

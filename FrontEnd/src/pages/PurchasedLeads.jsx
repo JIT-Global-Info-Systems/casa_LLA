@@ -11,7 +11,7 @@ import { toast } from "react-hot-toast";
 import axios from "axios";
 import Leads from "./Leads";
 import LeadStepper from "@/components/ui/LeadStepper";
- 
+
 const getStatusBadge = (status) => {
   switch (status?.toUpperCase()) {
     case 'PURCHASED':
@@ -24,7 +24,7 @@ const getStatusBadge = (status) => {
       return 'bg-gray-100 text-gray-800';
   }
 };
- 
+
 const PurchasedLeads = () => {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -38,18 +38,18 @@ const PurchasedLeads = () => {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [currentStep, setCurrentStep] = useState(1);
- 
+
   const leadComments = [
     selectedLead?.remark,
     selectedLead?.comment,
   ]
     .map((v) => (typeof v === "string" ? v.trim() : ""))
     .filter((text) => Boolean(text));
- 
+
   useEffect(() => {
     fetchPurchasedLeads()
   }, [])
- 
+
   const fetchPurchasedLeads = async () => {
     const loadingToast = toast.loading('Loading purchased leads...');
     try {
@@ -61,10 +61,10 @@ const PurchasedLeads = () => {
           "Authorization": `Bearer ${localStorage.getItem("token")}`
         }
       });
- 
+
       const leadsData = response.data?.data || [];
       setLeads(leadsData);
- 
+
       if (leadsData.length === 0) {
         toast.success('No purchased leads found', { id: loadingToast });
       } else {
@@ -85,13 +85,13 @@ const PurchasedLeads = () => {
       setLoading(false);
     }
   };
- 
+
   const handleView = (lead) => {
     setSelectedLead(lead);
     setIsViewMode(true);
     // Don't open modal for view mode - this prevents the popup from showing
   };
- 
+
   const filteredLeads = leads.filter((lead) => {
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch = searchTerm === "" ||
@@ -100,20 +100,20 @@ const PurchasedLeads = () => {
       (lead.lead_id && lead.lead_id.toLowerCase().includes(searchLower)) ||
       (lead.location && lead.location.toLowerCase().includes(searchLower)) ||
       (lead.leadType && lead.leadType.toLowerCase().includes(searchLower));
- 
+
     const matchesDate = !dateFrom && !dateTo ? true : (() => {
       const leadDate = new Date(lead.date || lead.purchaseDate || lead.createdAt || lead.updatedAt);
       const fromDateObj = dateFrom ? new Date(dateFrom) : new Date("1900-01-01");
       const toDateObj = dateTo ? new Date(dateTo) : new Date("2100-12-31");
       return leadDate >= fromDateObj && leadDate <= toDateObj;
     })();
- 
+
     const matchesStatus = statusFilter === "all" ||
       (lead.lead_status && lead.lead_status.toLowerCase() === statusFilter.toLowerCase());
- 
+
     return matchesSearch && matchesDate && matchesStatus;
   });
- 
+
   return (
     <div className="flex-1 space-y-6 p-0">
       {isViewMode ? (
@@ -125,6 +125,8 @@ const PurchasedLeads = () => {
               <div className="mb-6">
                 <LeadStepper
                   stageName={
+                    selectedLead?.assignedTo ||
+                    selectedLead?.currentRole ||
                     selectedLead?.leadStatus ||
                     selectedLead?.stageName ||
                     selectedLead?.lead_stage ||
@@ -135,7 +137,7 @@ const PurchasedLeads = () => {
                   className="w-full"
                 />
               </div>
- 
+
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2">
                   <Leads
@@ -144,7 +146,7 @@ const PurchasedLeads = () => {
                     onClose={() => setIsViewMode(false)}
                   />
                 </div>
- 
+
                 {/* Right-side calls and notes thread (show when viewing) */}
                 <div className="lg:col-span-1">
                   <div className="h-full rounded-lg border bg-slate-50 sticky top-4">
@@ -153,7 +155,7 @@ const PurchasedLeads = () => {
                         Communication History
                       </div>
                     </div>
- 
+
                     <div className="p-4 space-y-3 max-h-[80vh] overflow-y-auto">
                       {/* Display calls history if available */}
                       {selectedLead?.calls && selectedLead.calls.length > 0 &&
@@ -177,7 +179,7 @@ const PurchasedLeads = () => {
                           </div>
                         ))
                       }
- 
+
                       {/* Display notes from different sources without headers */}
                       {selectedLead?.remark && (
                         <div className="w-full border bg-white px-3 py-2 text-sm text-slate-800 rounded-md shadow-sm">
@@ -233,7 +235,7 @@ const PurchasedLeads = () => {
               </div>
             </div>
           </div>
- 
+
           {/* Main Content */}
           <div className="max-w-[1600px] mx-auto px-8 py-6">
             <Card className="bg-white shadow-sm">
@@ -248,7 +250,7 @@ const PurchasedLeads = () => {
                     className="pl-10 border-gray-300"
                   />
                 </div>
- 
+
                 <div className="flex items-center gap-2">
                   <Label className="text-sm text-gray-600 whitespace-nowrap">Status:</Label>
                   <DropdownMenu>
@@ -289,7 +291,7 @@ const PurchasedLeads = () => {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
- 
+
                 <div className="flex items-center gap-2">
                   <Label className="text-sm text-gray-600 whitespace-nowrap">From:</Label>
                   <Input
@@ -299,7 +301,7 @@ const PurchasedLeads = () => {
                     className="w-[150px] border-gray-300"
                   />
                 </div>
- 
+
                 <div className="flex items-center gap-2">
                   <Label className="text-sm text-gray-600 whitespace-nowrap">To:</Label>
                   <Input
@@ -433,7 +435,7 @@ const PurchasedLeads = () => {
               )}
             </Card>
           </div>
- 
+
           {/* Modal - Only show when not in view mode */}
           {!isViewMode && open && (
             <Modal open={open} onClose={() => setOpen(false)} size="7xl">
@@ -441,6 +443,8 @@ const PurchasedLeads = () => {
                 <div className="p-6">
                   <LeadStepper
                     stageName={
+                      selectedLead?.assignedTo ||
+                      selectedLead?.currentRole ||
                       selectedLead?.leadStatus ||
                       selectedLead?.stageName ||
                       selectedLead?.lead_stage ||
@@ -455,7 +459,7 @@ const PurchasedLeads = () => {
                   <Leads
                     data={selectedLead}
                     viewMode={true}
-                    onSubmit={() => {}}
+                    onSubmit={() => { }}
                     onClose={() => setOpen(false)}
                   />
                 </div>
@@ -468,4 +472,3 @@ const PurchasedLeads = () => {
   );
 }
 export default PurchasedLeads;
- 
