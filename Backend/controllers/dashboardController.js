@@ -166,23 +166,25 @@ export const getDashboardStats = async (req, res) => {
 
           // 4️⃣ Approved Leads
           approvedLeads: [
-            { $match: { lead_status: "APPROVED" } },
+            ...(Object.keys(matchStage).length ? [{ $match: { ...matchStage, lead_status: "APPROVED" } }] : [{ $match: { lead_status: "APPROVED" } }]),
             { $count: "count" }
           ],
 
           // 5️⃣ Pending Leads
           pendingLeads: [
-            { 
-              $match: { 
-                lead_status: { $nin: ["APPROVED", "PURCHASED"] }
-              } 
-            },
+            ...(Object.keys(matchStage).length ? 
+              [{ $match: { ...matchStage, lead_status: { $nin: ["APPROVED", "PURCHASED"] } } }] : 
+              [{ $match: { lead_status: { $nin: ["APPROVED", "PURCHASED"] } } }]
+            ),
             { $count: "count" }
           ],
 
           // 6️⃣ Purchased Leads
           purchasedLeads: [
-            { $match: { lead_status: "PURCHASED" } },
+            ...(Object.keys(matchStage).length ? 
+              [{ $match: { ...matchStage, lead_status: "PURCHASED" } }] : 
+              [{ $match: { lead_status: "PURCHASED" } }]
+            ),
             { $count: "count" }
           ]
         }
