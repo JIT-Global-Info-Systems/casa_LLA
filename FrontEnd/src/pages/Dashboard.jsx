@@ -464,8 +464,8 @@ const calculateWorkStages = (leadsData, accessData) => {
 </div>
 
         {/* FILTERS */}
-        {/* <div className="flex flex-col gap-4">
-          <div className="flex justify-between items-center">
+        <div className="flex flex-col gap-4">
+          <div className="flex justify-end items-center">
             {/* <DashboardFilters filters={filters} setFilters={setFilters} /> */}
             <Button
               variant="outline"
@@ -485,8 +485,8 @@ const calculateWorkStages = (leadsData, accessData) => {
               <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
               Refresh
             </Button>
-          {/* </div>
-        </div> */}
+          </div>
+        </div>
 
         {/* DONUT CHARTS */}
         <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
