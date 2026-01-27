@@ -246,7 +246,7 @@ export default function LeadsPage() {
                     <div className="h-[40vh] rounded-lg border bg-slate-50">
                       <div className="px-4 py-3 border-b bg-white rounded-t-lg">
                         <div className="text-sm font-semibold text-slate-800">
-                          Communication History
+                        Calls History
                         </div>
                         <div className="text-xs text-slate-500">
                           Message thread
@@ -396,7 +396,7 @@ export default function LeadsPage() {
                   <div className="h-[40vh] rounded-lg border bg-slate-50">
                     <div className="px-4 py-3 border-b bg-white rounded-t-lg">
                       <div className="text-sm font-semibold text-slate-800">
-                        Communication History
+                      Notes
                       </div>
                     </div>
 
@@ -452,11 +452,11 @@ export default function LeadsPage() {
                     </div>
                   </div>
 
-                  {/* Wild Cards Section */}
+                  {/* yield Cards Section */}
                   <div className="h-[40vh] rounded-lg border bg-slate-50">
                     <div className="px-4 py-3 border-b bg-white rounded-t-lg">
                       <div className="text-sm font-semibold text-slate-800">
-                        Wild Cards
+                        yield Cards
                       </div>
                       <div className="text-xs text-slate-500">
                         Additional information & actions

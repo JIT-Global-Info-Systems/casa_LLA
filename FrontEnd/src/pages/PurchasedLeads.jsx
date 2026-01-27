@@ -150,7 +150,7 @@ const PurchasedLeads = () => {
                   <div className="h-full rounded-lg border bg-slate-50 sticky top-4">
                     <div className="px-4 py-3 border-b bg-white rounded-t-lg">
                       <div className="text-sm font-semibold text-slate-800">
-                        Communication History
+                      Calls History
                       </div>
                     </div>
  
