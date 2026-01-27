@@ -15,21 +15,29 @@ import toast from "react-hot-toast"
 
 const yesNo = (v) => (v ? "Yes" : "No")
 
-export default function Leads({ data = null, onSubmit, onClose, viewMode = false }) {
+export default function Leads({ data = null, onSubmit, onClose, viewMode = false, currentStep, onStepChange, editableFields = null }) {
   const { mediators, loading: mediatorsLoading, fetched: mediatorsFetched, fetchMediators } = useMediators()
   const { users, loading: usersLoading, fetchUsers } = useUsers()
+
+  // Helper function to check if a field is editable
+  const isFieldEditable = (fieldName) => {
+    if (viewMode) return false;
+    if (editableFields === null) return true; // All fields editable by default
+    return editableFields.includes(fieldName);
+  };
 
   // Static roles for assignment (matching LeadStepper)
   const STATIC_ROLES = [
     "tele_caller",
-    "land_executive", 
+    "land_executive",
     "analytics_team",
     "feasibility_team",
     "field_study_product_team",
     "management_md_1st_level",
+    "l1_md",
     "cmo_cro",
     "legal",
-    "liaison", 
+    "liaison",
     "finance",
     "admin"
   ]
@@ -39,6 +47,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     'admin': 1,
     'cmo_cro': 2,
     'management_md_1st_level': 3,
+    'l1_md': 3,
     'legal': 4,
     'liaison': 5,
     'finance': 6,
@@ -51,7 +60,21 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
   // Get current user role from localStorage
   const getCurrentUserRole = () => {
-    return localStorage.getItem('userRole') || 'tele_caller' // Default to lowest role if not found
+    // Try to get from direct key first
+    const directRole = localStorage.getItem('userRole')
+    if (directRole) return directRole
+
+    // Fallback to parsing user object
+    const userData = localStorage.getItem('user')
+    if (userData) {
+      try {
+        const parsed = JSON.parse(userData)
+        return parsed.role || 'tele_caller'
+      } catch (e) {
+        console.error("Failed to parse user data for role", e)
+      }
+    }
+    return 'tele_caller'
   }
 
   // Get static roles filtered by hierarchy
@@ -61,7 +84,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
     // For now, show all static roles (remove filtering to debug)
     return STATIC_ROLES.sort((a, b) => (roleHierarchy[a] || 12) - (roleHierarchy[b] || 12))
-    
+
     // Admin can assign to anyone
     if (currentUserRole === 'admin') {
       return STATIC_ROLES.sort((a, b) => (roleHierarchy[a] || 12) - (roleHierarchy[b] || 12))
@@ -168,6 +191,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     checkRequests: "",
     currentRole: "",
     assignedTo: "",
+    inquiredBy: "", // New field for inquiry status (only enabled when leadStatus is "Pending"/Enquired)
   })
 
   const [masters, setMasters] = useState({ locations: [], regions: [], zones: [] })
@@ -316,11 +340,9 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
   }, [fetchLocations, fetchMediators, mediatorsFetched, mediatorsLoading, mediators.length, usersLoading, users.length, fetchUsers])
 
   useEffect(() => {
-    // Auto-set currentRole from localStorage when creating new lead (not editing)
-    if (!data) {
-      const userRole = getCurrentUserRole()
-      handleChange("currentRole", userRole)
-    }
+    // Auto-set currentRole from localStorage
+    const userRole = getCurrentUserRole()
+    handleChange("currentRole", userRole)
   }, [data])
 
   useEffect(() => {
@@ -339,6 +361,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       currentRole: data.currentRole || prev.currentRole,
       assignedTo: data.assignedTo || prev.assignedTo, // Now storing role string, not user ID
       status: data.status || prev.status,
+      inquiredBy: data.inquiredBy || prev.inquiredBy,
 
       // competitor..
       competitorDeveloperName: firstCompetitor?.developerName || "",
@@ -395,6 +418,32 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
   const handleChange = (key, value) => setFormData((prev) => ({ ...prev, [key]: value }))
   const handleCheckboxChange = (key, checked) => setFormData((prev) => ({ ...prev, [key]: checked }))
+
+  // Update currentStep when assignedTo changes to sync with LeadStepper
+  useEffect(() => {
+    if (formData.assignedTo && onStepChange) {
+      // Find the step number for the assigned role
+      const roleToStepMap = {
+        'tele_caller': 1,
+        'land_executive': 2,
+        'analytics_team': 3,
+        'feasibility_team': 4,
+        'field_study_product_team': 5,
+        'management_md_1st_level': 6,
+        'l1_md': 7,
+        'cmo_cro': 8,
+        'legal': 9,
+        'liaison': 10,
+        'finance': 11,
+        'admin': 12
+      }
+      
+      const stepNumber = roleToStepMap[formData.assignedTo]
+      if (stepNumber) {
+        onStepChange(stepNumber)
+      }
+    }
+  }, [formData.assignedTo, onStepChange])
 
   const handleFileChange = (key, file) => {
     if (file) {
@@ -543,9 +592,10 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
       // CRITICAL: Always send currentRole from localStorage to prevent validation errors
       currentRole: currentRoleValue,
-      
+
       // Send assignedTo field (backend needs to support this)
       assignedTo: formData.assignedTo,
+      inquiredBy: formData.inquiredBy,
 
       // structured sections
       competitorAnalysis,
@@ -623,6 +673,14 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     </div>
   )
 
+  // CSS for disabling all inputs except Lead Stage when editableFields is restricted
+  const getFormWrapperClass = () => {
+    if (editableFields && editableFields.length > 0 && !editableFields.includes('*')) {
+      return 'restricted-edit-mode'
+    }
+    return ''
+  }
+
   const CheckboxTile = ({ label, checked, onChange }) => (
     <label
       className={`
@@ -653,7 +711,18 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
   )
 
   return (
-    <div className="min-h-screen bg-slate-50/50 p-4 md:p-8">
+    <>
+      <style>{`
+        .restricted-edit-mode input:not([data-editable="true"]),
+        .restricted-edit-mode select:not([data-editable="true"]),
+        .restricted-edit-mode textarea:not([data-editable="true"]),
+        .restricted-edit-mode [role="combobox"]:not([data-editable="true"]) {
+          opacity: 0.5;
+          pointer-events: none;
+          cursor: not-allowed;
+        }
+      `}</style>
+      <div className={`min-h-screen bg-slate-50/50 p-4 md:p-8 ${getFormWrapperClass()}`}>
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
@@ -674,9 +743,9 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
         </div>
 
         {/* Lead Stepper */}
-        <LeadStepper 
-          stageName={formData.currentRole?.replace(/_/g, ' ') || "Tele Caller"}
-          currentStep={1}
+        <LeadStepper
+          stageName={formData.assignedTo || formData.currentRole || "tele_caller"}
+          currentStep={currentStep}
           className="w-full"
         />
 
@@ -732,7 +801,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
             <div className="space-y-2">
               <Label>Contact Number</Label>
-              {viewMode ? (
+              {viewMode || !isFieldEditable('contactNumber') ? (
                 <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
                   {formData.contactNumber || "-"}
                 </div>
@@ -744,7 +813,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                   className={`bg-gray-50/50 ${errors.contactNumber ? "border-red-500 focus:border-red-500" : ""}`}
                 />
               )}
-              {errors.contactNumber && !viewMode && (
+              {errors.contactNumber && !viewMode && isFieldEditable('contactNumber') && (
                 <p className="text-red-500 text-sm flex items-center gap-1">
                   <AlertCircle className="h-4 w-4" />
                   {errors.contactNumber}
@@ -807,17 +876,27 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
               )}
             </div>
 
+            <div className="space-y-2 hidden">
+              <Label>Current Role (Action By)</Label>
+              <div className="p-2 bg-gray-100 border border-gray-200 rounded-md text-gray-700 min-h-[40px] flex items-center capitalize font-medium">
+                {formData.currentRole?.replace(/_/g, ' ') || getCurrentUserRole().replace(/_/g, ' ')}
+              </div>
+            </div>
+
             <div className="space-y-2">
-              <Label>{viewMode ? "Current Role" : "Assign to"}</Label>
+              <Label>Assign to</Label>
               {viewMode ? (
                 <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
-                  {formData.currentRole?.replace(/_/g, ' ') || "-"}
+                  {formData.assignedTo?.replace(/_/g, ' ') || "-"}
                 </div>
               ) : (
                 <Select
                   value={formData.assignedTo}
                   onValueChange={(value) => {
                     handleChange("assignedTo", value)
+                    // When assigning, also ensure currentRole is up to date
+                    const userRole = getCurrentUserRole()
+                    handleChange("currentRole", userRole)
                   }}
                 >
                   <SelectTrigger className="bg-gray-50/50">
@@ -1231,34 +1310,61 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
             {/* <div className="md:col-span-3 p-4 bg-yellow-50 rounded-lg border border-yellow-200"> */}
             <div className="space-y-2">
-              <Label className="text-yellow-800">Lead Stage</Label>
-              {viewMode ? (
-                <div className="p-2 bg-white border border-yellow-300 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
+              <Label className="text-gray-700">Lead Stage</Label>
+              {!isFieldEditable('leadStatus') ? (
+                <div className="p-2 bg-white border border-gray-300 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
                   {formData.leadStatus || "-"}
                 </div>
               ) : (
                 <Select value={formData.leadStatus} onValueChange={(v) => handleChange("leadStatus", v)}>
-                  <SelectTrigger className="bg-white border-yellow-300">
+                  <SelectTrigger className="bg-white border-gray-300" data-editable="true">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-white z-50 shadow-lg">
-                      <SelectItem value="Enquired">Enquired</SelectItem>
-                      <SelectItem value="Lead_Allocated">Lead Allocated</SelectItem>
-                      <SelectItem value="First_Called">First Called</SelectItem>
-                      <SelectItem value="Site_Visit">Site Visit</SelectItem>
-                      <SelectItem value="Owner_Meeting">Owner Meeting</SelectItem>
-                      <SelectItem value="Negotiation_Started">Negotiation Started</SelectItem>
-                      <SelectItem value="Negotiation_End">Negotiation End</SelectItem>
-                      <SelectItem value="Due_Diligence_Started">Due Diligence Started</SelectItem>
-                      <SelectItem value="Due_Diligence_End">Due Diligence End</SelectItem>
-                      <SelectItem value="Approved">Approved</SelectItem>
-                      <SelectItem value="Purchased">Purchased</SelectItem>
-                      <SelectItem value="Lost">Lost</SelectItem>
-                      <SelectItem value="Hold">Hold</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    {/* Show only "Purchased" option when in restricted edit mode (Approved Leads page) */}
+                    {editableFields && editableFields.length > 0 && editableFields.includes('leadStatus') ? (
+                      <SelectItem value="Approved_Final">Purchased</SelectItem>
+                    ) : (
+                      <>
+                        <SelectItem value="Pending">Enquired</SelectItem>
+                        <SelectItem value="Approved">Lead Allocated</SelectItem>
+                        <SelectItem value="Rejected">First Called</SelectItem>
+                        <SelectItem value="Cancelled">Site Visit</SelectItem>
+                        <SelectItem value="Lost">Owner Meeting</SelectItem>
+                        <SelectItem value="Won">Negotiation Started</SelectItem>
+                        <SelectItem value="Negotiation_End">Negotiation End</SelectItem>
+                        <SelectItem value="Due_Diligence_Started">Due Diligence Started</SelectItem>
+                        <SelectItem value="Due_Diligence_End">Due Diligence End</SelectItem>
+                        <SelectItem value="Approved_Final">Approved</SelectItem>
+                        <SelectItem value="Hold">Hold</SelectItem>
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
               )}
             </div>
+
+            {/* Inquired By field - only show when Lead Stage is "Enquired" (Pending) */}
+            {formData.leadStatus === "Pending" && (
+              <div className="space-y-2">
+                <Label className="text-gray-700">Inquired By</Label>
+                {!isFieldEditable('inquiredBy') ? (
+                  <div className="p-2 bg-white border border-gray-300 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
+                    {formData.inquiredBy || "-"}
+                  </div>
+                ) : (
+                  <Select value={formData.inquiredBy} onValueChange={(v) => handleChange("inquiredBy", v)}>
+                    <SelectTrigger className="bg-white border-gray-300" data-editable="true">
+                      <SelectValue placeholder="Select inquiry status" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white z-50 shadow-lg">
+                      <SelectItem value="qualified_by_land_team">Qualified by Land Team</SelectItem>
+                      <SelectItem value="rejected_by_land_team">Rejected by Land Team</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            )}
 
             {/* Status field - only show in edit mode */}
             {data && (
@@ -1780,5 +1886,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
         )}
       </div>
     </div>
+    </>
   )
 }

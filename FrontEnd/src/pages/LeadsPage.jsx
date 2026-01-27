@@ -22,7 +22,7 @@ import {
   X,
   AlertCircle
 } from "lucide-react";
-import LeadStepper from "@/components/ui/LeadStepper"
+// import LeadStepper from "@/components/ui/LeadStepper"
 import Leads from "./Leads"
 import { useLeads } from "../context/LeadsContext.jsx"
 import ConfirmModal from "@/components/ui/ConfirmModal";
@@ -37,13 +37,17 @@ export default function LeadsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
  
-  const { leads, loading, error, fetchLeads, createLead, updateLead, deleteLead } = useLeads()
-  
-  // Entity action hook for status-aware delete
-  const { handleDelete, canPerformAction, confirmModal } = useEntityAction('lead')
+  const { leads, loading, error, fetchLeads, createLead, updateLead, deleteLead, getLeadById } = useLeads()
  
   const [currentStep, setCurrentStep] = useState(1)
+  const [isFetchingLead, setIsFetchingLead] = useState(false)
+  
+  // Entity action hook for status-aware delete
+  const { handleDelete, canPerformAction, confirmModal } = useEntityAction('lead');
+  
   const leadComments = [
     selectedLead?.remark,
     selectedLead?.comment,
@@ -75,15 +79,71 @@ export default function LeadsPage() {
     
     loadLeads();
   }, [])
+
+  // Update currentStep when selectedLead changes, based on assignedTo
+  useEffect(() => {
+    const getStepFromAssignedTo = (lead) => {
+      if (lead?.assignedTo) {
+        const roleToStepMap = {
+          'tele_caller': 1,
+          'land_executive': 2,
+          'analytics_team': 3,
+          'feasibility_team': 4,
+          'field_study_product_team': 5,
+          'management_md_1st_level': 6,
+          'l1_md': 7,
+          'cmo_cro': 8,
+          'legal': 9,
+          'liaison': 10,
+          'finance': 11,
+          'admin': 12
+        }
+        
+        const stepNumber = roleToStepMap[lead.assignedTo]
+        if (stepNumber) {
+          return stepNumber
+        }
+      }
+      return 1 // Default to step 1
+    }
+
+    if (selectedLead) {
+      setCurrentStep(getStepFromAssignedTo(selectedLead))
+    } else if (viewLead) {
+      setCurrentStep(getStepFromAssignedTo(viewLead))
+    } else if (selectedLead === null) {
+      // Reset to step 1 when creating new lead
+      setCurrentStep(1)
+    }
+  }, [selectedLead, viewLead])
  
   const handleCreate = () => {
     setSelectedLead(null);
     setOpen(true);
   };
  
-  const handleEdit = (lead) => {
-    setSelectedLead(lead);
-    setOpen(true);
+  const handleEdit = async (lead) => {
+    setIsFetchingLead(true);
+    try {
+      const loadingToast = toast.loading('Loading lead details...');
+      const fullLeadData = await getLeadById(lead._id || lead.id);
+      setSelectedLead(fullLeadData);
+      setOpen(true);
+      toast.success('Lead loaded for editing', { 
+        id: loadingToast,
+        icon: '✏️',
+        duration: 2000
+      });
+    } catch (err) {
+      console.error('Failed to fetch lead details:', err);
+      const errorMessage = err.response?.data?.message || 'Failed to load lead details. Please try again.';
+      toast.error(errorMessage, { 
+        icon: <AlertCircle className="w-5 h-5 text-red-500" />,
+        duration: 5000
+      });
+    } finally {
+      setIsFetchingLead(false);
+    }
   };
  
   const handleLeadSubmit = async (leadPayload, files = {}) => {
@@ -143,9 +203,28 @@ export default function LeadsPage() {
     });
   };
  
-  const handleView = (lead) => {
-    setViewLead(lead);
-    setIsViewMode(true);
+  const handleView = async (lead) => {
+    setIsFetchingLead(true);
+    try {
+      const loadingToast = toast.loading('Loading lead details...');
+      const fullLeadData = await getLeadById(lead._id || lead.id);
+      setViewLead(fullLeadData);
+      setIsViewMode(true);
+      toast.success('Viewing lead details', { 
+        id: loadingToast,
+        icon: '👁️',
+        duration: 2000
+      });
+    } catch (err) {
+      console.error('Failed to fetch lead details:', err);
+      const errorMessage = err.response?.data?.message || 'Failed to load lead details. Please try again.';
+      toast.error(errorMessage, { 
+        icon: <AlertCircle className="w-5 h-5 text-red-500" />,
+        duration: 5000
+      });
+    } finally {
+      setIsFetchingLead(false);
+    }
   };
  
   const normalizedLeads = (Array.isArray(leads) ? leads : []).map((lead) => {
@@ -191,6 +270,17 @@ export default function LeadsPage() {
  
     return matchesSearch && matchesDateRange;
   });
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, dateFrom, dateTo]);
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedLeads = filteredLeads.slice(startIndex, endIndex);
  
   return (
     <div className="flex-1 space-y-6 p-0">
@@ -371,6 +461,8 @@ export default function LeadsPage() {
                     data={viewLead}
                     viewMode={true}
                     onClose={() => setIsViewMode(false)}
+                    currentStep={currentStep}
+                    onStepChange={setCurrentStep}
                   />
                 </div>
 
@@ -577,7 +669,7 @@ export default function LeadsPage() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredLeads.map((lead) => (
+                    {paginatedLeads.map((lead) => (
                       <tr key={lead.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{lead.lead_id || lead.id}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{lead.name}</td>
@@ -607,11 +699,19 @@ export default function LeadsPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="bg-white border shadow-lg">
-                              <DropdownMenuItem onClick={() => handleView(lead.raw)} className="cursor-pointer">
+                              <DropdownMenuItem 
+                                onClick={() => handleView(lead.raw)} 
+                                className="cursor-pointer"
+                                disabled={isFetchingLead}
+                              >
                                 <Eye className="h-4 w-4 mr-2" />
                                 View
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleEdit(lead.raw)} className="cursor-pointer">
+                              <DropdownMenuItem 
+                                onClick={() => handleEdit(lead.raw)} 
+                                className="cursor-pointer"
+                                disabled={isFetchingLead}
+                              >
                                 <Edit className="h-4 w-4 mr-2" />
                                 Edit
                               </DropdownMenuItem>
@@ -637,11 +737,29 @@ export default function LeadsPage() {
               {!loading && !error && filteredLeads.length === 0 && <div className="text-center py-12 text-gray-500"><p>No leads found matching your criteria.</p></div>}
  
               <div className="px-6 py-4 border-t flex items-center justify-between">
-                <p className="text-sm text-gray-600">Showing {filteredLeads.length} results</p>
+                <p className="text-sm text-gray-600">Showing {startIndex + 1} to {Math.min(endIndex, filteredLeads.length)} of {filteredLeads.length} results</p>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" disabled className="text-gray-400">Previous</Button>
-                  <Button variant="outline" size="sm" disabled className="text-gray-400">Next</Button>
-                  <Button variant="outline" size="sm" disabled className="text-gray-400">Last</Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(currentPage - 1)}
+                    className="text-gray-700"
+                  >
+                    Previous
+                  </Button>
+                  <span className="px-3 py-1 text-sm text-gray-600 flex items-center">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                    className="text-gray-700"
+                  >
+                    Next
+                  </Button>
                 </div>
               </div>
             </Card>

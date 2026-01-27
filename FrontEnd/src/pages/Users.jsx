@@ -26,6 +26,8 @@ function Users() {
   const [toDate, setToDate] = useState("");
   const [mode, setMode] = useState("list"); // 'list' | 'add' | 'edit' | 'view'
   const [selectedUser, setSelectedUser] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -51,6 +53,17 @@ function Users() {
     filterUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [users, searchTerm, roleFilter, statusFilter, fromDate, toDate]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, roleFilter, statusFilter, fromDate, toDate]);
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
 
   const filterUsers = () => {
     if (!users) return;
@@ -330,193 +343,170 @@ function Users() {
 
               {/* Table */}
               <div className="overflow-x-auto">
-                {loading && <LoadingState message="Loading users..." />}
-                
-                {!loading && error && (
-                  <ErrorState 
-                    message={error} 
-                    onRetry={fetchUsers}
-                  />
-                )}
-
-                {!loading && !error && filteredUsers.length === 0 && (
-                  <EmptyState
-                    title="No users found"
-                    message="No users match your search criteria."
-                    action={() => {
-                      setSearchTerm("");
-                      setRoleFilter("all");
-                      setStatusFilter("all");
-                      setFromDate("");
-                      setToDate("");
-                    }}
-                    actionLabel="Clear filters"
-                  />
-                )}
-
-                {!loading && !error && filteredUsers.length > 0 && (
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b bg-gray-50">
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Name
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Role
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Phone
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Email
-                        </th>
-                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Status
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Registered Date
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Action
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {filteredUsers.map((user) => (
-                        <tr
-                          key={user.user_id}
-                          className="hover:bg-gray-50 transition-colors"
-                        >
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {user.name}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            <span
-                              className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${getCategoryColor(
-                                user.role
-                              )} capitalize`}
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b bg-gray-50">
+                      {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        ID
+                      </th> */}
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Name
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Role
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Phone
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Email
+                      </th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Registered Date
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Action
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {paginatedUsers.map((user) => (
+                      <tr
+                        key={user.user_id}
+                        className="hover:bg-gray-50 transition-colors"
+                      >
+                        {/* <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {user.user_id}
+                        </td> */}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {user.name}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <span
+                            className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${getCategoryColor(
+                              user.role
+                            )} capitalize`}
+                          >
+                            {user.role}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {user.phone_number}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {user.email}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <div className="flex items-center justify-center gap-3">
+                            <Switch
+                              checked={user.status === "active"}
+                              onCheckedChange={async (checked) => {
+                                try {
+                                  const newStatus = checked ? "active" : "inactive";
+                                  await updateUser(user.user_id, { status: newStatus });
+                                  toast.success(`User ${checked ? 'activated' : 'deactivated'} successfully`);
+                                } catch (error) {
+                                  toast.error('Could not update status. Please try again.');
+                                  console.error("Error updating user status:", error);
+                                }
+                              }}
+                              id={`status-toggle-${user.user_id}`}
+                              className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-gray-300 h-4 w-8.5 [&>span]:h-3 [&>span]:w-3"
+                            />
+                            <Label
+                              htmlFor={`status-toggle-${user.user_id}`}
+                              className={`text-sm font-medium cursor-pointer ${user.status === "active"
+                                  ? "text-green-700"
+                                  : "text-gray-500"
+                                }`}
                             >
-                              {user.role}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            {user.phone_number}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            {user.email}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            <div className="flex items-center justify-center gap-3">
-                              <Switch
-                                checked={user.status === "active"}
-                                onCheckedChange={async (checked) => {
-                                  try {
-                                    const newStatus = checked ? "active" : "inactive";
-                                    await updateUser(user.user_id, { status: newStatus });
-                                    toast.success(`User ${checked ? 'activated' : 'deactivated'} successfully`);
-                                  } catch (error) {
-                                    toast.error('Could not update status. Please try again.');
-                                    console.error("Error updating user status:", error);
-                                  }
-                                }}
-                                id={`status-toggle-${user.user_id}`}
-                                className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-gray-300 h-4 w-8.5 [&>span]:h-3 [&>span]:w-3"
-                              />
-                              <Label
-                                htmlFor={`status-toggle-${user.user_id}`}
-                                className={`text-sm font-medium cursor-pointer ${user.status === "active"
-                                    ? "text-green-700"
-                                    : "text-gray-500"
-                                  }`}
+                              {user.status === "active" ? "Active" : "Inactive"}
+                            </Label>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {new Date(user.created_at).toISOString().split("T")[0]}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0"
                               >
-                                {user.status === "active" ? "Active" : "Inactive"}
-                              </Label>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            {new Date(user.created_at).toISOString().split("T")[0]}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-8 w-8 p-0"
-                                >
-                                  <MoreVertical className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent
-                                align="end"
-                                className="bg-white border shadow-lg"
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent
+                              align="end"
+                              className="bg-white border shadow-lg"
+                            >
+                              <DropdownMenuItem
+                                onClick={() => openViewDialog(user)}
+                                className="cursor-pointer"
                               >
-                                <DropdownMenuItem
-                                  onClick={() => openViewDialog(user)}
-                                  className="cursor-pointer"
-                                >
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  View
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => openEditDialog(user)}
-                                  className="cursor-pointer"
-                                >
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => handleDeleteUser(user)}
-                                  disabled={!canPerformAction(user, 'delete').enabled}
-                                  className="cursor-pointer text-red-600"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete
-                                  {!canPerformAction(user, 'delete').enabled && (
-                                    <span className="ml-2 text-xs text-gray-500">
-                                      ({canPerformAction(user, 'delete').reason})
-                                    </span>
-                                  )}
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
+                                <Eye className="h-4 w-4 mr-2" />
+                                View
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => openEditDialog(user)}
+                                className="cursor-pointer"
+                              >
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteUser(user)}
+                                disabled={!canPerformAction(user, 'delete').enabled}
+                                className="cursor-pointer text-red-600"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                                {!canPerformAction(user, 'delete').enabled && (
+                                  <span className="ml-2 text-xs text-gray-500">
+                                    ({canPerformAction(user, 'delete').reason})
+                                  </span>
+                                )}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
 
               {/* Footer */}
               <div className="px-6 py-4 border-t flex items-center justify-between">
                 <p className="text-sm text-gray-600">
-                  Showing {filteredUsers.length} results
+                  Showing {startIndex + 1} to {Math.min(endIndex, filteredUsers.length)} of {filteredUsers.length} results
                 </p>
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled
-                    className="text-gray-400"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(currentPage - 1)}
+                    className="text-gray-700"
                   >
                     Previous
                   </Button>
+                  <span className="px-3 py-1 text-sm text-gray-600 flex items-center">
+                    Page {currentPage} of {totalPages}
+                  </span>
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled
-                    className="text-gray-400"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                    className="text-gray-700"
                   >
                     Next
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled
-                    className="text-gray-400"
-                  >
-                    Last
                   </Button>
                 </div>
               </div>

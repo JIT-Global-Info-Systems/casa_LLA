@@ -88,7 +88,23 @@ export const LeadsProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       const response = await leadsAPI.getById(id);
-      return response.data ?? response;
+      let leadData = response.data ?? response;
+      
+      // Extract the latest assignedTo from history array
+      if (leadData.history && Array.isArray(leadData.history) && leadData.history.length > 0) {
+        // Sort history by createdAt in descending order to get the latest
+        const sortedHistory = leadData.history.sort((a, b) => 
+          new Date(b.createdAt || b.created_at) - new Date(a.createdAt || a.created_at)
+        );
+        
+        // Get the latest assignment
+        const latestAssignment = sortedHistory[0];
+        if (latestAssignment && latestAssignment.assignedTo) {
+          leadData.assignedTo = latestAssignment.assignedTo;
+        }
+      }
+      
+      return leadData;
     } catch (err) {
       console.error('Error fetching lead:', err);
       setError(err.message);

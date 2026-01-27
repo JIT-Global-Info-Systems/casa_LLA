@@ -26,6 +26,8 @@ import { toast } from "react-hot-toast"
 export default function Calls() {
     const { calls: apiCalls, loading, error, fetchCalls } = useCalls()
     const [expandedNotes, setExpandedNotes] = useState(new Set())
+    const [currentPage, setCurrentPage] = useState(1)
+    const itemsPerPage = 10
 
     const calls = useMemo(() => apiCalls, [apiCalls])
 
@@ -103,6 +105,17 @@ export default function Calls() {
             return matchesSearch && matchesUser && matchesFromDate && matchesToDate
         })
     }, [calls, searchTerm, userFilter, fromDate, toDate])
+
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1)
+    }, [searchTerm, userFilter, fromDate, toDate])
+
+    // Calculate pagination
+    const totalPages = Math.ceil(filteredCalls.length / itemsPerPage)
+    const startIndex = (currentPage - 1) * itemsPerPage
+    const endIndex = startIndex + itemsPerPage
+    const paginatedCalls = filteredCalls.slice(startIndex, endIndex)
 
     return (
         <div className="min-h-screen bg-slate-50/50 p-4 md:p-8">
@@ -244,7 +257,7 @@ export default function Calls() {
                                         </TableCell>
                                     </TableRow>
                                 ) : filteredCalls.length > 0 ? (
-                                    filteredCalls.map((call) => (
+                                    paginatedCalls.map((call) => (
                                         <TableRow
                                             key={call._id}
                                             className="hover:bg-slate-50/80 transition-colors border-slate-100"
@@ -340,10 +353,29 @@ export default function Calls() {
                     {/* Footer */}
                     {!loading && filteredCalls.length > 0 && (
                         <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center text-xs text-slate-500 font-medium">
-                            <span>Showing {filteredCalls.length} of {calls.length} logs</span>
+                            <span>Showing {startIndex + 1} to {Math.min(endIndex, filteredCalls.length)} of {filteredCalls.length} logs</span>
                             <div className="flex gap-1">
-                                <span className="px-2 py-1 bg-white border border-slate-200 rounded text-slate-400 cursor-not-allowed">Prev</span>
-                                <span className="px-2 py-1 bg-white border border-slate-200 rounded text-slate-400 cursor-not-allowed">Next</span>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={currentPage === 1}
+                                    onClick={() => setCurrentPage(currentPage - 1)}
+                                    className="px-2 py-1 text-xs"
+                                >
+                                    Prev
+                                </Button>
+                                <span className="px-2 py-1 text-xs text-slate-600">
+                                    Page {currentPage} of {totalPages}
+                                </span>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={currentPage === totalPages}
+                                    onClick={() => setCurrentPage(currentPage + 1)}
+                                    className="px-2 py-1 text-xs"
+                                >
+                                    Next
+                                </Button>
                             </div>
                         </div>
                     )}

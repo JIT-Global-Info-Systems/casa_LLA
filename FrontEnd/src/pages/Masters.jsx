@@ -37,6 +37,13 @@ const Masters = () => {
   const [activeTab, setActiveTab] = useState('location');
   const [form, setForm] = useState({ open: false, type: '', data: {}, editing: null });
   const [deleteDialog, setDeleteDialog] = useState({ open: false, type: '', item: null });
+  const [currentPage, setCurrentPage] = useState({
+    location: 1,
+    region: 1,
+    zone: 1,
+    type: 1,
+  });
+  const itemsPerPage = 10;
 
   // Fetch all data on component mount
   useEffect(() => {
@@ -278,6 +285,12 @@ const Masters = () => {
         </div>
       );
     }
+
+    // Calculate pagination
+    const totalPages = Math.ceil(items.length / itemsPerPage);
+    const startIndex = (currentPage[type] - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedItems = items.slice(startIndex, endIndex);
     
     return (
       <div className="bg-white rounded-lg shadow">
@@ -292,9 +305,9 @@ const Masters = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {items.map((item, index) => (
+            {paginatedItems.map((item, index) => (
               <TableRow key={item.id}>
-                <TableCell>{index + 1}</TableCell>
+                <TableCell>{startIndex + index + 1}</TableCell>
                 {type === 'location' && (
                   <>
                     <TableCell className="text-center">{item.name}</TableCell>
@@ -342,6 +355,38 @@ const Masters = () => {
             ))}
           </TableBody>
         </Table>
+
+        {/* Pagination Footer */}
+        {items.length > 0 && (
+          <div className="px-6 py-4 border-t flex items-center justify-between bg-gray-50">
+            <p className="text-sm text-gray-600">
+              Showing {startIndex + 1} to {Math.min(endIndex, items.length)} of {items.length} results
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage[type] === 1}
+                onClick={() => setCurrentPage(prev => ({ ...prev, [type]: prev[type] - 1 }))}
+                className="text-gray-700"
+              >
+                Previous
+              </Button>
+              <span className="px-3 py-1 text-sm text-gray-600 flex items-center">
+                Page {currentPage[type]} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage[type] === totalPages}
+                onClick={() => setCurrentPage(prev => ({ ...prev, [type]: prev[type] + 1 }))}
+                className="text-gray-700"
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
       </div>);
   };
 
