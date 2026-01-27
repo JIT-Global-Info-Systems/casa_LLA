@@ -94,7 +94,7 @@ function ChangePassword() {
         if (isFirstLogin) {
           navigate('/pages/dashboard')
         } else {
-          navigate('/pages/profile')
+          navigate('/pages/Profile')
         }
       }, 2000)
     } catch (err) {
@@ -234,7 +234,7 @@ function ChangePassword() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => isFirstLogin ? navigate('/login') : navigate('/pages/profile')}
+                  onClick={() => isFirstLogin ? navigate('/login') : navigate('/pages/Profile')}
                   disabled={isLoading}
                 >
                   {isFirstLogin ? 'Back to Login' : 'Cancel'}
