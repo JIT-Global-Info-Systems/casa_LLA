@@ -220,16 +220,6 @@ export default function LeadsPage() {
                   className={`${selectedLead ? "lg:col-span-2" : "lg:col-span-3"
                     } space-y-4`}
                 >
-                  <LeadStepper
-                    stageName={
-                      selectedLead?.leadStatus ||
-                      selectedLead?.stageName ||
-                      "Tele Caller"
-                    }
-                    currentStep={currentStep}
-                    onStepChange={setCurrentStep}
-                    className="w-full"
-                  />
  
                   {/* <div className="flex justify-between items-center">
                     <h1 className="text-2xl font-bold">
