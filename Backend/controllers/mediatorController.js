@@ -172,7 +172,16 @@ exports.softDeleteMediator = async (req, res) => {
 
 exports.getAllMediators = async (req, res) => {
   try {
-    const mediators = await Mediator.find({ status: "active" })
+    // Check for location in both query params and request body
+    const location = req.query.location || (req.body && req.body.location);
+    let query = { status: "active" };
+    
+    // Add location filter if provided
+    if (location) {
+      query.location = location;
+    }
+
+    const mediators = await Mediator.find(query)
       .sort({ created_at: -1 });
 
     return res.status(200).json({
