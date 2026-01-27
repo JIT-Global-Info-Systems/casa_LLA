@@ -31,7 +31,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 import toast from "react-hot-toast";
 
-import { Select } from "@/components/ui/select";
 import DateFilter from "@/components/ui/datefilter";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
