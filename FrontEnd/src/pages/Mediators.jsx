@@ -248,7 +248,7 @@ function Mediators() {
                   <ChevronLeft className="h-5 w-5 text-gray-600" />
                 </Button>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+                  <h1 className="text-2xl font-bold text-indigo-600 tracking-tight">
                     {selectedMediator ? "Edit Mediator" : "Add Mediator"}
                   </h1>
                   <p className="text-gray-500 text-sm mt-1">
@@ -627,7 +627,7 @@ function Mediators() {
                   <ChevronLeft className="h-5 w-5 text-gray-600" />
                 </Button>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900 tracking-tight">View Mediator</h1>
+                  <h1 className="text-2xl font-bold text-indigo-600 tracking-tight">View Mediator</h1>
                   <p className="text-gray-500 text-sm mt-1">View the mediator details below</p>
                 </div>
               </div>

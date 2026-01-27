@@ -732,7 +732,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
               </Button>
             )}
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+              <h1 className="text-2xl font-bold text-indigo-600 tracking-tight">
                 {viewMode ? "View Lead" : data ? "Edit Lead" : "New Lead"}
               </h1>
               <p className="text-gray-500 text-sm mt-1">
