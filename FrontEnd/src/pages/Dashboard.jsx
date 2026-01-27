@@ -222,12 +222,26 @@ function Dashboard() {
     to: ''
   });
  
-    const [locations, setLocations] = useState([
+  const [locations, setLocations] = useState([
     { label: "All Locations", value: "all" }
   ]);
-  const [selectedLocation, setSelectedLocation] = useState("all");
-const [fromDate , setFromDate ] = useState("")
-const [toDate , setToDate ] = useState("")
+  const [selectedLocation, setSelectedLocation] = useState({ id: "all", name: "All Locations" });
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  
+  // Update date range when fromDate or toDate changes
+  useEffect(() => {
+    setDateRange({
+      from: fromDate,
+      to: toDate
+    });
+  }, [fromDate, toDate]);
+
+  // Log the selected location for debugging
+  useEffect(() => {
+    console.log('Selected location:', selectedLocation);
+  }, [selectedLocation]);
+ 
   useEffect(() => {
     const fetchLocations = async () => {
       try {
@@ -267,8 +281,17 @@ const [toDate , setToDate ] = useState("")
       const params = new URLSearchParams();
       if (dateRange.from) params.append('fromDate', dateRange.from);
       if (dateRange.to) params.append('toDate', dateRange.to);
- 
-      const url = `http://localhost:5000/api/dashboard${params.toString() ? `?${params.toString()}` : ''}`;
+      
+      // Add location filter if not 'all'
+      if (selectedLocation && selectedLocation.id !== 'all') {
+        // Use the location name for the API call
+        params.append('location', selectedLocation.name);
+      } else {
+        // Remove location parameter if 'all' is selected
+        params.delete('location');
+      }
+      
+      const url = `http://localhost:5000/api/dashboard${params.toString() ? `?${params}` : ''}`;
      
       const response = await fetch(url, {
         method: 'GET',
@@ -294,10 +317,10 @@ const [toDate , setToDate ] = useState("")
     }
   };
  
-  // Fetch data when date range changes
+  // Fetch data when date range or location changes
   useEffect(() => {
     fetchDashboardData();
-  }, [dateRange]);
+  }, [dateRange, selectedLocation]);
  
   // Extract data from API response
   const {
@@ -308,7 +331,7 @@ const [toDate , setToDate ] = useState("")
   } = dashboardData;
  
   // Use API response data directly without mapping
-  const activeLeadsCount = leadStatusCounts.PENDING || 0;
+  const activeLeadsCount = leadStatusCounts.pendingLeads || 0;
   const approvedLeadsCount = totals.approvedLeads || 0;
   const purchasedLeadsCount = totals.purchasedLeads || 0;
  
@@ -338,7 +361,7 @@ const [toDate , setToDate ] = useState("")
     {
       title: "Leads Stages",
       dateRange: "2025-08-30 – 2025-11-30",
-      total: activeLeadsCount + approvedLeadsCount + purchasedLeadsCount,
+      total: Object.values(leadStatusCounts).reduce((sum, count) => sum + (Number(count) || 0), 0),
       tone: "blue",
       segments: Object.entries(leadStatusCounts).map(([status, count]) => ({
         label: status,
@@ -349,7 +372,7 @@ const [toDate , setToDate ] = useState("")
     {
       title: "Leads Status",
       dateRange: "2025-08-30 – 2025-11-30",
-      total: leadStages.hot + leadStages.warm + leadStages.cold + leadStages.management_hot,
+      total: Object.values(leadStageCounts).reduce((sum, count) => sum + (Number(count) || 0), 0),
       tone: "red",
       segments: Object.entries(leadStageCounts).map(([stage, count]) => ({
         label: stage.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
@@ -377,7 +400,7 @@ const [toDate , setToDate ] = useState("")
 //   segments: Object.entries(workStages).map(([role, value], index) => ({
 //     label: role
 //       .replace(/_/g, " ")
-//       .replace(/\b\w/g, l => l.toUpperCase()),   // 👈 converts to Land Executive
+//       .replace(/\b\w/g, l => l.toUpperCase()),   // converts to Land Executive
 //     value,
 //     color: [
 //       "#0f172a", "#22c55e", "#3b82f6", "#f59e0b",
@@ -408,9 +431,21 @@ const [toDate , setToDate ] = useState("")
        <div className="flex items-center gap-3">
         
          {/* Location */}
-         <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+         <Select 
+            value={selectedLocation.id}
+            onValueChange={(value) => {
+              const selected = locations.find(loc => loc.value === value) || { value: 'all', label: 'All Locations' };
+              setSelectedLocation({
+                id: selected.value,
+                name: selected.label
+              });
+            }}
+            disabled={isLoading}
+          >
            <SelectTrigger className="w-[140px]">
-             <SelectValue placeholder="Location" />
+             <SelectValue placeholder="Location">
+               {selectedLocation.name}
+             </SelectValue>
            </SelectTrigger>
            <SelectContent className="bg-white border border-gray-200 shadow-lg">
              {locations.map((location) => (
@@ -429,6 +464,8 @@ const [toDate , setToDate ] = useState("")
              value={fromDate}
              onChange={(e) => setFromDate(e.target.value)}
              className="w-full"
+             max={toDate || new Date().toISOString().split('T')[0]}
+             disabled={isLoading}
            />
          </div>
     
@@ -440,6 +477,9 @@ const [toDate , setToDate ] = useState("")
              value={toDate}
              onChange={(e) => setToDate(e.target.value)}
              className="w-[150px]"
+             min={fromDate}
+             max={new Date().toISOString().split('T')[0]}
+             disabled={isLoading}
            />
          </div>
        </div>

@@ -190,7 +190,7 @@ export const mediatorsAPI = {
 export const leadsAPI = {
   // Get all leads
   getAll: async () => {
-    const response = await apiRequest('/leads/all');
+    const response = await apiRequest('/leads/pending');
     // The API returns { count: number, data: [...] }
     // We want to return the data array
     return response.data || [];
