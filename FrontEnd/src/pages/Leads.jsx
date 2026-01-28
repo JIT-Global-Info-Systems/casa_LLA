@@ -730,6 +730,14 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       `}</style>
       <div className={`min-h-screen bg-slate-50/50 p-4 md:p-8 ${getFormWrapperClass()}`}>
       <div className="max-w-7xl mx-auto space-y-6">
+        {/* Lead Stepper */}
+        <LeadStepper
+          stageName={formData.assignedTo || formData.currentRole || "tele_caller"}
+          currentStep={currentStep}
+          className="w-full"
+          isNewLead={!data}
+        />
+
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             {onClose && (
@@ -747,14 +755,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
             </div>
           </div>
         </div>
-
-        {/* Lead Stepper */}
-        <LeadStepper
-          stageName={formData.assignedTo || formData.currentRole || "tele_caller"}
-          currentStep={currentStep}
-          className="w-full"
-          isNewLead={!data}
-        />
 
         {apiError && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
