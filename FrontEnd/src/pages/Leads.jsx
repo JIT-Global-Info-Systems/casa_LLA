@@ -775,7 +775,9 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
             <CardTitle className="text-xl text-gray-800">Basic Information</CardTitle>
             <CardDescription>Primary contact and property details.</CardDescription>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <CardContent>
+            {/* 3x3 Grid Layout for Basic Information */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-2">
               <Label className="text-gray-700">Lead Type</Label>
               {viewMode ? (
@@ -949,20 +951,20 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
               )}
             </div>
 
-            <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-6 p-4 bg-slate-50 rounded-xl border border-slate-100">
+              {/* Row 1: Location, Zone, Area */}
               <div className="space-y-2">
-                <Label className="text-indigo-900 font-semibold">Location</Label>
+                <Label className="text-gray-700 font-medium">Location</Label>
                 {viewMode ? (
-                  <div className="p-2 bg-white border border-gray-200 rounded-md text-gray-800 min-h-40px flex items-center">
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
                     {formData.location || "-"}
                   </div>
                 ) : (
                   <Select value={formData.location} onValueChange={handleLocationChange} disabled={loading.locations}>
-                    <SelectTrigger className={`bg-white ${errors.location ? "border-red-500 focus:border-red-500" : ""}`}>
+                    <SelectTrigger className={`bg-gray-50/50 ${errors.location ? "border-red-500 focus:border-red-500" : ""}`}>
                       {loading.locations ? (
                         <div className="flex items-center gap-2">
                           <Loader2 className="h-4 w-4 animate-spin" />
-                          <SelectValue placeholder="Loading locations..." />
+                          <SelectValue placeholder="Loading..." />
                         </div>
                       ) : (
                         <SelectValue placeholder="Select location" />
@@ -986,18 +988,18 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
               </div>
 
               <div className="space-y-2">
-                <Label className="text-indigo-900 font-semibold">Zone</Label>
+                <Label className="text-gray-700 font-medium">Zone</Label>
                 {viewMode ? (
-                  <div className="p-2 bg-white border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
                     {formData.zone || "-"}
                   </div>
                 ) : (
                   <Select value={formData.zone} onValueChange={handleZoneChange} disabled={!formData.location || loading.regions}>
-                    <SelectTrigger className={`bg-white ${errors.zone ? "border-red-500 focus:border-red-500" : ""}`}>
+                    <SelectTrigger className={`bg-gray-50/50 ${errors.zone ? "border-red-500 focus:border-red-500" : ""}`}>
                       {loading.regions ? (
                         <div className="flex items-center gap-2">
                           <Loader2 className="h-4 w-4 animate-spin" />
-                          <SelectValue placeholder="Loading zones..." />
+                          <SelectValue placeholder="Loading..." />
                         </div>
                       ) : (
                         <SelectValue placeholder="Select zone" />
@@ -1015,18 +1017,18 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
               </div>
 
               <div className="space-y-2">
-                <Label className="text-indigo-900 font-semibold">Area</Label>
+                <Label className="text-gray-700 font-medium">Area</Label>
                 {viewMode ? (
-                  <div className="p-2 bg-white border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
                     {formData.area || "-"}
                   </div>
                 ) : (
                   <Select value={formData.area} onValueChange={(val) => handleChange("area", val)} disabled={!formData.zone || loading.zones}>
-                    <SelectTrigger className={`bg-white ${errors.area ? "border-red-500 focus:border-red-500" : ""}`}>
+                    <SelectTrigger className={`bg-gray-50/50 ${errors.area ? "border-red-500 focus:border-red-500" : ""}`}>
                       {loading.zones ? (
                         <div className="flex items-center gap-2">
                           <Loader2 className="h-4 w-4 animate-spin" />
-                          <SelectValue placeholder="Loading areas..." />
+                          <SelectValue placeholder="Loading..." />
                         </div>
                       ) : (
                         <SelectValue placeholder="Select area" />
@@ -1042,7 +1044,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                   </Select>
                 )}
               </div>
-            </div>
 
             <div className="space-y-2">
               <Label>Land Name</Label>
@@ -1110,26 +1111,27 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+              {/* Row 3: Extent, Unit, Property Type */}
               <div className="space-y-2">
-                <Label>Extent</Label>
+                <Label className="text-gray-700 font-medium">Extent</Label>
                 {viewMode ? (
                   <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
                     {formData.extent || "-"}
                   </div>
                 ) : (
-                  <Input value={formData.extent} onChange={(e) => handleChange("extent", e.target.value)} />
+                  <Input value={formData.extent} onChange={(e) => handleChange("extent", e.target.value)} className="bg-gray-50/50" />
                 )}
               </div>
+
               <div className="space-y-2">
-                <Label>Unit</Label>
+                <Label className="text-gray-700 font-medium">Unit</Label>
                 {viewMode ? (
                   <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
                     {formData.unit || "-"}
                   </div>
                 ) : (
                   <Select value={formData.unit} onValueChange={(v) => handleChange("unit", v)}>
-                    <SelectTrigger>
+                    <SelectTrigger className="bg-gray-50/50">
                       <SelectValue placeholder="Unit" />
                     </SelectTrigger>
                     <SelectContent className="bg-white z-50 shadow-lg">
@@ -1140,81 +1142,37 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                   </Select>
                 )}
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label>Property Type</Label>
-              {viewMode ? (
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
-                  {formData.propertyType || "-"}
-                </div>
-              ) : (
-                <Select value={formData.propertyType} onValueChange={(v) => handleChange("propertyType", v)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Type" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white z-50 shadow-lg">
-                    <SelectItem value="residential">Residential</SelectItem>
-                    <SelectItem value="commercial">Commercial</SelectItem>
-                    <SelectItem value="mixed">Mixed Use</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
+              <div className="space-y-2">
+                <Label className="text-gray-700 font-medium">Property Type</Label>
+                {viewMode ? (
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
+                    {formData.propertyType || "-"}
+                  </div>
+                ) : (
+                  <Select value={formData.propertyType} onValueChange={(v) => handleChange("propertyType", v)}>
+                    <SelectTrigger className="bg-gray-50/50">
+                      <SelectValue placeholder="Select Type" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white z-50 shadow-lg">
+                      <SelectItem value="residential">Residential</SelectItem>
+                      <SelectItem value="commercial">Commercial</SelectItem>
+                      <SelectItem value="mixed">Mixed Use</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
 
-            <div className="md:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-4 pt-2">
+              {/* Row 5: Transaction Type, Builder Share, Refundable, Non-Refundable */}
               <div className="space-y-2">
-                <Label>FSI</Label>
-                {viewMode ? (
-                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                    {formData.fsi || "-"}
-                  </div>
-                ) : (
-                  <Input value={formData.fsi} onChange={(e) => handleChange("fsi", e.target.value)} />
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label>ASP</Label>
-                {viewMode ? (
-                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                    {formData.asp || "-"}
-                  </div>
-                ) : (
-                  <Input value={formData.asp} onChange={(e) => handleChange("asp", e.target.value)} />
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label>Total Revenue</Label>
-                {viewMode ? (
-                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                    {formData.revenue || "-"}
-                  </div>
-                ) : (
-                  <Input value={formData.revenue} onChange={(e) => handleChange("revenue", e.target.value)} />
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label>Rate</Label>
-                {viewMode ? (
-                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                    {formData.rate || "-"}
-                  </div>
-                ) : (
-                  <Input value={formData.rate} onChange={(e) => handleChange("rate", e.target.value)} />
-                )}
-              </div>
-            </div>
-
-            <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-              <div className="space-y-2">
-                <Label>Transaction Type</Label>
+                <Label className="text-gray-700 font-medium">Transaction Type</Label>
                 {viewMode ? (
                   <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
                     {formData.transactionType || "-"}
                   </div>
                 ) : (
                   <Select value={formData.transactionType} onValueChange={(v) => handleChange("transactionType", v)}>
-                    <SelectTrigger className="bg-indigo-50/50 border-indigo-100">
+                    <SelectTrigger className="bg-gray-50/50">
                       <SelectValue placeholder="Select" />
                     </SelectTrigger>
                     <SelectContent className="bg-white z-50 shadow-lg">
@@ -1224,156 +1182,175 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                   </Select>
                 )}
               </div>
+
               <div className="space-y-2">
-                <Label>Builder Share (%)</Label>
+                <Label className="text-gray-700 font-medium">Builder Share (%)</Label>
                 {viewMode ? (
                   <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
                     {formData.builderShare || "-"}
                   </div>
                 ) : (
-                  <Input value={formData.builderShare} onChange={(e) => handleChange("builderShare", e.target.value)} />
+                  <Input value={formData.builderShare} onChange={(e) => handleChange("builderShare", e.target.value)} className="bg-gray-50/50" />
                 )}
               </div>
+
               <div className="space-y-2">
-                <Label>Refundable Deposit</Label>
+                <Label className="text-gray-700 font-medium">Rate</Label>
+                {viewMode ? (
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                    {formData.rate || "-"}
+                  </div>
+                ) : (
+                  <Input value={formData.rate} onChange={(e) => handleChange("rate", e.target.value)} className="bg-gray-50/50" />
+                )}
+              </div>
+
+              {/* Row 6: Refundable, Non-Refundable, Landmark */}
+              <div className="space-y-2">
+                <Label className="text-gray-700 font-medium">Refundable Deposit</Label>
                 {viewMode ? (
                   <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
                     {formData.refundable || "-"}
                   </div>
                 ) : (
-                  <Input value={formData.refundable} onChange={(e) => handleChange("refundable", e.target.value)} />
+                  <Input value={formData.refundable} onChange={(e) => handleChange("refundable", e.target.value)} className="bg-gray-50/50" />
                 )}
               </div>
+
               <div className="space-y-2">
-                <Label>Non-Refundable Deposit</Label>
+                <Label className="text-gray-700 font-medium">Non-Refundable Deposit</Label>
                 {viewMode ? (
                   <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
                     {formData.nonRefundable || "-"}
                   </div>
                 ) : (
-                  <Input value={formData.nonRefundable} onChange={(e) => handleChange("nonRefundable", e.target.value)} />
+                  <Input value={formData.nonRefundable} onChange={(e) => handleChange("nonRefundable", e.target.value)} className="bg-gray-50/50" />
                 )}
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label>Landmark</Label>
-              {viewMode ? (
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                  {formData.landmark || "-"}
-                </div>
-              ) : (
-                <Input value={formData.landmark} onChange={(e) => handleChange("landmark", e.target.value)} />
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label>Frontage</Label>
-              {viewMode ? (
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                  {formData.frontage || "-"}
-                </div>
-              ) : (
-                <Input value={formData.frontage} onChange={(e) => handleChange("frontage", e.target.value)} />
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label>Road Width</Label>
-              {viewMode ? (
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                  {formData.roadWidth || "-"}
-                </div>
-              ) : (
-                <Input value={formData.roadWidth} onChange={(e) => handleChange("roadWidth", e.target.value)} />
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label>SSPDE</Label>
-              {viewMode ? (
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                  {formData.sspde || "-"}
-                </div>
-              ) : (
-                <Select value={formData.sspde} onValueChange={(v) => handleChange("sspde", v)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white z-50 shadow-lg">
-                    <SelectItem value="Yes">Yes</SelectItem>
-                    <SelectItem value="No">No</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label>Yield (%)</Label>
-              {viewMode ? (
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                  {formData.yield || "-"}
-                </div>
-              ) : (
-                <Input value={formData.yield} onChange={(e) => handleChange("yield", e.target.value)} />
-              )}
-            </div>
-
-            {/* <div className="md:col-span-3 p-4 bg-yellow-50 rounded-lg border border-yellow-200"> */}
-            <div className="space-y-2">
-              <Label className="text-gray-700">Lead Stage</Label>
-              {!isFieldEditable('leadStatus') ? (
-                <div className="p-2 bg-white border border-gray-300 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
-                  {formData.leadStatus || "-"}
-                </div>
-              ) : (
-                <Select value={formData.leadStatus} onValueChange={(v) => handleChange("leadStatus", v)}>
-                  <SelectTrigger className="bg-white border-gray-300" data-editable="true">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white z-50 shadow-lg">
-                    {/* Show only "Purchased" option when in restricted edit mode (Approved Leads page) */}
-                    {editableFields && editableFields.length > 0 && editableFields.includes('leadStatus') ? (
-                      <SelectItem value="Approved">Purchased</SelectItem>
-                    ) : (
-                      <>
-                        <SelectItem value="Enquired">Enquired</SelectItem>
-                        <SelectItem value="Lead Allocated">Lead Allocated</SelectItem>
-                        <SelectItem value="First Called">First Called</SelectItem>
-                        <SelectItem value="Site Visit">Site Visit</SelectItem>
-                        <SelectItem value="Owner Meeting">Owner Meeting</SelectItem>
-                        <SelectItem value="Negotiation Started">Negotiation Started</SelectItem>
-                        <SelectItem value="Negotiation_End">Negotiation End</SelectItem>
-                        <SelectItem value="Due_Diligence_Started">Due Diligence Started</SelectItem>
-                        <SelectItem value="Due_Diligence_End">Due Diligence End</SelectItem>
-                        <SelectItem value="Approved">Approved</SelectItem>
-                        <SelectItem value="Hold">Hold</SelectItem>
-                        <SelectItem value="L1_Qualification">L1 Qualification</SelectItem>
-                        <SelectItem value="director_sv">Director sv</SelectItem>
-                      </>
-                    )}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-
-            {/* Inquired By field - only show when Lead Stage is "Enquired" (Pending) */}
-            {formData.leadStatus === "Enquired" && (
               <div className="space-y-2">
-                <Label className="text-gray-700">Inquired By</Label>
-                {!isFieldEditable('inquiredBy') ? (
-                  <div className="p-2 bg-white border border-gray-300 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
-                    {formData.inquiredBy || "-"}
+                <Label className="text-gray-700 font-medium">Landmark</Label>
+                {viewMode ? (
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                    {formData.landmark || "-"}
                   </div>
                 ) : (
-                  <Select value={formData.inquiredBy} onValueChange={(v) => handleChange("inquiredBy", v)}>
-                    <SelectTrigger className="bg-white border-gray-300" data-editable="true">
-                      <SelectValue placeholder="Select inquiry status" />
+                  <Input value={formData.landmark} onChange={(e) => handleChange("landmark", e.target.value)} className="bg-gray-50/50" />
+                )}
+              </div>
+
+              {/* Row 7: Frontage, Road Width, SSPDE */}
+              <div className="space-y-2">
+                <Label className="text-gray-700 font-medium">Frontage</Label>
+                {viewMode ? (
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                    {formData.frontage || "-"}
+                  </div>
+                ) : (
+                  <Input value={formData.frontage} onChange={(e) => handleChange("frontage", e.target.value)} className="bg-gray-50/50" />
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-gray-700 font-medium">Road Width</Label>
+                {viewMode ? (
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                    {formData.roadWidth || "-"}
+                  </div>
+                ) : (
+                  <Input value={formData.roadWidth} onChange={(e) => handleChange("roadWidth", e.target.value)} className="bg-gray-50/50" />
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-gray-700 font-medium">SSPDE</Label>
+                {viewMode ? (
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                    {formData.sspde || "-"}
+                  </div>
+                ) : (
+                  <Select value={formData.sspde} onValueChange={(v) => handleChange("sspde", v)}>
+                    <SelectTrigger className="bg-gray-50/50">
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-white z-50 shadow-lg">
-                      <SelectItem value="qualified_by_land_team">Qualified by Land Team</SelectItem>
-                      <SelectItem value="rejected_by_land_team">Rejected by Land Team</SelectItem>
+                      <SelectItem value="Yes">Yes</SelectItem>
+                      <SelectItem value="No">No</SelectItem>
                     </SelectContent>
                   </Select>
                 )}
               </div>
-            )}
+
+              {/* Row 8: Yield, Lead Stage, Inquired By */}
+              <div className="space-y-2">
+                <Label className="text-gray-700 font-medium">Yield (%)</Label>
+                {viewMode ? (
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                    {formData.yield || "-"}
+                  </div>
+                ) : (
+                  <Input value={formData.yield} onChange={(e) => handleChange("yield", e.target.value)} className="bg-gray-50/50" />
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label className="text-gray-700 font-medium">Lead Stage</Label>
+                {!isFieldEditable('leadStatus') ? (
+                  <div className="p-2 bg-white border border-gray-300 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
+                    {formData.leadStatus || "-"}
+                  </div>
+                ) : (
+                  <Select value={formData.leadStatus} onValueChange={(v) => handleChange("leadStatus", v)}>
+                    <SelectTrigger className="bg-white border-gray-300" data-editable="true">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white z-50 shadow-lg">
+                      {/* Show only "Purchased" option when in restricted edit mode (Approved Leads page) */}
+                      {editableFields && editableFields.length > 0 && editableFields.includes('leadStatus') ? (
+                        <SelectItem value="Approved">Purchased</SelectItem>
+                      ) : (
+                        <>
+                          <SelectItem value="Enquired">Enquired</SelectItem>
+                          <SelectItem value="Lead Allocated">Lead Allocated</SelectItem>
+                          <SelectItem value="First Called">First Called</SelectItem>
+                          <SelectItem value="Site Visit">Site Visit</SelectItem>
+                          <SelectItem value="Owner Meeting">Owner Meeting</SelectItem>
+                          <SelectItem value="Negotiation Started">Negotiation Started</SelectItem>
+                          <SelectItem value="Negotiation_End">Negotiation End</SelectItem>
+                          <SelectItem value="Due_Diligence_Started">Due Diligence Started</SelectItem>
+                          <SelectItem value="Due_Diligence_End">Due Diligence End</SelectItem>
+                          <SelectItem value="Approved">Approved</SelectItem>
+                          <SelectItem value="Hold">Hold</SelectItem>
+                          <SelectItem value="L1_Qualification">L1 Qualification</SelectItem>
+                          <SelectItem value="director_sv">Director sv</SelectItem>
+                        </>
+                      )}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+
+              {/* Inquired By field - only show when Lead Stage is "Enquired" (Pending) */}
+              {formData.leadStatus === "Enquired" && (
+                <div className="space-y-2">
+                  <Label className="text-gray-700 font-medium">Inquired By</Label>
+                  {!isFieldEditable('inquiredBy') ? (
+                    <div className="p-2 bg-white border border-gray-300 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
+                      {formData.inquiredBy || "-"}
+                    </div>
+                  ) : (
+                    <Select value={formData.inquiredBy} onValueChange={(v) => handleChange("inquiredBy", v)}>
+                      <SelectTrigger className="bg-white border-gray-300" data-editable="true">
+                        <SelectValue placeholder="Select inquiry status" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white z-50 shadow-lg">
+                        <SelectItem value="qualified_by_land_team">Qualified by Land Team</SelectItem>
+                        <SelectItem value="rejected_by_land_team">Rejected by Land Team</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              )}
+            </div>
             {/* Lead Qualification */}
             {formData.leadStatus === "L1_Qualification" && (
               <div className="space-y-2">
