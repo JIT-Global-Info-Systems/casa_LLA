@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
@@ -288,14 +288,24 @@ export default function LeadsPage() {
       {open ? (
         /* Full page view when editing/creating */
         <div className="min-h-screen bg-gray-50 p-4">
+          {/* Lead Stepper - Full Width Outside Grid - Shows for both new and existing leads */}
+          <div className="bg-white rounded-t-lg shadow-md px-6 py-4 mb-0">
+            <Leads
+              data={selectedLead}
+              currentStep={currentStep}
+              onStepChange={setCurrentStep}
+              stepperOnly={true}
+            />
+          </div>
+          
           <div className="w-full">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="bg-white rounded-lg shadow-md p-6 rounded-t-none">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 align-top">
                 <div
                   className={`${selectedLead ? "lg:col-span-2" : "lg:col-span-3"
                     } space-y-4`}
                 >
- 
+
                   {/* <div className="flex justify-between items-center">
                     <h1 className="text-2xl font-bold">
                       {selectedLead ? "Edit Lead" : "Create Lead"}
@@ -304,114 +314,115 @@ export default function LeadsPage() {
                       ← Back to Leads
                     </Button>
                   </div> */}
- 
+
                   <Leads
                     data={selectedLead}
                     onSubmit={handleLeadSubmit}
                     onClose={() => setOpen(false)}
                     currentStep={currentStep}
                     onStepChange={setCurrentStep}
+                    hideStepper={true}
                   />
                 </div>
- 
-                {/* Right-side Communication History and Wild Cards (show when editing) */}
+                
+                {/* Right Sidebar - Call History & Yield Info */}
                 {selectedLead && (
-                  <div className="lg:col-span-1 space-y-4 sticky top-4 h-fit">
-                    {/* Communication History - 40% height */}
-                    <div className="h-[40vh] rounded-lg border bg-slate-50">
-                      <div className="px-4 py-3 border-b bg-white rounded-t-lg">
-                        <div className="text-sm font-semibold text-slate-800">
-                        Calls History
-                        </div>
-                        <div className="text-xs text-slate-500">
-                          Message thread
-                        </div>
-                      </div>
- 
-                      <div className="p-4 space-y-3 max-h-[32vh] overflow-y-auto">
-                        {/* Display calls history if available */}
-                        {selectedLead?.calls && selectedLead.calls.length > 0 &&
-                          selectedLead.calls.map((call, index) => (
-                            <div
-                              key={call._id || index}
-                              className="w-full border bg-white px-3 py-2 rounded-md shadow-sm"
-                            >
-                              <div className="flex justify-between items-start mb-1">
-                                <div>
-                                  <p className="text-sm font-medium text-slate-800">{call.name || 'Unknown User'}</p>
-                                  <p className="text-xs text-slate-600">{call.role || 'No role'}</p>
-                                </div>
-                                <p className="text-xs text-slate-500">
-                                  {formatCallDate(call)}
-                                </p>
+                  <div className="lg:col-span-1 space-y-4 mt-52">
+                    <Card className="bg-white shadow-sm min-h-100">
+                      <CardHeader>
+                        <CardTitle className="text-lg font-semibold text-gray-800">Call History</CardTitle>
+                      </CardHeader>
+                      <CardContent className="overflow-y-auto max-h-80">
+                        <div className="space-y-3">
+                          {/* Show Notes if available */}
+                          {selectedLead.checkNotes && (
+                            <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                              <div className="flex items-start gap-2 mb-2">
+                                <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full font-medium">
+                                  Notes
+                                </span>
                               </div>
-                              {call.note && (
-                                <p className="text-xs text-slate-700 mt-1">{call.note}</p>
-                              )}
+                              <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedLead.checkNotes}</p>
                             </div>
-                          ))
-                        }
- 
-                        {/* Display notes from different sources without headers */}
-                        {selectedLead?.remark && (
-                          <div className="w-full border bg-white px-3 py-2 text-sm text-slate-800 rounded-md shadow-sm">
-                            <p className="text-xs font-medium text-slate-600 mb-1">Remark:</p>
-                            {selectedLead.remark}
-                          </div>
-                        )}
-                        {selectedLead?.comment && (
-                          <div className="w-full border bg-white px-3 py-2 text-sm text-slate-800 rounded-md shadow-sm">
-                            <p className="text-xs font-medium text-slate-600 mb-1">Comment:</p>
-                            {selectedLead.comment}
-                          </div>
-                        )}
-                        {selectedLead?.checkNotes && (
-                          <div className="w-full border bg-white px-3 py-2 text-sm text-slate-800 rounded-md shadow-sm">
-                            <p className="text-xs font-medium text-slate-600 mb-1">Additional Notes:</p>
-                            {selectedLead.checkNotes}
-                          </div>
-                        )}
-                        {selectedLead?.checkListPage?.[0]?.notes && (
-                          <div className="w-full border bg-white px-3 py-2 text-sm text-slate-800 rounded-md shadow-sm">
-                            <p className="text-xs font-medium text-slate-600 mb-1">Site Visit Notes:</p>
-                            {selectedLead.checkListPage[0].notes}
-                          </div>
-                        )}
- 
-                        {/* Fallback to leadComments if no other data */}
-                        {(!selectedLead?.calls?.length && !selectedLead?.remark && !selectedLead?.comment && !selectedLead?.checkNotes && !selectedLead?.checkListPage?.[0]?.notes) && leadComments.length === 0 ? (
-                          <div className="text-sm text-slate-500">
-                            No comments
-                          </div>
-                        ) : (
-                          (!selectedLead?.calls?.length && !selectedLead?.remark && !selectedLead?.comment && !selectedLead?.checkNotes && !selectedLead?.checkListPage?.[0]?.notes) &&
-                          leadComments.map((text, idx) => (
-                            <div
-                              key={`${idx}-${text}`}
-                              className="w-full border bg-white px-3 py-2 text-sm text-slate-800 rounded-md shadow-sm"
-                            >
-                              {text}
+                          )}
+                          
+                          {/* Show Call History */}
+                          {selectedLead.calls && selectedLead.calls.length > 0 ? (
+                            selectedLead.calls.map((call, index) => (
+                              <div key={index} className="p-3 bg-gray-50 rounded-lg border">
+                                <div className="flex justify-between items-start mb-2">
+                                  <span className="text-sm font-medium text-gray-700">
+                                    {new Date(call.date || call.createdAt).toLocaleDateString()}
+                                  </span>
+                                  <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
+                                    {call.type || 'Call'}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-gray-600">{call.notes || call.description || 'No notes available'}</p>
+                                {call.duration && (
+                                  <p className="text-xs text-gray-500 mt-1">Duration: {call.duration}</p>
+                                )}
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-sm text-gray-500 italic">No call history available</p>
+                          )}
+                          
+                          {/* Show message if no data at all */}
+                          {!selectedLead.checkNotes && (!selectedLead.calls || selectedLead.calls.length === 0) && (
+                            <p className="text-sm text-gray-500 italic">No call history or notes available</p>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="bg-white shadow-sm min-h-100">
+                      <CardHeader>
+                        <CardTitle className="text-lg font-semibold text-gray-800">Yield Information</CardTitle>
+                      </CardHeader>
+                      <CardContent className="overflow-y-auto max-h-80">
+                        <div className="space-y-3">
+                          {selectedLead.yield && selectedLead.yield !== '0' && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm font-medium text-gray-600">Yield %:</span>
+                              <span className="text-lg font-bold text-green-600">
+                                {selectedLead.yield}%
+                              </span>
                             </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
- 
-                    {/* Yield Section */}
-                    <div className="h-auto rounded-lg border bg-slate-50">
-                      <div className="px-4 py-3 border-b bg-white rounded-t-lg">
-                        <div className="text-sm font-semibold text-slate-800">
-                          Yield
+                          )}
+                          {/*
+                          Revenue metrics hidden per user request
+                          {selectedLead.revenue && selectedLead.revenue !== '0' && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm font-medium text-gray-600">Revenue:</span>
+                              <span className="text-sm font-semibold text-gray-800">
+                                ₹{Number(selectedLead.revenue).toLocaleString()}
+                              </span>
+                            </div>
+                          )}
+                          {selectedLead.rate && selectedLead.rate !== '0' && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm font-medium text-gray-600">Rate:</span>
+                              <span className="text-sm font-semibold text-gray-800">
+                                ₹{Number(selectedLead.rate).toLocaleString()}
+                              </span>
+                            </div>
+                          )}
+                          {selectedLead.asp && selectedLead.asp !== '0' && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm font-medium text-gray-600">ASP:</span>
+                              <span className="text-sm font-semibold text-gray-800">
+                                ₹{Number(selectedLead.asp).toLocaleString()}
+                              </span>
+                            </div>
+                          )}
+                          */}
+                          {!selectedLead.yield && (
+                            <p className="text-sm text-gray-500 italic">No yield information available</p>
+                          )}
                         </div>
-                      </div>
- 
-                      <div className="p-4">
-                        <div className="w-full border bg-white px-3 py-2 rounded-md shadow-sm">
-                          <p className="text-xs font-medium text-slate-600 mb-1">Yield Value</p>
-                          <p className="text-sm text-slate-700">{selectedLead?.yield || '-'}</p>
-                        </div>
-                      </div>
-                    </div>
+                      </CardContent>
+                    </Card>
                   </div>
                 )}
               </div>
@@ -419,11 +430,21 @@ export default function LeadsPage() {
           </div>
         </div>
       ) : isViewMode ? (
-        /* VIEW MODE - Use the Leads component with viewMode */
+        /* VIEW MODE - Use the Leads component with viewMode and right sidebar */
         <div className="min-h-screen bg-gray-50 p-4">
+          {/* Lead Stepper - Full Width Outside Grid - Shows for view mode */}
+          <div className="bg-white rounded-t-lg shadow-md px-6 py-4 mb-0">
+            <Leads
+              data={viewLead}
+              currentStep={currentStep}
+              onStepChange={setCurrentStep}
+              stepperOnly={true}
+            />
+          </div>
+          
           <div className="w-full">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="bg-white rounded-lg shadow-md p-6 rounded-t-none">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 align-top">
                 <div className="lg:col-span-2 space-y-4">
                   <Leads
                     data={viewLead}
@@ -431,87 +452,110 @@ export default function LeadsPage() {
                     onClose={() => setIsViewMode(false)}
                     currentStep={currentStep}
                     onStepChange={setCurrentStep}
+                    hideStepper={true}
                   />
                 </div>
- 
-                {/* Right-side calls and notes thread (show when viewing) */}
-                <div className="lg:col-span-1 space-y-4 sticky top-4 h-fit">
-                  {/* Communication History - 40% height */}
-                  <div className="h-[40vh] rounded-lg border bg-slate-50">
-                    <div className="px-4 py-3 border-b bg-white rounded-t-lg">
-                      <div className="text-sm font-semibold text-slate-800">
-                      Notes
-                      </div>
-                    </div>
- 
-                    <div className="p-4 space-y-3 max-h-[32vh] overflow-y-auto">
-                      {/* Display calls history if available */}
-                      {viewLead?.calls && viewLead.calls.length > 0 &&
-                        viewLead.calls.map((call, index) => (
-                          <div
-                            key={call._id || index}
-                            className="w-full border bg-white px-3 py-2 rounded-md shadow-sm"
-                          >
-                            <div className="flex justify-between items-start mb-1">
-                              <div>
-                                <p className="text-sm font-medium text-slate-800">{call.name || 'Unknown User'}</p>
-                                <p className="text-xs text-slate-600">{call.role || 'No role'}</p>
+                
+                {/* Right Sidebar - Call History & Yield Info for View Mode */}
+                {viewLead && (
+                  <div className="lg:col-span-1 space-y-4 mt-52">
+                    <Card className="bg-white shadow-sm min-h-100">
+                      <CardHeader>
+                        <CardTitle className="text-lg font-semibold text-gray-800">Call History</CardTitle>
+                      </CardHeader>
+                      <CardContent className="overflow-y-auto max-h-80">
+                        <div className="space-y-3">
+                          {/* Show Notes if available */}
+                          {viewLead.checkNotes && (
+                            <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                              <div className="flex items-start gap-2 mb-2">
+                                <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full font-medium">
+                                  Notes
+                                </span>
                               </div>
-                              <p className="text-xs text-slate-500">
-                                {formatCallDate(call)}
-                              </p>
+                              <p className="text-sm text-gray-700 whitespace-pre-wrap">{viewLead.checkNotes}</p>
                             </div>
-                            {call.note && (
-                              <p className="text-xs text-slate-700 mt-1">{call.note}</p>
-                            )}
-                          </div>
-                        ))
-                      }
- 
-                      {/* Display notes from different sources without headers */}
-                      {viewLead?.remark && (
-                        <div className="w-full border bg-white px-3 py-2 text-sm text-slate-800 rounded-md shadow-sm">
-                          <p className="text-xs font-medium text-slate-600 mb-1">Remark:</p>
-                          {viewLead.remark}
+                          )}
+                          
+                          {/* Show Call History */}
+                          {viewLead.calls && viewLead.calls.length > 0 ? (
+                            viewLead.calls.map((call, index) => (
+                              <div key={index} className="p-3 bg-gray-50 rounded-lg border">
+                                <div className="flex justify-between items-start mb-2">
+                                  <span className="text-sm font-medium text-gray-700">
+                                    {new Date(call.date || call.createdAt).toLocaleDateString()}
+                                  </span>
+                                  <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
+                                    {call.type || 'Call'}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-gray-600">{call.notes || call.description || 'No notes available'}</p>
+                                {call.duration && (
+                                  <p className="text-xs text-gray-500 mt-1">Duration: {call.duration}</p>
+                                )}
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-sm text-gray-500 italic">No call history available</p>
+                          )}
+                          
+                          {/* Show message if no data at all */}
+                          {!viewLead.checkNotes && (!viewLead.calls || viewLead.calls.length === 0) && (
+                            <p className="text-sm text-gray-500 italic">No call history or notes available</p>
+                          )}
                         </div>
-                      )}
-                      {viewLead?.comment && (
-                        <div className="w-full border bg-white px-3 py-2 text-sm text-slate-800 rounded-md shadow-sm">
-                          <p className="text-xs font-medium text-slate-600 mb-1">Comment:</p>
-                          {viewLead.comment}
+                      </CardContent>
+                    </Card>
+
+                    <Card className="bg-white shadow-sm min-h-100">
+                      <CardHeader>
+                        <CardTitle className="text-lg font-semibold text-gray-800">Yield Information</CardTitle>
+                      </CardHeader>
+                      <CardContent className="overflow-y-auto max-h-80">
+                        <div className="space-y-3">
+                          {viewLead.yield && viewLead.yield !== '0' && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm font-medium text-gray-600">Yield %:</span>
+                              <span className="text-lg font-bold text-green-600">
+                                {viewLead.yield}%
+                              </span>
+                            </div>
+                          )}
+                          {/*
+                          Revenue metrics hidden per user request
+                          {viewLead.revenue && viewLead.revenue !== '0' && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm font-medium text-gray-600">Revenue:</span>
+                              <span className="text-sm font-semibold text-gray-800">
+                                ₹{Number(viewLead.revenue).toLocaleString()}
+                              </span>
+                            </div>
+                          )}
+                          {viewLead.rate && viewLead.rate !== '0' && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm font-medium text-gray-600">Rate:</span>
+                              <span className="text-sm font-semibold text-gray-800">
+                                ₹{Number(viewLead.rate).toLocaleString()}
+                              </span>
+                            </div>
+                          )}
+                          {viewLead.asp && viewLead.asp !== '0' && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm font-medium text-gray-600">ASP:</span>
+                              <span className="text-sm font-semibold text-gray-800">
+                                ₹{Number(viewLead.asp).toLocaleString()}
+                              </span>
+                            </div>
+                          )}
+                          */}
+                          {!viewLead.yield && (
+                            <p className="text-sm text-gray-500 italic">No yield information available</p>
+                          )}
                         </div>
-                      )}
-                      {viewLead?.checkNotes && (
-                        <div className="w-full border bg-white px-3 py-2 text-sm text-slate-800 rounded-md shadow-sm">
-                          <p className="text-xs font-medium text-slate-600 mb-1">Additional Notes:</p>
-                          {viewLead.checkNotes}
-                        </div>
-                      )}
-                      {viewLead?.checkListPage?.[0]?.notes && (
-                        <div className="w-full border bg-white px-3 py-2 text-sm text-slate-800 rounded-md shadow-sm">
-                          <p className="text-xs font-medium text-slate-600 mb-1">Site Visit Notes:</p>
-                          {viewLead.checkListPage[0].notes}
-                        </div>
-                      )}
-                    </div>
+                      </CardContent>
+                    </Card>
                   </div>
- 
-                  {/* Yield Section */}
-                  <div className="h-auto rounded-lg border bg-slate-50">
-                    <div className="px-4 py-3 border-b bg-white rounded-t-lg">
-                      <div className="text-sm font-semibold text-slate-800">
-                        Yield
-                      </div>
-                    </div>
- 
-                    <div className="p-4">
-                      <div className="w-full border bg-white px-3 py-2 rounded-md shadow-sm">
-                        <p className="text-xs font-medium text-slate-600 mb-1">Yield Value</p>
-                        <p className="text-sm text-slate-700">{viewLead?.yield || '-'}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -520,7 +564,7 @@ export default function LeadsPage() {
         /* Main page content when not editing or viewing */
         <div className="min-h-screen bg-gray-50">
           <div className="bg-white border-b px-8 py-4">
-            <div className="flex items-center justify-between max-w-[1600px] mx-auto">
+            <div className="flex items-center justify-between max-w-400 mx-auto">
               <div>
                 <h1 className="text-2xl font-semibold text-indigo-700">Leads</h1>
                 <p className="text-sm text-gray-500 mt-1">Leads list · Last updated today</p>
@@ -562,10 +606,10 @@ export default function LeadsPage() {
             </div>
           </div>
  
-          <div className="max-w-[1600px] mx-auto px-8 py-6">
+          <div className="max-w-400 mx-auto px-8 py-6">
             <Card className="bg-white shadow-sm">
               <div className="p-6 border-b flex flex-wrap gap-4 items-center">
-                <div className="relative flex-1 min-w-[250px]">
+                <div className="relative flex-1 min-w-62.5">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <Input
                     placeholder="Search leads..."
@@ -577,12 +621,12 @@ export default function LeadsPage() {
  
                 <div className="flex items-center gap-2">
                   <Label className="text-sm text-gray-600 whitespace-nowrap">From:</Label>
-                  <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px] border-gray-300" />
+                  <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-37.5 border-gray-300" />
                 </div>
  
                 <div className="flex items-center gap-2">
                   <Label className="text-sm text-gray-600 whitespace-nowrap">To:</Label>
-                  <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px] border-gray-300" />
+                  <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-37.5 border-gray-300" />
                 </div>
  
                
