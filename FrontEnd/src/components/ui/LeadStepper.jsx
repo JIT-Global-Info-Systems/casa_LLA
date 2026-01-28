@@ -100,12 +100,42 @@ const LEAD_STAGES = [
   "Finance",
   "Admin",
 ]
+<<<<<<< HEAD
  
 export default function LeadStepper({ stageName, currentStep = 1, onStepChange, className }) {
   // Find current step number from stage name
   const stepFromStage = LEAD_STAGES.indexOf(stageName) + 1 || 1
   const activeStep = currentStep || stepFromStage
  
+=======
+
+export default function LeadStepper({ stageName, currentStep = 1, onStepChange, className, isNewLead = false }) {
+  // Normalize stageName to match against STAGES
+  const findStepIndex = (name) => {
+    if (!name) return 0
+    const normalized = name.toLowerCase().replace(/[\s_/]/g, '')
+
+    // First try to match by id
+    const indexById = STAGES.findIndex(s => s.id.toLowerCase().replace(/[\s_/]/g, '') === normalized)
+    if (indexById !== -1) return indexById + 1
+
+    // Then try to match by label
+    const indexByLabel = STAGES.findIndex(s => s.label.toLowerCase().replace(/[\s_/]/g, '') === normalized)
+    if (indexByLabel !== -1) return indexByLabel + 1
+
+    return 0 // Return 0 if no match found
+  }
+
+  // For new leads, always show all steps as grey (activeStep = 0)
+  // For existing leads, use the stage name or current step
+  let activeStep = 0
+  
+  if (!isNewLead) {
+    const stepFromStage = findStepIndex(stageName)
+    activeStep = (currentStep === 1 && stepFromStage > 0) ? stepFromStage : (currentStep || stepFromStage)
+  }
+
+>>>>>>> 86418bc83063cd4c6d5187843b52485a162f143c
   const handleStepClick = (stepNumber) => {
     if (onStepChange) {
       onStepChange(stepNumber)

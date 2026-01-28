@@ -164,6 +164,13 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
     checkRequests: "",
     currentRole: "",
+<<<<<<< HEAD
+=======
+    assignedTo: "",
+    inquiredBy: "", // New field for inquiry status (only enabled when leadStatus is "Pending"/Enquired)
+    L1_Qualification: "", // L1 Qualification status
+    directorSVStatus: "", // Director SV status
+>>>>>>> 86418bc83063cd4c6d5187843b52485a162f143c
   })
 
   const [masters, setMasters] = useState({ locations: [], regions: [], zones: [] })
@@ -327,6 +334,12 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       mediatorId: data.mediatorId || prev.mediatorId,
       currentRole: data.currentRole || prev.currentRole,
       status: data.status || prev.status,
+<<<<<<< HEAD
+=======
+      inquiredBy: data.inquiredBy || prev.inquiredBy,
+      L1_Qualification: data.L1_Qualification || prev.L1_Qualification,
+      directorSVStatus: data.directorSVStatus || prev.directorSVStatus,
+>>>>>>> 86418bc83063cd4c6d5187843b52485a162f143c
 
       // competitor..
       competitorDeveloperName: firstCompetitor?.developerName || "",
@@ -527,6 +540,18 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       // backend field name
       lead_status: String(formData.leadStatus || "").toUpperCase(),
 
+<<<<<<< HEAD
+=======
+      // CRITICAL: Always send currentRole from localStorage to prevent validation errors
+      currentRole: currentRoleValue,
+
+      // Send assignedTo field (backend needs to support this)
+      assignedTo: formData.assignedTo,
+      inquiredBy: formData.inquiredBy,
+      L1_Qualification: formData.L1_Qualification,
+      directorSVStatus: formData.directorSVStatus,
+
+>>>>>>> 86418bc83063cd4c6d5187843b52485a162f143c
       // structured sections
       competitorAnalysis,
       checkListPage,
@@ -653,6 +678,17 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           </div>
         </div>
 
+<<<<<<< HEAD
+=======
+        {/* Lead Stepper */}
+        <LeadStepper
+          stageName={formData.assignedTo || formData.currentRole || "tele_caller"}
+          currentStep={currentStep}
+          className="w-full"
+          isNewLead={!data}
+        />
+
+>>>>>>> 86418bc83063cd4c6d5187843b52485a162f143c
         {apiError && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
             <AlertCircle className="h-5 w-5 text-red-600 shrink-0" />
@@ -1213,6 +1249,48 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
             </div>
 
             {/* <div className="md:col-span-3 p-4 bg-yellow-50 rounded-lg border border-yellow-200"> */}
+<<<<<<< HEAD
+=======
+            <div className="space-y-2">
+              <Label className="text-gray-700">Lead Stage</Label>
+              {!isFieldEditable('leadStatus') ? (
+                <div className="p-2 bg-white border border-gray-300 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
+                  {formData.leadStatus || "-"}
+                </div>
+              ) : (
+                <Select value={formData.leadStatus} onValueChange={(v) => handleChange("leadStatus", v)}>
+                  <SelectTrigger className="bg-white border-gray-300" data-editable="true">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white z-50 shadow-lg">
+                    {/* Show only "Purchased" option when in restricted edit mode (Approved Leads page) */}
+                    {editableFields && editableFields.length > 0 && editableFields.includes('leadStatus') ? (
+                      <SelectItem value="Approved">Purchased</SelectItem>
+                    ) : (
+                      <>
+                        <SelectItem value="Enquired">Enquired</SelectItem>
+                        <SelectItem value="Lead Allocated">Lead Allocated</SelectItem>
+                        <SelectItem value="First Called">First Called</SelectItem>
+                        <SelectItem value="Site Visit">Site Visit</SelectItem>
+                        <SelectItem value="Owner Meeting">Owner Meeting</SelectItem>
+                        <SelectItem value="Negotiation Started">Negotiation Started</SelectItem>
+                        <SelectItem value="Negotiation_End">Negotiation End</SelectItem>
+                        <SelectItem value="Due_Diligence_Started">Due Diligence Started</SelectItem>
+                        <SelectItem value="Due_Diligence_End">Due Diligence End</SelectItem>
+                        <SelectItem value="Approved">Approved</SelectItem>
+                        <SelectItem value="Hold">Hold</SelectItem>
+                        <SelectItem value="L1_Qualification">L1 Qualification</SelectItem>
+                        <SelectItem value="director_sv">Director sv</SelectItem>
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+
+            {/* Inquired By field - only show when Lead Stage is "Enquired" (Pending) */}
+            {formData.leadStatus === "Enquired" && (
+>>>>>>> 86418bc83063cd4c6d5187843b52485a162f143c
               <div className="space-y-2">
                 <Label className="text-yellow-800">Lead Status</Label>
                 {viewMode ? (
@@ -1236,6 +1314,54 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                   </Select>
                 )}
               </div>
+<<<<<<< HEAD
+=======
+            )}
+            {/* Lead Qualification */}
+            {formData.leadStatus === "L1_Qualification" && (
+              <div className="space-y-2">
+                <Label className="text-gray-700">L1_Qualification</Label>
+                {!isFieldEditable('L1_Qualification') ? (
+                  <div className="p-2 bg-white border border-gray-300 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
+                    {formData.L1_Qualification || "-"}
+                  </div>
+                ) : (
+                  <Select value={formData.L1_Qualification} onValueChange={(v) => handleChange("L1_Qualification", v)}>
+                    <SelectTrigger className="bg-white border-gray-300" data-editable="true">
+                      <SelectValue placeholder="Select L1_Qualification status" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white z-50 shadow-lg">
+                      <SelectItem value="eligible_for_sv">eligible for SV</SelectItem>
+                      <SelectItem value="rejected_for_sv">eligible for sv</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            )}
+
+            {/* Director SV Status */}
+            {formData.leadStatus === "director_sv" && (
+              <div className="space-y-2">
+                <Label className="text-gray-700">Director SV Status</Label>
+                {!isFieldEditable('directorSVStatus') ? (
+                  <div className="p-2 bg-white border border-gray-300 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
+                    {formData.directorSVStatus || "-"}
+                  </div>
+                ) : (
+                  <Select value={formData.directorSVStatus} onValueChange={(v) => handleChange("directorSVStatus", v)}>
+                    <SelectTrigger className="bg-white border-gray-300" data-editable="true">
+                      <SelectValue placeholder="Select Director SV status" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white z-50 shadow-lg">
+                      <SelectItem value="sv_pending">SV Pending</SelectItem>
+                      <SelectItem value="sv_rejected">SV Rejected</SelectItem>
+                      <SelectItem value="sv_done">SV Done</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            )}
+>>>>>>> 86418bc83063cd4c6d5187843b52485a162f143c
 
               {/* Status field - only show in edit mode */}
               {data && (
