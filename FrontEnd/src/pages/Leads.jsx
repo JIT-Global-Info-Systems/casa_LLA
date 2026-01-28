@@ -164,13 +164,10 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
     checkRequests: "",
     currentRole: "",
-<<<<<<< HEAD
-=======
     assignedTo: "",
     inquiredBy: "", // New field for inquiry status (only enabled when leadStatus is "Pending"/Enquired)
     L1_Qualification: "", // L1 Qualification status
     directorSVStatus: "", // Director SV status
->>>>>>> 86418bc83063cd4c6d5187843b52485a162f143c
   })
 
   const [masters, setMasters] = useState({ locations: [], regions: [], zones: [] })
@@ -334,12 +331,9 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       mediatorId: data.mediatorId || prev.mediatorId,
       currentRole: data.currentRole || prev.currentRole,
       status: data.status || prev.status,
-<<<<<<< HEAD
-=======
       inquiredBy: data.inquiredBy || prev.inquiredBy,
       L1_Qualification: data.L1_Qualification || prev.L1_Qualification,
       directorSVStatus: data.directorSVStatus || prev.directorSVStatus,
->>>>>>> 86418bc83063cd4c6d5187843b52485a162f143c
 
       // competitor..
       competitorDeveloperName: firstCompetitor?.developerName || "",
@@ -540,8 +534,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       // backend field name
       lead_status: String(formData.leadStatus || "").toUpperCase(),
 
-<<<<<<< HEAD
-=======
       // CRITICAL: Always send currentRole from localStorage to prevent validation errors
       currentRole: currentRoleValue,
 
@@ -551,7 +543,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       L1_Qualification: formData.L1_Qualification,
       directorSVStatus: formData.directorSVStatus,
 
->>>>>>> 86418bc83063cd4c6d5187843b52485a162f143c
       // structured sections
       competitorAnalysis,
       checkListPage,
@@ -678,8 +669,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           </div>
         </div>
 
-<<<<<<< HEAD
-=======
         {/* Lead Stepper */}
         <LeadStepper
           stageName={formData.assignedTo || formData.currentRole || "tele_caller"}
@@ -688,7 +677,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           isNewLead={!data}
         />
 
->>>>>>> 86418bc83063cd4c6d5187843b52485a162f143c
         {apiError && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
             <AlertCircle className="h-5 w-5 text-red-600 shrink-0" />
@@ -1249,8 +1237,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
             </div>
 
             {/* <div className="md:col-span-3 p-4 bg-yellow-50 rounded-lg border border-yellow-200"> */}
-<<<<<<< HEAD
-=======
             <div className="space-y-2">
               <Label className="text-gray-700">Lead Stage</Label>
               {!isFieldEditable('leadStatus') ? (
@@ -1290,7 +1276,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
             {/* Inquired By field - only show when Lead Stage is "Enquired" (Pending) */}
             {formData.leadStatus === "Enquired" && (
->>>>>>> 86418bc83063cd4c6d5187843b52485a162f143c
               <div className="space-y-2">
                 <Label className="text-yellow-800">Lead Status</Label>
                 {viewMode ? (
@@ -1314,8 +1299,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                   </Select>
                 )}
               </div>
-<<<<<<< HEAD
-=======
             )}
             {/* Lead Qualification */}
             {formData.leadStatus === "L1_Qualification" && (
@@ -1361,7 +1344,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                 )}
               </div>
             )}
->>>>>>> 86418bc83063cd4c6d5187843b52485a162f143c
 
               {/* Status field - only show in edit mode */}
               {data && (
