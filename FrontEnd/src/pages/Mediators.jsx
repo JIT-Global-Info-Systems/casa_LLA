@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useMediators } from "../context/MediatorsContext.jsx";
+import { useMaster } from "../context/Mastercontext.jsx";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,9 +37,11 @@ import {
   ChevronLeft,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { formatDisplayDate } from "@/utils/dateUtils";
  
 function Mediators() {
   const { mediators, loading, error, fetchMediators, createMediator, updateMediator, deleteMediator } = useMediators();
+  const { masters, fetchTypes } = useMaster();
   const [open, setOpen] = useState(false);
   const [selectedMediator, setSelectedMediator] = useState(null);
   const [viewMediator, setViewMediator] = useState(null);
@@ -53,6 +56,7 @@ function Mediators() {
 
   useEffect(() => {
     fetchMediators();
+    fetchTypes();
   }, []);
 
   const [formData, setFormData] = useState({
@@ -60,7 +64,7 @@ function Mediators() {
     email: "",
     phonePrimary: "",
     phoneSecondary: "",
-    category: "",
+    type: "",
     panNumber: "",
     aadhaarNumber: "",
     location: "",
@@ -119,7 +123,7 @@ function Mediators() {
         email: formData.email,
         phone_primary: formData.phonePrimary,
         phone_secondary: formData.phoneSecondary,
-        category: formData.category,
+        category: formData.type,
         pan_number: formData.panNumber,
         aadhar_number: formData.aadhaarNumber,
         location: formData.location,
@@ -155,7 +159,7 @@ function Mediators() {
       email: "",
       phonePrimary: "",
       phoneSecondary: "",
-      category: "",
+      type: "",
       panNumber: "",
       aadhaarNumber: "",
       location: "",
@@ -197,7 +201,7 @@ function Mediators() {
       email: mediator.email || "",
       phonePrimary: mediator.phone_primary || "",
       phoneSecondary: mediator.phone_secondary || "",
-      category: mediator.category || "",
+      type: mediator.category || "",
       panNumber: mediator.pan_number || "",
       aadhaarNumber: mediator.aadhar_number || "",
       location: mediator.location || "",
@@ -248,7 +252,7 @@ function Mediators() {
                   <ChevronLeft className="h-5 w-5 text-gray-600" />
                 </Button>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+                  <h1 className="text-2xl font-bold text-indigo-600 tracking-tight">
                     {selectedMediator ? "Edit Mediator" : "Add Mediator"}
                   </h1>
                   <p className="text-gray-500 text-sm mt-1">
@@ -338,10 +342,10 @@ function Mediators() {
 
               <div className="space-y-2">
                 <Label
-                  htmlFor="category"
+                  htmlFor="type"
                   className="text-gray-700 font-medium"
                 >
-                  Category <span className="text-red-500">*</span>
+                  Type <span className="text-red-500">*</span>
                 </Label>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -349,23 +353,26 @@ function Mediators() {
                       variant="outline"
                       className="w-full justify-between bg-gray-50/50 border-gray-300"
                     >
-                      {formData.category || "Select category"}
+                      {formData.type || "Select type"}
                       <ChevronDown className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] bg-white border shadow-lg">
-                    <DropdownMenuItem
-                      onClick={() => handleInputChange("category", "Individual")}
-                      className="cursor-pointer"
-                    >
-                      Individual
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleInputChange("category", "Office")}
-                      className="cursor-pointer"
-                    >
-                      Office
-                    </DropdownMenuItem>
+                    {masters.types && masters.types.length > 0 ? (
+                      masters.types.map((type) => (
+                        <DropdownMenuItem
+                          key={type.id}
+                          onClick={() => handleInputChange("type", type.name)}
+                          className="cursor-pointer"
+                        >
+                          {type.name}
+                        </DropdownMenuItem>
+                      ))
+                    ) : (
+                      <DropdownMenuItem disabled>
+                        No types available
+                      </DropdownMenuItem>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
@@ -627,7 +634,7 @@ function Mediators() {
                   <ChevronLeft className="h-5 w-5 text-gray-600" />
                 </Button>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900 tracking-tight">View Mediator</h1>
+                  <h1 className="text-2xl font-bold text-indigo-600 tracking-tight">View Mediator</h1>
                   <p className="text-gray-500 text-sm mt-1">View the mediator details below</p>
                 </div>
               </div>
@@ -670,7 +677,7 @@ function Mediators() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-gray-700 font-medium">Category</Label>
+                    <Label className="text-gray-700 font-medium">Type</Label>
                     <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
                       <span className="inline-flex px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">
                         {viewMediator.category || '-'}
@@ -853,7 +860,7 @@ function Mediators() {
                             Name
                           </th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
-                            Category
+                            Type
                           </th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
                             Phone
@@ -894,7 +901,7 @@ function Mediators() {
                               {mediator.email}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                              {new Date(mediator.created_at).toLocaleDateString()}
+                              {formatDisplayDate(mediator.created_at)}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                               {mediator.linked_executive || 'N/A'}

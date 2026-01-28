@@ -1,5 +1,5 @@
 // const API_BASE_URL = 'http://13.201.132.94:5000/api';
-const API_BASE_URL = 'http://13.201.132.94:5000/api';
+const API_BASE_URL = 'http://localhost:5000/api';
 const REQUEST_TIMEOUT = 30000; // 30 seconds
 const MAX_RETRIES = 2;
 
@@ -45,7 +45,7 @@ const apiRequest = async (endpoint, options = {}, retryCount = 0) => {
   const token = localStorage.getItem('token');
  
   // Skip authentication for auth endpoints
-  const isAuthEndpoint = endpoint.startsWith('/auth/') || endpoint.startsWith('/users/create');
+  const isAuthEndpoint = endpoint.startsWith('/auth/');
  
   if (!token && !isAuthEndpoint) {
     throw new Error('Your session has expired. Please log in again.');
@@ -300,7 +300,7 @@ export const usersAPI = {
     return response.data || response;
   },
  
-  // Create new user (no auth required)
+  // Create new user (requires authentication)
   create: async (userData) => {
     return await apiRequest('/users/create', {
       method: 'POST',

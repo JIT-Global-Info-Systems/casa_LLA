@@ -28,6 +28,7 @@ import { useLeads } from "../context/LeadsContext.jsx"
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import { useEntityAction } from "@/hooks/useEntityAction";
 import toast from "react-hot-toast"
+import { formatDateWithFallback, formatCallDate } from "@/utils/dateUtils";
  
 export default function LeadsPage() {
   const [open, setOpen] = useState(false);
@@ -341,7 +342,7 @@ export default function LeadsPage() {
                                   <p className="text-xs text-slate-600">{call.role || 'No role'}</p>
                                 </div>
                                 <p className="text-xs text-slate-500">
-                                  {new Date(call.created_at || call.createdAt).toLocaleDateString()}
+                                  {formatCallDate(call)}
                                 </p>
                               </div>
                               {call.note && (
@@ -457,7 +458,7 @@ export default function LeadsPage() {
                                 <p className="text-xs text-slate-600">{call.role || 'No role'}</p>
                               </div>
                               <p className="text-xs text-slate-500">
-                                {new Date(call.created_at || call.createdAt).toLocaleDateString()}
+                                {formatCallDate(call)}
                               </p>
                             </div>
                             {call.note && (
@@ -617,13 +618,7 @@ export default function LeadsPage() {
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {lead.registeredDate ? 
-                            (new Date(lead.registeredDate).toString() !== 'Invalid Date' ? 
-                              new Date(lead.registeredDate).toISOString().split("T")[0] : 
-                              lead.registeredDate
-                            ) : 
-                            "—"
-                          }
+                          {formatDateWithFallback(lead.registeredDate, "—")}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <DropdownMenu>

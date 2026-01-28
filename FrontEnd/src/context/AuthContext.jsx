@@ -77,7 +77,7 @@ export const AuthProvider = ({ children }) => {
     initAuth();
   }, []);
 
-  const login = async (credentials) => {
+  const login = async (credentials, rememberMe = false) => {
     try {
       setLoading(true);
       setError(null);
@@ -85,6 +85,15 @@ export const AuthProvider = ({ children }) => {
 
       if (response?.token) {
         localStorage.setItem('token', response.token);
+
+        // Handle remember me
+        if (rememberMe) {
+          localStorage.setItem('rememberMe', 'true');
+          localStorage.setItem('rememberedEmail', credentials.email);
+        } else {
+          localStorage.removeItem('rememberMe');
+          localStorage.removeItem('rememberedEmail');
+        }
 
         // Store user data if available
         if (response.user) {
@@ -137,6 +146,8 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('user_id');
     localStorage.removeItem('user');
     localStorage.removeItem('userRole');
+    localStorage.removeItem('rememberMe');
+    localStorage.removeItem('rememberedEmail');
     setUser(null);
     setError(null);
     setIsFirstLogin(false);

@@ -732,7 +732,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
               </Button>
             )}
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+              <h1 className="text-2xl font-bold text-indigo-600 tracking-tight">
                 {viewMode ? "View Lead" : data ? "Edit Lead" : "New Lead"}
               </h1>
               <p className="text-gray-500 text-sm mt-1">
@@ -1323,19 +1323,19 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                   <SelectContent className="bg-white z-50 shadow-lg">
                     {/* Show only "Purchased" option when in restricted edit mode (Approved Leads page) */}
                     {editableFields && editableFields.length > 0 && editableFields.includes('leadStatus') ? (
-                      <SelectItem value="Approved_Final">Purchased</SelectItem>
+                      <SelectItem value="Approved">Purchased</SelectItem>
                     ) : (
                       <>
-                        <SelectItem value="Pending">Enquired</SelectItem>
-                        <SelectItem value="Approved">Lead Allocated</SelectItem>
-                        <SelectItem value="Rejected">First Called</SelectItem>
-                        <SelectItem value="Cancelled">Site Visit</SelectItem>
-                        <SelectItem value="Lost">Owner Meeting</SelectItem>
-                        <SelectItem value="Won">Negotiation Started</SelectItem>
+                        <SelectItem value="Enquired">Enquired</SelectItem>
+                        <SelectItem value="Lead Allocated">Lead Allocated</SelectItem>
+                        <SelectItem value="First Called">First Called</SelectItem>
+                        <SelectItem value="Site Visit">Site Visit</SelectItem>
+                        <SelectItem value="Owner Meeting">Owner Meeting</SelectItem>
+                        <SelectItem value="Negotiation Started">Negotiation Started</SelectItem>
                         <SelectItem value="Negotiation_End">Negotiation End</SelectItem>
                         <SelectItem value="Due_Diligence_Started">Due Diligence Started</SelectItem>
                         <SelectItem value="Due_Diligence_End">Due Diligence End</SelectItem>
-                        <SelectItem value="Approved_Final">Approved</SelectItem>
+                        <SelectItem value="Approved">Approved</SelectItem>
                         <SelectItem value="Hold">Hold</SelectItem>
                       </>
                     )}
@@ -1345,7 +1345,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
             </div>
 
             {/* Inquired By field - only show when Lead Stage is "Enquired" (Pending) */}
-            {formData.leadStatus === "Pending" && (
+            {formData.leadStatus === "Enquired" && (
               <div className="space-y-2">
                 <Label className="text-gray-700">Inquired By</Label>
                 {!isFieldEditable('inquiredBy') ? (

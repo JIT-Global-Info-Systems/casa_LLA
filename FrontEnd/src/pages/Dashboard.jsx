@@ -30,6 +30,10 @@ import {
  import { locationsAPI } from "@/services/api";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
+import toast from "react-hot-toast";
+
+//import { Select } from "@/components/ui/select";
 import DateFilter from "@/components/ui/datefilter";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
@@ -359,7 +363,7 @@ function Dashboard() {
  
   const donutCards = [
     {
-      title: "Leads Status",
+      title: "Leads Stages",
       dateRange: "2025-08-30 – 2025-11-30",
       total: Object.values(leadStatusCounts).reduce((sum, count) => sum + (Number(count) || 0), 0),
       tone: "blue",
@@ -370,7 +374,7 @@ function Dashboard() {
       })),
     },
     {
-      title: "Leads Stages",
+      title: "Leads Status",
       dateRange: "2025-08-30 – 2025-11-30",
       total: Object.values(leadStageCounts).reduce((sum, count) => sum + (Number(count) || 0), 0),
       tone: "red",
@@ -381,7 +385,7 @@ function Dashboard() {
       })),
     },
     {
-      title: "Work Stages",
+      title: "Work Stages with Profile",
       dateRange: "2025-08-30 – 2025-11-30",
       total: Object.values(workStages).reduce((sum, count) => sum + count, 0),
       tone: "purple",
@@ -534,7 +538,7 @@ function Dashboard() {
  
         <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
           <WideMetricCard icon={Users} label="Approved Leads" value={totals.approvedLeads} />
-          <WideMetricCard icon={FileCheck2} label="Purchased Leads" value={totals.purchasedLeads} />
+          <WideMetricCard icon={FileCheck2} label="Purchased Leads" value={purchasedLeadsCount} />
           <WideMetricCard icon={FileCheck2} label="Pending Leads" value={totals.pendingLeads} />
         </section>
  
