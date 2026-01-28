@@ -1,11 +1,8 @@
-
-
-
+//Leads table
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import Modal from "@/components/ui/modal";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
@@ -25,10 +22,13 @@ import {
   X,
   AlertCircle
 } from "lucide-react";
-import LeadStepper from "@/components/ui/LeadStepper"
+// import LeadStepper from "@/components/ui/LeadStepper"
 import Leads from "./Leads"
 import { useLeads } from "../context/LeadsContext.jsx"
+import ConfirmModal from "@/components/ui/ConfirmModal";
+import { useEntityAction } from "@/hooks/useEntityAction";
 import toast from "react-hot-toast"
+import { formatDateWithFallback, formatCallDate } from "@/utils/dateUtils";
  
 export default function LeadsPage() {
   const [open, setOpen] = useState(false);
@@ -38,10 +38,17 @@ export default function LeadsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
  
-  const { leads, loading, error, fetchLeads, createLead, updateLead, deleteLead } = useLeads()
+  const { leads, loading, error, fetchLeads, createLead, updateLead, deleteLead, getLeadById } = useLeads()
  
   const [currentStep, setCurrentStep] = useState(1)
+  const [isFetchingLead, setIsFetchingLead] = useState(false)
+ 
+  // Entity action hook for status-aware delete
+  const { handleDelete, canPerformAction, confirmModal } = useEntityAction('lead');
+ 
   const leadComments = [
     selectedLead?.remark,
     selectedLead?.comment,
@@ -54,102 +61,126 @@ export default function LeadsPage() {
       const loadingToast = toast.loading('Loading leads...');
       try {
         await fetchLeads();
-        toast.success('Leads loaded successfully', { 
+        toast.success('Leads loaded', {
           id: loadingToast,
           icon: <Check className="w-5 h-5 text-green-500" />,
           duration: 2000
         });
       } catch (err) {
         console.error('Failed to load leads:', err);
-        const errorMessage = err.response?.data?.message || 'Failed to load leads. Please try again.';
-        
-        toast.error(errorMessage, { 
+        const errorMessage = err.response?.data?.message || 'Could not load leads. Please try again.';
+       
+        toast.error(errorMessage, {
           id: loadingToast,
           icon: <AlertCircle className="w-5 h-5 text-red-500" />,
           duration: 5000
         });
       }
     };
-    
+   
     loadLeads();
   }, [])
+ 
+  // Update currentStep when selectedLead changes, based on assignedTo
+  useEffect(() => {
+    const getStepFromAssignedTo = (lead) => {
+      if (lead?.assignedTo) {
+        const roleToStepMap = {
+          'tele_caller': 1,
+          'land_executive': 2,
+          'analytics_team': 3,
+          'feasibility_team': 4,
+          'field_study_product_team': 5,
+          'management_md_1st_level': 6,
+          'l1_md': 7,
+          'cmo_cro': 8,
+          'legal': 9,
+          'liaison': 10,
+          'finance': 11,
+          'admin': 12
+        }
+       
+        const stepNumber = roleToStepMap[lead.assignedTo]
+        if (stepNumber) {
+          return stepNumber
+        }
+      }
+      return 1 // Default to step 1
+    }
+ 
+    if (selectedLead) {
+      setCurrentStep(getStepFromAssignedTo(selectedLead))
+    } else if (viewLead) {
+      setCurrentStep(getStepFromAssignedTo(viewLead))
+    } else if (selectedLead === null) {
+      // Reset to step 1 when creating new lead
+      setCurrentStep(1)
+    }
+  }, [selectedLead, viewLead])
  
   const handleCreate = () => {
     setSelectedLead(null);
     setOpen(true);
-    toast.success('Creating a new lead', { icon: '📝' });
   };
  
-  const handleEdit = (lead) => {
-    setSelectedLead(lead);
-    setOpen(true);
-    toast('Editing lead details', { icon: '✏️' });
+  const handleEdit = async (lead) => {
+    setIsFetchingLead(true);
+    try {
+      const loadingToast = toast.loading('Loading lead details...');
+      const fullLeadData = await getLeadById(lead._id || lead.id);
+      setSelectedLead(fullLeadData);
+      setOpen(true);
+      toast.success('Lead loaded for editing', {
+        id: loadingToast,
+        icon: '✏️',
+        duration: 2000
+      });
+    } catch (err) {
+      console.error('Failed to fetch lead details:', err);
+      const errorMessage = err.response?.data?.message || 'Failed to load lead details. Please try again.';
+      toast.error(errorMessage, {
+        icon: <AlertCircle className="w-5 h-5 text-red-500" />,
+        duration: 5000
+      });
+    } finally {
+      setIsFetchingLead(false);
+    }
   };
  
   const handleLeadSubmit = async (leadPayload, files = {}) => {
     const isUpdate = !!selectedLead;
     const loadingToast = toast.loading(isUpdate ? 'Updating lead...' : 'Creating lead...');
-    
+   
     try {
       if (isUpdate) {
         await updateLead(selectedLead._id || selectedLead.id, leadPayload, files);
       } else {
         await createLead(leadPayload, files);
       }
-      
+     
       toast.success(
-        isUpdate ? 'Lead updated successfully!' : 'Lead created successfully!',
-        { 
+        isUpdate ? 'Lead updated successfully' : 'Lead created successfully',
+        {
           id: loadingToast,
           icon: <Check className="w-5 h-5 text-green-500" />,
           duration: 3000
         }
       );
-      
+     
       if (Object.keys(files).length > 0) {
-        toast.success('Files uploaded successfully', { 
+        toast.success('Files uploaded successfully', {
           icon: '📎',
-          duration: 2000 
+          duration: 2000
         });
       }
-      
+     
       setOpen(false);
-      fetchLeads(); // Refresh list
-    } catch (err) {
-      console.error("Failed to submit lead:", err);
-      const errorMessage = err.response?.data?.message || 'Failed to save lead. Please try again.';
-      
-      toast.error(errorMessage, { 
-        id: loadingToast,
-        icon: <X className="w-5 h-5 text-red-500" />,
-        duration: 5000
-      });
-    }
-  };
- 
-  const handleDelete = async (lead) => {
-    if (!window.confirm('Are you sure you want to delete this lead? This action cannot be undone.')) {
-      toast('Deletion cancelled', { icon: 'ℹ️' });
-      return;
-    }
-
-    const loadingToast = toast.loading('Deleting lead...');
-    
-    try {
-      await deleteLead(lead._id || lead.id);
-      
-      toast.success('Lead deleted successfully!', { 
-        id: loadingToast,
-        icon: <Check className="w-5 h-5 text-green-500" />,
-        duration: 3000
-      });
-      
       fetchLeads();
     } catch (err) {
-      console.error("Failed to delete lead:", err);
-      const errorMessage = err.response?.data?.message || 'Failed to delete lead. Please try again.';
-      
-      toast.error(errorMessage, { 
+      console.error("Failed to submit lead:", err);
+      const errorMessage = err.response?.data?.message || 'Could not save lead. Please try again.';
+     
+      toast.error(errorMessage, {
         id: loadingToast,
         icon: <X className="w-5 h-5 text-red-500" />,
         duration: 5000
@@ -157,34 +188,65 @@ export default function LeadsPage() {
     }
   };
  
-  const handleView = (lead) => {
-    setViewLead(lead);
-    setIsViewMode(true);
-    toast.success('Viewing lead details', { 
-      icon: '👁️',
-      duration: 2000
+  const handleDeleteLead = (lead) => {
+    // Check if delete is allowed
+    const deleteState = canPerformAction(lead, 'delete');
+   
+    if (!deleteState.enabled) {
+      // Lead is already inactive/deleted - don't show error
+      return;
+    }
+ 
+    // Perform delete with status check
+    handleDelete(lead, async () => {
+      await deleteLead(lead._id || lead.id);
+      fetchLeads(); // Refresh list
     });
+  };
+ 
+  const handleView = async (lead) => {
+    setIsFetchingLead(true);
+    try {
+      const loadingToast = toast.loading('Loading lead details...');
+      const fullLeadData = await getLeadById(lead._id || lead.id);
+      setViewLead(fullLeadData);
+      setIsViewMode(true);
+      toast.success('Viewing lead details', {
+        id: loadingToast,
+        icon: '👁️',
+        duration: 2000
+      });
+    } catch (err) {
+      console.error('Failed to fetch lead details:', err);
+      const errorMessage = err.response?.data?.message || 'Failed to load lead details. Please try again.';
+      toast.error(errorMessage, {
+        icon: <AlertCircle className="w-5 h-5 text-red-500" />,
+        duration: 5000
+      });
+    } finally {
+      setIsFetchingLead(false);
+    }
   };
  
   const normalizedLeads = (Array.isArray(leads) ? leads : []).map((lead) => {
     const registeredDate =
-      lead.registeredDate || lead.date || lead.createdAt || null;
+      lead.date || lead.createdAt || lead.created_at || null;
     return {
-      id: lead.id || lead._id || "N/A",
+      id: lead._id || lead.id || lead.lead_id || "N/A",
       name:
         lead.mediatorName ||
         lead.ownerName ||
         lead.name ||
         lead.contactName ||
         "N/A",
-        lead_id:lead.lead_id,
+      lead_id: lead.lead_id || "N/A",
       email: lead.email || lead.contactEmail || "—",
-      phone: lead.phone || lead.contactNumber || "",
+      phone: lead.contactNumber || lead.phone || "",
       location: lead.location || lead.address?.city || "N/A",
       zone: lead.zone || lead.region || "N/A",
-      property:lead.propertyType,
-      status: lead.status || lead.stageStatus || "Pending",
-      stageName: lead.stageName || lead.currentStage || "Not Started",
+      property: lead.propertyType || "—",
+      status: lead.lead_status || lead.status || "Pending",
+      stageName: lead.lead_stage || lead.currentStage || "Not Started",
       registeredDate,
       raw: lead,
     };
@@ -210,6 +272,17 @@ export default function LeadsPage() {
     return matchesSearch && matchesDateRange;
   });
  
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, dateFrom, dateTo]);
+ 
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedLeads = filteredLeads.slice(startIndex, endIndex);
+ 
   return (
     <div className="flex-1 space-y-6 p-0">
       {open ? (
@@ -222,16 +295,6 @@ export default function LeadsPage() {
                   className={`${selectedLead ? "lg:col-span-2" : "lg:col-span-3"
                     } space-y-4`}
                 >
-                  <LeadStepper
-                    stageName={
-                      selectedLead?.leadStatus ||
-                      selectedLead?.stageName ||
-                      "Tele Caller"
-                    }
-                    currentStep={currentStep}
-                    onStepChange={setCurrentStep}
-                    className="w-full"
-                  />
  
                   {/* <div className="flex justify-between items-center">
                     <h1 className="text-2xl font-bold">
@@ -251,25 +314,77 @@ export default function LeadsPage() {
                   />
                 </div>
  
-                {/* Right-side message thread (only show when editing) */}
+                {/* Right-side Communication History and Wild Cards (show when editing) */}
                 {selectedLead && (
-                  <div className="lg:col-span-1">
-                    <div className="h-full rounded-lg border bg-slate-50 sticky top-4">
+                  <div className="lg:col-span-1 space-y-4 sticky top-4 h-fit">
+                    {/* Communication History - 40% height */}
+                    <div className="h-[40vh] rounded-lg border bg-slate-50">
                       <div className="px-4 py-3 border-b bg-white rounded-t-lg">
                         <div className="text-sm font-semibold text-slate-800">
-                          Notes
+                        Calls History
                         </div>
                         <div className="text-xs text-slate-500">
                           Message thread
                         </div>
                       </div>
  
-                      <div className="p-4 space-y-3 max-h-[80vh] overflow-y-auto">
-                        {leadComments.length === 0 ? (
+                      <div className="p-4 space-y-3 max-h-[32vh] overflow-y-auto">
+                        {/* Display calls history if available */}
+                        {selectedLead?.calls && selectedLead.calls.length > 0 &&
+                          selectedLead.calls.map((call, index) => (
+                            <div
+                              key={call._id || index}
+                              className="w-full border bg-white px-3 py-2 rounded-md shadow-sm"
+                            >
+                              <div className="flex justify-between items-start mb-1">
+                                <div>
+                                  <p className="text-sm font-medium text-slate-800">{call.name || 'Unknown User'}</p>
+                                  <p className="text-xs text-slate-600">{call.role || 'No role'}</p>
+                                </div>
+                                <p className="text-xs text-slate-500">
+                                  {formatCallDate(call)}
+                                </p>
+                              </div>
+                              {call.note && (
+                                <p className="text-xs text-slate-700 mt-1">{call.note}</p>
+                              )}
+                            </div>
+                          ))
+                        }
+ 
+                        {/* Display notes from different sources without headers */}
+                        {selectedLead?.remark && (
+                          <div className="w-full border bg-white px-3 py-2 text-sm text-slate-800 rounded-md shadow-sm">
+                            <p className="text-xs font-medium text-slate-600 mb-1">Remark:</p>
+                            {selectedLead.remark}
+                          </div>
+                        )}
+                        {selectedLead?.comment && (
+                          <div className="w-full border bg-white px-3 py-2 text-sm text-slate-800 rounded-md shadow-sm">
+                            <p className="text-xs font-medium text-slate-600 mb-1">Comment:</p>
+                            {selectedLead.comment}
+                          </div>
+                        )}
+                        {selectedLead?.checkNotes && (
+                          <div className="w-full border bg-white px-3 py-2 text-sm text-slate-800 rounded-md shadow-sm">
+                            <p className="text-xs font-medium text-slate-600 mb-1">Additional Notes:</p>
+                            {selectedLead.checkNotes}
+                          </div>
+                        )}
+                        {selectedLead?.checkListPage?.[0]?.notes && (
+                          <div className="w-full border bg-white px-3 py-2 text-sm text-slate-800 rounded-md shadow-sm">
+                            <p className="text-xs font-medium text-slate-600 mb-1">Site Visit Notes:</p>
+                            {selectedLead.checkListPage[0].notes}
+                          </div>
+                        )}
+ 
+                        {/* Fallback to leadComments if no other data */}
+                        {(!selectedLead?.calls?.length && !selectedLead?.remark && !selectedLead?.comment && !selectedLead?.checkNotes && !selectedLead?.checkListPage?.[0]?.notes) && leadComments.length === 0 ? (
                           <div className="text-sm text-slate-500">
                             No comments
                           </div>
                         ) : (
+                          (!selectedLead?.calls?.length && !selectedLead?.remark && !selectedLead?.comment && !selectedLead?.checkNotes && !selectedLead?.checkListPage?.[0]?.notes) &&
                           leadComments.map((text, idx) => (
                             <div
                               key={`${idx}-${text}`}
@@ -279,6 +394,22 @@ export default function LeadsPage() {
                             </div>
                           ))
                         )}
+                      </div>
+                    </div>
+ 
+                    {/* Yield Section */}
+                    <div className="h-auto rounded-lg border bg-slate-50">
+                      <div className="px-4 py-3 border-b bg-white rounded-t-lg">
+                        <div className="text-sm font-semibold text-slate-800">
+                          Yield
+                        </div>
+                      </div>
+ 
+                      <div className="p-4">
+                        <div className="w-full border bg-white px-3 py-2 rounded-md shadow-sm">
+                          <p className="text-xs font-medium text-slate-600 mb-1">Yield Value</p>
+                          <p className="text-sm text-slate-700">{selectedLead?.yield || '-'}</p>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -298,21 +429,24 @@ export default function LeadsPage() {
                     data={viewLead}
                     viewMode={true}
                     onClose={() => setIsViewMode(false)}
+                    currentStep={currentStep}
+                    onStepChange={setCurrentStep}
                   />
                 </div>
-
+ 
                 {/* Right-side calls and notes thread (show when viewing) */}
-                <div className="lg:col-span-1">
-                  <div className="h-full rounded-lg border bg-slate-50 sticky top-4">
+                <div className="lg:col-span-1 space-y-4 sticky top-4 h-fit">
+                  {/* Communication History - 40% height */}
+                  <div className="h-[40vh] rounded-lg border bg-slate-50">
                     <div className="px-4 py-3 border-b bg-white rounded-t-lg">
                       <div className="text-sm font-semibold text-slate-800">
-                        Communication History
+                      Notes
                       </div>
                     </div>
-
-                    <div className="p-4 space-y-3 max-h-[80vh] overflow-y-auto">
+ 
+                    <div className="p-4 space-y-3 max-h-[32vh] overflow-y-auto">
                       {/* Display calls history if available */}
-                      {viewLead?.calls && viewLead.calls.length > 0 && 
+                      {viewLead?.calls && viewLead.calls.length > 0 &&
                         viewLead.calls.map((call, index) => (
                           <div
                             key={call._id || index}
@@ -324,7 +458,7 @@ export default function LeadsPage() {
                                 <p className="text-xs text-slate-600">{call.role || 'No role'}</p>
                               </div>
                               <p className="text-xs text-slate-500">
-                                {new Date(call.created_at || call.createdAt).toLocaleDateString()}
+                                {formatCallDate(call)}
                               </p>
                             </div>
                             {call.note && (
@@ -333,7 +467,7 @@ export default function LeadsPage() {
                           </div>
                         ))
                       }
-
+ 
                       {/* Display notes from different sources without headers */}
                       {viewLead?.remark && (
                         <div className="w-full border bg-white px-3 py-2 text-sm text-slate-800 rounded-md shadow-sm">
@@ -361,6 +495,22 @@ export default function LeadsPage() {
                       )}
                     </div>
                   </div>
+ 
+                  {/* Yield Section */}
+                  <div className="h-auto rounded-lg border bg-slate-50">
+                    <div className="px-4 py-3 border-b bg-white rounded-t-lg">
+                      <div className="text-sm font-semibold text-slate-800">
+                        Yield
+                      </div>
+                    </div>
+ 
+                    <div className="p-4">
+                      <div className="w-full border bg-white px-3 py-2 rounded-md shadow-sm">
+                        <p className="text-xs font-medium text-slate-600 mb-1">Yield Value</p>
+                        <p className="text-sm text-slate-700">{viewLead?.yield || '-'}</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -376,29 +526,29 @@ export default function LeadsPage() {
                 <p className="text-sm text-gray-500 mt-1">Leads list · Last updated today</p>
               </div>
               <div className="flex items-center gap-3">
-                <Button 
-                  variant="ghost" 
-                  className="text-gray-700" 
+                <Button
+                  variant="ghost"
+                  className="text-gray-700"
                   onClick={async () => {
                     const loadingToast = toast.loading('Refreshing leads...');
                     try {
                       await fetchLeads();
-                      toast.success('Leads refreshed successfully', { 
+                      toast.success('Leads refreshed', {
                         id: loadingToast,
                         icon: <Check className="w-5 h-5 text-green-500" />,
                         duration: 2000
                       });
                     } catch (err) {
                       console.error('Failed to refresh leads:', err);
-                      const errorMessage = err.response?.data?.message || 'Failed to refresh leads. Please try again.';
-                      
-                      toast.error(errorMessage, { 
+                      const errorMessage = err.response?.data?.message || 'Could not refresh leads. Please try again.';
+                     
+                      toast.error(errorMessage, {
                         id: loadingToast,
                         icon: <AlertCircle className="w-5 h-5 text-red-500" />,
                         duration: 5000
                       });
                     }
-                  }} 
+                  }}
                   disabled={loading}
                 >
                   <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
@@ -435,7 +585,7 @@ export default function LeadsPage() {
                   <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px] border-gray-300" />
                 </div>
  
-                
+               
               </div>
  
               <div className="overflow-x-auto">
@@ -454,21 +604,21 @@ export default function LeadsPage() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredLeads.map((lead) => (
+                    {paginatedLeads.map((lead) => (
                       <tr key={lead.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{lead.raw?.lead_id ?? lead.id}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{lead.lead_id || lead.id}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{lead.name}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.phone || "—"}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.location}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.zone}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.raw?.propertyType || "—"}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.property || "—"}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
                           <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${String(lead.status).toLowerCase() === "approved" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
                             {lead.status}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {lead.registeredDate ? new Date(lead.registeredDate).toISOString().split("T")[0] : "—"}
+                          {formatDateWithFallback(lead.registeredDate, "—")}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <DropdownMenu>
@@ -478,16 +628,25 @@ export default function LeadsPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="bg-white border shadow-lg">
-                              <DropdownMenuItem onClick={() => handleView(lead.raw)} className="cursor-pointer">
+                              <DropdownMenuItem
+                                onClick={() => handleView(lead.raw)}
+                                className="cursor-pointer"
+                                disabled={isFetchingLead}
+                              >
                                 <Eye className="h-4 w-4 mr-2" />
                                 View
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleEdit(lead.raw)} className="cursor-pointer">
+                              <DropdownMenuItem
+                                onClick={() => handleEdit(lead.raw)}
+                                className="cursor-pointer"
+                                disabled={isFetchingLead}
+                              >
                                 <Edit className="h-4 w-4 mr-2" />
                                 Edit
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={() => handleDelete(lead.raw)}
+                                onClick={() => handleDeleteLead(lead.raw)}
+                                disabled={!canPerformAction(lead.raw, 'delete').enabled}
                                 className="cursor-pointer text-red-600 hover:bg-red-50"
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
@@ -507,17 +666,50 @@ export default function LeadsPage() {
               {!loading && !error && filteredLeads.length === 0 && <div className="text-center py-12 text-gray-500"><p>No leads found matching your criteria.</p></div>}
  
               <div className="px-6 py-4 border-t flex items-center justify-between">
-                <p className="text-sm text-gray-600">Showing {filteredLeads.length} results</p>
+                <p className="text-sm text-gray-600">Showing {startIndex + 1} to {Math.min(endIndex, filteredLeads.length)} of {filteredLeads.length} results</p>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" disabled className="text-gray-400">Previous</Button>
-                  <Button variant="outline" size="sm" disabled className="text-gray-400">Next</Button>
-                  <Button variant="outline" size="sm" disabled className="text-gray-400">Last</Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(currentPage - 1)}
+                    className="text-gray-700"
+                  >
+                    Previous
+                  </Button>
+                  <span className="px-3 py-1 text-sm text-gray-600 flex items-center">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                    className="text-gray-700"
+                  >
+                    Next
+                  </Button>
                 </div>
               </div>
             </Card>
           </div>
         </div>
       )}
+     
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={confirmModal.onClose}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        description={confirmModal.description}
+        confirmText={confirmModal.confirmText}
+        cancelText="Cancel"
+        variant={confirmModal.variant}
+        loading={confirmModal.loading}
+      />
     </div>
   );
 }
+ 
+ 
