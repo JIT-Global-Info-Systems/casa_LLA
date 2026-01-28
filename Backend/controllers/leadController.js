@@ -367,7 +367,7 @@ exports.getPendingLeads = async (req, res) => {
     });
   }
 };
-
+// check update
 exports.getApprovedLeads = async (req, res) => {
   try {
     const { location } = req.query;
