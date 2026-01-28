@@ -15,7 +15,7 @@ import toast from "react-hot-toast"
 
 const yesNo = (v) => (v ? "Yes" : "No")
 
-export default function Leads({ data = null, onSubmit, onClose, viewMode = false, currentStep, onStepChange, editableFields = null }) {
+export default function Leads({ data = null, onSubmit, onClose, viewMode = false, currentStep, onStepChange, editableFields = null, stepperOnly = false, hideStepper = false }) {
   const { mediators, loading: mediatorsLoading, fetched: mediatorsFetched, fetchMediators } = useMediators()
   const { users, loading: usersLoading, fetchUsers } = useUsers()
 
@@ -728,15 +728,33 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           cursor: not-allowed;
         }
       `}</style>
-      <div className={`min-h-screen bg-slate-50/50 p-4 md:p-8 ${getFormWrapperClass()}`}>
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Lead Stepper */}
-        <LeadStepper
-          stageName={formData.assignedTo || formData.currentRole || "tele_caller"}
-          currentStep={currentStep}
-          className="w-full"
-          isNewLead={!data}
-        />
+      
+      {/* Stepper Only Mode - Show only the LeadStepper */}
+      {stepperOnly ? (
+        <div className="w-full">
+          <LeadStepper
+            stageName={formData.assignedTo || formData.currentRole || "tele_caller"}
+            currentStep={currentStep}
+            className="w-full"
+            isNewLead={!data}
+          />
+        </div>
+      ) : (
+        /* Full Form Mode */
+        <div className={`min-h-screen bg-slate-50/50 p-4 md:p-8 ${getFormWrapperClass()}`}>
+          {/* Lead Stepper - Full Width (conditionally hidden) */}
+          {!hideStepper && (
+            <div className="w-full">
+              <LeadStepper
+                stageName={formData.assignedTo || formData.currentRole || "tele_caller"}
+                currentStep={currentStep}
+                className="w-full"
+                isNewLead={!data}
+              />
+            </div>
+          )}
+          
+          <div className="max-w-7xl mx-auto space-y-6">
 
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
@@ -775,7 +793,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
             <CardTitle className="text-xl text-gray-800">Basic Information</CardTitle>
             <CardDescription>Primary contact and property details.</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-6">
             {/* 3x3 Grid Layout for Basic Information */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-2">
@@ -885,7 +903,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
               )}
             </div>
 
-            <div className="space-y-2 hidden">
+            <div className="space-y-2">
               <Label>Current Role (Action By)</Label>
               <div className="p-2 bg-gray-100 border border-gray-200 rounded-md text-gray-700 min-h-[40px] flex items-center capitalize font-medium">
                 {formData.currentRole?.replace(/_/g, ' ') || getCurrentUserRole().replace(/_/g, ' ')}
@@ -926,7 +944,13 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
             <div className="space-y-2 hidden">
               <Label>Mediator ID (optional)</Label>
-              <Input value={formData.mediatorId} onChange={(e) => handleChange("mediatorId", e.target.value)} className="bg-gray-50/50" />
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  {formData.mediatorId || "-"}
+                </div>
+              ) : (
+                <Input value={formData.mediatorId} onChange={(e) => handleChange("mediatorId", e.target.value)} className="bg-gray-50/50" placeholder="Enter mediator ID if applicable" />
+              )}
             </div>
 
             <div className="space-y-2">
@@ -1282,7 +1306,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
               </div>
 
               {/* Row 8: Yield, Lead Stage, Inquired By */}
-              <div className="space-y-2">
+              <div className="space-y-2 hidden">
                 <Label className="text-gray-700 font-medium">Yield (%)</Label>
                 {viewMode ? (
                   <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
@@ -1411,22 +1435,96 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                 </Select>
               </div>
             )}
-            {/* </div> */}
 
-            <div className="md:col-span-3 space-y-2">
-              <Label>Remark</Label>
-              {viewMode ? (
-                <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[80px]">
-                  {formData.remark || "-"}
-                </div>
-              ) : (
-                <Textarea value={formData.remark} onChange={(e) => handleChange("remark", e.target.value)} rows={3} placeholder="Add any additional context here..." className="bg-gray-50" />
-              )}
-            </div>
+
           </CardContent>
         </Card>
 
+        {/* Notes & Yield Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 hidden">
+          {/* Notes Card */}
+          <Card className="border-0 shadow-md bg-white">
+            <CardHeader>
+              <CardTitle className="text-xl text-gray-800">Notes & Calls</CardTitle>
+              <CardDescription>Additional notes and call history</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Calls & Notes</Label>
+                {viewMode ? (
+                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[120px] whitespace-pre-wrap">
+                    {formData.checkNotes || "-"}
+                  </div>
+                ) : (
+                  <Textarea
+                    value={formData.checkNotes}
+                    onChange={(e) => handleChange("checkNotes", e.target.value)}
+                    placeholder="Enter additional notes, calls, observations, or important information about this lead..."
+                    rows={5}
+                    className="bg-gray-50 resize-y"
+                  />
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>Remark</Label>
+                {viewMode ? (
+                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[100px] whitespace-pre-wrap">
+                    {formData.remark || "-"}
+                  </div>
+                ) : (
+                  <Textarea 
+                    value={formData.remark} 
+                    onChange={(e) => handleChange("remark", e.target.value)} 
+                    rows={4} 
+                    placeholder="Add any additional context here..." 
+                    className="bg-gray-50" 
+                  />
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
+          {/* Yield Card */}
+          <Card className="border-0 shadow-md bg-white">
+            <CardHeader>
+              <CardTitle className="text-xl text-gray-800">Yield & Requests</CardTitle>
+              <CardDescription>Yield calculation and special requests</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2 hidden">
+                <Label className="text-gray-700 font-medium">Yield (%)</Label>
+                {viewMode ? (
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                    {formData.yield || "-"}
+                  </div>
+                ) : (
+                  <Input 
+                    value={formData.yield} 
+                    onChange={(e) => handleChange("yield", e.target.value)} 
+                    placeholder="Enter yield percentage"
+                    className="bg-gray-50/50" 
+                  />
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>Special Requests</Label>
+                {viewMode ? (
+                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[100px] whitespace-pre-wrap">
+                    {formData.checkRequests || "-"}
+                  </div>
+                ) : (
+                  <Textarea 
+                    value={formData.checkRequests} 
+                    onChange={(e) => handleChange("checkRequests", e.target.value)} 
+                    placeholder="Enter any special requests" 
+                    rows={4} 
+                    className="bg-gray-50" 
+                  />
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         <Card className="border-0 shadow-md bg-white">
           <CardHeader>
@@ -1860,42 +1958,9 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                   )}
                 </div>
               </div>
-
-              <div className="mt-4">
-                <div className="space-y-2">
-                  <Label>Requests</Label>
-                  {viewMode ? (
-                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[80px]">
-                      {formData.checkRequests || "-"}
-                    </div>
-                  ) : (
-                    <Textarea value={formData.checkRequests} onChange={(e) => handleChange("checkRequests", e.target.value)} placeholder="Enter any special requests" rows={3} className="bg-gray-50" />
-                  )}
-                </div>
-              </div>
             </div>
           </CardContent>
         </Card>
-
-        {!viewMode && (
-          <Card className="border-0 shadow-md bg-white">
-            <CardHeader>
-              <CardTitle className="text-xl text-gray-800">Calls & Notes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <Label>Calls & Notes</Label>
-                <Textarea
-                  value={formData.checkNotes}
-                  onChange={(e) => handleChange("checkNotes", e.target.value)}
-                  placeholder="Enter additional notes, calls, observations, or important information about this lead..."
-                  rows={3}
-                  className="bg-gray-50 resize-y"
-                />
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {!viewMode && (
           <div className="flex justify-end gap-4 pb-8">
@@ -1916,6 +1981,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
         )}
       </div>
     </div>
+      )}
     </>
   )
 }
