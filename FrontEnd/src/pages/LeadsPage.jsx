@@ -22,11 +22,14 @@ import {
   X,
   AlertCircle
 } from "lucide-react";
-import LeadStepper from "@/components/ui/LeadStepper"
 import Leads from "./Leads"
 import { useLeads } from "../context/LeadsContext.jsx"
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import { useEntityAction } from "@/hooks/useEntityAction";
+import { useLoadingState } from "@/hooks/useLoadingState";
+import { useDebounce } from "@/hooks/useDebounce";
+import { usePagination } from "@/hooks/usePagination";
+import { TableSkeleton, PageSkeleton } from "@/components/ui/LoadingSkeleton";
 import toast from "react-hot-toast"
 import { formatDateWithFallback, formatCallDate } from "@/utils/dateUtils";
  
@@ -39,10 +42,26 @@ export default function LeadsPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
  
-  const { leads, loading, error, fetchLeads, createLead, updateLead, deleteLead } = useLeads()
+  const { leads, loading, error, fetchLeads, createLead, updateLead, deleteLead, clearError, retryLastOperation, actionLoading } = useLeads()
   
   // Entity action hook for status-aware delete
   const { handleDelete, canPerformAction, confirmModal } = useEntityAction('lead')
+  
+  // Loading state management
+  const { 
+    setLoading, 
+    isLoading, 
+    withLoading,
+    isAnyLoading 
+  } = useLoadingState({
+    initialLoad: true,
+    refresh: false,
+    submit: false,
+    delete: false
+  });
+
+  // Debounced search to prevent excessive filtering
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
  
   const [currentStep, setCurrentStep] = useState(1)
   const leadComments = [
@@ -53,12 +72,13 @@ export default function LeadsPage() {
     .filter((text) => Boolean(text))
  
   useEffect(() => {
-    const loadLeads = async () => {
-      const loadingToast = toast.loading('Loading leads...');
+    const loadLeads = withLoading('initialLoad', async () => {
+      // Clear any previous errors before loading
+      clearError();
+      
       try {
         await fetchLeads();
-        toast.success('Leads loaded', { 
-          id: loadingToast,
+        toast.success('Leads loaded successfully', { 
           icon: <Check className="w-5 h-5 text-green-500" />,
           duration: 2000
         });
@@ -67,15 +87,14 @@ export default function LeadsPage() {
         const errorMessage = err.response?.data?.message || 'Could not load leads. Please try again.';
         
         toast.error(errorMessage, { 
-          id: loadingToast,
           icon: <AlertCircle className="w-5 h-5 text-red-500" />,
           duration: 5000
         });
       }
-    };
+    }, 500); // Minimum 500ms loading to prevent flash
     
     loadLeads();
-  }, [])
+  }, []) // Only run once on mount
  
   const handleCreate = () => {
     setSelectedLead(null);
@@ -87,9 +106,11 @@ export default function LeadsPage() {
     setOpen(true);
   };
  
-  const handleLeadSubmit = async (leadPayload, files = {}) => {
+  const handleLeadSubmit = withLoading('submit', async (leadPayload, files = {}) => {
     const isUpdate = !!selectedLead;
-    const loadingToast = toast.loading(isUpdate ? 'Updating lead...' : 'Creating lead...');
+    
+    // Clear any previous errors
+    clearError();
     
     try {
       if (isUpdate) {
@@ -98,35 +119,25 @@ export default function LeadsPage() {
         await createLead(leadPayload, files);
       }
       
-      toast.success(
-        isUpdate ? 'Lead updated successfully' : 'Lead created successfully',
-        { 
-          id: loadingToast,
-          icon: <Check className="w-5 h-5 text-green-500" />,
-          duration: 3000
-        }
-      );
-      
-      if (Object.keys(files).length > 0) {
-        toast.success('Files uploaded successfully', { 
-          icon: '📎',
-          duration: 2000 
-        });
-      }
+      toast.success(isUpdate ? 'Lead updated successfully' : 'Lead created successfully', {
+        icon: <Check className="w-5 h-5 text-green-500" />,
+        duration: 3000
+      });
       
       setOpen(false);
-      fetchLeads();
+      setSelectedLead(null);
     } catch (err) {
-      console.error("Failed to submit lead:", err);
-      const errorMessage = err.response?.data?.message || 'Could not save lead. Please try again.';
+      console.error('Failed to save lead:', err);
+      const errorMessage = err.response?.data?.message || `Could not ${isUpdate ? 'update' : 'create'} lead. Please try again.`;
       
-      toast.error(errorMessage, { 
-        id: loadingToast,
-        icon: <X className="w-5 h-5 text-red-500" />,
+      toast.error(errorMessage, {
+        icon: <AlertCircle className="w-5 h-5 text-red-500" />,
         duration: 5000
       });
+      // Don't close the form on error - let user retry
+      throw err; // Re-throw to keep loading state
     }
-  };
+  });
  
   const handleDeleteLead = (lead) => {
     // Check if delete is allowed
@@ -140,9 +151,26 @@ export default function LeadsPage() {
     // Perform delete with status check
     handleDelete(lead, async () => {
       await deleteLead(lead._id || lead.id);
-      fetchLeads(); // Refresh list
+      // No need to manually refresh - context handles state update
     });
   };
+
+  const handleRefresh = withLoading('refresh', async () => {
+    clearError();
+    try {
+      await fetchLeads();
+      toast.success('Leads refreshed', {
+        icon: <Check className="w-5 h-5 text-green-500" />,
+        duration: 2000
+      });
+    } catch (err) {
+      console.error('Failed to refresh leads:', err);
+      toast.error('Could not refresh leads. Please try again.', {
+        icon: <AlertCircle className="w-5 h-5 text-red-500" />,
+        duration: 5000
+      });
+    }
+  }, 300);
  
   const handleView = (lead) => {
     setViewLead(lead);
@@ -175,11 +203,11 @@ export default function LeadsPage() {
  
   const filteredLeads = normalizedLeads.filter((lead) => {
     const matchesSearch =
-      searchTerm === "" ||
-      lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.phone.includes(searchTerm) ||
-      String(lead.id).toLowerCase().includes(searchTerm.toLowerCase());
+      debouncedSearchTerm === "" ||
+      lead.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      lead.email.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      lead.phone.includes(debouncedSearchTerm) ||
+      String(lead.id).toLowerCase().includes(debouncedSearchTerm.toLowerCase());
  
     const matchesDateRange = (() => {
       if (!dateFrom && !dateTo) return true;
@@ -192,6 +220,28 @@ export default function LeadsPage() {
  
     return matchesSearch && matchesDateRange;
   });
+
+  // Pagination for better performance with large datasets
+  const {
+    currentData: paginatedLeads,
+    currentPage,
+    totalPages,
+    totalItems,
+    goToPage,
+    goToNextPage,
+    goToPreviousPage,
+    goToFirstPage,
+    goToLastPage,
+    canGoNext,
+    canGoPrevious,
+    getDisplayRange,
+    resetPagination
+  } = usePagination(filteredLeads, 20); // 20 items per page
+
+  // Reset pagination when search changes
+  useEffect(() => {
+    resetPagination();
+  }, [debouncedSearchTerm, dateFrom, dateTo, resetPagination]);
  
   return (
     <div className="flex-1 space-y-6 p-0">
@@ -503,32 +553,17 @@ export default function LeadsPage() {
                 <Button 
                   variant="ghost" 
                   className="text-gray-700" 
-                  onClick={async () => {
-                    const loadingToast = toast.loading('Refreshing leads...');
-                    try {
-                      await fetchLeads();
-                      toast.success('Leads refreshed', { 
-                        id: loadingToast,
-                        icon: <Check className="w-5 h-5 text-green-500" />,
-                        duration: 2000
-                      });
-                    } catch (err) {
-                      console.error('Failed to refresh leads:', err);
-                      const errorMessage = err.response?.data?.message || 'Could not refresh leads. Please try again.';
-                      
-                      toast.error(errorMessage, { 
-                        id: loadingToast,
-                        icon: <AlertCircle className="w-5 h-5 text-red-500" />,
-                        duration: 5000
-                      });
-                    }
-                  }} 
-                  disabled={loading}
+                  onClick={handleRefresh}
+                  disabled={isLoading('refresh') || isLoading('initialLoad')}
                 >
-                  <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+                  <RefreshCw className={`h-4 w-4 mr-2 ${isLoading('refresh') ? "animate-spin" : ""}`} />
                   Refresh
                 </Button>
-                <Button className="bg-indigo-600 hover:bg-indigo-700 text-white" onClick={handleCreate}>
+                <Button 
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white" 
+                  onClick={handleCreate}
+                  disabled={isLoading('submit')}
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   Add
                 </Button>
@@ -537,6 +572,39 @@ export default function LeadsPage() {
           </div>
  
           <div className="max-w-[1600px] mx-auto px-8 py-6">
+            {/* Error Display with Retry */}
+            {error && (
+              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+                    <div>
+                      <p className="text-sm font-medium text-red-800">Error loading leads</p>
+                      <p className="text-sm text-red-600">{error}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRefresh}
+                      disabled={isLoading('refresh')}
+                    >
+                      <RefreshCw className={`h-4 w-4 mr-1 ${isLoading('refresh') ? "animate-spin" : ""}`} />
+                      Retry
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearError}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <Card className="bg-white shadow-sm">
               <div className="p-6 border-b flex flex-wrap gap-4 items-center">
                 <div className="relative flex-1 min-w-[250px]">
@@ -563,80 +631,163 @@ export default function LeadsPage() {
               </div>
  
               <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b bg-gray-50">
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Zone</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property</th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Registered Date</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredLeads.map((lead) => (
-                      <tr key={lead.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{lead.lead_id || lead.id}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{lead.name}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.phone || "—"}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.location}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.zone}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.property || "—"}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                          <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${String(lead.status).toLowerCase() === "approved" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
-                            {lead.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {formatDateWithFallback(lead.registeredDate, "—")}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="bg-white border shadow-lg">
-                              <DropdownMenuItem onClick={() => handleView(lead.raw)} className="cursor-pointer">
-                                <Eye className="h-4 w-4 mr-2" />
-                                View
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleEdit(lead.raw)} className="cursor-pointer">
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleDeleteLead(lead.raw)}
-                                disabled={!canPerformAction(lead.raw, 'delete').enabled}
-                                className="cursor-pointer text-red-600 hover:bg-red-50"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </td>
+                {/* Show skeleton loading during initial load */}
+                {isLoading('initialLoad') ? (
+                  <div className="p-6">
+                    <TableSkeleton rows={8} columns={9} />
+                  </div>
+                ) : (
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b bg-gray-50">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Zone</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property</th>
+                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Registered Date</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {paginatedLeads.map((lead) => (
+                        <tr key={lead.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{lead.lead_id || lead.id}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{lead.name}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.phone || "—"}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.location}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.zone}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.property || "—"}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                            <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${String(lead.status).toLowerCase() === "approved" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
+                              {lead.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {formatDateWithFallback(lead.registeredDate, "—")}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-8 w-8 p-0"
+                                  disabled={actionLoading[`deleteLead_${lead.id}`]}
+                                >
+                                  {actionLoading[`deleteLead_${lead.id}`] ? (
+                                    <RefreshCw className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <MoreVertical className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="bg-white border shadow-lg">
+                                <DropdownMenuItem onClick={() => handleView(lead.raw)} className="cursor-pointer">
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => handleEdit(lead.raw)} 
+                                  className="cursor-pointer"
+                                  disabled={actionLoading[`updateLead_${lead.id}`]}
+                                >
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleDeleteLead(lead.raw)}
+                                  disabled={!canPerformAction(lead.raw, 'delete').enabled || actionLoading[`deleteLead_${lead.id}`]}
+                                  className="cursor-pointer text-red-600 hover:bg-red-50"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </div>
  
-              {loading && <div className="text-center py-12 text-gray-500"><p>Loading leads...</p></div>}
-              {error && <div className="text-center py-12 text-red-500"><p>Error: {error}</p></div>}
-              {!loading && !error && filteredLeads.length === 0 && <div className="text-center py-12 text-gray-500"><p>No leads found matching your criteria.</p></div>}
+              {/* Empty State - Only show when not loading and no error */}
+              {!isLoading('initialLoad') && !error && paginatedLeads.length === 0 && (
+                <div className="text-center py-12">
+                  <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                    <AlertCircle className="h-12 w-12 text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No leads found</h3>
+                  <p className="text-gray-500 mb-4">
+                    {debouncedSearchTerm || dateFrom || dateTo 
+                      ? "No leads match your current filters. Try adjusting your search criteria."
+                      : "Get started by creating your first lead."
+                    }
+                  </p>
+                  {!debouncedSearchTerm && !dateFrom && !dateTo && (
+                    <Button onClick={handleCreate} className="bg-indigo-600 hover:bg-indigo-700">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create First Lead
+                    </Button>
+                  )}
+                </div>
+              )}
  
               <div className="px-6 py-4 border-t flex items-center justify-between">
-                <p className="text-sm text-gray-600">Showing {filteredLeads.length} results</p>
+                <div className="flex items-center gap-4">
+                  <p className="text-sm text-gray-600">
+                    Showing {getDisplayRange().start}-{getDisplayRange().end} of {getDisplayRange().total} results
+                    {totalItems !== filteredLeads.length && (
+                      <span className="text-gray-400"> (filtered from {leads.length} total)</span>
+                    )}
+                  </p>
+                  {debouncedSearchTerm !== searchTerm && (
+                    <div className="flex items-center text-xs text-gray-400">
+                      <RefreshCw className="h-3 w-3 animate-spin mr-1" />
+                      Searching...
+                    </div>
+                  )}
+                </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" disabled className="text-gray-400">Previous</Button>
-                  <Button variant="outline" size="sm" disabled className="text-gray-400">Next</Button>
-                  <Button variant="outline" size="sm" disabled className="text-gray-400">Last</Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={goToFirstPage}
+                    disabled={!canGoPrevious}
+                  >
+                    First
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={goToPreviousPage}
+                    disabled={!canGoPrevious}
+                  >
+                    Previous
+                  </Button>
+                  <span className="flex items-center px-3 text-sm text-gray-600">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={goToNextPage}
+                    disabled={!canGoNext}
+                  >
+                    Next
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={goToLastPage}
+                    disabled={!canGoNext}
+                  >
+                    Last
+                  </Button>
                 </div>
               </div>
             </Card>

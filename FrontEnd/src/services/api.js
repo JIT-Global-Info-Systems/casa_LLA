@@ -37,7 +37,30 @@ const fetchWithTimeout = (url, options, timeout = REQUEST_TIMEOUT) => {
   ]);
 };
 
-// Generic API request helper with retry logic
+// Token validation helper
+const isTokenExpired = (token) => {
+  if (!token) return true;
+  
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const currentTime = Date.now() / 1000;
+    return payload.exp < currentTime;
+  } catch (error) {
+    console.error('Invalid token format:', error);
+    return true;
+  }
+};
+
+// Session cleanup helper
+const clearSession = () => {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user_id');
+  localStorage.removeItem('user');
+  // Dispatch custom event for auth context to listen
+  window.dispatchEvent(new CustomEvent('auth:logout'));
+};
+
+// Generic API request helper with retry logic and proper session handling
 const apiRequest = async (endpoint, options = {}, retryCount = 0) => {
   const url = `${API_BASE_URL}${endpoint}`;
  
@@ -47,8 +70,18 @@ const apiRequest = async (endpoint, options = {}, retryCount = 0) => {
   // Skip authentication for auth endpoints
   const isAuthEndpoint = endpoint.startsWith('/auth/');
  
-  if (!token && !isAuthEndpoint) {
-    throw new Error('Your session has expired. Please log in again.');
+  // Validate token before making request
+  if (!isAuthEndpoint) {
+    if (!token) {
+      clearSession();
+      throw new Error('Your session has expired. Please log in again.');
+    }
+    
+    if (isTokenExpired(token)) {
+      clearSession();
+      // Don't redirect immediately - let auth context handle it
+      throw new Error('Your session has expired. Please log in again.');
+    }
   }
  
   const headers = {
@@ -69,12 +102,9 @@ const apiRequest = async (endpoint, options = {}, retryCount = 0) => {
   try {
     const response = await fetchWithTimeout(url, config);
  
-    // Handle 401 - clear auth and redirect to login
+    // Handle 401 - clear auth but don't redirect (let auth context handle it)
     if (response.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user_id');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      clearSession();
       throw new Error('Your session has expired. Please log in again.');
     }
 
@@ -91,19 +121,31 @@ const apiRequest = async (endpoint, options = {}, retryCount = 0) => {
  
     return await response.json();
   } catch (error) {
+    // Don't retry auth errors
+    if (error.statusCode === 401 || error.message.includes('session has expired')) {
+      throw error;
+    }
+
     // Retry logic for network errors or 5xx errors
     const shouldRetry = (
       retryCount < MAX_RETRIES &&
-      (!error.statusCode || error.statusCode >= 500)
+      (!error.statusCode || error.statusCode >= 500 || error.message === 'Request timed out')
     );
 
     if (shouldRetry) {
-      // Exponential backoff: wait 1s, then 2s
-      await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+      console.log(`Retrying request (${retryCount + 1}/${MAX_RETRIES}):`, endpoint);
+      // Exponential backoff: 1s, 2s, 4s
+      const delay = Math.pow(2, retryCount) * 1000;
+      await new Promise(resolve => setTimeout(resolve, delay));
       return apiRequest(endpoint, options, retryCount + 1);
     }
 
-    console.error('API Request Error:', error);
+    // Add network error context
+    if (!error.statusCode) {
+      error.isNetworkError = true;
+      error.canRetry = true;
+    }
+
     throw error;
   }
 };
