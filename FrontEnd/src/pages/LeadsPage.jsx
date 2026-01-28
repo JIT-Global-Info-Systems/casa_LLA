@@ -334,15 +334,15 @@ export default function LeadsPage() {
                       </CardHeader>
                       <CardContent className="overflow-y-auto max-h-80">
                         <div className="space-y-3">
-                          {/* Show Notes if available */}
-                          {selectedLead.checkNotes && (
+                          {/* Show Notes if available from checkListPage */}
+                          {selectedLead.checkListPage && selectedLead.checkListPage[0]?.notes && (
                             <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
                               <div className="flex items-start gap-2 mb-2">
                                 <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full font-medium">
                                   Notes
                                 </span>
                               </div>
-                              <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedLead.checkNotes}</p>
+                              <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedLead.checkListPage[0].notes}</p>
                             </div>
                           )}
                           
@@ -364,12 +364,10 @@ export default function LeadsPage() {
                                 )}
                               </div>
                             ))
-                          ) : (
-                            <p className="text-sm text-gray-500 italic">No call history available</p>
-                          )}
+                          ) : null}
                           
                           {/* Show message if no data at all */}
-                          {!selectedLead.checkNotes && (!selectedLead.calls || selectedLead.calls.length === 0) && (
+                          {(!selectedLead.checkListPage || !selectedLead.checkListPage[0]?.notes) && (!selectedLead.calls || selectedLead.calls.length === 0) && (
                             <p className="text-sm text-gray-500 italic">No call history or notes available</p>
                           )}
                         </div>
@@ -465,15 +463,15 @@ export default function LeadsPage() {
                       </CardHeader>
                       <CardContent className="overflow-y-auto max-h-80">
                         <div className="space-y-3">
-                          {/* Show Notes if available */}
-                          {viewLead.checkNotes && (
+                          {/* Show Notes if available from checkListPage */}
+                          {viewLead.checkListPage && viewLead.checkListPage[0]?.notes && (
                             <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
                               <div className="flex items-start gap-2 mb-2">
                                 <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full font-medium">
                                   Notes
                                 </span>
                               </div>
-                              <p className="text-sm text-gray-700 whitespace-pre-wrap">{viewLead.checkNotes}</p>
+                              <p className="text-sm text-gray-700 whitespace-pre-wrap">{viewLead.checkListPage[0].notes}</p>
                             </div>
                           )}
                           
@@ -495,12 +493,10 @@ export default function LeadsPage() {
                                 )}
                               </div>
                             ))
-                          ) : (
-                            <p className="text-sm text-gray-500 italic">No call history available</p>
-                          )}
+                          ) : null}
                           
                           {/* Show message if no data at all */}
-                          {!viewLead.checkNotes && (!viewLead.calls || viewLead.calls.length === 0) && (
+                          {(!viewLead.checkListPage || !viewLead.checkListPage[0]?.notes) && (!viewLead.calls || viewLead.calls.length === 0) && (
                             <p className="text-sm text-gray-500 italic">No call history or notes available</p>
                           )}
                         </div>
