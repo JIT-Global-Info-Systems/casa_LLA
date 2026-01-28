@@ -430,18 +430,8 @@ export default function LeadsPage() {
       ) : isViewMode ? (
         /* VIEW MODE - Use the Leads component with viewMode and right sidebar */
         <div className="min-h-screen bg-gray-50 p-4">
-          {/* Lead Stepper - Full Width Outside Grid - Shows for view mode */}
-          <div className="bg-white rounded-t-lg shadow-md px-6 py-4 mb-0">
-            <Leads
-              data={viewLead}
-              currentStep={currentStep}
-              onStepChange={setCurrentStep}
-              stepperOnly={true}
-            />
-          </div>
-          
           <div className="w-full">
-            <div className="bg-white rounded-lg shadow-md p-6 rounded-t-none">
+            <div className="bg-white rounded-lg shadow-md p-6 rounded-t-lg">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 align-top">
                 <div className="lg:col-span-2 space-y-4">
                   <Leads

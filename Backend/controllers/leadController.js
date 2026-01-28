@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
-const Lead = require("../models/Lead");
+// const Lead = require("../models/Lead");
+const Lead = require("../models/Lead").default;
 const LeadHistory = require("../models/LeadHistory");
 const Call = require("../models/Call");
 
@@ -15,14 +16,14 @@ exports.createLead = async (req, res) => {
     // Get user ID from JWT token
     if (!req.user || !req.user.user_id) {
       return res.status(401).json({
-        message: "Authentication required. Please log in."
+        message: "Please sign in to continue"
       });
     }
     const createdBy = req.user.user_id;
 
     if (!leadData.contactNumber || !leadData.date) {
       return res.status(400).json({
-        message: "contactNumber and date are required"
+        message: "Contact number and date are required"
       });
     }
 
@@ -84,7 +85,7 @@ exports.createLead = async (req, res) => {
       ...restLeadData,
       checkListPage: formattedCheckListPage,
       competitorAnalysis: formattedCompetitorAnalysis,
-      lead_status: "PENDING",
+      lead_status: "",
       currentRole: currentRole, // Add currentRole to the lead
       created_by: createdBy
     });
@@ -109,7 +110,7 @@ exports.createLead = async (req, res) => {
 
   } catch (error) {
     return res.status(500).json({
-      message: "Server error",
+      message: "Could not create lead. Please try again.",
       error: error.message
     });
   }
@@ -120,7 +121,7 @@ exports.updateLead = async (req, res) => {
     // Check if user is authenticated
     if (!req.user || !req.user.user_id) {
       return res.status(401).json({
-        message: "Authentication required. Please log in."
+        message: "Please sign in to continue"
       });
     }
 
@@ -276,17 +277,20 @@ exports.updateLead = async (req, res) => {
     });
   } catch (error) {
     return res.status(500).json({
-      message: "Server error",
+      message: "Could not update lead. Please try again.",
       error: error.message
     });
   }
 };
 
-exports.softDeleteLead = async (req, res) => {
+
+
+exports.deleteLead = async (req, res) => {
   try {
     const { leadId } = req.params;
 
-    const lead = await Lead.findById(leadId);
+    const lead = await Lead.findByIdAndDelete(leadId);
+
     if (!lead) {
       return res.status(404).json({
         message: "Lead not found"
@@ -295,7 +299,7 @@ exports.softDeleteLead = async (req, res) => {
 
     if (lead.status === "inactive") {
       return res.status(400).json({
-        message: "Lead already inactive"
+        message: "This lead is already inactive"
       });
     }
 
@@ -303,12 +307,12 @@ exports.softDeleteLead = async (req, res) => {
     await lead.save();
 
     return res.status(200).json({
-      message: "Lead soft deleted successfully",
+      message: "Lead deleted successfully",
       data: lead
     });
   } catch (error) {
     return res.status(500).json({
-      message: "Server error",
+      message: "Could not delete lead. Please try again.",
       error: error.message
     });
   }
@@ -332,7 +336,7 @@ exports.getAllLeads = async (req, res) => {
     });
   } catch (error) {
     return res.status(500).json({
-      message: "Failed to fetch all leads",
+      message: "Could not load leads. Please try again.",
       error: error.message
     });
   }
@@ -341,7 +345,9 @@ exports.getAllLeads = async (req, res) => {
 exports.getPendingLeads = async (req, res) => {
   try {
     const { location } = req.query;
-    const query = { lead_status: "PENDING" };
+    const query = {
+  lead_status: { $nin: ["APPROVED", "PURCHASED", "Purchased", "Approved"] }
+};
     
     if (location) {
       query.location = { $regex: new RegExp(`^${location}$`, 'i') };
@@ -356,7 +362,7 @@ exports.getPendingLeads = async (req, res) => {
     });
   } catch (error) {
     return res.status(500).json({
-      message: "Failed to fetch pending leads",
+      message: "Could not load leads. Please try again.",
       error: error.message
     });
   }
@@ -377,7 +383,7 @@ exports.getApprovedLeads = async (req, res) => {
     const leads = await Lead.find(query).sort({ created_at: -1 });
 
     return res.status(200).json({
-      message: "Approved leads fetched successfully",
+      message: "Approved leads loaded successfully",
       count: leads.length,
       data: leads
     });
@@ -385,7 +391,7 @@ exports.getApprovedLeads = async (req, res) => {
   } catch (error) {
     console.error("Get Approved Leads Error:", error);
     return res.status(500).json({
-      message: "Failed to fetch approved leads",
+      message: "Could not load approved leads. Please try again.",
       error: error.message
     });
   }
@@ -406,7 +412,7 @@ exports.getPurchasedLeads = async (req, res) => {
     const leads = await Lead.find(query).sort({ created_at: -1 });
 
     return res.status(200).json({
-      message: "Purchased leads fetched successfully",
+      message: "Purchased leads loaded successfully",
       count: leads.length,
       data: leads
     });
@@ -414,7 +420,7 @@ exports.getPurchasedLeads = async (req, res) => {
   } catch (error) {
     console.error("Get Purchased Leads Error:", error);
     return res.status(500).json({
-      message: "Failed to fetch purchased leads",
+      message: "Could not load purchased leads. Please try again.",
       error: error.message
     });
   }
@@ -427,15 +433,15 @@ exports.getLeadById = async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(leadId)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid lead ID format'
+        message: 'Invalid lead ID'
       });
     }
 
     // Find the lead, history, and calls in parallel
     const [lead, history, calls] = await Promise.all([
       Lead.findById(leadId),
-      LeadHistory.find({ leadId }).sort({ createdAt: -1 }), // Get history sorted by creation date (newest first)
-      Call.find({ leadId }).sort({ createdAt: -1 }) // Get calls sorted by creation date (newest first)
+      LeadHistory.find({ leadId }).sort({ createdAt: -1 }),
+      Call.find({ leadId }).sort({ createdAt: -1 })
     ]);
 
     if (!lead) {
@@ -456,7 +462,7 @@ exports.getLeadById = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: 'Server error',
+      message: 'Could not load lead details. Please try again.',
       error: error.message
     });
   }
@@ -472,7 +478,7 @@ exports.getAllCalls = async (req, res) => {
       if (!mongoose.Types.ObjectId.isValid(leadId)) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid lead ID format'
+          message: 'Invalid lead ID'
         });
       }
       query.leadId = leadId;
@@ -500,7 +506,7 @@ exports.getAllCalls = async (req, res) => {
     console.error('Error fetching calls:', error);
     return res.status(500).json({
       success: false,
-      message: 'Failed to fetch calls',
+      message: 'Could not load calls. Please try again.',
       error: error.message
     });
   }
