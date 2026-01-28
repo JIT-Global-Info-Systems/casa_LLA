@@ -255,7 +255,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
   const fetchLocations = useCallback(async () => {
     setLoading((prev) => ({ ...prev, locations: true, regions: true, zones: true }))
     setApiError(null)
-    const loadingToast = toast.loading('Loading locations...')
+    // const loadingToast = toast.loading('Loading locations...')
 
     try {
       const locationsData = await locationsAPI.getAll()
@@ -293,7 +293,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       })
 
       setMasters({ locations: transformedLocations, regions: transformedRegions, zones: transformedZones })
-      toast.success('Locations loaded successfully', { id: loadingToast })
+      // toast.success('Locations loaded successfully', { id: loadingToast })
     } catch (err) {
       console.error("Failed to fetch locations:", err)
       const errorMsg = err.response?.data?.message || "Failed to load locations. Please try again."
@@ -311,10 +311,10 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
         // Only fetch mediators if they haven't been fetched yet
         if (!mediatorsFetched && !mediatorsLoading && !mediators.length) {
-          const mediatorsToast = toast.loading('Loading mediators...')
+          // const mediatorsToast = toast.loading('Loading mediators...')
           try {
             await fetchMediators()
-            toast.success('Mediators loaded successfully', { id: mediatorsToast })
+            // toast.success('Mediators loaded successfully', { id: mediatorsToast })
           } catch (err) {
             console.error('Failed to load mediators:', err)
             toast.error('Failed to load mediators. Some features may be limited.', { id: mediatorsToast })
