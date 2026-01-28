@@ -100,14 +100,6 @@ const LEAD_STAGES = [
   "Finance",
   "Admin",
 ]
-<<<<<<< HEAD
- 
-export default function LeadStepper({ stageName, currentStep = 1, onStepChange, className }) {
-  // Find current step number from stage name
-  const stepFromStage = LEAD_STAGES.indexOf(stageName) + 1 || 1
-  const activeStep = currentStep || stepFromStage
- 
-=======
 
 export default function LeadStepper({ stageName, currentStep = 1, onStepChange, className, isNewLead = false }) {
   // Normalize stageName to match against STAGES
@@ -135,7 +127,6 @@ export default function LeadStepper({ stageName, currentStep = 1, onStepChange, 
     activeStep = (currentStep === 1 && stepFromStage > 0) ? stepFromStage : (currentStep || stepFromStage)
   }
 
->>>>>>> 86418bc83063cd4c6d5187843b52485a162f143c
   const handleStepClick = (stepNumber) => {
     if (onStepChange) {
       onStepChange(stepNumber)
