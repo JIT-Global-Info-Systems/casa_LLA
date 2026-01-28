@@ -242,160 +242,52 @@ function Dashboard() {
 
     loadData();
   }, []);
-
-  // Calculate active leads count (PENDING leads from all leads API)
-  const activeLeadsCount = leads?.filter((lead) => {
-    const status = lead.lead_status || lead.status;
-    return status === "PENDING" || status === "pending";
-  }).length || 0;
-
-  // Use separate API data for approved and purchased counts
-  const approvedLeadsCount = approvedLeads?.length || 0;
-  const purchasedLeadsCount = purchasedLeads?.length || 0;
-
-  // Calculate lead stages count (filtering only valid stages: hot, warm, cold, management hot)
-  const leadStages = {
-    hot: 0,
-    warm: 0,
-    cold: 0,
-    management_hot: 0,
-  };
-
-  leads?.forEach((lead) => {
-    const stage = lead.lead_stage;
-    if (stage === "hot") leadStages.hot++;
-    else if (stage === "warm") leadStages.warm++;
-    else if (stage === "cold") leadStages.cold++;
-    else if (stage === "management hot" || stage === "management_hot")
-      leadStages.management_hot++;
-  });
- 
-  // Debug: log the leads data to see structure
-  console.log('Leads data:', leads);
-  console.log('Active leads count:', activeLeadsCount);
-  console.log('Approval leads count:', approvedLeadsCount);
-  console.log('Purchased leads count:', purchasedLeadsCount);
-  console.log('Lead stages:', leadStages);
-  
-  // Calculate work stages based on currentRole from leads API
-  const [workStages, setWorkStages] = useState({});
-  const [workStagesLabels, setWorkStagesLabels] = useState({});
-
-  // Function to calculate work stages dynamically based on API response
-  // const calculateWorkStages = (leadsData, accessData = null) => {
-  //   const stages = {};
-    
-  //   // If access data provided by API, use it to create labels
-  //   if (accessData && accessData.data) {
-  //     // Initialize stages with API roles (exclude admin)
-  //     accessData.data.forEach(access => {
-  //       if (access.role !== 'admin') {
-  //         // Convert role key to display label
-  //         const displayLabel = access.role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-  //         stages[displayLabel] = 0;
-  //       }
-  //     });
-      
-  //     // Count leads based on API roles
-  //     leadsData?.forEach(lead => {
-  //       const role = lead.currentRole;
-  //       if (role) {
-  //         const normalizedRole = role.toLowerCase().trim().replace(/\s+/g, '_');
-          
-  //         // Find matching role from API
-  //         const matchingAccess = accessData.data.find(access => 
-  //           access.role === normalizedRole && access.role !== 'admin'
-  //         );
-          
-  //         if (matchingAccess) {
-  //           const displayLabel = matchingAccess.role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-  //           stages[displayLabel]++;
-  //         }
-  //       }
-  //     });
-  //   } else {
-  //     // Fallback to hardcoded labels if API not available
-  //     const defaultLabels = {
-  //       'Tele Callers': ['tele callers', 'tele_callers', 'telecaller'],
-  //       'Land Executive': ['land executive', 'land_executive', 'landexecutive'],
-  //       'L1 Md': ['l1 md', 'l1_md', 'l1md'],
-  //       'Cmo Cro': ['cmo cro', 'cmo_cro', 'cmo', 'cro'],
-  //       'Feasibility Team': ['feasibility team', 'feasibility_team', 'feasibility'],
-  //       'Legal': ['legal'],
-  //       'Liaison': ['liaison'],
-  //       'Finance': ['finance'],
-  //       'Management': ['management']
-  //     };
-      
-  //     // Initialize stages with default labels
-  //     Object.keys(defaultLabels).forEach(label => {
-  //       stages[label] = 0;
-  //     });
-      
-  //     // Count leads based on default labels
-  //     leadsData?.forEach(lead => {
-  //       const role = lead.currentRole;
-  //       if (role) {
-  //         const normalizedRole = role.toLowerCase().trim();
-  //         Object.entries(defaultLabels).forEach(([label, variations]) => {
-  //           if (variations.some(variation => normalizedRole === variation.toLowerCase().trim())) {
-  //             stages[label]++;
-  //           }
-  //         });
-  //       }
-  //     });
-  //   }
-//new api method for work stages
-  const calculateWorkStages = (leadsData, accessData) => {
-  const stages = {};
- 
-  if (!accessData || !Array.isArray(accessData)) return {};
- 
-  // Step 1: Initialize all roles from API (except admin)
-  accessData.forEach(access => {
-    if (access.role !== "admin") {
-      stages[access.role] = 0;   // land_executive, tele_caller, etc
-    }
-  });
-
-    // Step 1: Initialize all roles from API (except admin)
-    accessData.forEach(access => {
-      if (access.role !== "admin") {
-        stages[access.role] = 0;   // land_executive, tele_caller, etc
-      }
-    });
-
-    // Step 2: Count leads by currentRole
-    leadsData.forEach(lead => {
-      if (!lead.currentRole) return;
-
-      const role = lead.currentRole.trim(); // e.g. "land_executive"
-
-      if (stages.hasOwnProperty(role)) {
-        stages[role]++;
-      }
-    });
-
-    return stages;
-  };
-
-  // Fetch access data for work stages labels
-  const fetchAccessData = async () => {
+  // Fetch dashboard data from API
+  const fetchDashboardData = async () => {
     try {
-      console.log('🔑 Checking token in localStorage:', localStorage.getItem('token') ? 'Token exists' : 'No token found');
-      console.log('🌐 Making API call to access/get...');
-      const accessData = await accessAPI.getAll();
-      console.log('✅ Access API call successful:', accessData);
-      setWorkStagesLabels(accessData);
-      return accessData;
-    } catch (error) {
-      console.error('❌ Error fetching access data:', error);
-      console.error('❌ Error details:', {
-        message: error.message,
-        stack: error.stack
+      setIsLoading(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+ 
+      // Build query parameters
+      const params = new URLSearchParams();
+      if (dateRange.from) params.append('fromDate', dateRange.from);
+      if (dateRange.to) params.append('toDate', dateRange.to);
+      
+      // Add location filter if not 'all'
+      if (selectedLocation && selectedLocation.id !== 'all') {
+        // Use the location name for the API call
+        params.append('location', selectedLocation.name);
+      } else {
+        // Remove location parameter if 'all' is selected
+        params.delete('location');
+      }
+      
+      const url = `http://localhost:5000/api/dashboard${params.toString() ? `?${params}` : ''}`;
+     
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
       });
-      // Return null to use fallback labels
-      return null;
+ 
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+ 
+      const data = await response.json();
+      setDashboardData(data.data);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+      setError('Failed to load dashboard data');
+      toast.error('Failed to load dashboard data');
+    } finally {
+      setIsLoading(false);
     }
   };
 
