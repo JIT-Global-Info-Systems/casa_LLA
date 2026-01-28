@@ -75,10 +75,8 @@ const mediatorSchema = new mongoose.Schema({
   },
 
   address: {
-    street: String,
-    city: String,
-    state: String,
-    pincode: String
+    type: String,
+    trim: true
   },
 
   status: {
