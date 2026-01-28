@@ -126,7 +126,7 @@ exports.updateLead = async (req, res) => {
     }
 
     const { leadId } = req.params;
-    const { userId, note, notes, role, currentRole, competitorAnalysis, checkListPage, ...updateData } = req.body;
+    const { userId, note, notes, role, currentRole, competitorAnalysis, checkListPage, callDate, callTime, ...updateData } = req.body;
 
     const update = {
       ...updateData,
@@ -181,26 +181,59 @@ exports.updateLead = async (req, res) => {
     // If notes is being updated, create a new call record
     if (notes !== undefined) {
       const updateData = typeof req.body.data === "string" ? JSON.parse(req.body.data) : req.body;
+      const { callDate, callTime } = updateData;
+      
+      // Create call timestamp from provided date and time, or use current date/time as fallback
+      let callTimestamp = new Date();
+      if (callDate) {
+        // If callTime is provided, combine with callDate, otherwise use callDate alone
+        const dateTimeString = callTime ? `${callDate}T${callTime}` : callDate;
+        callTimestamp = new Date(dateTimeString);
+        
+        // If invalid date, fallback to current date/time
+        if (isNaN(callTimestamp.getTime())) {
+          callTimestamp = new Date();
+        }
+      }
+      
       await Call.create({
         leadId: leadId,
         userId: userId || 'system',
         name: updateData.name || req.user?.name || 'System',
         role: currentRole || 'system',
         note: notes,
-        created_by: req.user?.user_id || 'system'
+        created_by: req.user?.user_id || 'system',
+        created_at: callTimestamp,
+        callDate: callDate || null,
+        callTime: callTime || null
       });
     }
 
     // If a new note is provided, create a new call record
     if (note && userId) {
       const updateData = typeof req.body.data === "string" ? JSON.parse(req.body.data) : req.body;
+      const { callDate, callTime } = updateData;
+      
+      // Create call timestamp from provided date and time, or use current date/time as fallback
+      let callTimestamp = new Date();
+      if (callDate) {
+        const dateTimeString = callTime ? `${callDate}T${callTime}` : callDate;
+        callTimestamp = new Date(dateTimeString);
+        if (isNaN(callTimestamp.getTime())) {
+          callTimestamp = new Date();
+        }
+      }
+      
       await Call.create({
         leadId: leadId,
         userId,
         name: updateData.name || req.user?.name || 'Unknown User',
         role: currentRole || 'user',
         note: note,
-        created_by: req.user?.user_id || 'system'
+        created_by: req.user?.user_id || 'system',
+        created_at: callTimestamp,
+        callDate: callDate || null,
+        callTime: callTime || null
       });
     }
 

@@ -12,7 +12,7 @@ const leadHistorySchema = new mongoose.Schema({
   },
   assignedTo: {
     type: String,
-    required: true
+    required: false
   },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
