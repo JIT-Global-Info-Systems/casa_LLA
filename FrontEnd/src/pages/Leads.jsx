@@ -192,6 +192,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     currentRole: "",
     assignedTo: "",
     inquiredBy: "", // New field for inquiry status (only enabled when leadStatus is "Pending"/Enquired)
+    L1_Qualification: "", // L1 Qualification status
+    directorSVStatus: "", // Director SV status
   })
 
   const [masters, setMasters] = useState({ locations: [], regions: [], zones: [] })
@@ -362,6 +364,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       assignedTo: data.assignedTo || prev.assignedTo, // Now storing role string, not user ID
       status: data.status || prev.status,
       inquiredBy: data.inquiredBy || prev.inquiredBy,
+      L1_Qualification: data.L1_Qualification || prev.L1_Qualification,
+      directorSVStatus: data.directorSVStatus || prev.directorSVStatus,
 
       // competitor..
       competitorDeveloperName: firstCompetitor?.developerName || "",
@@ -596,6 +600,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       // Send assignedTo field (backend needs to support this)
       assignedTo: formData.assignedTo,
       inquiredBy: formData.inquiredBy,
+      L1_Qualification: formData.L1_Qualification,
+      directorSVStatus: formData.directorSVStatus,
 
       // structured sections
       competitorAnalysis,
@@ -747,6 +753,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           stageName={formData.assignedTo || formData.currentRole || "tele_caller"}
           currentStep={currentStep}
           className="w-full"
+          isNewLead={!data}
         />
 
         {apiError && (
@@ -1337,6 +1344,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                         <SelectItem value="Due_Diligence_End">Due Diligence End</SelectItem>
                         <SelectItem value="Approved">Approved</SelectItem>
                         <SelectItem value="Hold">Hold</SelectItem>
+                        <SelectItem value="L1_Qualification">L1 Qualification</SelectItem>
+                        <SelectItem value="director_sv">Director sv</SelectItem>
                       </>
                     )}
                   </SelectContent>
@@ -1360,6 +1369,50 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                     <SelectContent className="bg-white z-50 shadow-lg">
                       <SelectItem value="qualified_by_land_team">Qualified by Land Team</SelectItem>
                       <SelectItem value="rejected_by_land_team">Rejected by Land Team</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            )}
+            {/* Lead Qualification */}
+            {formData.leadStatus === "L1_Qualification" && (
+              <div className="space-y-2">
+                <Label className="text-gray-700">L1_Qualification</Label>
+                {!isFieldEditable('L1_Qualification') ? (
+                  <div className="p-2 bg-white border border-gray-300 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
+                    {formData.L1_Qualification || "-"}
+                  </div>
+                ) : (
+                  <Select value={formData.L1_Qualification} onValueChange={(v) => handleChange("L1_Qualification", v)}>
+                    <SelectTrigger className="bg-white border-gray-300" data-editable="true">
+                      <SelectValue placeholder="Select L1_Qualification status" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white z-50 shadow-lg">
+                      <SelectItem value="eligible_for_sv">eligible for SV</SelectItem>
+                      <SelectItem value="rejected_for_sv">eligible for sv</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            )}
+
+            {/* Director SV Status */}
+            {formData.leadStatus === "director_sv" && (
+              <div className="space-y-2">
+                <Label className="text-gray-700">Director SV Status</Label>
+                {!isFieldEditable('directorSVStatus') ? (
+                  <div className="p-2 bg-white border border-gray-300 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
+                    {formData.directorSVStatus || "-"}
+                  </div>
+                ) : (
+                  <Select value={formData.directorSVStatus} onValueChange={(v) => handleChange("directorSVStatus", v)}>
+                    <SelectTrigger className="bg-white border-gray-300" data-editable="true">
+                      <SelectValue placeholder="Select Director SV status" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white z-50 shadow-lg">
+                      <SelectItem value="sv_pending">SV Pending</SelectItem>
+                      <SelectItem value="sv_rejected">SV Rejected</SelectItem>
+                      <SelectItem value="sv_done">SV Done</SelectItem>
                     </SelectContent>
                   </Select>
                 )}
