@@ -519,7 +519,7 @@ const handleCancelDelete = () => {
       
       {/* Simple Delete Confirmation Modal */}
       {deleteModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="relative w-full max-w-md mx-4 bg-white rounded-lg shadow-xl">
             <div className="p-6">
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
