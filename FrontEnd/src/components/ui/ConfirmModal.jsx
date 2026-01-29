@@ -13,6 +13,8 @@ const ConfirmModal = ({
   variant = 'destructive', // 'destructive' | 'default'
   loading = false,
 }) => {
+  console.log('ConfirmModal rendered with isOpen:', isOpen);
+  
   if (!isOpen) return null;
 
   const handleBackdropClick = (e) => {

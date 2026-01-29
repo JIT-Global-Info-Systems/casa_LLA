@@ -289,7 +289,7 @@ exports.deleteLead = async (req, res) => {
   try {
     const { leadId } = req.params;
 
-    const lead = await Lead.findByIdAndDelete(leadId);
+    const lead = await Lead.findById(leadId);
 
     if (!lead) {
       return res.status(404).json({
@@ -297,18 +297,15 @@ exports.deleteLead = async (req, res) => {
       });
     }
 
-    if (lead.status === "inactive") {
-      return res.status(400).json({
-        message: "This lead is already inactive"
-      });
-    }
+    // Store the lead data for response before deletion
+    const deletedLeadData = lead.toObject();
 
-    lead.status = "inactive";
-    await lead.save();
+    // Permanently delete the lead
+    await Lead.findByIdAndDelete(leadId);
 
     return res.status(200).json({
-      message: "Lead deleted successfully",
-      data: lead
+      message: "Lead deleted permanently",
+      data: deletedLeadData
     });
   } catch (error) {
     return res.status(500).json({

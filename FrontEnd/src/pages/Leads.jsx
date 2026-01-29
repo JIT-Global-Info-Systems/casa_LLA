@@ -2073,7 +2073,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
         )}
 
         {/* Notes Section */}
-        <div className="space-y-2">
+        {/* <div className="space-y-2">
           <Label className="text-gray-700 font-medium">Notes</Label>
           {viewMode ? (
             <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[100px] whitespace-pre-wrap">
@@ -2088,7 +2088,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
               className="bg-gray-50 resize-y"
             />
           )}
-        </div>
+        </div> */}
 
       {/* </div> */}
 

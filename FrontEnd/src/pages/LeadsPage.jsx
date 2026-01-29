@@ -20,14 +20,13 @@ import {
   Search,
   Check,
   X,
-  AlertCircle
+  AlertCircle,
+  AlertTriangle
 } from "lucide-react";
 // import LeadStepper from "@/components/ui/LeadStepper"
 import Leads from "./Leads"
 import { callsAPI } from "../services/api"
 import { useLeads } from "../context/LeadsContext.jsx"
-import ConfirmModal from "@/components/ui/ConfirmModal";
-import { useEntityAction } from "@/hooks/useEntityAction";
 import toast from "react-hot-toast"
 import { formatDateWithFallback, formatCallDate } from "@/utils/dateUtils";
  
@@ -42,14 +41,15 @@ export default function LeadsPage() {
   const [dateTo, setDateTo] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  
+  // Simple delete modal state
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [leadToDelete, setLeadToDelete] = useState(null);
  
   const { leads, loading, error, fetchLeads, createLead, updateLead, deleteLead, getLeadById } = useLeads()
  
   const [currentStep, setCurrentStep] = useState(1)
   const [isFetchingLead, setIsFetchingLead] = useState(false)
-  
-  // Entity action hook for status-aware delete
-  const { handleDelete, canPerformAction, confirmModal } = useEntityAction('lead');
   
   const leadComments = [
     selectedLead?.remark,
@@ -199,20 +199,31 @@ export default function LeadsPage() {
   };
  
   const handleDeleteLead = (lead) => {
-    // Check if delete is allowed
-    const deleteState = canPerformAction(lead, 'delete');
-    
-    if (!deleteState.enabled) {
-      // Lead is already inactive/deleted - don't show error
-      return;
-    }
+  console.log('Delete clicked for lead:', lead);
+  setLeadToDelete(lead);
+  setDeleteModalOpen(true);
+};
 
-    // Perform delete with status check
-    handleDelete(lead, async () => {
-      await deleteLead(lead._id || lead.id);
-      fetchLeads(); // Refresh list
-    });
-  };
+const handleConfirmDelete = async () => {
+  if (!leadToDelete) return;
+  
+  try {
+    console.log('Performing delete for lead:', leadToDelete._id || leadToDelete.id);
+    await deleteLead(leadToDelete._id || leadToDelete.id);
+    fetchLeads(); // Refresh list
+    setDeleteModalOpen(false);
+    setLeadToDelete(null);
+    toast.success('Lead deleted successfully');
+  } catch (error) {
+    console.error('Delete failed:', error);
+    toast.error('Failed to delete lead');
+  }
+};
+
+const handleCancelDelete = () => {
+  setDeleteModalOpen(false);
+  setLeadToDelete(null);
+};
  
   const handleView = async (lead) => {
     setIsFetchingLead(true);
@@ -397,18 +408,18 @@ export default function LeadsPage() {
                     {paginatedLeads.map((lead) => (
                       <tr key={lead.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{lead.lead_id || lead.id}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{lead.name}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.phone || "—"}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{lead.mediatorName}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.contactNumber || "—"}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.location}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.zone}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.property || "—"}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.propertyType || "—"}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                          <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${String(lead.status).toLowerCase() === "approved" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
-                            {lead.status}
+                          <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${String(lead.lead_status).toLowerCase() === "approved" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
+                            {lead.lead_status}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {formatDateWithFallback(lead.registeredDate, "—")}
+                          {formatDateWithFallback(lead.created_at, "—")}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <DropdownMenu>
@@ -436,7 +447,6 @@ export default function LeadsPage() {
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => handleDeleteLead(lead)}
-                                disabled={!canPerformAction(lead, 'delete').enabled}
                                 className="cursor-pointer text-red-600 hover:bg-red-50"
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
@@ -486,18 +496,40 @@ export default function LeadsPage() {
         </div>
       )}
       
-      {/* Delete Confirmation Modal */}
-      <ConfirmModal
-        isOpen={confirmModal.isOpen}
-        onClose={confirmModal.onClose}
-        onConfirm={confirmModal.onConfirm}
-        title={confirmModal.title}
-        description={confirmModal.description}
-        confirmText={confirmModal.confirmText}
-        cancelText="Cancel"
-variant={confirmModal.variant}
-        loading={confirmModal.loading}
-      />
+      {/* Simple Delete Confirmation Modal */}
+      {deleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="relative w-full max-w-md mx-4 bg-white rounded-lg shadow-xl">
+            <div className="p-6">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+                <AlertTriangle className="h-6 w-6 text-red-600" />
+              </div>
+              <h3 className="mt-4 text-lg font-semibold text-center text-gray-900">
+                Delete Lead
+              </h3>
+              <p className="mt-2 text-sm text-center text-gray-600">
+                Are you sure you want to delete "{leadToDelete?.mediatorName || 'this lead'}"? This action cannot be undone.
+              </p>
+              <div className="mt-6 flex gap-3">
+                <Button
+                  onClick={handleCancelDelete}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleConfirmDelete}
+                  variant="destructive"
+                  className="flex-1"
+                >
+                  Delete
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
