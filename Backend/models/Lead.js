@@ -130,6 +130,10 @@ const leadSchema = new mongoose.Schema({
   remark: {
     type: String
   },
+
+  ownerName: {
+    type: String
+  },
   
   status: {
     type: String,
