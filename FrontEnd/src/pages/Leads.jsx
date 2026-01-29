@@ -50,20 +50,20 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     "admin"
   ]
 
-  // Define role hierarchy - lower number means higher priority
+  // Define role hierarchy - matching Lead Stepper workflow order
   const roleHierarchy = {
-    'admin': 1,
-    'cmo_cro': 2,
-    'management_md_1st_level': 3,
-    'l1_md': 3,
-    'legal': 4,
-    'liaison': 5,
-    'finance': 6,
-    'feasibility_team': 7,
-    'analytics_team': 8,
-    'field_study_product_team': 9,
-    'land_executive': 10,
-    'tele_caller': 11
+    'tele_caller': 1,
+    'land_executive': 2,
+    'analytics_team': 3,
+    'feasibility_team': 4,
+    'field_study_product_team': 5,
+    'management_md_1st_level': 6,
+    'l1_md': 7,
+    'cmo_cro': 8,
+    'legal': 9,
+    'liaison': 10,
+    'finance': 11,
+    'admin': 12
   }
 
   // Get current user role from localStorage
@@ -85,27 +85,69 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     return 'tele_caller'
   }
 
-  // Get static roles filtered by hierarchy and exclude current user's role
+  // Get current user info from localStorage
+  const getCurrentUserInfo = () => {
+    const userData = localStorage.getItem('user')
+    if (userData) {
+      try {
+        const parsed = JSON.parse(userData)
+        return {
+          user_id: parsed._id || parsed.id || '',
+          name: parsed.name || '',
+          role: parsed.role || 'tele_caller'
+        }
+      } catch (e) {
+        console.error("Failed to parse user data", e)
+      }
+    }
+    return {
+      user_id: '',
+      name: '',
+      role: 'tele_caller'
+    }
+  }
+
+  // Get assigned user info based on role
+  const getAssignedUserInfo = (role) => {
+    if (!role || role === getCurrentUserRole()) {
+      // If no role specified or same as current user, assign to current user
+      return getCurrentUserInfo()
+    }
+    
+    // For now, use current user's ID as fallback since user_id is required in backend
+    const currentUserInfo = getCurrentUserInfo();
+    return {
+      user_id: currentUserInfo.user_id, // Use current user's ID as required fallback
+      name: `${role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}`,
+      role: role
+    }
+  }
+
+  // Get static roles filtered by hierarchy - only show next 1 role in workflow, except for admin
   const getFilteredStaticRoles = () => {
     const currentUserRole = getCurrentUserRole()
-    const currentUserLevel = roleHierarchy[currentUserRole] || 11
+    const currentUserLevel = roleHierarchy[currentUserRole] || 1
 
-    // For now, show all static roles except current user's role
-    return STATIC_ROLES
-      .filter(role => role !== currentUserRole) // Exclude current user's role
-      .sort((a, b) => (roleHierarchy[a] || 12) - (roleHierarchy[b] || 12))
-
-    // Admin can assign to anyone except themselves
+    // Admin can see all roles except themselves
     if (currentUserRole === 'admin') {
       return STATIC_ROLES
-        .filter(role => role !== currentUserRole) // Exclude admin from assigning to admin
-        .sort((a, b) => (roleHierarchy[a] || 12) - (roleHierarchy[b] || 12))
+        .filter(role => role !== 'admin') // Exclude admin from assigning to admin
+        .sort((a, b) => (roleHierarchy[a] || 12) - (roleHierarchy[b] || 12)) // Sort by workflow order
     }
 
-    // Other users can only assign to lower priority roles (higher numbers) and not themselves
-    return STATIC_ROLES
-      .filter(role => (roleHierarchy[role] || 12) > currentUserLevel && role !== currentUserRole)
-      .sort((a, b) => (roleHierarchy[a] || 12) - (roleHierarchy[b] || 12))
+    // For other users, show only the next 1 role in the workflow (higher numbers = next steps)
+    const filteredRoles = STATIC_ROLES
+      .filter(role => (roleHierarchy[role] || 12) > currentUserLevel) // Only next steps in workflow (higher numbers)
+      .sort((a, b) => (roleHierarchy[a] || 12) - (roleHierarchy[b] || 12)) // Sort by workflow order
+      .slice(0, 1) // Take only the first 1 (next in hierarchy)
+    
+    return filteredRoles
+  }
+
+  // Check if a role can be selected (not same as current user's role)
+  const canSelectRole = (role) => {
+    const currentUserRole = getCurrentUserRole()
+    return role !== currentUserRole
   }
   const [formData, setFormData] = useState({
     // Basic Lead Information
@@ -436,7 +478,111 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           duration: 3000 
         });
       } else {
-        handleChange("currentRole", userRole)
+        // Reset form to initial state when creating new lead
+        setFormData({
+          // Basic Lead Information
+          leadType: "mediator",
+          contactNumber: "",
+          mediatorName: "",
+          mediatorId: "",
+          location: "",
+          zone: "",
+          area: "",
+          landName: "",
+          sourceCategory: "",
+          source: "",
+          extent: "",
+          unit: "",
+          propertyType: "",
+          fsi: "",
+          asp: "",
+          revenue: "",
+          transactionType: " ",
+          rate: "",
+          builderShare: "",
+          refundable: "",
+          nonRefundable: "",
+          landmark: "",
+          frontage: "",
+          roadWidth: "",
+          sspde: "No",
+          leadStatus: "Enquired",
+          status: "active",
+          remark: "",
+          lead_stage: "",
+
+          // Yield Calculation
+          yield: "",
+
+          // Competitor Analysis
+          competitorDeveloperName: "",
+          competitorProjectName: "",
+          competitorProductType: "",
+          competitorLocation: "",
+          competitorPlotSize: "",
+          competitorLandExtent: "",
+          competitorPriceRange: "",
+          competitorApproxPrice: "",
+          competitorApproxPriceCent: "",
+          competitorTotalUnits: "",
+          competitorKeyAmenities: "",
+          competitorUSP: "",
+
+          // Site Visit Checklist
+          checkLandLocation: "",
+          checkLandExtent: "",
+          checkLandZone: "",
+          checkLandClassification: "",
+          checkGooglePin: "",
+          checkApproachRoadWidth: "",
+          checkSoilType: "",
+          checkSellingPrice: "",
+          checkGuidelineValue: "",
+          checkLocationSellingPrice: "",
+          checkMarketingPrice: "",
+          checkRoadWidth: "",
+          checkTotalSaleableArea: "",
+          checkOwnerName: "",
+          checkConsultantName: "",
+          checkNotes: "",
+          checkProjects: "",
+          checkGoogleLocation: "",
+
+          // Checkboxes
+          checkEBLine: false,
+          checkQuarryCrusher: false,
+          checkGovtLandAcquisition: false,
+          checkRailwayTrackNOC: false,
+          checkBankIssues: false,
+          checkDumpyardQuarry: false,
+          checkWaterbodyNearby: false,
+          checkNearbyHTLine: false,
+          checkTempleLand: false,
+          checkFutureGovtProjects: false,
+          checkFarmLand: false,
+          checkLandCleaning: false,
+          checkSubDivision: false,
+          checkSoilTest: false,
+          checkWaterList: false,
+
+          // Special Fields (Checkbox + Upload)
+          checkFMBSketch: false,
+          fileFMBSketch: null,
+          checkPattaChitta: false,
+          filePattaChitta: null,
+
+          currentRole: userRole,
+          assignedTo: "",
+          assignToUser: "",
+          inquiredBy: "",
+          L1_Qualification: "",
+          directorSVStatus: "",
+          callDate: "",
+          callTime: "",
+          callNotes: "",
+        })
+        setOriginalData(null)
+        setHasUnsavedChanges(false)
       }
     }
   }, [data, loadFormDraft])
@@ -450,11 +596,12 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
     const hydratedData = {
       ...data,
+      leadType: data.leadType || data.lead_type || "mediator", // Ensure leadType is properly mapped
       leadStatus: data.lead_status || "",
       lead_stage: data.lead_stage || "",
       mediatorId: data.mediatorId || "",
-      currentRole: data.currentRole || "",
-      assignedTo: data.assignedTo || "", // Now storing role string, not user ID
+      currentRole: Array.isArray(data.currentRole) ? data.currentRole[0]?.role || "" : data.currentRole || "",
+      assignedTo: Array.isArray(data.assignedTo) ? data.assignedTo[0]?.role || "" : data.assignedTo || "",
       assignToUser: data.assignToUser || "", // New field for specific user assignment
       status: data.status || "",
       inquiredBy: data.inquiredBy || "",
@@ -543,6 +690,20 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
   const handleChange = (key, value) => {
     const newFormData = { ...formData, [key]: value };
+    setFormData(newFormData);
+    setHasUnsavedChanges(true);
+    
+    // Auto-save draft (debounced)
+    if (!viewMode && !data) {
+      clearTimeout(window.formDraftTimeout);
+      window.formDraftTimeout = setTimeout(() => {
+        saveFormDraft(newFormData);
+      }, 1000);
+    }
+  };
+
+  const handleMultipleChanges = (changes) => {
+    const newFormData = { ...formData, ...changes };
     setFormData(newFormData);
     setHasUnsavedChanges(true);
     
@@ -708,18 +869,24 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
     // For new leads, send all fields
     if (!data) {
+      const currentUserInfo = getCurrentUserInfo();
+      const assignedUserInfo = getAssignedUserInfo(formData.assignedTo || currentRoleValue);
+      
       const payload = {
         // base schema fields - always required
         leadType: formData.leadType || "mediator",
         contactNumber: formData.contactNumber || "",
         mediatorName: formData.mediatorName || "",
+        date: new Date().toISOString(), // Add current date as required by backend
         location: formData.location || "",
         landName: formData.landName || "",
         sourceCategory: formData.sourceCategory || "",
         source: formData.source || "",
         status: formData.status || "active",
-        currentRole: currentRoleValue,
-        assignedTo: formData.assignedTo || currentRoleValue,
+        
+        // Backend expects arrays of objects for currentRole and assignedTo
+        currentRole: [currentUserInfo],
+        assignedTo: [assignedUserInfo],
         assignToUser: formData.assignToUser,
 
         // structured sections
@@ -797,8 +964,19 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     addIfChanged('sourceCategory', formData.sourceCategory || "", originalData?.sourceCategory || "")
     addIfChanged('source', formData.source || "", originalData?.source || "")
     addIfChanged('status', formData.status || "active", originalData?.status || "active")
-    addIfChanged('currentRole', currentRoleValue, originalData?.currentRole || "")
-    addIfChanged('assignedTo', formData.assignedTo || currentRoleValue, originalData?.assignedTo || "")
+    
+    // Handle currentRole and assignedTo as arrays of objects
+    const currentUserInfo = getCurrentUserInfo();
+    const assignedUserInfo = getAssignedUserInfo(formData.assignedTo || currentRoleValue);
+    
+    // Only update if the role assignment has changed
+    if (!originalData?.currentRole || originalData.currentRole[0]?.role !== currentUserInfo.role) {
+      payload.currentRole = [currentUserInfo];
+    }
+    if (!originalData?.assignedTo || originalData.assignedTo[0]?.role !== assignedUserInfo.role) {
+      payload.assignedTo = [assignedUserInfo];
+    }
+    
     addIfChanged('assignToUser', formData.assignToUser, originalData?.assignToUser)
 
     // Check optional fields
@@ -859,9 +1037,23 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       payload.checkListPage = checkListPage
     }
 
-    // Always include currentRole and assignedTo for history tracking
-    payload.currentRole = currentRoleValue
-    payload.assignedTo = formData.assignedTo || currentRoleValue
+    // Always include currentRole and assignedTo for history tracking (in correct array format)
+    if (!payload.currentRole) {
+      const currentUserInfo = getCurrentUserInfo();
+      payload.currentRole = [currentUserInfo];
+    }
+    if (!payload.assignedTo) {
+      const assignedUserInfo = getAssignedUserInfo(formData.assignedTo || currentRoleValue);
+      payload.assignedTo = [assignedUserInfo];
+    }
+
+    // Ensure required fields are included for updates
+    if (!payload.contactNumber && originalData?.contactNumber) {
+      payload.contactNumber = originalData.contactNumber;
+    }
+    if (!payload.date && originalData?.date) {
+      payload.date = originalData.date;
+    }
 
     return payload
   }
@@ -987,6 +1179,9 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           await onSubmit(leadPayload, files)
           console.log('✅ onSubmit completed successfully')
           
+          // Clear form draft on successful submission
+          clearFormDraft()
+          
           toast.success(data ? 'Lead updated successfully!' : 'Lead created successfully!', {
             id: submitToast,
             duration: 3000
@@ -1089,7 +1284,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       {stepperOnly ? (
         <div className="w-full">
           <LeadStepper
-            stageName={formData.assignedTo || formData.currentRole || "tele_caller"}
+            stageName={formData.assignedTo?.[0]?.role || formData.currentRole?.[0]?.role || "tele_caller"}
             currentStep={currentStep}
             className="w-full"
             isNewLead={!data}
@@ -1102,7 +1297,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           {!hideStepper && (
             <div className="w-full">
               <LeadStepper
-                stageName={formData.assignedTo || formData.currentRole || "tele_caller"}
+                stageName={formData.assignedTo?.[0]?.role || formData.currentRole?.[0]?.role || "tele_caller"}
                 currentStep={currentStep}
                 className="w-full"
                 isNewLead={!data}
@@ -1158,7 +1353,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="space-y-2">
                     <Label className="text-gray-700">Lead Type</Label>
-                    {viewMode ? (
+                    {viewMode || !isFieldEditable('leadType') ? (
                       <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
                         {formData.leadType || "-"}
                       </div>
@@ -1169,13 +1364,14 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                             key={type}
                             type="button"
                             onClick={() => {
-                              handleChange("leadType", type)
-                              // Clear the mediator/owner name when switching types
+                              // Update both leadType and clear mediatorName in a single state update
+                              const changes = { leadType: type };
                               if (formData.leadType !== type) {
-                                handleChange("mediatorName", "")
+                                changes.mediatorName = "";
                               }
+                              handleMultipleChanges(changes);
                             }}
-                            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                            className={`px-4 py-2 rounded-md text-sm font-medium transition-all cursor-pointer ${
                               formData.leadType === type
                                 ? "bg-indigo-600 text-white shadow-sm"
                                 : "bg-transparent text-gray-600 hover:bg-gray-200"
@@ -1287,11 +1483,22 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                           <SelectValue placeholder="Select Role" />
                         </SelectTrigger>
                         <SelectContent className="bg-white z-50 shadow-lg">
-                          {getFilteredStaticRoles().map((role) => (
-                            <SelectItem key={role} value={role}>
-                              {role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                            </SelectItem>
-                          ))}
+                          {getFilteredStaticRoles().map((role) => {
+                            const isSameRole = !canSelectRole(role)
+                            return (
+                              <SelectItem 
+                                key={role} 
+                                value={role}
+                                disabled={isSameRole}
+                                className={isSameRole ? "opacity-50 cursor-not-allowed" : ""}
+                              >
+                                {isSameRole 
+                                  ? `${role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} (Can't select - same role)`
+                                  : role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+                                }
+                              </SelectItem>
+                            )
+                          })}
                         </SelectContent>
                       </Select>
                     )}
@@ -1610,11 +1817,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                     </SelectContent>
                   </Select>
                 )}
-              </div>
-
-              <div className="space-y-2">
-                  <Input value={formData.builderShare} onChange={(e) => handleChange("builderShare", e.target.value)} className="bg-gray-50/50" />
-                
               </div>
 
               <div className="space-y-2">
