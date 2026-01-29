@@ -1294,7 +1294,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
         //   />
         // </div>
         // <div className="fixed top-16 left-64 right-0 z-50 bg-white border-b border-gray-200 shadow-sm">
-  <div className="fixed max-w-7xl mx-auto px-4 md:px-8 bg-white">
+  <div className="fixed top-17 left-72 z-50 bg-white border-b border-gray-200 shadow-sm max-w-7xl px-4 md:px-8">
   <LeadStepper
     stageName={formData.assignedTo?.[0]?.role || formData.currentRole?.[0]?.role || "tele_caller"}
     currentStep={currentStep}
