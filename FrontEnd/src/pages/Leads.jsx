@@ -1261,11 +1261,11 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                     <Label className="text-gray-700 font-medium">Current Role</Label>
                     {viewMode ? (
                       <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
-                        {formData.currentRole ? formData.currentRole.replace(/_/g, ' ') : "-"}
+                        {formData.currentRole && typeof formData.currentRole === 'string' ? formData.currentRole.replace(/_/g, ' ') : formData.currentRole || "-"}
                       </div>
                     ) : (
                       <Input 
-                        value={formData.currentRole ? formData.currentRole.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : ""} 
+                        value={formData.currentRole && typeof formData.currentRole === 'string' ? formData.currentRole.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : ""} 
                         onChange={(e) => handleChange("currentRole", e.target.value)} 
                         disabled 
                         className="bg-gray-50/50" 
