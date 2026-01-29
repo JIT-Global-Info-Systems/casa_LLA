@@ -1279,7 +1279,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                     <Label className="text-gray-700 font-medium">Assigned To (Role)</Label>
                     {viewMode ? (
                       <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
-                        {formData.assignedTo ? formData.assignedTo.replace(/_/g, ' ') : "-"}
+                        {formData.assignedTo && typeof formData.assignedTo === 'string' ? formData.assignedTo.replace(/_/g, ' ') : formData.assignedTo || "-"}
                       </div>
                     ) : (
                       <Select value={formData.assignedTo} onValueChange={(v) => handleChange("assignedTo", v)}>
