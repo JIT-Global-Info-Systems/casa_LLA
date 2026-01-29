@@ -10,5 +10,6 @@ router.post("/", verifyToken, stageController.createStage);
 router.get("/", verifyToken, stageController.getAllStages);
 router.get("/:id", verifyToken, stageController.getStageById);
 router.put("/:id", verifyToken, stageController.updateStage);
+router.delete("/:id", verifyToken, stageController.deleteStage);
 
 module.exports = router;
