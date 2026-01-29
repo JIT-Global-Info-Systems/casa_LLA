@@ -228,7 +228,7 @@ function Mediators() {
     // Perform delete with status check
     handleDelete(mediator, async () => {
       await deleteMediator(mediator._id);
-      fetchMediators(); // Refresh list
+      // No need to call fetchMediators() - context handles state update
     }, mediator.name);
   };
  
