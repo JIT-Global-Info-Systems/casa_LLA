@@ -472,8 +472,9 @@ exports.getApprovedLeads = async (req, res) => {
       query.location = { $regex: new RegExp(`^${location}$`, 'i') };
     }
     
-    const leads = await Lead.find(query).sort({ created_at: -1 });
-
+    const leads = await Lead.find(query)
+    // .sort({ created_at: -1 });
+console.log('leads :>> ', leads);
     return res.status(200).json({
       message: "Approved leads loaded successfully",
       count: leads.length,
@@ -493,7 +494,7 @@ exports.getPurchasedLeads = async (req, res) => {
   try {
     const { location } = req.query;
     const query = {
-      lead_status: "purchased",
+      lead_status: "Purchased",
       status: "active"
     };
     
