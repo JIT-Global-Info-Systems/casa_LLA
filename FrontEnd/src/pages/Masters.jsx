@@ -60,7 +60,8 @@ const Masters = () => {
       'location': 'locations',
       'region': 'regions', 
       'zone': 'zones',
-      'type': 'types'
+      'type': 'types',
+      'stage':'stages'
     };
     return masters[keyMap[type]] || [];
   }, [masters]);
@@ -95,7 +96,10 @@ const Masters = () => {
       result = await deleteZone(itemId);
     } else if (type === 'type') {
       result = await deleteType(itemId);
-    }
+    
+  } else if (type === 'stage') {
+    result = await deleteType(itemId);
+  }
     
     if (result?.success) {
       setDeleteDialog({ open: false, type: '', item: null });
@@ -155,6 +159,12 @@ const Masters = () => {
       } else {
         result = await addType(formattedData);
       }
+    } else if (type === 'stage') {
+      if (editing) {
+        result = await updateStage(editing.id, formattedData);
+      } else {
+        result = await addStage(formattedData);
+      }
     }
 
     if (result?.success) {
@@ -167,6 +177,7 @@ const Masters = () => {
     { id: 'region', label: 'Zone', columns: ['S.No', 'Location', 'Zone', 'Action'] },
     { id: 'zone', label: 'Area', columns: ['S.No', 'Location', 'Zone', 'Area', 'Action'] },
     { id: 'type', label: 'Type', columns: ['S.No', 'Type', 'Status', 'Action'] },
+    { id: 'stage', label: 'Stage', columns: ['S.No', 'Type', 'Status','Action'] },
   ];
 
   const getOptions = useCallback((type, selectedLocation = null) => {

@@ -431,10 +431,10 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           currentRole: userRole // Always use current user role
         }));
         setHasUnsavedChanges(true);
-        toast.success('Draft loaded', { 
-          icon: '📝',
-          duration: 3000 
-        });
+        // toast.success('Draft loaded', { 
+        //   icon: '📝',
+        //   duration: 3000 
+        // });
       } else {
         handleChange("currentRole", userRole)
       }
@@ -985,7 +985,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
         
         try {
           await onSubmit(leadPayload, files)
-          console.log('✅ onSubmit completed successfully')
           
           toast.success(data ? 'Lead updated successfully!' : 'Lead created successfully!', {
             id: submitToast,
@@ -2424,27 +2423,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           </div>
         )}
 
-        {/* Notes Section */}
-        {/* <div className="space-y-2">
-          <Label className="text-gray-700 font-medium">Notes</Label>
-          {viewMode ? (
-            <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[100px] whitespace-pre-wrap">
-              {formData.checkNotes || "-"}
-            </div>
-          ) : (
-            <Textarea
-              value={formData.checkNotes}
-              onChange={(e) => handleChange("checkNotes", e.target.value)}
-              placeholder="Enter additional notes, observations, or important information about this lead..."
-              rows={5}
-              className="bg-gray-50 resize-y"
-            />
-          )}
-        </div> */}
-
-      {/* </div> */}
-
-      {/* Remark - Full Width */}
+    
       <div className="space-y-2">
         <Label className="text-gray-700 font-medium">Remark</Label>
         {viewMode ? (
