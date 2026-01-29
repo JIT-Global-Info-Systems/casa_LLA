@@ -177,7 +177,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     roadWidth: "",
     sspde: "No",
     leadStatus: "Enquired",
-    status: "active",
     remark: "",
     lead_stage: "",
 
@@ -334,6 +333,11 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     if (!dataToValidate.landName?.trim()) nextErrors.landName = "Land name is required"
     if (!dataToValidate.sourceCategory) nextErrors.sourceCategory = "Source category is required"
     if (!dataToValidate.source) nextErrors.source = "Source is required"
+    
+    // Assign To (User) is required when Assigned To (Role) is selected
+    if (dataToValidate.assignedTo && !dataToValidate.assignToUser?.trim()) {
+      nextErrors.assignToUser = "Please select a user when a role is assigned"
+    }
 
       // Numeric fields (soft validation)
       ;["extent", "fsi", "asp", "revenue", "rate", "builderShare"].forEach((k) => {
@@ -507,7 +511,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           roadWidth: "",
           sspde: "No",
           leadStatus: "Enquired",
-          status: "active",
           remark: "",
           lead_stage: "",
 
@@ -600,10 +603,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       leadStatus: data.lead_status || "",
       lead_stage: data.lead_stage || "",
       mediatorId: data.mediatorId || "",
-      currentRole: Array.isArray(data.currentRole) ? data.currentRole[0]?.role || "" : data.currentRole || "",
-      assignedTo: Array.isArray(data.assignedTo) ? data.assignedTo[0]?.role || "" : data.assignedTo || "",
-      assignToUser: data.assignToUser || "", // New field for specific user assignment
-      status: data.status || "",
       inquiredBy: data.inquiredBy || "",
       L1_Qualification: data.L1_Qualification || "",
       directorSVStatus: data.directorSVStatus || "",
@@ -882,7 +881,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
         landName: formData.landName || "",
         sourceCategory: formData.sourceCategory || "",
         source: formData.source || "",
-        status: formData.status || "active",
         
         // Backend expects arrays of objects for currentRole and assignedTo
         currentRole: [currentUserInfo],
@@ -963,7 +961,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     addIfChanged('landName', formData.landName || "", originalData?.landName || "")
     addIfChanged('sourceCategory', formData.sourceCategory || "", originalData?.sourceCategory || "")
     addIfChanged('source', formData.source || "", originalData?.source || "")
-    addIfChanged('status', formData.status || "active", originalData?.status || "active")
     
     // Handle currentRole and assignedTo as arrays of objects
     const currentUserInfo = getCurrentUserInfo();
@@ -1092,7 +1089,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           landName: formData.landName || "",
           sourceCategory: formData.sourceCategory || "",
           source: formData.source || "",
-          status: formData.status || "active",
           currentRole: getCurrentUserRole(),
           assignedTo: formData.assignedTo || getCurrentUserRole(),
           assignToUser: formData.assignToUser,
@@ -1277,13 +1273,28 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
         pointer-events: none;
         cursor: not-allowed;
       }
+      
+      /* Hide number input arrows */
+      input[type="number"]::-webkit-outer-spin-button,
+      input[type="number"]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      
+      input[type="number"] {
+        -moz-appearance: textfield;
+      }
     `}</style>
 
     {/* Stepper Only Mode - Show only the LeadStepper */}
     {stepperOnly ? (
       <div className="w-full">
         <LeadStepper
-          stageName={formData.assignedTo || formData.currentRole || "tele_caller"}
+          stageName={(() => {
+            const assignedRole = Array.isArray(formData.assignedTo) ? formData.assignedTo[0]?.role : formData.assignedTo;
+            const currentRole = Array.isArray(formData.currentRole) ? formData.currentRole[0]?.role : formData.currentRole;
+            return assignedRole || currentRole || "tele_caller";
+          })()}
           currentStep={currentStep}
           className="w-full"
           isNewLead={!data}
@@ -1296,7 +1307,11 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
         {!hideStepper && (
           <div className="w-full">
             <LeadStepper
-              stageName={formData.assignedTo || formData.currentRole || "tele_caller"}
+              stageName={(() => {
+            const assignedRole = Array.isArray(formData.assignedTo) ? formData.assignedTo[0]?.role : formData.assignedTo;
+            const currentRole = Array.isArray(formData.currentRole) ? formData.currentRole[0]?.role : formData.currentRole;
+            return assignedRole || currentRole || "tele_caller";
+          })()}
               currentStep={currentStep}
               className="w-full"
               isNewLead={!data}
@@ -1392,6 +1407,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                       </div>
                     ) : (
                       <Input
+                        type="number"
                         value={formData.contactNumber}
                         onChange={(e) => handleChange("contactNumber", e.target.value)}
                         className={errors.contactNumber ? "border-red-500 focus:border-red-500" : ""}
@@ -1450,100 +1466,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                     )}
                   </div>
 
-                  {/* ===== NEW FIELDS: Current Role, Assigned To, Assign To ===== */}
-                  
-                  {/* Current Role - Visible field (auto-fetched from localStorage) */}
-                  <div className="space-y-2">
-                    <Label className="text-gray-700 font-medium">Current Role</Label>
-                    {viewMode ? (
-                      <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
-                        {formData.currentRole && typeof formData.currentRole === 'string' ? formData.currentRole.replace(/_/g, ' ') : formData.currentRole || "-"}
-                      </div>
-                    ) : (
-                      <Input 
-                        value={formData.currentRole && typeof formData.currentRole === 'string' ? formData.currentRole.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : ""} 
-                        onChange={(e) => handleChange("currentRole", e.target.value)} 
-                        disabled 
-                        className="bg-gray-50/50" 
-                        placeholder="Current role (auto-fetched)"
-                      />
-                    )}
-                  </div>
-
-                  {/* Assigned To - Role Dropdown */}
-                  <div className="space-y-2">
-                    <Label className="text-gray-700 font-medium">Assigned To (Role)</Label>
-                    {viewMode ? (
-                      <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
-                        {formData.assignedTo && typeof formData.assignedTo === 'string' ? formData.assignedTo.replace(/_/g, ' ') : formData.assignedTo || "-"}
-                      </div>
-                    ) : (
-                      <Select value={formData.assignedTo} onValueChange={(v) => handleChange("assignedTo", v)}>
-                        <SelectTrigger className="bg-gray-50/50">
-                          <SelectValue placeholder="Select Role" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white z-50 shadow-lg">
-                          {getFilteredStaticRoles().map((role) => {
-                            const isSameRole = !canSelectRole(role)
-                            return (
-                              <SelectItem 
-                                key={role} 
-                                value={role}
-                                disabled={isSameRole}
-                                className={isSameRole ? "opacity-50 cursor-not-allowed" : ""}
-                              >
-                                {isSameRole 
-                                  ? `${role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} (Can't select - same role)`
-                                  : role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
-                                }
-                              </SelectItem>
-                            )
-                          })}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  </div>
-
-                  {/* Assign To - User Dropdown based on selected role */}
-                  {formData.assignedTo && (
-                    <div className="space-y-2">
-                      <Label className="text-gray-700 font-medium">Assign To (User)</Label>
-                      {viewMode ? (
-                        <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                          {formData.assignToUser || "-"}
-                        </div>
-                      ) : (
-                        <Select value={formData.assignToUser} onValueChange={(v) => handleChange("assignToUser", v)}>
-                          <SelectTrigger className="bg-gray-50/50">
-                            {usersLoading ? (
-                              <div className="flex items-center gap-2">
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                                <SelectValue placeholder="Loading users..." />
-                              </div>
-                            ) : (
-                              <SelectValue placeholder="Select User" />
-                            )}
-                          </SelectTrigger>
-                          <SelectContent className="bg-white z-50 shadow-lg">
-                            {users
-                              .filter(user => user.role === formData.assignedTo).length > 0 ? (
-                                users
-                                  .filter(user => user.role === formData.assignedTo)
-                                  .map((user) => (
-                                    <SelectItem key={user._id || user.id} value={user._id || user.id}>
-                                      {user.name} ({user.role.replace(/_/g, ' ')})
-                                    </SelectItem>
-                                  ))
-                              ) : (
-                                <div className="px-2 py-1 text-sm text-gray-500 italic">
-                                  User not found
-                                </div>
-                              )}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    </div>
-                  )}
 
               <div className="space-y-2 hidden">
                 <Label>Mediator ID (optional)</Label>
@@ -1795,7 +1717,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                     {formData.builderShare || "-"}
                   </div>
                 ) : (
-                  <Input value={formData.builderShare} onChange={(e) => handleChange("builderShare", e.target.value)} className="bg-gray-50/50" />
+                  <Input type="number" value={formData.builderShare} onChange={(e) => handleChange("builderShare", e.target.value)} className="bg-gray-50/50" />
                 )}
               </div>
 
@@ -1826,7 +1748,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                     {formData.rate || "-"}
                   </div>
                 ) : (
-                  <Input value={formData.rate} onChange={(e) => handleChange("rate", e.target.value)} className="bg-gray-50/50" />
+                  <Input type="number" value={formData.rate} onChange={(e) => handleChange("rate", e.target.value)} className="bg-gray-50/50" />
                 )}
               </div>
 
@@ -1838,7 +1760,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                     {formData.refundable || "-"}
                   </div>
                 ) : (
-                  <Input value={formData.refundable} onChange={(e) => handleChange("refundable", e.target.value)} className="bg-gray-50/50" />
+                  <Input type="number" value={formData.refundable} onChange={(e) => handleChange("refundable", e.target.value)} className="bg-gray-50/50" />
                 )}
               </div>
 
@@ -1849,7 +1771,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                     {formData.nonRefundable || "-"}
                   </div>
                 ) : (
-                  <Input value={formData.nonRefundable} onChange={(e) => handleChange("nonRefundable", e.target.value)} className="bg-gray-50/50" />
+                  <Input type="number" value={formData.nonRefundable} onChange={(e) => handleChange("nonRefundable", e.target.value)} className="bg-gray-50/50" />
                 )}
               </div>
 
@@ -1872,7 +1794,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                     {formData.frontage || "-"}
                   </div>
                 ) : (
-                  <Input value={formData.frontage} onChange={(e) => handleChange("frontage", e.target.value)} className="bg-gray-50/50" />
+                  <Input type="number" value={formData.frontage} onChange={(e) => handleChange("frontage", e.target.value)} className="bg-gray-50/50" />
                 )}
               </div>
 
@@ -1883,7 +1805,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                     {formData.roadWidth || "-"}
                   </div>
                 ) : (
-                  <Input value={formData.roadWidth} onChange={(e) => handleChange("roadWidth", e.target.value)} className="bg-gray-50/50" />
+                  <Input type="number" value={formData.roadWidth} onChange={(e) => handleChange("roadWidth", e.target.value)} className="bg-gray-50/50" />
                 )}
               </div>
 
@@ -1918,7 +1840,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                 )}
               </div>
               <div className="space-y-2">
-                <Label className="text-gray-700 font-medium">Lead Stage</Label>
+                <Label className="text-gray-700 font-medium">Lead Stage <span className="text-red-500">*</span></Label>
                 {!isFieldEditable('leadStatus') ? (
                   <div className="p-2 bg-white border border-gray-300 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
                     {formData.leadStatus || "-"}
@@ -2021,27 +1943,119 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
             </div>
           )}
 
-          {/* Status field - only show in edit mode */}
-          {data && (
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Select value={formData.status} onValueChange={(v) => handleChange("status", v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-white z-50 shadow-lg">
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+                  {/* ===== NEW FIELDS: Current Role, Assigned To, Assign To ===== */}
+                  {/* 3x3 Grid Layout for Role Assignment Fields */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Current Role - Visible field (auto-fetched from localStorage) */}
+                    <div className="space-y-2">
+                      <Label className="text-gray-700 font-medium">Current Role</Label>
+                      {viewMode ? (
+                        <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
+                          {(() => {
+                            const roleValue = Array.isArray(formData.currentRole) ? formData.currentRole[0]?.role : formData.currentRole;
+                            return roleValue && typeof roleValue === 'string' ? roleValue.replace(/_/g, ' ') : roleValue || "-";
+                          })()}
+                        </div>
+                      ) : (
+                        <Input 
+                          value={formData.currentRole && typeof formData.currentRole === 'string' ? formData.currentRole.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : ""} 
+                          onChange={(e) => handleChange("currentRole", e.target.value)} 
+                          disabled 
+                          className="bg-gray-50/50" 
+                          placeholder="Current role (auto-fetched)"
+                        />
+                      )}
+                    </div>
 
+                    {/* Assigned To - Role Dropdown */}
+                    <div className="space-y-2">
+                      <Label className="text-gray-700 font-medium">Assigned To (Role)</Label>
+                      {viewMode ? (
+                        <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
+                          {(() => {
+                            const roleValue = Array.isArray(formData.assignedTo) ? formData.assignedTo[0]?.role : formData.assignedTo;
+                            return roleValue && typeof roleValue === 'string' ? roleValue.replace(/_/g, ' ') : roleValue || "-";
+                          })()}
+                        </div>
+                      ) : (
+                        <Select value={formData.assignedTo} onValueChange={(v) => handleChange("assignedTo", v)}>
+                          <SelectTrigger className="bg-gray-50/50">
+                            <SelectValue placeholder="Select Role" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-white z-50 shadow-lg">
+                            {getFilteredStaticRoles().map((role) => {
+                              const isSameRole = !canSelectRole(role)
+                              return (
+                                <SelectItem 
+                                  key={role} 
+                                  value={role}
+                                  disabled={isSameRole}
+                                  className={isSameRole ? "opacity-50 cursor-not-allowed" : ""}
+                                >
+                                  {isSameRole 
+                                    ? `${role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} (Can't select - same role)`
+                                    : role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+                                  }
+                                </SelectItem>
+                              )
+                            })}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
+
+                    {/* Assign To - User Dropdown based on selected role */}
+                    {formData.assignedTo && (
+                      <div className="space-y-2">
+                        <Label className="text-gray-700 font-medium">Assign To (User) <span className="text-red-500">*</span></Label>
+                        {viewMode ? (
+                          <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                            {formData.assignToUser || "-"}
+                          </div>
+                        ) : (
+                          <Select value={formData.assignToUser} onValueChange={(v) => handleChange("assignToUser", v)}>
+                            <SelectTrigger className="bg-gray-50/50">
+                              {usersLoading ? (
+                                <div className="flex items-center gap-2">
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                  <SelectValue placeholder="Loading users..." />
+                                </div>
+                              ) : (
+                                <SelectValue placeholder="Select User" />
+                              )}
+                            </SelectTrigger>
+                            <SelectContent className="bg-white z-50 shadow-lg">
+                              {users
+                                .filter(user => user.role === formData.assignedTo).length > 0 ? (
+                                users
+                                  .filter(user => user.role === formData.assignedTo)
+                                  .map((user) => (
+                                    <SelectItem key={user._id || user.id} value={user._id || user.id}>
+                                      {user.name} ({user.role.replace(/_/g, ' ')})
+                                    </SelectItem>
+                                  ))
+                              ) : (
+                                <div className="px-2 py-1 text-sm text-gray-500 italic">
+                                  User not found
+                                </div>
+                              )}
+                            </SelectContent>
+                          </Select>
+                        )}
+                        {errors.assignToUser && !viewMode && (
+                          <p className="text-red-500 text-sm flex items-center gap-1">
+                            <AlertCircle className="h-4 w-4" />
+                            {errors.assignToUser}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
 
                   </CardContent>
                 </Card>
                 {/* test1  */}
-                <Card className="border-0 shadow-md bg-white">
+                <Card className="border-0 shadow-md bg-white mt-3">
       <CardHeader>
         <CardTitle className="text-xl text-gray-800">Competitor Analysis</CardTitle>
       </CardHeader>
