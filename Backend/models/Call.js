@@ -24,11 +24,19 @@ const callSchema = new mongoose.Schema({
   },
   location: {
     type: String,
-    required: true
+    required: false
   },
   created_by: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
+    required: true
+  },
+  callDate: {
+    type: Date,
+    required: true
+  },
+  callTime: {
+    type: String,
     required: true
   },
   created_at: {

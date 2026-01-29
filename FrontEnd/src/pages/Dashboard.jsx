@@ -295,7 +295,7 @@ function Dashboard() {
         params.delete('location');
       }
       
-      const url = `http://localhost:5000/api/dashboard${params.toString() ? `?${params}` : ''}`;
+      const url = `http://13.201.132.94:5000/api/dashboard${params.toString() ? `?${params}` : ''}`;
      
       const response = await fetch(url, {
         method: 'GET',

@@ -102,7 +102,7 @@ const STAGES = [
   { id: "admin", label: "Admin" },
 ]
 
-export default function LeadStepper({ stageName, currentStep = 1, onStepChange, className }) {
+export default function LeadStepper({ stageName, currentStep = 1, onStepChange, className, isNewLead = false }) {
   // Normalize stageName to match against STAGES
   const findStepIndex = (name) => {
     if (!name) return 0
@@ -116,12 +116,17 @@ export default function LeadStepper({ stageName, currentStep = 1, onStepChange, 
     const indexByLabel = STAGES.findIndex(s => s.label.toLowerCase().replace(/[\s_/]/g, '') === normalized)
     if (indexByLabel !== -1) return indexByLabel + 1
 
-    return 1 // Default to first step
+    return 0 // Return 0 if no match found
   }
 
-  const stepFromStage = findStepIndex(stageName)
-  // If currentStep is 1 (default) and we have a valid step from stage, use the stage step
-  const activeStep = (currentStep === 1 && stepFromStage > 0) ? stepFromStage : (currentStep || stepFromStage)
+  // For new leads, always show all steps as grey (activeStep = 0)
+  // For existing leads, use the stage name or current step
+  let activeStep = 0
+  
+  if (!isNewLead) {
+    const stepFromStage = findStepIndex(stageName)
+    activeStep = (currentStep === 1 && stepFromStage > 0) ? stepFromStage : (currentStep || stepFromStage)
+  }
 
   const handleStepClick = (stepNumber) => {
     if (onStepChange) {
@@ -130,25 +135,25 @@ export default function LeadStepper({ stageName, currentStep = 1, onStepChange, 
   }
 
   return (
-    <div className={`overflow-x-auto ${className || ''}`}>
-      <div className="flex mb-2 min-w-[900px] items-center">
+    <div className={`w-full ${className || ''}`}>
+      <div className="flex mb-2 w-full items-center justify-between">
         {STAGES.map((s, index) => {
           const step = index + 1
           const active = step <= activeStep
           const isLast = index === STAGES.length - 1
 
           return (
-            <div key={s.id} className="flex items-center">
-              <div className="flex flex-col items-center">
+            <div key={s.id} className="flex items-center flex-1">
+              <div className="flex flex-col items-center w-full">
                 <button
                   onClick={() => handleStepClick(step)}
-                  className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors z-10
+                  className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors z-10 flex-shrink-0
                   ${active ? "bg-indigo-600 text-white hover:bg-indigo-700" : "bg-gray-200 text-gray-600 hover:bg-gray-300"}`}
                 >
                   {active > step ? <Check size={14} /> : step}
                 </button>
 
-                <span className="text-[11px] text-center mt-1 w-24 text-gray-600 cursor-pointer hover:text-indigo-600"
+                <span className="text-[11px] text-center mt-1 px-1 text-gray-600 cursor-pointer hover:text-indigo-600 line-clamp-2"
                   onClick={() => handleStepClick(step)}>
                   {s.label}
                 </span>
@@ -156,7 +161,7 @@ export default function LeadStepper({ stageName, currentStep = 1, onStepChange, 
 
               {/* Connecting line */}
               {!isLast && (
-                <div className="w-8 h-px bg-gray-400 mx-1" />
+                <div className="flex-1 h-px bg-gray-400 mx-1 min-w-[8px]" />
               )}
             </div>
           )

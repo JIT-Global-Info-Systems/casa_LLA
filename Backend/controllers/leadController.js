@@ -85,7 +85,7 @@ exports.createLead = async (req, res) => {
       ...restLeadData,
       checkListPage: formattedCheckListPage,
       competitorAnalysis: formattedCompetitorAnalysis,
-      lead_status: "PENDING",
+      lead_status: "",
       currentRole: currentRole, // Add currentRole to the lead
       created_by: createdBy
     });
@@ -126,7 +126,7 @@ exports.updateLead = async (req, res) => {
     }
 
     const { leadId } = req.params;
-    const { userId, note, notes, role, currentRole, competitorAnalysis, checkListPage, ...updateData } = req.body;
+    const { userId, note, notes, role, currentRole, competitorAnalysis, checkListPage, callDate, callTime, ...updateData } = req.body;
 
     const update = {
       ...updateData,
@@ -181,26 +181,59 @@ exports.updateLead = async (req, res) => {
     // If notes is being updated, create a new call record
     if (notes !== undefined) {
       const updateData = typeof req.body.data === "string" ? JSON.parse(req.body.data) : req.body;
+      const { callDate, callTime } = updateData;
+      
+      // Create call timestamp from provided date and time, or use current date/time as fallback
+      let callTimestamp = new Date();
+      if (callDate) {
+        // If callTime is provided, combine with callDate, otherwise use callDate alone
+        const dateTimeString = callTime ? `${callDate}T${callTime}` : callDate;
+        callTimestamp = new Date(dateTimeString);
+        
+        // If invalid date, fallback to current date/time
+        if (isNaN(callTimestamp.getTime())) {
+          callTimestamp = new Date();
+        }
+      }
+      
       await Call.create({
         leadId: leadId,
         userId: userId || 'system',
         name: updateData.name || req.user?.name || 'System',
         role: currentRole || 'system',
         note: notes,
-        created_by: req.user?.user_id || 'system'
+        created_by: req.user?.user_id || 'system',
+        created_at: callTimestamp,
+        callDate: callDate || null,
+        callTime: callTime || null
       });
     }
 
     // If a new note is provided, create a new call record
     if (note && userId) {
       const updateData = typeof req.body.data === "string" ? JSON.parse(req.body.data) : req.body;
+      const { callDate, callTime } = updateData;
+      
+      // Create call timestamp from provided date and time, or use current date/time as fallback
+      let callTimestamp = new Date();
+      if (callDate) {
+        const dateTimeString = callTime ? `${callDate}T${callTime}` : callDate;
+        callTimestamp = new Date(dateTimeString);
+        if (isNaN(callTimestamp.getTime())) {
+          callTimestamp = new Date();
+        }
+      }
+      
       await Call.create({
         leadId: leadId,
         userId,
         name: updateData.name || req.user?.name || 'Unknown User',
         role: currentRole || 'user',
         note: note,
-        created_by: req.user?.user_id || 'system'
+        created_by: req.user?.user_id || 'system',
+        created_at: callTimestamp,
+        callDate: callDate || null,
+        callTime: callTime || null
       });
     }
 
@@ -256,7 +289,7 @@ exports.deleteLead = async (req, res) => {
   try {
     const { leadId } = req.params;
 
-    const lead = await Lead.findByIdAndDelete(leadId);
+    const lead = await Lead.findById(leadId);
 
     if (!lead) {
       return res.status(404).json({
@@ -264,18 +297,15 @@ exports.deleteLead = async (req, res) => {
       });
     }
 
-    if (lead.status === "inactive") {
-      return res.status(400).json({
-        message: "This lead is already inactive"
-      });
-    }
+    // Store the lead data for response before deletion
+    const deletedLeadData = lead.toObject();
 
-    lead.status = "inactive";
-    await lead.save();
+    // Permanently delete the lead
+    await Lead.findByIdAndDelete(leadId);
 
     return res.status(200).json({
-      message: "Lead deleted successfully",
-      data: lead
+      message: "Lead deleted permanently",
+      data: deletedLeadData
     });
   } catch (error) {
     return res.status(500).json({
@@ -334,7 +364,7 @@ exports.getPendingLeads = async (req, res) => {
     });
   }
 };
-
+// check update
 exports.getApprovedLeads = async (req, res) => {
   try {
     const { location } = req.query;

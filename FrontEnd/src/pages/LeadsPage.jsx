@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
@@ -20,13 +20,13 @@ import {
   Search,
   Check,
   X,
-  AlertCircle
+  AlertCircle,
+  AlertTriangle
 } from "lucide-react";
 // import LeadStepper from "@/components/ui/LeadStepper"
 import Leads from "./Leads"
+import { callsAPI } from "../services/api"
 import { useLeads } from "../context/LeadsContext.jsx"
-import ConfirmModal from "@/components/ui/ConfirmModal";
-import { useEntityAction } from "@/hooks/useEntityAction";
 import toast from "react-hot-toast"
 import { formatDateWithFallback, formatCallDate } from "@/utils/dateUtils";
  
@@ -35,19 +35,21 @@ export default function LeadsPage() {
   const [selectedLead, setSelectedLead] = useState(null);
   const [viewLead, setViewLead] = useState(null);
   const [isViewMode, setIsViewMode] = useState(false);
+  const [calls, setCalls] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  
+  // Simple delete modal state
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [leadToDelete, setLeadToDelete] = useState(null);
  
   const { leads, loading, error, fetchLeads, createLead, updateLead, deleteLead, getLeadById } = useLeads()
  
   const [currentStep, setCurrentStep] = useState(1)
   const [isFetchingLead, setIsFetchingLead] = useState(false)
-  
-  // Entity action hook for status-aware delete
-  const { handleDelete, canPerformAction, confirmModal } = useEntityAction('lead');
   
   const leadComments = [
     selectedLead?.remark,
@@ -130,6 +132,14 @@ export default function LeadsPage() {
       const fullLeadData = await getLeadById(lead._id || lead.id);
       setSelectedLead(fullLeadData);
       setOpen(true);
+      // Fetch calls for this lead
+      const allCalls = await callsAPI.getAll();
+      const filteredCalls = allCalls.filter(c => {
+        if (!c.leadId) return false;
+        if (typeof c.leadId === 'object') return c.leadId._id === (lead._id || lead.id);
+        return c.leadId === (lead._id || lead.id);
+      });
+      setCalls(filteredCalls);
       toast.success('Lead loaded for editing', { 
         id: loadingToast,
         icon: '✏️',
@@ -189,20 +199,31 @@ export default function LeadsPage() {
   };
  
   const handleDeleteLead = (lead) => {
-    // Check if delete is allowed
-    const deleteState = canPerformAction(lead, 'delete');
-    
-    if (!deleteState.enabled) {
-      // Lead is already inactive/deleted - don't show error
-      return;
-    }
+  console.log('Delete clicked for lead:', lead);
+  setLeadToDelete(lead);
+  setDeleteModalOpen(true);
+};
 
-    // Perform delete with status check
-    handleDelete(lead, async () => {
-      await deleteLead(lead._id || lead.id);
-      fetchLeads(); // Refresh list
-    });
-  };
+const handleConfirmDelete = async () => {
+  if (!leadToDelete) return;
+  
+  try {
+    console.log('Performing delete for lead:', leadToDelete._id || leadToDelete.id);
+    await deleteLead(leadToDelete._id || leadToDelete.id);
+    fetchLeads(); // Refresh list
+    setDeleteModalOpen(false);
+    setLeadToDelete(null);
+    toast.success('Lead deleted successfully');
+  } catch (error) {
+    console.error('Delete failed:', error);
+    toast.error('Failed to delete lead');
+  }
+};
+
+const handleCancelDelete = () => {
+  setDeleteModalOpen(false);
+  setLeadToDelete(null);
+};
  
   const handleView = async (lead) => {
     setIsFetchingLead(true);
@@ -211,6 +232,14 @@ export default function LeadsPage() {
       const fullLeadData = await getLeadById(lead._id || lead.id);
       setViewLead(fullLeadData);
       setIsViewMode(true);
+      // Fetch calls for this lead
+      const allCalls = await callsAPI.getAll();
+      const filteredCalls = allCalls.filter(c => {
+        if (!c.leadId) return false;
+        if (typeof c.leadId === 'object') return c.leadId._id === (lead._id || lead.id);
+        return c.leadId === (lead._id || lead.id);
+      });
+      setCalls(filteredCalls);
       toast.success('Viewing lead details', { 
         id: loadingToast,
         icon: '👁️',
@@ -230,297 +259,69 @@ export default function LeadsPage() {
  
   const normalizedLeads = (Array.isArray(leads) ? leads : []).map((lead) => {
     const registeredDate =
-      lead.date || lead.createdAt || lead.created_at || null;
+      lead.createdAt || lead.registeredDate
+        ? formatDateWithFallback(lead.createdAt || lead.registeredDate)
+        : "N/A";
+
     return {
-      id: lead._id || lead.id || lead.lead_id || "N/A",
-      name:
-        lead.mediatorName ||
-        lead.ownerName ||
-        lead.name ||
-        lead.contactName ||
-        "N/A",
-      lead_id: lead.lead_id || "N/A",
-      email: lead.email || lead.contactEmail || "—",
-      phone: lead.contactNumber || lead.phone || "",
-      location: lead.location || lead.address?.city || "N/A",
-      zone: lead.zone || lead.region || "N/A",
-      property: lead.propertyType || "—",
-      status: lead.lead_status || lead.status || "Pending",
-      stageName: lead.lead_stage || lead.currentStage || "Not Started",
+      ...lead,
       registeredDate,
-      raw: lead,
     };
   });
- 
+
+  // Filter and paginate leads
   const filteredLeads = normalizedLeads.filter((lead) => {
-    const matchesSearch =
-      searchTerm === "" ||
-      lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.phone.includes(searchTerm) ||
-      String(lead.id).toLowerCase().includes(searchTerm.toLowerCase());
- 
-    const matchesDateRange = (() => {
-      if (!dateFrom && !dateTo) return true;
-      if (!lead.registeredDate) return false;
-      const leadDate = new Date(lead.registeredDate);
-      const fromDate = dateFrom ? new Date(dateFrom) : new Date("1900-01-01");
-      const toDate = dateTo ? new Date(dateTo) : new Date("2100-12-31");
-      return leadDate >= fromDate && leadDate <= toDate;
-    })();
- 
-    return matchesSearch && matchesDateRange;
+    const matchesSearch = !searchTerm || 
+      lead.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.phone?.includes(searchTerm) ||
+      lead.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.zone?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const leadDate = new Date(lead.createdAt || lead.registeredDate);
+    const matchesDateFrom = !dateFrom || leadDate >= new Date(dateFrom);
+    const matchesDateTo = !dateTo || leadDate <= new Date(dateTo);
+
+    return matchesSearch && matchesDateFrom && matchesDateTo;
   });
 
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, dateFrom, dateTo]);
-
-  // Calculate pagination
   const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedLeads = filteredLeads.slice(startIndex, endIndex);
- 
+
+  // Main component return
   return (
-    <div className="flex-1 space-y-6 p-0">
-      {open ? (
-        /* Full page view when editing/creating */
-        <div className="min-h-screen bg-gray-50 p-4">
-          <div className="w-full">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div
-                  className={`${selectedLead ? "lg:col-span-2" : "lg:col-span-3"
-                    } space-y-4`}
-                >
- 
-                  {/* <div className="flex justify-between items-center">
-                    <h1 className="text-2xl font-bold">
-                      {selectedLead ? "Edit Lead" : "Create Lead"}
-                    </h1>
-                    <Button variant="outline" onClick={() => setOpen(false)}>
-                      ← Back to Leads
-                    </Button>
-                  </div> */}
- 
-                  <Leads
-                    data={selectedLead}
-                    onSubmit={handleLeadSubmit}
-                    onClose={() => setOpen(false)}
-                    currentStep={currentStep}
-                    onStepChange={setCurrentStep}
-                  />
-                </div>
- 
-                {/* Right-side Communication History and Wild Cards (show when editing) */}
-                {selectedLead && (
-                  <div className="lg:col-span-1 space-y-4 sticky top-4 h-fit">
-                    {/* Communication History - 40% height */}
-                    <div className="h-[40vh] rounded-lg border bg-slate-50">
-                      <div className="px-4 py-3 border-b bg-white rounded-t-lg">
-                        <div className="text-sm font-semibold text-slate-800">
-                        Calls History
-                        </div>
-                        <div className="text-xs text-slate-500">
-                          Message thread
-                        </div>
-                      </div>
-
-                      <div className="p-4 space-y-3 max-h-[32vh] overflow-y-auto">
-                        {/* Display calls history if available */}
-                        {selectedLead?.calls && selectedLead.calls.length > 0 && 
-                          selectedLead.calls.map((call, index) => (
-                            <div
-                              key={call._id || index}
-                              className="w-full border bg-white px-3 py-2 rounded-md shadow-sm"
-                            >
-                              <div className="flex justify-between items-start mb-1">
-                                <div>
-                                  <p className="text-sm font-medium text-slate-800">{call.name || 'Unknown User'}</p>
-                                  <p className="text-xs text-slate-600">{call.role || 'No role'}</p>
-                                </div>
-                                <p className="text-xs text-slate-500">
-                                  {formatCallDate(call)}
-                                </p>
-                              </div>
-                              {call.note && (
-                                <p className="text-xs text-slate-700 mt-1">{call.note}</p>
-                              )}
-                            </div>
-                          ))
-                        }
-
-                        {/* Display notes from different sources without headers */}
-                        {selectedLead?.remark && (
-                          <div className="w-full border bg-white px-3 py-2 text-sm text-slate-800 rounded-md shadow-sm">
-                            <p className="text-xs font-medium text-slate-600 mb-1">Remark:</p>
-                            {selectedLead.remark}
-                          </div>
-                        )}
-                        {selectedLead?.comment && (
-                          <div className="w-full border bg-white px-3 py-2 text-sm text-slate-800 rounded-md shadow-sm">
-                            <p className="text-xs font-medium text-slate-600 mb-1">Comment:</p>
-                            {selectedLead.comment}
-                          </div>
-                        )}
-                        {selectedLead?.checkNotes && (
-                          <div className="w-full border bg-white px-3 py-2 text-sm text-slate-800 rounded-md shadow-sm">
-                            <p className="text-xs font-medium text-slate-600 mb-1">Additional Notes:</p>
-                            {selectedLead.checkNotes}
-                          </div>
-                        )}
-                        {selectedLead?.checkListPage?.[0]?.notes && (
-                          <div className="w-full border bg-white px-3 py-2 text-sm text-slate-800 rounded-md shadow-sm">
-                            <p className="text-xs font-medium text-slate-600 mb-1">Site Visit Notes:</p>
-                            {selectedLead.checkListPage[0].notes}
-                          </div>
-                        )}
-
-                        {/* Fallback to leadComments if no other data */}
-                        {(!selectedLead?.calls?.length && !selectedLead?.remark && !selectedLead?.comment && !selectedLead?.checkNotes && !selectedLead?.checkListPage?.[0]?.notes) && leadComments.length === 0 ? (
-                          <div className="text-sm text-slate-500">
-                            No comments
-                          </div>
-                        ) : (
-                          (!selectedLead?.calls?.length && !selectedLead?.remark && !selectedLead?.comment && !selectedLead?.checkNotes && !selectedLead?.checkListPage?.[0]?.notes) &&
-                          leadComments.map((text, idx) => (
-                            <div
-                              key={`${idx}-${text}`}
-                              className="w-full border bg-white px-3 py-2 text-sm text-slate-800 rounded-md shadow-sm"
-                            >
-                              {text}
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Yield Section */}
-                    <div className="h-auto rounded-lg border bg-slate-50">
-                      <div className="px-4 py-3 border-b bg-white rounded-t-lg">
-                        <div className="text-sm font-semibold text-slate-800">
-                          Yield
-                        </div>
-                      </div>
-
-                      <div className="p-4">
-                        <div className="w-full border bg-white px-3 py-2 rounded-md shadow-sm">
-                          <p className="text-xs font-medium text-slate-600 mb-1">Yield Value</p>
-                          <p className="text-sm text-slate-700">{selectedLead?.yield || '-'}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+    <div>
+    {(open || isViewMode) ? (
+      <div className="min-h-screen bg-gray-50 p-4">
+        {/* Lead Stepper - Full Width Outside Grid - Shows for both new and existing leads */}
+        <div className="bg-white rounded-t-lg shadow-md px-6 py-4 mb-0">
+          <Leads
+            data={open ? selectedLead : viewLead}
+            currentStep={currentStep}
+            onStepChange={setCurrentStep}
+            stepperOnly={true}
+          />
+        </div>
+        <div className="w-full">
+          <div className="bg-white rounded-lg shadow-md p-6 rounded-t-none">
+            <Leads
+              data={open ? selectedLead : viewLead}
+              viewMode={!open}
+              onClose={open ? () => setOpen(false) : () => setIsViewMode(false)}
+              currentStep={currentStep}
+              onStepChange={setCurrentStep}
+              hideStepper={true}
+              calls={calls}
+            />
           </div>
         </div>
-      ) : isViewMode ? (
-        /* VIEW MODE - Use the Leads component with viewMode */
-        <div className="min-h-screen bg-gray-50 p-4">
-          <div className="w-full">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-4">
-                  <Leads
-                    data={viewLead}
-                    viewMode={true}
-                    onClose={() => setIsViewMode(false)}
-                    currentStep={currentStep}
-                    onStepChange={setCurrentStep}
-                  />
-                </div>
-
-                {/* Right-side calls and notes thread (show when viewing) */}
-                <div className="lg:col-span-1 space-y-4 sticky top-4 h-fit">
-                  {/* Communication History - 40% height */}
-                  <div className="h-[40vh] rounded-lg border bg-slate-50">
-                    <div className="px-4 py-3 border-b bg-white rounded-t-lg">
-                      <div className="text-sm font-semibold text-slate-800">
-                      Notes
-                      </div>
-                    </div>
-
-                    <div className="p-4 space-y-3 max-h-[32vh] overflow-y-auto">
-                      {/* Display calls history if available */}
-                      {viewLead?.calls && viewLead.calls.length > 0 && 
-                        viewLead.calls.map((call, index) => (
-                          <div
-                            key={call._id || index}
-                            className="w-full border bg-white px-3 py-2 rounded-md shadow-sm"
-                          >
-                            <div className="flex justify-between items-start mb-1">
-                              <div>
-                                <p className="text-sm font-medium text-slate-800">{call.name || 'Unknown User'}</p>
-                                <p className="text-xs text-slate-600">{call.role || 'No role'}</p>
-                              </div>
-                              <p className="text-xs text-slate-500">
-                                {formatCallDate(call)}
-                              </p>
-                            </div>
-                            {call.note && (
-                              <p className="text-xs text-slate-700 mt-1">{call.note}</p>
-                            )}
-                          </div>
-                        ))
-                      }
-
-                      {/* Display notes from different sources without headers */}
-                      {viewLead?.remark && (
-                        <div className="w-full border bg-white px-3 py-2 text-sm text-slate-800 rounded-md shadow-sm">
-                          <p className="text-xs font-medium text-slate-600 mb-1">Remark:</p>
-                          {viewLead.remark}
-                        </div>
-                      )}
-                      {viewLead?.comment && (
-                        <div className="w-full border bg-white px-3 py-2 text-sm text-slate-800 rounded-md shadow-sm">
-                          <p className="text-xs font-medium text-slate-600 mb-1">Comment:</p>
-                          {viewLead.comment}
-                        </div>
-                      )}
-                      {viewLead?.checkNotes && (
-                        <div className="w-full border bg-white px-3 py-2 text-sm text-slate-800 rounded-md shadow-sm">
-                          <p className="text-xs font-medium text-slate-600 mb-1">Additional Notes:</p>
-                          {viewLead.checkNotes}
-                        </div>
-                      )}
-                      {viewLead?.checkListPage?.[0]?.notes && (
-                        <div className="w-full border bg-white px-3 py-2 text-sm text-slate-800 rounded-md shadow-sm">
-                          <p className="text-xs font-medium text-slate-600 mb-1">Site Visit Notes:</p>
-                          {viewLead.checkListPage[0].notes}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Yield Section */}
-                  <div className="h-auto rounded-lg border bg-slate-50">
-                    <div className="px-4 py-3 border-b bg-white rounded-t-lg">
-                      <div className="text-sm font-semibold text-slate-800">
-                        Yield
-                      </div>
-                    </div>
-
-                    <div className="p-4">
-                      <div className="w-full border bg-white px-3 py-2 rounded-md shadow-sm">
-                        <p className="text-xs font-medium text-slate-600 mb-1">Yield Value</p>
-                        <p className="text-sm text-slate-700">{viewLead?.yield || '-'}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : (
+      </div>
+    ) : (
         /* Main page content when not editing or viewing */
         <div className="min-h-screen bg-gray-50">
           <div className="bg-white border-b px-8 py-4">
-            <div className="flex items-center justify-between max-w-[1600px] mx-auto">
+            <div className="flex items-center justify-between max-w-400 mx-auto">
               <div>
                 <h1 className="text-2xl font-semibold text-indigo-700">Leads</h1>
                 <p className="text-sm text-gray-500 mt-1">Leads list · Last updated today</p>
@@ -562,10 +363,10 @@ export default function LeadsPage() {
             </div>
           </div>
  
-          <div className="max-w-[1600px] mx-auto px-8 py-6">
+          <div className="max-w-400 mx-auto px-8 py-6">
             <Card className="bg-white shadow-sm">
               <div className="p-6 border-b flex flex-wrap gap-4 items-center">
-                <div className="relative flex-1 min-w-[250px]">
+                <div className="relative flex-1 min-w-62.5">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <Input
                     placeholder="Search leads..."
@@ -577,12 +378,12 @@ export default function LeadsPage() {
  
                 <div className="flex items-center gap-2">
                   <Label className="text-sm text-gray-600 whitespace-nowrap">From:</Label>
-                  <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[150px] border-gray-300" />
+                  <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-37.5 border-gray-300" />
                 </div>
  
                 <div className="flex items-center gap-2">
                   <Label className="text-sm text-gray-600 whitespace-nowrap">To:</Label>
-                  <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[150px] border-gray-300" />
+                  <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-37.5 border-gray-300" />
                 </div>
  
                 
@@ -607,18 +408,18 @@ export default function LeadsPage() {
                     {paginatedLeads.map((lead) => (
                       <tr key={lead.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{lead.lead_id || lead.id}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{lead.name}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.phone || "—"}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{lead.mediatorName}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.contactNumber || "—"}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.location}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.zone}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.property || "—"}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.propertyType || "—"}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                          <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${String(lead.status).toLowerCase() === "approved" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
-                            {lead.status}
+                          <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${String(lead.lead_status).toLowerCase() === "approved" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
+                            {lead.lead_status}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {formatDateWithFallback(lead.registeredDate, "—")}
+                          {formatDateWithFallback(lead.created_at, "—")}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <DropdownMenu>
@@ -629,7 +430,7 @@ export default function LeadsPage() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="bg-white border shadow-lg">
                               <DropdownMenuItem 
-                                onClick={() => handleView(lead.raw)} 
+                                onClick={() => handleView(lead)} 
                                 className="cursor-pointer"
                                 disabled={isFetchingLead}
                               >
@@ -637,7 +438,7 @@ export default function LeadsPage() {
                                 View
                               </DropdownMenuItem>
                               <DropdownMenuItem 
-                                onClick={() => handleEdit(lead.raw)} 
+                                onClick={() => handleEdit(lead)} 
                                 className="cursor-pointer"
                                 disabled={isFetchingLead}
                               >
@@ -645,8 +446,7 @@ export default function LeadsPage() {
                                 Edit
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={() => handleDeleteLead(lead.raw)}
-                                disabled={!canPerformAction(lead.raw, 'delete').enabled}
+                                onClick={() => handleDeleteLead(lead)}
                                 className="cursor-pointer text-red-600 hover:bg-red-50"
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
@@ -696,18 +496,40 @@ export default function LeadsPage() {
         </div>
       )}
       
-      {/* Delete Confirmation Modal */}
-      <ConfirmModal
-        isOpen={confirmModal.isOpen}
-        onClose={confirmModal.onClose}
-        onConfirm={confirmModal.onConfirm}
-        title={confirmModal.title}
-        description={confirmModal.description}
-        confirmText={confirmModal.confirmText}
-        cancelText="Cancel"
-        variant={confirmModal.variant}
-        loading={confirmModal.loading}
-      />
+      {/* Simple Delete Confirmation Modal */}
+      {deleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="relative w-full max-w-md mx-4 bg-white rounded-lg shadow-xl">
+            <div className="p-6">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+                <AlertTriangle className="h-6 w-6 text-red-600" />
+              </div>
+              <h3 className="mt-4 text-lg font-semibold text-center text-gray-900">
+                Delete Lead
+              </h3>
+              <p className="mt-2 text-sm text-center text-gray-600">
+                Are you sure you want to delete "{leadToDelete?.mediatorName || 'this lead'}"? This action cannot be undone.
+              </p>
+              <div className="mt-6 flex gap-3">
+                <Button
+                  onClick={handleCancelDelete}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleConfirmDelete}
+                  variant="destructive"
+                  className="flex-1"
+                >
+                  Delete
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
