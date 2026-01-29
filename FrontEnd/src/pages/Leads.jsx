@@ -473,10 +473,10 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           currentRole: userRole // Always use current user role
         }));
         setHasUnsavedChanges(true);
-        toast.success('Draft loaded', { 
-          icon: '📝',
-          duration: 3000 
-        });
+        // toast.success('Draft loaded', { 
+        //   icon: '📝',
+        //   duration: 3000 
+        // });
       } else {
         // Reset form to initial state when creating new lead
         setFormData({
@@ -1177,7 +1177,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
         
         try {
           await onSubmit(leadPayload, files)
-          console.log('✅ onSubmit completed successfully')
           
           // Clear form draft on successful submission
           clearFormDraft()
@@ -1269,53 +1268,41 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
   return (
     <>
-      <style>{`
-        .restricted-edit-mode input:not([data-editable="true"]),
-        .restricted-edit-mode select:not([data-editable="true"]),
-        .restricted-edit-mode textarea:not([data-editable="true"]),
-        .restricted-edit-mode [role="combobox"]:not([data-editable="true"]) {
-          opacity: 0.5;
-          pointer-events: none;
-          cursor: not-allowed;
-        }
-      `}</style>
+    <style>{`
+      .restricted-edit-mode input:not([data-editable="true"]),
+      .restricted-edit-mode select:not([data-editable="true"]),
+      .restricted-edit-mode textarea:not([data-editable="true"]),
+      .restricted-edit-mode [role="combobox"]:not([data-editable="true"]) {
+        opacity: 0.5;
+        pointer-events: none;
+        cursor: not-allowed;
+      }
+    `}</style>
 
-      {/* Stepper Only Mode - Show only the LeadStepper */}
-      {stepperOnly ? (
-        // <div className="w-full fixed top-20 z-5  bg-white border-b border-gray-200 shadow-sm">
-        //   <LeadStepper
-        //   sx={{
-
-        //   }}
-        //     stageName={formData.assignedTo?.[0]?.role || formData.currentRole?.[0]?.role || "tele_caller"}
-        //     currentStep={currentStep}
-        //     className="w-full"
-        //     isNewLead={!data}
-        //   />
-        // </div>
-        // <div className="fixed top-16 left-64 right-0 z-50 bg-white border-b border-gray-200 shadow-sm">
-  <div className="fixed top-17 left-72 z-50 bg-white border-b border-gray-200 shadow-sm max-w-7xl px-4 md:px-8">
-  <LeadStepper
-    stageName={formData.assignedTo?.[0]?.role || formData.currentRole?.[0]?.role || "tele_caller"}
-    currentStep={currentStep}
-    // className="w-full"
-    isNewLead={!data}
-  />
-</div>
-      ) : (
-        /* Full Form Mode */
-        <div className={`min-h-screen bg-slate-50/50 p-4 md:p-8 ${getFormWrapperClass()}`}>
-          {/* Lead Stepper - Full Width (conditionally hidden) */}
-          {!hideStepper && (
-            <div className="w-full">
-              <LeadStepper
-                stageName={formData.assignedTo?.[0]?.role || formData.currentRole?.[0]?.role || "tele_caller"}
-                currentStep={currentStep}
-                className="w-full"
-                isNewLead={!data}
-              />
-            </div>
-          )}
+    {/* Stepper Only Mode - Show only the LeadStepper */}
+    {stepperOnly ? (
+      <div className="w-full">
+        <LeadStepper
+          stageName={formData.assignedTo || formData.currentRole || "tele_caller"}
+          currentStep={currentStep}
+          className="w-full"
+          isNewLead={!data}
+        />
+      </div>
+    ) : (
+      /* Full Form Mode */
+      <div className={`min-h-screen bg-slate-50/50 p-4 md:p-8 ${getFormWrapperClass()}`}>
+        {/* Lead Stepper - Full Width (conditionally hidden) */}
+        {!hideStepper && (
+          <div className="w-full">
+            <LeadStepper
+              stageName={formData.assignedTo || formData.currentRole || "tele_caller"}
+              currentStep={currentStep}
+              className="w-full"
+              isNewLead={!data}
+            />
+          </div>
+        )}
 
           <div className="w-full">
 
@@ -2583,27 +2570,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           </div>
         )}
 
-        {/* Notes Section */}
-        {/* <div className="space-y-2">
-          <Label className="text-gray-700 font-medium">Notes</Label>
-          {viewMode ? (
-            <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[100px] whitespace-pre-wrap">
-              {formData.checkNotes || "-"}
-            </div>
-          ) : (
-            <Textarea
-              value={formData.checkNotes}
-              onChange={(e) => handleChange("checkNotes", e.target.value)}
-              placeholder="Enter additional notes, observations, or important information about this lead..."
-              rows={5}
-              className="bg-gray-50 resize-y"
-            />
-          )}
-        </div> */}
-
-      {/* </div> */}
-
-      {/* Remark - Full Width */}
+    
       <div className="space-y-2">
         <Label className="text-gray-700 font-medium">Remark</Label>
         {viewMode ? (

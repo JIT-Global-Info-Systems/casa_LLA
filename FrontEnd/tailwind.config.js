@@ -25,4 +25,8 @@ export default {
       },
     },
   },
+  // Add this for Tailwind CSS v4 compatibility
+  corePlugins: {
+    preflight: true,
+  },
 };

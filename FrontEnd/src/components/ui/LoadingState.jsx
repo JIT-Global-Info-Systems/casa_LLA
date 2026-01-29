@@ -13,7 +13,7 @@ const LoadingState = ({
   };
 
   const containerClasses = fullScreen
-    ? 'fixed inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-50'
+    ? 'fixed inset-0 flex items-center justify-center bg-background/80 z-50'
     : 'flex items-center justify-center p-8';
 
   return (
