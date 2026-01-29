@@ -6,14 +6,34 @@ const leadHistorySchema = new mongoose.Schema({
     ref: 'Lead',
     required: true
   },
-  currentRole: {
-    type: String,
-    required: true
-  },
-  assignedTo: {
-    type: String,
-    required: false
-  },
+  currentRole: [{
+    user_id: {
+      type: String,
+      required: true
+    },
+    role: {
+      type: String,
+      required: true
+    },
+    name: {
+      type: String,
+      required: true
+    }
+  }],
+  assignedTo: [{
+    user_id: {
+      type: String,
+      required: true
+    },
+    role: {
+      type: String,
+      required: true
+    },
+    name: {
+      type: String,
+      required: true
+    }
+  }],
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

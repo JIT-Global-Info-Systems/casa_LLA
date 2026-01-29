@@ -174,22 +174,23 @@ exports.deleteMediator = async (req, res) => {
   try {
     const { mediatorId } = req.params;
 
-    const mediator = await Mediator.findByIdAndDelete(mediatorId);
-
+    const mediator = await Mediator.findById(mediatorId);
     if (!mediator) {
       return res.status(404).json({
         message: "Mediator not found"
       });
     }
 
-    if (mediator.status === "inactive") {
-      return res.status(400).json({
-        message: "This mediator is already inactive"
-      });
+    // Delete uploaded files if they exist
+    if (mediator.pan_upload && fs.existsSync(mediator.pan_upload)) {
+      fs.unlinkSync(mediator.pan_upload);
+    }
+    if (mediator.aadhar_upload && fs.existsSync(mediator.aadhar_upload)) {
+      fs.unlinkSync(mediator.aadhar_upload);
     }
 
-    mediator.status = "inactive";
-    await mediator.save();
+    // Permanently delete the record
+    await Mediator.findByIdAndDelete(mediatorId);
 
     return res.status(200).json({
       message: "Mediator deleted successfully",
