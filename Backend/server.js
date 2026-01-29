@@ -32,5 +32,14 @@ app.get("/", (req, res) => {
   res.send("Casagrand Backend Running");
 });
 
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error("Global Error Handler:", err);
+  res.status(500).json({
+    message: "Internal server error",
+    error: err.message
+  });
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

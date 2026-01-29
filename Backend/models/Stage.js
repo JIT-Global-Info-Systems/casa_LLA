@@ -50,10 +50,10 @@ const stageSchema = new mongoose.Schema({
 });
 
 /**
- * Auto-increment stage_id
+ * Auto-increment stage_id using a simpler approach
  */
-stageSchema.pre("save", async function (next) {
-  if (!this.isNew) return next();
+stageSchema.pre("save", async function() {
+  if (!this.isNew) return;
 
   try {
     const counter = await StageCounter.findOneAndUpdate(
@@ -63,9 +63,9 @@ stageSchema.pre("save", async function (next) {
     );
 
     this.stage_id = counter.seq;
-    next();
   } catch (err) {
-    next(err);
+    console.error("Stage pre-save error:", err);
+    throw err;
   }
 });
 
