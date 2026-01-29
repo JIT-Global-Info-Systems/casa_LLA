@@ -413,7 +413,7 @@ export default function LeadsPage() {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {paginatedLeads.map((lead) => (
-                      <tr key={lead.id} className="hover:bg-gray-50 transition-colors">
+                      <tr key={lead._id || lead.id || `lead-${Math.random()}`} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{lead.lead_id || lead.id || "—"}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{lead.name}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.phone}</td>
