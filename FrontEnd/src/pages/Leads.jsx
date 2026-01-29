@@ -334,10 +334,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     if (!dataToValidate.sourceCategory) nextErrors.sourceCategory = "Source category is required"
     if (!dataToValidate.source) nextErrors.source = "Source is required"
     
-    // Assign To (User) is required when Assigned To (Role) is selected
-    if (dataToValidate.assignedTo && !dataToValidate.assignToUser?.trim()) {
-      nextErrors.assignToUser = "Please select a user when a role is assigned"
-    }
+    // Assign To (User) is optional - removed required validation
 
       // Numeric fields (soft validation)
       ;["extent", "fsi", "asp", "revenue", "rate", "builderShare"].forEach((k) => {
@@ -917,7 +914,17 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       if (formData.directorSVStatus) payload.directorSVStatus = formData.directorSVStatus
       if (formData.callDate) payload.callDate = formData.callDate
       if (formData.callTime) payload.callTime = formData.callTime
-      if (formData.callNotes) payload.callNotes = formData.callNotes
+      if (formData.callNotes) {
+        payload.note = formData.callNotes  // Backend expects 'note' not 'notes'
+        // Add userId to trigger Call record creation in backend
+        const currentUser = getCurrentUserInfo()
+        payload.userId = currentUser.user_id
+        payload.role = currentUser.role
+        payload.name = currentUser.name || formData.mediatorName || 'Unknown User'
+        // Backend createLead doesn't use callDate/callTime for Call records, but we'll send them anyway
+        payload.callDate = formData.callDate
+        payload.callTime = formData.callTime
+      }
 
       return payload
     }
@@ -1002,7 +1009,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     addIfChanged('directorSVStatus', formData.directorSVStatus, originalData?.directorSVStatus)
     addIfChanged('callDate', formData.callDate, originalData?.callDate)
     addIfChanged('callTime', formData.callTime, originalData?.callTime)
-    addIfChanged('callNotes', formData.callNotes, originalData?.callNotes)
+    // For updateLead, backend expects 'notes' field
+    addIfChanged('notes', formData.callNotes, originalData?.callNotes)
 
     // Check structured data (competitorAnalysis)
     const originalCompetitor = originalData?.competitorAnalysis?.[0] || {}
@@ -1161,18 +1169,44 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
         console.log(`   Fields sent: ${Object.keys(leadPayload).length}`)
       }
 
-      console.log('📤 Lead Payload being sent:', JSON.stringify(leadPayload, null, 2))
-
+      console.log('📤 Final Lead Payload being sent:', JSON.stringify(leadPayload, null, 2))
+      
       const files = {
         ...(formData.checkFMBSketch && formData.fileFMBSketch ? { fmb_sketch: formData.fileFMBSketch } : {}),
         ...(formData.checkPattaChitta && formData.filePattaChitta ? { patta_chitta: formData.filePattaChitta } : {}),
       }
+      
+      console.log('📋 Files being sent:', Object.keys(files))
 
       if (onSubmit) {
-       
-        
         try {
-          await onSubmit(leadPayload, files)
+          const result = await onSubmit(leadPayload, files)
+          console.log('📥 Backend response:', JSON.stringify(result, null, 2))
+          
+          // Backend workaround: Immediately update lead_status after creation
+          console.log('🔧 Checking workaround conditions:')
+          console.log('  - isNewLead:', !data)
+          console.log('  - hasLeadId:', !!result?.data?._id)
+          console.log('  - hasLeadStatus:', !!leadPayload.lead_status)
+          console.log('  - leadStatusValue:', leadPayload.lead_status)
+          
+          if (!data && result?.data?._id && leadPayload.lead_status) {
+            console.log('🔧 Backend workaround: Updating lead_status after creation')
+            console.log('🎯 Target lead_id:', result.data._id)
+            console.log('🎯 Target status:', leadPayload.lead_status)
+            try {
+              // Use the leadsAPI directly for update
+              const { leadsAPI } = await import('../services/api')
+              console.log('📞 Making API call to leadsAPI.update...')
+              const updateResult = await leadsAPI.update(result.data._id, { lead_status: leadPayload.lead_status })
+              console.log('✅ lead_status updated successfully:', updateResult)
+            } catch (updateError) {
+              console.warn('⚠️ Failed to update lead_status:', updateError)
+              // Don't fail the whole operation if status update fails
+            }
+          } else {
+            console.log('⏭️ Skipping lead_status workaround - conditions not met')
+          }
           
           // Clear form draft on successful submission
           clearFormDraft()
@@ -2007,7 +2041,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                     {/* Assign To - User Dropdown based on selected role */}
                     {formData.assignedTo && (
                       <div className="space-y-2">
-                        <Label className="text-gray-700 font-medium">Assign To (User) <span className="text-red-500">*</span></Label>
+                        <Label className="text-gray-700 font-medium">Assign To (User)</Label>
                         {viewMode ? (
                           <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
                             {formData.assignToUser || "-"}
@@ -2654,451 +2688,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
               </div>
             </div>
             {/* ===== TWO COLUMN ROW END ===== */}
-
-  {/* Full Width Wrapper for Competitor Analysis, Site Visit Checklist & Notes & Calls */ }
-  <div className="w-full mt-8">
-    {/* Competitor Analysis - Full Width */}
-    {/* <Card className="border-0 shadow-md bg-white">
-      <CardHeader>
-        <CardTitle className="text-xl text-gray-800">Competitor Analysis</CardTitle>
-      </CardHeader>
-      <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="space-y-2">
-          <Label>Developer Name</Label>
-          {viewMode ? (
-            <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-              {formData.competitorDeveloperName || "-"}
-            </div>
-          ) : (
-            <Input value={formData.competitorDeveloperName} onChange={(e) => handleChange("competitorDeveloperName", e.target.value)} />
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label>Project Name</Label>
-          {viewMode ? (
-            <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-              {formData.competitorProjectName || "-"}
-            </div>
-          ) : (
-            <Input value={formData.competitorProjectName} onChange={(e) => handleChange("competitorProjectName", e.target.value)} />
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label>Product Type</Label>
-          {viewMode ? (
-            <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-              {formData.competitorProductType || "-"}
-            </div>
-          ) : (
-            <Input value={formData.competitorProductType} onChange={(e) => handleChange("competitorProductType", e.target.value)} />
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label>Location</Label>
-          {viewMode ? (
-            <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-              {formData.competitorLocation || "-"}
-            </div>
-          ) : (
-            <Input value={formData.competitorLocation} onChange={(e) => handleChange("competitorLocation", e.target.value)} />
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label>Plot / Unit Size</Label>
-          {viewMode ? (
-            <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-              {formData.competitorPlotSize || "-"}
-            </div>
-          ) : (
-            <Input value={formData.competitorPlotSize} onChange={(e) => handleChange("competitorPlotSize", e.target.value)} />
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label>Land Extent</Label>
-          {viewMode ? (
-            <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-              {formData.competitorLandExtent || "-"}
-            </div>
-          ) : (
-            <Input value={formData.competitorLandExtent} onChange={(e) => handleChange("competitorLandExtent", e.target.value)} />
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label>Price Range</Label>
-          {viewMode ? (
-            <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-              {formData.competitorPriceRange || "-"}
-            </div>
-          ) : (
-            <Input value={formData.competitorPriceRange} onChange={(e) => handleChange("competitorPriceRange", e.target.value)} />
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label>Approx Price</Label>
-          {viewMode ? (
-            <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-              {formData.competitorApproxPrice || "-"}
-            </div>
-          ) : (
-            <Input value={formData.competitorApproxPrice} onChange={(e) => handleChange("competitorApproxPrice", e.target.value)} />
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label>Approx Price Cent</Label>
-          {viewMode ? (
-            <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-              {formData.competitorApproxPriceCent || "-"}
-            </div>
-          ) : (
-            <Input value={formData.competitorApproxPriceCent} onChange={(e) => handleChange("competitorApproxPriceCent", e.target.value)} />
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label>Total Plots / Units</Label>
-          {viewMode ? (
-            <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-              {formData.competitorTotalUnits || "-"}
-            </div>
-          ) : (
-            <Input value={formData.competitorTotalUnits} onChange={(e) => handleChange("competitorTotalUnits", e.target.value)} />
-          )}
-        </div>
-        <div className="md:col-span-2 space-y-2">
-          <Label>Key Amenities (comma separated)</Label>
-          {viewMode ? (
-            <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-              {formData.competitorKeyAmenities || "-"}
-            </div>
-          ) : (
-            <Input value={formData.competitorKeyAmenities} onChange={(e) => handleChange("competitorKeyAmenities", e.target.value)} />
-          )}
-        </div>
-        <div className="md:col-span-3 space-y-2">
-          <Label>USP / Positioning</Label>
-          {viewMode ? (
-            <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[80px]">
-              {formData.competitorUSP || "-"}
-            </div>
-          ) : (
-            <Textarea value={formData.competitorUSP} onChange={(e) => handleChange("competitorUSP", e.target.value)} rows={2} />
-          )}
-        </div>
-      </CardContent>
-    </Card> */}
-
-    {/* Site Visit Checklist - Full Width */}
-    {/* <Card className="border-0 shadow-md bg-white mt-8">
-      <CardHeader className="pb-4 border-b">
-        <CardTitle className="flex items-center gap-2 text-xl text-gray-800">
-          <CheckCircle2 className="text-green-600" />
-          Site Visit Checklist
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-8 pt-6">
-        <div>
-          <SectionHeader title="Land Details" icon={FileText} />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <div className="space-y-2">
-              <Label>Land Location</Label>
-              {viewMode ? (
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                  {formData.checkLandLocation || "-"}
-                </div>
-              ) : (
-                <Input value={formData.checkLandLocation} onChange={(e) => handleChange("checkLandLocation", e.target.value)} />
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label>Land Extent</Label>
-              {viewMode ? (
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                  {formData.checkLandExtent || "-"}
-                </div>
-              ) : (
-                <Input value={formData.checkLandExtent} onChange={(e) => handleChange("checkLandExtent", e.target.value)} />
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label>Land Zone</Label>
-              {viewMode ? (
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                  {formData.checkLandZone || "-"}
-                </div>
-              ) : (
-                <Input value={formData.checkLandZone} onChange={(e) => handleChange("checkLandZone", e.target.value)} />
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label>Classification of Land</Label>
-              {viewMode ? (
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                  {formData.checkLandClassification || "-"}
-                </div>
-              ) : (
-                <Input value={formData.checkLandClassification} onChange={(e) => handleChange("checkLandClassification", e.target.value)} />
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label>Google Pin</Label>
-              {viewMode ? (
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                  {formData.checkGooglePin || "-"}
-                </div>
-              ) : (
-                <Input value={formData.checkGooglePin} onChange={(e) => handleChange("checkGooglePin", e.target.value)} />
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label>Approach Road Width</Label>
-              {viewMode ? (
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                  {formData.checkApproachRoadWidth || "-"}
-                </div>
-              ) : (
-                <Input value={formData.checkApproachRoadWidth} onChange={(e) => handleChange("checkApproachRoadWidth", e.target.value)} />
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label>Road Width</Label>
-              {viewMode ? (
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                  {formData.checkRoadWidth || "-"}
-                </div>
-              ) : (
-                <Input value={formData.checkRoadWidth} onChange={(e) => handleChange("checkRoadWidth", e.target.value)} />
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label>Soil Type</Label>
-              {viewMode ? (
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                  {formData.checkSoilType || "-"}
-                </div>
-              ) : (
-                <Input value={formData.checkSoilType} onChange={(e) => handleChange("checkSoilType", e.target.value)} />
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <SectionHeader title="Valuation & Pricing" icon={FileText} />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            <div className="space-y-2">
-              <Label>Selling Price</Label>
-              {viewMode ? (
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                  {formData.checkSellingPrice || "-"}
-                </div>
-              ) : (
-                <Input value={formData.checkSellingPrice} onChange={(e) => handleChange("checkSellingPrice", e.target.value)} />
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label>Guideline Value</Label>
-              {viewMode ? (
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                  {formData.checkGuidelineValue || "-"}
-                </div>
-              ) : (
-                <Input value={formData.checkGuidelineValue} onChange={(e) => handleChange("checkGuidelineValue", e.target.value)} />
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label>Location Selling Price</Label>
-              {viewMode ? (
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                  {formData.checkLocationSellingPrice || "-"}
-                </div>
-              ) : (
-                <Input value={formData.checkLocationSellingPrice} onChange={(e) => handleChange("checkLocationSellingPrice", e.target.value)} />
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label>Marketing Price</Label>
-              {viewMode ? (
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                  {formData.checkMarketingPrice || "-"}
-                </div>
-              ) : (
-                <Input value={formData.checkMarketingPrice} onChange={(e) => handleChange("checkMarketingPrice", e.target.value)} />
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label>Total Saleable Area</Label>
-              {viewMode ? (
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                  {formData.checkTotalSaleableArea || "-"}
-                </div>
-              ) : (
-                <Input value={formData.checkTotalSaleableArea} onChange={(e) => handleChange("checkTotalSaleableArea", e.target.value)} />
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <SectionHeader title="Features & Constraints" icon={CheckCircle2} />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <CheckboxTile label="EB Line" checked={formData.checkEBLine} onChange={(c) => handleCheckboxChange("checkEBLine", c)} />
-            <CheckboxTile label="Quarry / Crusher" checked={formData.checkQuarryCrusher} onChange={(c) => handleCheckboxChange("checkQuarryCrusher", c)} />
-            <CheckboxTile label="Govt. Land Acquisition" checked={formData.checkGovtLandAcquisition} onChange={(c) => handleCheckboxChange("checkGovtLandAcquisition", c)} />
-            <CheckboxTile label="Railway Track NOC" checked={formData.checkRailwayTrackNOC} onChange={(c) => handleCheckboxChange("checkRailwayTrackNOC", c)} />
-            <CheckboxTile label="Bank Issues" checked={formData.checkBankIssues} onChange={(c) => handleCheckboxChange("checkBankIssues", c)} />
-            <CheckboxTile label="Dumpyard / Quarry" checked={formData.checkDumpyardQuarry} onChange={(c) => handleCheckboxChange("checkDumpyardQuarry", c)} />
-            <CheckboxTile label="Waterbody Nearby" checked={formData.checkWaterbodyNearby} onChange={(c) => handleCheckboxChange("checkWaterbodyNearby", c)} />
-            <CheckboxTile label="Nearby HT Line" checked={formData.checkNearbyHTLine} onChange={(c) => handleCheckboxChange("checkNearbyHTLine", c)} />
-            <CheckboxTile label="Temple Land" checked={formData.checkTempleLand} onChange={(c) => handleCheckboxChange("checkTempleLand", c)} />
-            <CheckboxTile label="Future Govt Projects" checked={formData.checkFutureGovtProjects} onChange={(c) => handleCheckboxChange("checkFutureGovtProjects", c)} />
-            <CheckboxTile label="Farm Land" checked={formData.checkFarmLand} onChange={(c) => handleCheckboxChange("checkFarmLand", c)} />
-            <CheckboxTile label="Land Cleaning" checked={formData.checkLandCleaning} onChange={(c) => handleCheckboxChange("checkLandCleaning", c)} />
-            <CheckboxTile label="Sub Division" checked={formData.checkSubDivision} onChange={(c) => handleCheckboxChange("checkSubDivision", c)} />
-            <CheckboxTile label="Soil Test" checked={formData.checkSoilTest} onChange={(c) => handleCheckboxChange("checkSoilTest", c)} />
-            <CheckboxTile label="Water List" checked={formData.checkWaterList} onChange={(c) => handleCheckboxChange("checkWaterList", c)} />
-          </div>
-        </div>
-
-        <div>
-          <SectionHeader title="Documents" icon={Upload} />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className={`border-2 border-dashed rounded-xl p-6 transition-all ${formData.checkFMBSketch ? "border-indigo-400 bg-indigo-50/30" : "border-gray-200 bg-gray-50"}`}>
-              <div className="flex items-center gap-3 mb-3">
-                <input
-                  type="checkbox"
-                  checked={formData.checkFMBSketch}
-                  onChange={(e) => handleCheckboxChange("checkFMBSketch", e.target.checked)}
-                  className="w-5 h-5 text-indigo-600 rounded"
-                  disabled={viewMode}
-                />
-                <span className="font-semibold text-gray-700">FMB Sketch Available</span>
-              </div>
-              {formData.checkFMBSketch && (
-                <div className="mt-4 animate-in fade-in slide-in-from-top-2">
-                  {viewMode && data?.checkListPage?.[0]?.fmbSketchPath ? (
-                    <div className="space-y-2">
-                      <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">FMB Sketch Document</Label>
-                      <div className="p-3 bg-white border border-gray-200 rounded-md">
-                        <p className="text-sm text-gray-600 truncate">{data.checkListPage[0].fmbSketchPath}</p>
-                        <button
-                          className="mt-2 text-xs text-indigo-600 hover:text-indigo-800 underline"
-                          onClick={() => window.open(`/${data.checkListPage[0].fmbSketchPath.replace(/\\/g, '/')}`, '_blank')}
-                        >
-                          View Document
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Upload File (JPG/PNG, ≤2MB)</Label>
-                      <Input type="file" accept="image/png,image/jpeg,image/jpg" onChange={(e) => handleFileChange("fileFMBSketch", e.target.files?.[0])} className={`bg-white ${errors.fileFMBSketch ? "border-red-500 focus:border-red-500" : ""}`} />
-                      {errors.fileFMBSketch && (
-                        <p className="text-red-500 text-sm flex items-center gap-1 mt-2">
-                          <AlertCircle className="h-4 w-4" />
-                          {errors.fileFMBSketch}
-                        </p>
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className={`border-2 border-dashed rounded-xl p-6 transition-all ${formData.checkPattaChitta ? "border-indigo-400 bg-indigo-50/30" : "border-gray-200 bg-gray-50"}`}>
-              <div className="flex items-center gap-3 mb-3">
-                <input
-                  type="checkbox"
-                  checked={formData.checkPattaChitta}
-                  onChange={(e) => handleCheckboxChange("checkPattaChitta", e.target.checked)}
-                  className="w-5 h-5 text-indigo-600 rounded"
-                  disabled={viewMode}
-                />
-                <span className="font-semibold text-gray-700">Patta / Chitta Available</span>
-              </div>
-              {formData.checkPattaChitta && (
-                <div className="mt-4 animate-in fade-in slide-in-from-top-2">
-                  {viewMode && data?.checkListPage?.[0]?.pattaChittaPath ? (
-                    <div className="space-y-2">
-                      <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Patta / Chitta Document</Label>
-                      <div className="p-3 bg-white border border-gray-200 rounded-md">
-                        <p className="text-sm text-gray-600 truncate">{data.checkListPage[0].pattaChittaPath}</p>
-                        <button
-                          className="mt-2 text-xs text-indigo-600 hover:text-indigo-800 underline"
-                          onClick={() => window.open(`/${data.checkListPage[0].pattaChittaPath.replace(/\\/g, '/')}`, '_blank')}
-                        >
-                          View Document
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Upload File (JPG/PNG, ≤2MB)</Label>
-                      <Input type="file" accept="image/png,image/jpeg,image/jpg" onChange={(e) => handleFileChange("filePattaChitta", e.target.files?.[0])} className={`bg-white ${errors.filePattaChitta ? "border-red-500 focus:border-red-500" : ""}`} />
-                      {errors.filePattaChitta && (
-                        <p className="text-red-500 text-sm flex items-center gap-1 mt-2">
-                          <AlertCircle className="h-4 w-4" />
-                          {errors.filePattaChitta}
-                        </p>
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <SectionHeader title="Additional Details" icon={FileText} />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Owner Name</Label>
-              {viewMode ? (
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                  {formData.checkOwnerName || "-"}
-                </div>
-              ) : (
-                <Input value={formData.checkOwnerName} onChange={(e) => handleChange("checkOwnerName", e.target.value)} />
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label>Consultant Name</Label>
-              {viewMode ? (
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                  {formData.checkConsultantName || "-"}
-                </div>
-              ) : (
-                <Input value={formData.checkConsultantName} onChange={(e) => handleChange("checkConsultantName", e.target.value)} />
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label>Projects</Label>
-              {viewMode ? (
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                  {formData.checkProjects || "-"}
-                </div>
-              ) : (
-                <Input value={formData.checkProjects} onChange={(e) => handleChange("checkProjects", e.target.value)} />
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label>Google Location</Label>
-              {viewMode ? (
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                  {formData.checkGoogleLocation || "-"}
-                </div>
-              ) : (
-                <Input value={formData.checkGoogleLocation} onChange={(e) => handleChange("checkGoogleLocation", e.target.value)} />
-              )}
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card> */}
-
-   
-      </div>
-    {/* End Full Width Wrapper */}
-
     {!viewMode && (
       <div className="flex justify-end gap-4 pb-8">
         <Button variant="outline" size="lg" onClick={onClose} className="bg-white border-gray-300" disabled={loading.submit}>
