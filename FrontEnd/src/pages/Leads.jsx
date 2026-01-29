@@ -1612,10 +1612,10 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                 )}
               </div>
 
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                   <Input value={formData.builderShare} onChange={(e) => handleChange("builderShare", e.target.value)} className="bg-gray-50/50" />
                 
-              </div>
+              </div> */}
 
               <div className="space-y-2">
                 <Label className="text-gray-700 font-medium">Rate</Label>

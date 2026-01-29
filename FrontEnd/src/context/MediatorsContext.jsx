@@ -95,14 +95,9 @@ export const MediatorsProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       const response = await mediatorsAPI.delete(id);
-      const deleted = response.data ?? response;
 
-      // Remove from local state or update status to inactive
-      setMediators(prev =>
-        prev.map(m =>
-          m._id === id ? { ...m, ...deleted } : m
-        )
-      );
+      // Remove the deleted mediator from local state
+      setMediators(prev => prev.filter(m => m._id !== id));
 
       return response;
     } catch (err) {
