@@ -162,7 +162,7 @@ export const AuthProvider = ({ children }) => {
     return () => clearInterval(interval);
   }, [user?.token]);
 
-  const login = async (credentials) => {
+  const login = async (credentials, rememberMe = false) => {
     try {
       setLoading(true);
       setError(null);
