@@ -422,13 +422,27 @@ exports.getAllLeads = async (req, res) => {
 
 exports.getPendingLeads = async (req, res) => {
   try {
-    const { location } = req.query;
-    const query = {
-  lead_status: { $nin: ["APPROVED", "PURCHASED", "Purchased", "Approved"] }
-};
+    const { location, userId } = req.query;
+    let query = {
+      lead_status: { $nin: ["APPROVED", "PURCHASED", "Purchased", "Approved"] }
+    };
     
     if (location) {
       query.location = { $regex: new RegExp(`^${location}$`, 'i') };
+    }
+    
+    // If userId is provided, filter leads created by user or assigned to user
+    if (userId) {
+      // Get lead IDs from LeadHistory where user is assignedTo
+      const assignedLeadIds = await LeadHistory.find({
+        'assignedTo.user_id': userId
+      }).distinct('leadId');
+      
+      // Query for leads created by user OR assigned to user via LeadHistory
+      query.$or = [
+        { created_by: userId },
+        { _id: { $in: assignedLeadIds } }
+      ];
     }
     
     const leads = await Lead.find(query)
