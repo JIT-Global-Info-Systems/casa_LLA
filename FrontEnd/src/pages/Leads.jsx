@@ -15,7 +15,7 @@ import toast from "react-hot-toast"
 
 const yesNo = (v) => (v ? "Yes" : "No")
 
-export default function Leads({ data = null, onSubmit, onClose, viewMode = false, currentStep, onStepChange, editableFields = null, stepperOnly = false, hideStepper = false }) {
+export default function Leads({ data = null, onSubmit, onClose, viewMode = false, currentStep, onStepChange, editableFields = null, stepperOnly = false, hideStepper = false, calls = [] }) {
   const { mediators, loading: mediatorsLoading, fetched: mediatorsFetched, fetchMediators } = useMediators()
   const { users, loading: usersLoading, fetchUsers } = useUsers()
 
@@ -26,10 +26,10 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     return editableFields.includes(fieldName);
   };
 
-  // Static roles for assignment (matching LeadStepper)
+  // Static roles for assignment (matching LeadStepper) - 12 roles total
   const STATIC_ROLES = [
     "tele_caller",
-    "land_executive",
+    "land_executive", 
     "analytics_team",
     "feasibility_team",
     "field_study_product_team",
@@ -37,7 +37,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     "l1_md",
     "cmo_cro",
     "legal",
-    "liaison",
+    "liaison", 
     "finance",
     "admin"
   ]
@@ -188,12 +188,15 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     checkPattaChitta: false,
     filePattaChitta: null,
 
-    checkRequests: "",
     currentRole: "",
     assignedTo: "",
+    assignToUser: "", // New field for specific user assignment
     inquiredBy: "", // New field for inquiry status (only enabled when leadStatus is "Pending"/Enquired)
     L1_Qualification: "", // L1 Qualification status
     directorSVStatus: "", // Director SV status
+    callDate: "", // Call date for calls and notes
+    callTime: "", // Call time for calls and notes
+    callNotes: "", // Call notes for calls
   })
 
   const [masters, setMasters] = useState({ locations: [], regions: [], zones: [] })
@@ -362,10 +365,14 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       mediatorId: data.mediatorId || prev.mediatorId,
       currentRole: data.currentRole || prev.currentRole,
       assignedTo: data.assignedTo || prev.assignedTo, // Now storing role string, not user ID
+      assignToUser: data.assignToUser || prev.assignToUser, // New field for specific user assignment
       status: data.status || prev.status,
       inquiredBy: data.inquiredBy || prev.inquiredBy,
       L1_Qualification: data.L1_Qualification || prev.L1_Qualification,
       directorSVStatus: data.directorSVStatus || prev.directorSVStatus,
+      callDate: data.callDate || prev.callDate,
+      callTime: data.callTime || prev.callTime,
+      callNotes: data.callNotes || prev.callNotes,
 
       // competitor..
       competitorDeveloperName: firstCompetitor?.developerName || "",
@@ -441,7 +448,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
         'finance': 11,
         'admin': 12
       }
-      
+
       const stepNumber = roleToStepMap[formData.assignedTo]
       if (stepNumber) {
         onStepChange(stepNumber)
@@ -554,59 +561,63 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
         waterList: yesNo(formData.checkWaterList),
         ownerName: formData.checkOwnerName || "",
         consultantName: formData.checkConsultantName || "",
-        notes: [formData.checkNotes, formData.checkRequests ? `Requests: ${formData.checkRequests}` : ""].filter(Boolean).join("\n"),
+        notes: formData.checkNotes || "",
         projects: formData.checkProjects || "",
         googleLocation: formData.checkGoogleLocation || "",
       },
     ]
 
-    return {
-      // base schema fields
-      leadType: formData.leadType,
-      contactNumber: formData.contactNumber,
-      mediatorName: formData.mediatorName,
-      mediatorId: formData.mediatorId,
-      date: formData.date,
-      location: formData.location,
-      zone: formData.zone,
-      landName: formData.landName,
-      sourceCategory: formData.sourceCategory,
-      source: formData.source,
-      extent: formData.extent,
-      unit: formData.unit,
-      propertyType: formData.propertyType,
-      fsi: formData.fsi,
-      asp: formData.asp,
-      revenue: formData.revenue,
-      transactionType: formData.transactionType,
-      rate: formData.rate,
-      builderShare: formData.builderShare,
-      refundable: formData.refundable,
-      nonRefundable: formData.nonRefundable,
-      landmark: formData.landmark,
-      frontage: formData.frontage,
-      roadWidth: formData.roadWidth,
-      sspde: formData.sspde,
-      remark: formData.remark,
-      lead_stage: formData.lead_stage,
-      status: formData.status,
-
-      // backend field name
-      lead_status: String(formData.leadStatus || "").toUpperCase(),
-
-      // CRITICAL: Always send currentRole from localStorage to prevent validation errors
+    // Build the payload - only include fields that have values or are required
+    const payload = {
+      // base schema fields - always required
+      leadType: formData.leadType || "mediator",
+      contactNumber: formData.contactNumber || "",
+      mediatorName: formData.mediatorName || "",
+      date: formData.date || "",
+      location: formData.location || "",
+      landName: formData.landName || "",
+      sourceCategory: formData.sourceCategory || "",
+      source: formData.source || "",
+      status: formData.status || "active",
       currentRole: currentRoleValue,
-
-      // Send assignedTo field (backend needs to support this)
-      assignedTo: formData.assignedTo,
-      inquiredBy: formData.inquiredBy,
-      L1_Qualification: formData.L1_Qualification,
-      directorSVStatus: formData.directorSVStatus,
+      assignedTo: formData.assignedTo || currentRoleValue, // CRITICAL: Always send assignedTo (required for history)
+      assignToUser: formData.assignToUser, // New field for specific user assignment
 
       // structured sections
       competitorAnalysis,
       checkListPage,
     }
+
+    // Add optional fields only if they have values
+    if (formData.mediatorId) payload.mediatorId = formData.mediatorId
+    if (formData.zone) payload.zone = formData.zone
+    if (formData.extent) payload.extent = formData.extent
+    if (formData.unit) payload.unit = formData.unit
+    if (formData.propertyType) payload.propertyType = formData.propertyType
+    if (formData.fsi) payload.fsi = formData.fsi
+    if (formData.asp) payload.asp = formData.asp
+    if (formData.revenue) payload.revenue = formData.revenue
+    if (formData.transactionType) payload.transactionType = formData.transactionType
+    if (formData.rate) payload.rate = formData.rate
+    if (formData.builderShare) payload.builderShare = formData.builderShare
+    if (formData.refundable) payload.refundable = formData.refundable
+    if (formData.nonRefundable) payload.nonRefundable = formData.nonRefundable
+    if (formData.landmark) payload.landmark = formData.landmark
+    if (formData.frontage) payload.frontage = formData.frontage
+    if (formData.roadWidth) payload.roadWidth = formData.roadWidth
+    if (formData.sspde) payload.sspde = formData.sspde
+    if (formData.remark) payload.remark = formData.remark
+    if (formData.lead_stage) payload.lead_stage = formData.lead_stage
+    if (formData.leadStatus) payload.lead_status = String(formData.leadStatus).toUpperCase()
+    // assignedTo is now always included in the base payload above
+    if (formData.inquiredBy) payload.inquiredBy = formData.inquiredBy
+    if (formData.L1_Qualification) payload.L1_Qualification = formData.L1_Qualification
+    if (formData.directorSVStatus) payload.directorSVStatus = formData.directorSVStatus
+    if (formData.callDate) payload.callDate = formData.callDate
+    if (formData.callTime) payload.callTime = formData.callTime
+    if (formData.callNotes) payload.callNotes = formData.callNotes
+
+    return payload
   }
 
   const handleSubmit = async () => {
@@ -631,6 +642,10 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
     try {
       const leadPayload = toLeadPayload()
+
+      // Debug: Log the payload being sent
+      console.log('Lead Payload being sent:', JSON.stringify(leadPayload, null, 2))
+
       const files = {
         ...(formData.checkFMBSketch && formData.fileFMBSketch ? { fmb_sketch: formData.fileFMBSketch } : {}),
         ...(formData.checkPattaChitta && formData.filePattaChitta ? { patta_chitta: formData.filePattaChitta } : {}),
@@ -728,7 +743,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           cursor: not-allowed;
         }
       `}</style>
-      
+
       {/* Stepper Only Mode - Show only the LeadStepper */}
       {stepperOnly ? (
         <div className="w-full">
@@ -753,227 +768,243 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
               />
             </div>
           )}
-          
-          <div className="max-w-7xl mx-auto space-y-6">
 
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            {onClose && (
-              <Button variant="outline" size="icon" onClick={onClose} className="bg-white shadow-sm hover:bg-gray-100">
-                <ChevronLeft className="h-5 w-5 text-gray-600" />
-              </Button>
-            )}
-            <div>
-              <h1 className="text-2xl font-bold text-indigo-600 tracking-tight">
-                {viewMode ? "View Lead" : data ? "Edit Lead" : "New Lead"}
-              </h1>
-              <p className="text-gray-500 text-sm mt-1">
-                {viewMode ? "View the lead details below." : "Fill in the details below to create a new property lead"}
-              </p>
-            </div>
-          </div>
-        </div>
+          <div className="w-full">
 
-        {apiError && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
-            <AlertCircle className="h-5 w-5 text-red-600 shrink-0" />
-            <div className="flex-1">
-              <p className="text-red-800 font-medium">Error</p>
-              <p className="text-red-600 text-sm">{apiError}</p>
-            </div>
-            <Button variant="ghost" size="sm" onClick={() => setApiError(null)} className="text-red-600 hover:text-red-800 hover:bg-red-100">
-              ×
-            </Button>
-          </div>
-        )}
-
-        <Card className="border-0 shadow-md bg-white overflow-hidden">
-          <div className="h-2 bg-indigo-500 w-full" />
-          <CardHeader>
-            <CardTitle className="text-xl text-gray-800">Basic Information</CardTitle>
-            <CardDescription>Primary contact and property details.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* 3x3 Grid Layout for Basic Information */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="space-y-2">
-              <Label className="text-gray-700">Lead Type</Label>
-              {viewMode ? (
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
-                  {formData.leadType || "-"}
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-4">
+                {onClose && (
+                  <Button variant="outline" size="icon" onClick={onClose} className="bg-white shadow-sm hover:bg-gray-100">
+                    <ChevronLeft className="h-5 w-5 text-gray-600" />
+                  </Button>
+                )}
+                <div>
+                  <h1 className="text-2xl font-bold text-indigo-600 tracking-tight">
+                    {viewMode ? "View Lead" : data ? "Edit Lead" : "New Lead"}
+                  </h1>
+                  <p className="text-gray-500 text-sm mt-1">
+                    {viewMode ? "View the lead details below." : "Fill in the details below to create a new property lead"}
+                  </p>
                 </div>
-              ) : (
-                <div className="flex gap-2 p-1 bg-gray-100 rounded-lg w-fit">
-                  {["mediator", "owner"].map((type) => (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => {
-                        handleChange("leadType", type)
-                        // Clear mediator fields when switching to owner
-                        if (type === "owner") {
-                          handleChange("mediatorName", "")
-                          handleChange("mediatorId", "")
-                        }
-                      }}
-                      className={`px-4 py-1.5 rounded-md text-sm font-medium capitalize transition-all ${formData.leadType === type ? "bg-white text-indigo-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
-                        }`}
-                    >
-                      {type}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label>Contact Number</Label>
-              {viewMode || !isFieldEditable('contactNumber') ? (
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                  {formData.contactNumber || "-"}
-                </div>
-              ) : (
-                <Input
-                  value={formData.contactNumber}
-                  onChange={(e) => handleChange("contactNumber", e.target.value)}
-                  placeholder="e.g. +91 98765 43210"
-                  className={`bg-gray-50/50 ${errors.contactNumber ? "border-red-500 focus:border-red-500" : ""}`}
-                />
-              )}
-              {errors.contactNumber && !viewMode && isFieldEditable('contactNumber') && (
-                <p className="text-red-500 text-sm flex items-center gap-1">
-                  <AlertCircle className="h-4 w-4" />
-                  {errors.contactNumber}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label>Mediator/Owner Name</Label>
-              {viewMode ? (
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                  {formData.mediatorName || "-"}
-                </div>
-              ) : (
-                formData.leadType === "mediator" ? (
-                  <Select
-                    value={formData.mediatorName}
-                    onValueChange={(value) => {
-                      handleChange("mediatorName", value)
-                      // Also set the mediator ID when a mediator is selected
-                      const selectedMediator = mediators.find(m => m.name === value)
-                      if (selectedMediator) {
-                        handleChange("mediatorId", selectedMediator._id)
-                      }
-                    }}
-                    disabled={mediatorsLoading}
-                  >
-                    <SelectTrigger className={`bg-gray-50/50 ${errors.mediatorName ? "border-red-500 focus:border-red-500" : ""}`}>
-                      {mediatorsLoading ? (
-                        <div className="flex items-center gap-2">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          <SelectValue placeholder="Loading mediators..." />
-                        </div>
-                      ) : (
-                        <SelectValue placeholder="Select mediator" />
-                      )}
-                    </SelectTrigger>
-                    <SelectContent className="bg-white z-50 shadow-xl border-gray-200">
-                      {mediators.map((mediator) => (
-                        <SelectItem key={mediator._id} value={mediator.name}>
-                          {mediator.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <Input
-                    value={formData.mediatorName}
-                    onChange={(e) => handleChange("mediatorName", e.target.value)}
-                    placeholder="Enter owner name"
-                    className={`bg-gray-50/50 ${errors.mediatorName ? "border-red-500 focus:border-red-500" : ""}`}
-                  />
-                )
-              )}
-              {errors.mediatorName && !viewMode && (
-                <p className="text-red-500 text-sm flex items-center gap-1">
-                  <AlertCircle className="h-4 w-4" />
-                  {errors.mediatorName}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label>Current Role (Action By)</Label>
-              <div className="p-2 bg-gray-100 border border-gray-200 rounded-md text-gray-700 min-h-[40px] flex items-center capitalize font-medium">
-                {formData.currentRole?.replace(/_/g, ' ') || getCurrentUserRole().replace(/_/g, ' ')}
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Assign to</Label>
-              {viewMode ? (
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
-                  {formData.assignedTo?.replace(/_/g, ' ') || "-"}
+            {apiError && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
+                <AlertCircle className="h-5 w-5 text-red-600 shrink-0" />
+                <div className="flex-1">
+                  <p className="text-red-800 font-medium">Error</p>
+                  <p className="text-red-600 text-sm">{apiError}</p>
                 </div>
-              ) : (
-                <Select
-                  value={formData.assignedTo}
-                  onValueChange={(value) => {
-                    handleChange("assignedTo", value)
-                    // When assigning, also ensure currentRole is up to date
-                    const userRole = getCurrentUserRole()
-                    handleChange("currentRole", userRole)
-                  }}
-                >
-                  <SelectTrigger className="bg-gray-50/50">
-                    <SelectValue placeholder="Select role to assign">
-                      {formData.assignedTo?.replace(/_/g, ' ') || "Select role to assign"}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent className="bg-white z-50 shadow-xl border-gray-200">
-                    {getFilteredStaticRoles().map((role) => (
-                      <SelectItem key={role} value={role}>
-                        {role.replace(/_/g, ' ')}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
+                <Button variant="ghost" size="sm" onClick={() => setApiError(null)} className="text-red-600 hover:text-red-800 hover:bg-red-100">
+                  ×
+                </Button>
+              </div>
+            )}
 
-            <div className="space-y-2 hidden">
-              <Label>Mediator ID (optional)</Label>
-              {viewMode ? (
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                  {formData.mediatorId || "-"}
-                </div>
-              ) : (
-                <Input value={formData.mediatorId} onChange={(e) => handleChange("mediatorId", e.target.value)} className="bg-gray-50/50" placeholder="Enter mediator ID if applicable" />
-              )}
-            </div>
+            {/* ===== TWO COLUMN ROW START ===== */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* LEFT COLUMN – BASIC INFO */}
+              <div className="lg:col-span-8">
+                <Card className="border-0 shadow-md bg-white overflow-hidden">
+                  <div className="h-2 bg-indigo-500 w-full" />
+                  <CardHeader>
+                    <CardTitle className="text-xl text-gray-800">Basic Information</CardTitle>
+                    <CardDescription>Primary contact and property details.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                {/* 3x3 Grid Layout for Basic Information */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-gray-700">Lead Type</Label>
+                    {viewMode ? (
+                      <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
+                        {formData.leadType || "-"}
+                      </div>
+                    ) : (
+                      <div className="flex gap-2 p-1 bg-gray-100 rounded-lg w-fit">
+                        {["mediator", "owner"].map((type) => (
+                          <button
+                            key={type}
+                            type="button"
+                            onClick={() => handleChange("leadType", type)}
+                            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                              formData.leadType === type
+                                ? "bg-indigo-600 text-white shadow-sm"
+                                : "bg-transparent text-gray-600 hover:bg-gray-200"
+                            }`}
+                          >
+                            {type.charAt(0).toUpperCase() + type.slice(1)}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
 
-            <div className="space-y-2">
-              <Label>Date</Label>
-              {viewMode ? (
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                  {formData.date ? String(formData.date).slice(0, 10) : "-"}
-                </div>
-              ) : (
-                <Input
-                  type="date"
-                  value={formData.date ? String(formData.date).slice(0, 10) : ""}
-                  onChange={(e) => handleChange("date", e.target.value)}
-                  className={`bg-gray-50/50 ${errors.date ? "border-red-500 focus:border-red-500" : ""}`}
-                />
-              )}
-              {errors.date && !viewMode && (
-                <p className="text-red-500 text-sm flex items-center gap-1">
-                  <AlertCircle className="h-4 w-4" />
-                  {errors.date}
-                </p>
-              )}
-            </div>
+                  <div className="space-y-2">
+                    <Label>Contact Number</Label>
+                    {viewMode ? (
+                      <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                        {formData.contactNumber || "-"}
+                      </div>
+                    ) : (
+                      <Input
+                        value={formData.contactNumber}
+                        onChange={(e) => handleChange("contactNumber", e.target.value)}
+                        className={errors.contactNumber ? "border-red-500 focus:border-red-500" : ""}
+                        placeholder="+91 XXXXX XXXXX"
+                      />
+                    )}
+                    {errors.contactNumber && !viewMode && (
+                      <p className="text-red-500 text-sm flex items-center gap-1">
+                        <AlertCircle className="h-4 w-4" />
+                        {errors.contactNumber}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Mediator/Owner Name</Label>
+                    {viewMode ? (
+                      <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                        {formData.mediatorName || "-"}
+                      </div>
+                    ) : (
+                      <Select value={formData.mediatorName} onValueChange={(v) => handleChange("mediatorName", v)}>
+                        <SelectTrigger className={errors.mediatorName ? "border-red-500 focus:border-red-500" : ""}>
+                          {mediatorsLoading ? (
+                            <div className="flex items-center gap-2">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              <SelectValue placeholder="Loading..." />
+                            </div>
+                          ) : (
+                            <SelectValue placeholder="Select Mediator/Owner" />
+                          )}
+                        </SelectTrigger>
+                        <SelectContent className="bg-white z-50 shadow-lg">
+                          {mediators.map((m) => (
+                            <SelectItem key={m._id || m.id} value={m.name}>
+                              {m.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    {errors.mediatorName && !viewMode && (
+                      <p className="text-red-500 text-sm flex items-center gap-1">
+                        <AlertCircle className="h-4 w-4" />
+                        {errors.mediatorName}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* ===== NEW FIELDS: Current Role, Assigned To, Assign To ===== */}
+                  
+                  {/* Current Role - Visible field (auto-fetched from localStorage) */}
+                  <div className="space-y-2">
+                    <Label className="text-gray-700 font-medium">Current Role</Label>
+                    {viewMode ? (
+                      <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
+                        {formData.currentRole ? formData.currentRole.replace(/_/g, ' ') : "-"}
+                      </div>
+                    ) : (
+                      <Input 
+                        value={formData.currentRole ? formData.currentRole.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : ""} 
+                        onChange={(e) => handleChange("currentRole", e.target.value)} 
+                        disabled 
+                        className="bg-gray-50/50" 
+                        placeholder="Current role (auto-fetched)"
+                      />
+                    )}
+                  </div>
+
+                  {/* Assigned To - Role Dropdown */}
+                  <div className="space-y-2">
+                    <Label className="text-gray-700 font-medium">Assigned To (Role)</Label>
+                    {viewMode ? (
+                      <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
+                        {formData.assignedTo ? formData.assignedTo.replace(/_/g, ' ') : "-"}
+                      </div>
+                    ) : (
+                      <Select value={formData.assignedTo} onValueChange={(v) => handleChange("assignedTo", v)}>
+                        <SelectTrigger className="bg-gray-50/50">
+                          <SelectValue placeholder="Select Role" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white z-50 shadow-lg">
+                          {getFilteredStaticRoles().map((role) => (
+                            <SelectItem key={role} value={role}>
+                              {role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+
+                  {/* Assign To - User Dropdown based on selected role */}
+                  <div className="space-y-2">
+                    <Label className="text-gray-700 font-medium">Assign To (User)</Label>
+                    {viewMode ? (
+                      <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                        {formData.assignToUser || "-"}
+                      </div>
+                    ) : (
+                      <Select value={formData.assignToUser} onValueChange={(v) => handleChange("assignToUser", v)}>
+                        <SelectTrigger className="bg-gray-50/50">
+                          {usersLoading ? (
+                            <div className="flex items-center gap-2">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              <SelectValue placeholder="Loading users..." />
+                            </div>
+                          ) : (
+                            <SelectValue placeholder="Select User" />
+                          )}
+                        </SelectTrigger>
+                        <SelectContent className="bg-white z-50 shadow-lg">
+                          {users
+                            .filter(user => user.role === formData.assignedTo)
+                            .map((user) => (
+                              <SelectItem key={user._id || user.id} value={user._id || user.id}>
+                                {user.name} ({user.role.replace(/_/g, ' ')})
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+
+              <div className="space-y-2 hidden">
+                <Label>Mediator ID (optional)</Label>
+                {viewMode ? (
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                    {formData.mediatorId || "-"}
+                  </div>
+                ) : (
+                  <Input value={formData.mediatorId} onChange={(e) => handleChange("mediatorId", e.target.value)} className="bg-gray-50/50" placeholder="Enter mediator ID if applicable" />
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label>Date</Label>
+                {viewMode ? (
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                    {formData.date ? String(formData.date).slice(0, 10) : "-"}
+                  </div>
+                ) : (
+                  <Input
+                    type="date"
+                    value={formData.date ? String(formData.date).slice(0, 10) : ""}
+                    onChange={(e) => handleChange("date", e.target.value)}
+                    className={`bg-gray-50/50 ${errors.date ? "border-red-500 focus:border-red-500" : ""}`}
+                  />
+                )}
+                {errors.date && !viewMode && (
+                  <p className="text-red-500 text-sm flex items-center gap-1">
+                    <AlertCircle className="h-4 w-4" />
+                    {errors.date}
+                  </p>
+                )}
+              </div>
 
               {/* Row 1: Location, Zone, Area */}
               <div className="space-y-2">
@@ -1069,71 +1100,71 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                 )}
               </div>
 
-            <div className="space-y-2">
-              <Label>Land Name</Label>
-              {viewMode ? (
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                  {formData.landName || "-"}
-                </div>
-              ) : (
-                <Input value={formData.landName} onChange={(e) => handleChange("landName", e.target.value)} className={errors.landName ? "border-red-500 focus:border-red-500" : ""} />
-              )}
-            </div>
+              <div className="space-y-2">
+                <Label>Land Name</Label>
+                {viewMode ? (
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                    {formData.landName || "-"}
+                  </div>
+                ) : (
+                  <Input value={formData.landName} onChange={(e) => handleChange("landName", e.target.value)} className={errors.landName ? "border-red-500 focus:border-red-500" : ""} />
+                )}
+              </div>
 
-            <div className="space-y-2">
-              <Label>Source Category</Label>
-              {viewMode ? (
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
-                  {formData.sourceCategory || "-"}
-                </div>
-              ) : (
-                <Select value={formData.sourceCategory} onValueChange={(v) => handleChange("sourceCategory", v)}>
-                  <SelectTrigger className={errors.sourceCategory ? "border-red-500 focus:border-red-500" : ""}>
-                    <SelectValue placeholder="Select Category" />
+              <div className="space-y-2">
+                <Label>Source Category</Label>
+                {viewMode ? (
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
+                    {formData.sourceCategory || "-"}
+                  </div>
+                ) : (
+                  <Select value={formData.sourceCategory} onValueChange={(v) => handleChange("sourceCategory", v)}>
+                    <SelectTrigger className={errors.sourceCategory ? "border-red-500 focus:border-red-500" : ""}>
+                      <SelectValue placeholder="Select Category" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white z-50 shadow-lg">
+                      <SelectItem value="online">Online</SelectItem>
+                      <SelectItem value="reference">Reference</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label>Lead Status</Label>
+                <Select value={formData.lead_stage} onValueChange={(v) => handleChange("lead_stage", v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent className="bg-white z-50 shadow-lg">
-                    <SelectItem value="online">Online</SelectItem>
-                    <SelectItem value="reference">Reference</SelectItem>
+                    {/* <SelectItem value="new">New</SelectItem> */}
+                    <SelectItem value="warm">Warm</SelectItem>
+                    <SelectItem value="hot">Hot</SelectItem>
+                    <SelectItem value="cold">Cold</SelectItem>
+                    <SelectItem value="management_hot">Management Hot</SelectItem>
                   </SelectContent>
                 </Select>
-              )}
-            </div>
+              </div>
 
-            <div className="space-y-2">
-              <Label>Lead Status</Label>
-              <Select value={formData.lead_stage} onValueChange={(v) => handleChange("lead_stage", v)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent className="bg-white z-50 shadow-lg">
-                  {/* <SelectItem value="new">New</SelectItem> */}
-                  <SelectItem value="warm">Warm</SelectItem>
-                  <SelectItem value="hot">Hot</SelectItem>
-                  <SelectItem value="cold">Cold</SelectItem>
-                  <SelectItem value="management_hot">Management Hot</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Source</Label>
-              {viewMode ? (
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
-                  {formData.source || "-"}
-                </div>
-              ) : (
-                <Select value={formData.source} onValueChange={(v) => handleChange("source", v)}>
-                  <SelectTrigger className={errors.source ? "border-red-500 focus:border-red-500" : ""}>
-                    <SelectValue placeholder="Select Source" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white z-50 shadow-lg">
-                    <SelectItem value="facebook">Facebook</SelectItem>
-                    <SelectItem value="google">Google</SelectItem>
-                    <SelectItem value="referral">Referral</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
+              <div className="space-y-2">
+                <Label>Source</Label>
+                {viewMode ? (
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
+                    {formData.source || "-"}
+                  </div>
+                ) : (
+                  <Select value={formData.source} onValueChange={(v) => handleChange("source", v)}>
+                    <SelectTrigger className={errors.source ? "border-red-500 focus:border-red-500" : ""}>
+                      <SelectValue placeholder="Select Source" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white z-50 shadow-lg">
+                      <SelectItem value="facebook">Facebook</SelectItem>
+                      <SelectItem value="google">Google</SelectItem>
+                      <SelectItem value="referral">Referral</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
 
               {/* Row 3: Extent, Unit, Property Type */}
               <div className="space-y-2">
@@ -1187,7 +1218,29 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                 )}
               </div>
 
-              {/* Row 5: Transaction Type, Builder Share, Refundable, Non-Refundable */}
+              <div className="space-y-2">
+                <Label>Date</Label>
+                {viewMode ? (
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                    {formData.date || "-"}
+                  </div>
+                ) : (
+                  <Input value={formData.date} onChange={(e) => handleChange("date", e.target.value)} className="bg-gray-50/50" />
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-gray-700 font-medium">Builder Share (%)</Label>
+                {viewMode ? (
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                    {formData.builderShare || "-"}
+                  </div>
+                ) : (
+                  <Input value={formData.builderShare} onChange={(e) => handleChange("builderShare", e.target.value)} className="bg-gray-50/50" />
+                )}
+              </div>
+
+              {/* Row 5: Transaction Type, Rate, Refundable, Non-Refundable */}
               <div className="space-y-2">
                 <Label className="text-gray-700 font-medium">Transaction Type</Label>
                 {viewMode ? (
@@ -1208,14 +1261,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
               </div>
 
               <div className="space-y-2">
-                <Label className="text-gray-700 font-medium">Builder Share (%)</Label>
-                {viewMode ? (
-                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                    {formData.builderShare || "-"}
-                  </div>
-                ) : (
                   <Input value={formData.builderShare} onChange={(e) => handleChange("builderShare", e.target.value)} className="bg-gray-50/50" />
-                )}
+                
               </div>
 
               <div className="space-y-2">
@@ -1374,614 +1421,778 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                   )}
                 </div>
               )}
-            </div>
-            {/* Lead Qualification */}
-            {formData.leadStatus === "L1_Qualification" && (
-              <div className="space-y-2">
-                <Label className="text-gray-700">L1_Qualification</Label>
-                {!isFieldEditable('L1_Qualification') ? (
-                  <div className="p-2 bg-white border border-gray-300 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
-                    {formData.L1_Qualification || "-"}
-                  </div>
-                ) : (
-                  <Select value={formData.L1_Qualification} onValueChange={(v) => handleChange("L1_Qualification", v)}>
-                    <SelectTrigger className="bg-white border-gray-300" data-editable="true">
-                      <SelectValue placeholder="Select L1_Qualification status" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white z-50 shadow-lg">
-                      <SelectItem value="eligible_for_sv">eligible for SV</SelectItem>
-                      <SelectItem value="rejected_for_sv">eligible for sv</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              </div>
-            )}
-
-            {/* Director SV Status */}
-            {formData.leadStatus === "director_sv" && (
-              <div className="space-y-2">
-                <Label className="text-gray-700">Director SV Status</Label>
-                {!isFieldEditable('directorSVStatus') ? (
-                  <div className="p-2 bg-white border border-gray-300 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
-                    {formData.directorSVStatus || "-"}
-                  </div>
-                ) : (
-                  <Select value={formData.directorSVStatus} onValueChange={(v) => handleChange("directorSVStatus", v)}>
-                    <SelectTrigger className="bg-white border-gray-300" data-editable="true">
-                      <SelectValue placeholder="Select Director SV status" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white z-50 shadow-lg">
-                      <SelectItem value="sv_pending">SV Pending</SelectItem>
-                      <SelectItem value="sv_rejected">SV Rejected</SelectItem>
-                      <SelectItem value="sv_done">SV Done</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              </div>
-            )}
-
-            {/* Status field - only show in edit mode */}
-            {data && (
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select value={formData.status} onValueChange={(v) => handleChange("status", v)}>
-                  <SelectTrigger>
-                    <SelectValue />
+          </div>
+          {/* Lead Qualification */}
+          {formData.leadStatus === "L1_Qualification" && (
+            <div className="space-y-2">
+              <Label className="text-gray-700">L1_Qualification</Label>
+              {!isFieldEditable('L1_Qualification') ? (
+                <div className="p-2 bg-white border border-gray-300 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
+                  {formData.L1_Qualification || "-"}
+                </div>
+              ) : (
+                <Select value={formData.L1_Qualification} onValueChange={(v) => handleChange("L1_Qualification", v)}>
+                  <SelectTrigger className="bg-white border-gray-300" data-editable="true">
+                    <SelectValue placeholder="Select L1_Qualification status" />
                   </SelectTrigger>
                   <SelectContent className="bg-white z-50 shadow-lg">
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
+                    <SelectItem value="eligible_for_sv">eligible for SV</SelectItem>
+                    <SelectItem value="rejected_for_sv">eligible for sv</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-            )}
+              )}
+            </div>
+          )}
+
+          {/* Director SV Status */}
+          {formData.leadStatus === "director_sv" && (
+            <div className="space-y-2">
+              <Label className="text-gray-700">Director SV Status</Label>
+              {!isFieldEditable('directorSVStatus') ? (
+                <div className="p-2 bg-white border border-gray-300 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
+                  {formData.directorSVStatus || "-"}
+                </div>
+              ) : (
+                <Select value={formData.directorSVStatus} onValueChange={(v) => handleChange("directorSVStatus", v)}>
+                  <SelectTrigger className="bg-white border-gray-300" data-editable="true">
+                    <SelectValue placeholder="Select Director SV status" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white z-50 shadow-lg">
+                    <SelectItem value="sv_pending">SV Pending</SelectItem>
+                    <SelectItem value="sv_rejected">SV Rejected</SelectItem>
+                    <SelectItem value="sv_done">SV Done</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          )}
+
+          {/* Status field - only show in edit mode */}
+          {data && (
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select value={formData.status} onValueChange={(v) => handleChange("status", v)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-white z-50 shadow-lg">
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
 
-          </CardContent>
-        </Card>
+                  </CardContent>
+                </Card>
+              </div>
 
-        {/* Notes & Yield Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 hidden">
-          {/* Notes Card */}
-          <Card className="border-0 shadow-md bg-white">
-            <CardHeader>
-              <CardTitle className="text-xl text-gray-800">Notes & Calls</CardTitle>
-              <CardDescription>Additional notes and call history</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Calls & Notes</Label>
-                {viewMode ? (
-                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[120px] whitespace-pre-wrap">
-                    {formData.checkNotes || "-"}
-                  </div>
-                ) : (
-                  <Textarea
-                    value={formData.checkNotes}
-                    onChange={(e) => handleChange("checkNotes", e.target.value)}
-                    placeholder="Enter additional notes, calls, observations, or important information about this lead..."
-                    rows={5}
-                    className="bg-gray-50 resize-y"
-                  />
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label>Remark</Label>
-                {viewMode ? (
-                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[100px] whitespace-pre-wrap">
-                    {formData.remark || "-"}
-                  </div>
-                ) : (
-                  <Textarea 
-                    value={formData.remark} 
-                    onChange={(e) => handleChange("remark", e.target.value)} 
-                    rows={4} 
-                    placeholder="Add any additional context here..." 
-                    className="bg-gray-50" 
-                  />
-                )}
-              </div>
-            </CardContent>
-          </Card>
+              {/* RIGHT COLUMN – CALL HISTORY / YIELD */}
+              <div className="lg:col-span-4">
+                <Card className="border-0 shadow-md bg-white">
+                  <CardHeader>
+                    <CardTitle className="text-lg text-gray-800">Call History & Yield</CardTitle>
+                    <CardDescription>Quick reference</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* CALL HISTORY */}
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700">Call History</Label>
+                      {calls?.length > 0 ? (
+                        <div className="space-y-3 mt-2">
+                          {calls.map((call, idx) => (
+                            <div key={idx} className="p-3 border rounded-lg bg-gray-50 text-sm">
+                              <div className="flex justify-between items-start mb-2">
+                                <p className="font-medium">
+                                  {new Date(call.created_at || call.createdAt).toLocaleDateString()}
+                                </p>
+                                <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
+                                  {call.role || 'Call'}
+                                </span>
+                              </div>
+                              <p className="text-gray-600">
+                                {call.note || "No notes"}
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {new Date(call.created_at || call.createdAt).toLocaleTimeString()}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-400 italic mt-2">No call history</p>
+                      )}
+                    </div>
 
-          {/* Yield Card */}
-          <Card className="border-0 shadow-md bg-white">
-            <CardHeader>
-              <CardTitle className="text-xl text-gray-800">Yield & Requests</CardTitle>
-              <CardDescription>Yield calculation and special requests</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2 hidden">
-                <Label className="text-gray-700 font-medium">Yield (%)</Label>
-                {viewMode ? (
-                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                    {formData.yield || "-"}
-                  </div>
-                ) : (
-                  <Input 
-                    value={formData.yield} 
-                    onChange={(e) => handleChange("yield", e.target.value)} 
-                    placeholder="Enter yield percentage"
-                    className="bg-gray-50/50" 
-                  />
-                )}
+                    {/* YIELD */}
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700">Yield (%)</Label>
+                      <div className="p-2 bg-gray-50 border rounded-md mt-1">
+                        {formData.yield || "-"}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
-              <div className="space-y-2">
-                <Label>Special Requests</Label>
-                {viewMode ? (
-                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[100px] whitespace-pre-wrap">
-                    {formData.checkRequests || "-"}
-                  </div>
-                ) : (
-                  <Textarea 
-                    value={formData.checkRequests} 
-                    onChange={(e) => handleChange("checkRequests", e.target.value)} 
-                    placeholder="Enter any special requests" 
-                    rows={4} 
-                    className="bg-gray-50" 
-                  />
-                )}
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+            {/* ===== TWO COLUMN ROW END ===== */}
+
+  {/* Full Width Wrapper for Competitor Analysis, Site Visit Checklist & Notes & Calls */ }
+  <div className="w-full mt-8">
+    {/* Competitor Analysis - Full Width */}
+    <Card className="border-0 shadow-md bg-white">
+      <CardHeader>
+        <CardTitle className="text-xl text-gray-800">Competitor Analysis</CardTitle>
+      </CardHeader>
+      <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="space-y-2">
+          <Label>Developer Name</Label>
+          {viewMode ? (
+            <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+              {formData.competitorDeveloperName || "-"}
+            </div>
+          ) : (
+            <Input value={formData.competitorDeveloperName} onChange={(e) => handleChange("competitorDeveloperName", e.target.value)} />
+          )}
         </div>
+        <div className="space-y-2">
+          <Label>Project Name</Label>
+          {viewMode ? (
+            <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+              {formData.competitorProjectName || "-"}
+            </div>
+          ) : (
+            <Input value={formData.competitorProjectName} onChange={(e) => handleChange("competitorProjectName", e.target.value)} />
+          )}
+        </div>
+        <div className="space-y-2">
+          <Label>Product Type</Label>
+          {viewMode ? (
+            <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+              {formData.competitorProductType || "-"}
+            </div>
+          ) : (
+            <Input value={formData.competitorProductType} onChange={(e) => handleChange("competitorProductType", e.target.value)} />
+          )}
+        </div>
+        <div className="space-y-2">
+          <Label>Location</Label>
+          {viewMode ? (
+            <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+              {formData.competitorLocation || "-"}
+            </div>
+          ) : (
+            <Input value={formData.competitorLocation} onChange={(e) => handleChange("competitorLocation", e.target.value)} />
+          )}
+        </div>
+        <div className="space-y-2">
+          <Label>Plot / Unit Size</Label>
+          {viewMode ? (
+            <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+              {formData.competitorPlotSize || "-"}
+            </div>
+          ) : (
+            <Input value={formData.competitorPlotSize} onChange={(e) => handleChange("competitorPlotSize", e.target.value)} />
+          )}
+        </div>
+        <div className="space-y-2">
+          <Label>Land Extent</Label>
+          {viewMode ? (
+            <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+              {formData.competitorLandExtent || "-"}
+            </div>
+          ) : (
+            <Input value={formData.competitorLandExtent} onChange={(e) => handleChange("competitorLandExtent", e.target.value)} />
+          )}
+        </div>
+        <div className="space-y-2">
+          <Label>Price Range</Label>
+          {viewMode ? (
+            <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+              {formData.competitorPriceRange || "-"}
+            </div>
+          ) : (
+            <Input value={formData.competitorPriceRange} onChange={(e) => handleChange("competitorPriceRange", e.target.value)} />
+          )}
+        </div>
+        <div className="space-y-2">
+          <Label>Approx Price</Label>
+          {viewMode ? (
+            <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+              {formData.competitorApproxPrice || "-"}
+            </div>
+          ) : (
+            <Input value={formData.competitorApproxPrice} onChange={(e) => handleChange("competitorApproxPrice", e.target.value)} />
+          )}
+        </div>
+        <div className="space-y-2">
+          <Label>Approx Price Cent</Label>
+          {viewMode ? (
+            <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+              {formData.competitorApproxPriceCent || "-"}
+            </div>
+          ) : (
+            <Input value={formData.competitorApproxPriceCent} onChange={(e) => handleChange("competitorApproxPriceCent", e.target.value)} />
+          )}
+        </div>
+        <div className="space-y-2">
+          <Label>Total Plots / Units</Label>
+          {viewMode ? (
+            <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+              {formData.competitorTotalUnits || "-"}
+            </div>
+          ) : (
+            <Input value={formData.competitorTotalUnits} onChange={(e) => handleChange("competitorTotalUnits", e.target.value)} />
+          )}
+        </div>
+        <div className="md:col-span-2 space-y-2">
+          <Label>Key Amenities (comma separated)</Label>
+          {viewMode ? (
+            <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+              {formData.competitorKeyAmenities || "-"}
+            </div>
+          ) : (
+            <Input value={formData.competitorKeyAmenities} onChange={(e) => handleChange("competitorKeyAmenities", e.target.value)} />
+          )}
+        </div>
+        <div className="md:col-span-3 space-y-2">
+          <Label>USP / Positioning</Label>
+          {viewMode ? (
+            <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[80px]">
+              {formData.competitorUSP || "-"}
+            </div>
+          ) : (
+            <Textarea value={formData.competitorUSP} onChange={(e) => handleChange("competitorUSP", e.target.value)} rows={2} />
+          )}
+        </div>
+      </CardContent>
+    </Card>
 
-        <Card className="border-0 shadow-md bg-white">
-          <CardHeader>
-            <CardTitle className="text-xl text-gray-800">Competitor Analysis</CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    {/* Site Visit Checklist - Full Width */}
+    <Card className="border-0 shadow-md bg-white mt-8">
+      <CardHeader className="pb-4 border-b">
+        <CardTitle className="flex items-center gap-2 text-xl text-gray-800">
+          <CheckCircle2 className="text-green-600" />
+          Site Visit Checklist
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-8 pt-6">
+        <div>
+          <SectionHeader title="Land Details" icon={FileText} />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <div className="space-y-2">
-              <Label>Developer Name</Label>
+              <Label>Land Location</Label>
               {viewMode ? (
                 <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                  {formData.competitorDeveloperName || "-"}
+                  {formData.checkLandLocation || "-"}
                 </div>
               ) : (
-                <Input value={formData.competitorDeveloperName} onChange={(e) => handleChange("competitorDeveloperName", e.target.value)} />
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label>Project Name</Label>
-              {viewMode ? (
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                  {formData.competitorProjectName || "-"}
-                </div>
-              ) : (
-                <Input value={formData.competitorProjectName} onChange={(e) => handleChange("competitorProjectName", e.target.value)} />
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label>Product Type</Label>
-              {viewMode ? (
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                  {formData.competitorProductType || "-"}
-                </div>
-              ) : (
-                <Input value={formData.competitorProductType} onChange={(e) => handleChange("competitorProductType", e.target.value)} />
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label>Location</Label>
-              {viewMode ? (
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                  {formData.competitorLocation || "-"}
-                </div>
-              ) : (
-                <Input value={formData.competitorLocation} onChange={(e) => handleChange("competitorLocation", e.target.value)} />
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label>Plot / Unit Size</Label>
-              {viewMode ? (
-                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                  {formData.competitorPlotSize || "-"}
-                </div>
-              ) : (
-                <Input value={formData.competitorPlotSize} onChange={(e) => handleChange("competitorPlotSize", e.target.value)} />
+                <Input value={formData.checkLandLocation} onChange={(e) => handleChange("checkLandLocation", e.target.value)} />
               )}
             </div>
             <div className="space-y-2">
               <Label>Land Extent</Label>
               {viewMode ? (
                 <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                  {formData.competitorLandExtent || "-"}
+                  {formData.checkLandExtent || "-"}
                 </div>
               ) : (
-                <Input value={formData.competitorLandExtent} onChange={(e) => handleChange("competitorLandExtent", e.target.value)} />
+                <Input value={formData.checkLandExtent} onChange={(e) => handleChange("checkLandExtent", e.target.value)} />
               )}
             </div>
             <div className="space-y-2">
-              <Label>Price Range</Label>
+              <Label>Land Zone</Label>
               {viewMode ? (
                 <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                  {formData.competitorPriceRange || "-"}
+                  {formData.checkLandZone || "-"}
                 </div>
               ) : (
-                <Input value={formData.competitorPriceRange} onChange={(e) => handleChange("competitorPriceRange", e.target.value)} />
+                <Input value={formData.checkLandZone} onChange={(e) => handleChange("checkLandZone", e.target.value)} />
               )}
             </div>
             <div className="space-y-2">
-              <Label>Approx Price</Label>
+              <Label>Classification of Land</Label>
               {viewMode ? (
                 <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                  {formData.competitorApproxPrice || "-"}
+                  {formData.checkLandClassification || "-"}
                 </div>
               ) : (
-                <Input value={formData.competitorApproxPrice} onChange={(e) => handleChange("competitorApproxPrice", e.target.value)} />
+                <Input value={formData.checkLandClassification} onChange={(e) => handleChange("checkLandClassification", e.target.value)} />
               )}
             </div>
             <div className="space-y-2">
-              <Label>Approx Price Cent</Label>
+              <Label>Google Pin</Label>
               {viewMode ? (
                 <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                  {formData.competitorApproxPriceCent || "-"}
+                  {formData.checkGooglePin || "-"}
                 </div>
               ) : (
-                <Input value={formData.competitorApproxPriceCent} onChange={(e) => handleChange("competitorApproxPriceCent", e.target.value)} />
+                <Input value={formData.checkGooglePin} onChange={(e) => handleChange("checkGooglePin", e.target.value)} />
               )}
             </div>
             <div className="space-y-2">
-              <Label>Total Plots / Units</Label>
+              <Label>Approach Road Width</Label>
               {viewMode ? (
                 <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                  {formData.competitorTotalUnits || "-"}
+                  {formData.checkApproachRoadWidth || "-"}
                 </div>
               ) : (
-                <Input value={formData.competitorTotalUnits} onChange={(e) => handleChange("competitorTotalUnits", e.target.value)} />
+                <Input value={formData.checkApproachRoadWidth} onChange={(e) => handleChange("checkApproachRoadWidth", e.target.value)} />
               )}
             </div>
-            <div className="md:col-span-2 space-y-2">
-              <Label>Key Amenities (comma separated)</Label>
+            <div className="space-y-2">
+              <Label>Road Width</Label>
               {viewMode ? (
                 <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                  {formData.competitorKeyAmenities || "-"}
+                  {formData.checkRoadWidth || "-"}
                 </div>
               ) : (
-                <Input value={formData.competitorKeyAmenities} onChange={(e) => handleChange("competitorKeyAmenities", e.target.value)} />
+                <Input value={formData.checkRoadWidth} onChange={(e) => handleChange("checkRoadWidth", e.target.value)} />
               )}
             </div>
-            <div className="md:col-span-3 space-y-2">
-              <Label>USP / Positioning</Label>
+            <div className="space-y-2">
+              <Label>Soil Type</Label>
               {viewMode ? (
-                <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[80px]">
-                  {formData.competitorUSP || "-"}
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  {formData.checkSoilType || "-"}
                 </div>
               ) : (
-                <Textarea value={formData.competitorUSP} onChange={(e) => handleChange("competitorUSP", e.target.value)} rows={2} />
+                <Input value={formData.checkSoilType} onChange={(e) => handleChange("checkSoilType", e.target.value)} />
               )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card className="border-0 shadow-md bg-white">
-          <CardHeader className="pb-4 border-b">
-            <CardTitle className="flex items-center gap-2 text-xl text-gray-800">
-              <CheckCircle2 className="text-green-600" />
-              Site Visit Checklist
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-8 pt-6">
-            <div>
-              <SectionHeader title="Land Details" icon={FileText} />
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                <div className="space-y-2">
-                  <Label>Land Location</Label>
-                  {viewMode ? (
-                    <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                      {formData.checkLandLocation || "-"}
-                    </div>
-                  ) : (
-                    <Input value={formData.checkLandLocation} onChange={(e) => handleChange("checkLandLocation", e.target.value)} />
-                  )}
+        <div>
+          <SectionHeader title="Valuation & Pricing" icon={FileText} />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="space-y-2">
+              <Label>Selling Price</Label>
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  {formData.checkSellingPrice || "-"}
                 </div>
-                <div className="space-y-2">
-                  <Label>Land Extent</Label>
-                  {viewMode ? (
-                    <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                      {formData.checkLandExtent || "-"}
-                    </div>
-                  ) : (
-                    <Input value={formData.checkLandExtent} onChange={(e) => handleChange("checkLandExtent", e.target.value)} />
-                  )}
+              ) : (
+                <Input value={formData.checkSellingPrice} onChange={(e) => handleChange("checkSellingPrice", e.target.value)} />
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>Guideline Value</Label>
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  {formData.checkGuidelineValue || "-"}
                 </div>
-                <div className="space-y-2">
-                  <Label>Land Zone</Label>
-                  {viewMode ? (
-                    <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                      {formData.checkLandZone || "-"}
-                    </div>
-                  ) : (
-                    <Input value={formData.checkLandZone} onChange={(e) => handleChange("checkLandZone", e.target.value)} />
-                  )}
+              ) : (
+                <Input value={formData.checkGuidelineValue} onChange={(e) => handleChange("checkGuidelineValue", e.target.value)} />
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>Location Selling Price</Label>
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  {formData.checkLocationSellingPrice || "-"}
                 </div>
-                <div className="space-y-2">
-                  <Label>Classification of Land</Label>
-                  {viewMode ? (
-                    <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                      {formData.checkLandClassification || "-"}
-                    </div>
-                  ) : (
-                    <Input value={formData.checkLandClassification} onChange={(e) => handleChange("checkLandClassification", e.target.value)} />
-                  )}
+              ) : (
+                <Input value={formData.checkLocationSellingPrice} onChange={(e) => handleChange("checkLocationSellingPrice", e.target.value)} />
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>Marketing Price</Label>
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  {formData.checkMarketingPrice || "-"}
                 </div>
-                <div className="space-y-2">
-                  <Label>Google Pin</Label>
-                  {viewMode ? (
-                    <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                      {formData.checkGooglePin || "-"}
-                    </div>
-                  ) : (
-                    <Input value={formData.checkGooglePin} onChange={(e) => handleChange("checkGooglePin", e.target.value)} />
-                  )}
+              ) : (
+                <Input value={formData.checkMarketingPrice} onChange={(e) => handleChange("checkMarketingPrice", e.target.value)} />
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>Total Saleable Area</Label>
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  {formData.checkTotalSaleableArea || "-"}
                 </div>
-                <div className="space-y-2">
-                  <Label>Approach Road Width</Label>
-                  {viewMode ? (
-                    <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                      {formData.checkApproachRoadWidth || "-"}
-                    </div>
-                  ) : (
-                    <Input value={formData.checkApproachRoadWidth} onChange={(e) => handleChange("checkApproachRoadWidth", e.target.value)} />
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label>Road Width</Label>
-                  {viewMode ? (
-                    <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                      {formData.checkRoadWidth || "-"}
-                    </div>
-                  ) : (
-                    <Input value={formData.checkRoadWidth} onChange={(e) => handleChange("checkRoadWidth", e.target.value)} />
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label>Soil Type</Label>
-                  {viewMode ? (
-                    <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                      {formData.checkSoilType || "-"}
-                    </div>
-                  ) : (
-                    <Input value={formData.checkSoilType} onChange={(e) => handleChange("checkSoilType", e.target.value)} />
-                  )}
-                </div>
+              ) : (
+                <Input value={formData.checkTotalSaleableArea} onChange={(e) => handleChange("checkTotalSaleableArea", e.target.value)} />
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <SectionHeader title="Features & Constraints" icon={CheckCircle2} />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <CheckboxTile label="EB Line" checked={formData.checkEBLine} onChange={(c) => handleCheckboxChange("checkEBLine", c)} />
+            <CheckboxTile label="Quarry / Crusher" checked={formData.checkQuarryCrusher} onChange={(c) => handleCheckboxChange("checkQuarryCrusher", c)} />
+            <CheckboxTile label="Govt. Land Acquisition" checked={formData.checkGovtLandAcquisition} onChange={(c) => handleCheckboxChange("checkGovtLandAcquisition", c)} />
+            <CheckboxTile label="Railway Track NOC" checked={formData.checkRailwayTrackNOC} onChange={(c) => handleCheckboxChange("checkRailwayTrackNOC", c)} />
+            <CheckboxTile label="Bank Issues" checked={formData.checkBankIssues} onChange={(c) => handleCheckboxChange("checkBankIssues", c)} />
+            <CheckboxTile label="Dumpyard / Quarry" checked={formData.checkDumpyardQuarry} onChange={(c) => handleCheckboxChange("checkDumpyardQuarry", c)} />
+            <CheckboxTile label="Waterbody Nearby" checked={formData.checkWaterbodyNearby} onChange={(c) => handleCheckboxChange("checkWaterbodyNearby", c)} />
+            <CheckboxTile label="Nearby HT Line" checked={formData.checkNearbyHTLine} onChange={(c) => handleCheckboxChange("checkNearbyHTLine", c)} />
+            <CheckboxTile label="Temple Land" checked={formData.checkTempleLand} onChange={(c) => handleCheckboxChange("checkTempleLand", c)} />
+            <CheckboxTile label="Future Govt Projects" checked={formData.checkFutureGovtProjects} onChange={(c) => handleCheckboxChange("checkFutureGovtProjects", c)} />
+            <CheckboxTile label="Farm Land" checked={formData.checkFarmLand} onChange={(c) => handleCheckboxChange("checkFarmLand", c)} />
+            <CheckboxTile label="Land Cleaning" checked={formData.checkLandCleaning} onChange={(c) => handleCheckboxChange("checkLandCleaning", c)} />
+            <CheckboxTile label="Sub Division" checked={formData.checkSubDivision} onChange={(c) => handleCheckboxChange("checkSubDivision", c)} />
+            <CheckboxTile label="Soil Test" checked={formData.checkSoilTest} onChange={(c) => handleCheckboxChange("checkSoilTest", c)} />
+            <CheckboxTile label="Water List" checked={formData.checkWaterList} onChange={(c) => handleCheckboxChange("checkWaterList", c)} />
+          </div>
+        </div>
+
+        <div>
+          <SectionHeader title="Documents" icon={Upload} />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className={`border-2 border-dashed rounded-xl p-6 transition-all ${formData.checkFMBSketch ? "border-indigo-400 bg-indigo-50/30" : "border-gray-200 bg-gray-50"}`}>
+              <div className="flex items-center gap-3 mb-3">
+                <input
+                  type="checkbox"
+                  checked={formData.checkFMBSketch}
+                  onChange={(e) => handleCheckboxChange("checkFMBSketch", e.target.checked)}
+                  className="w-5 h-5 text-indigo-600 rounded"
+                  disabled={viewMode}
+                />
+                <span className="font-semibold text-gray-700">FMB Sketch Available</span>
               </div>
-            </div>
-
-            <div>
-              <SectionHeader title="Valuation & Pricing" icon={FileText} />
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                <div className="space-y-2">
-                  <Label>Selling Price</Label>
-                  {viewMode ? (
-                    <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                      {formData.checkSellingPrice || "-"}
+              {formData.checkFMBSketch && (
+                <div className="mt-4 animate-in fade-in slide-in-from-top-2">
+                  {viewMode && data?.checkListPage?.[0]?.fmbSketchPath ? (
+                    <div className="space-y-2">
+                      <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">FMB Sketch Document</Label>
+                      <div className="p-3 bg-white border border-gray-200 rounded-md">
+                        <p className="text-sm text-gray-600 truncate">{data.checkListPage[0].fmbSketchPath}</p>
+                        <button
+                          className="mt-2 text-xs text-indigo-600 hover:text-indigo-800 underline"
+                          onClick={() => window.open(`/uploads/${data.checkListPage[0].fmbSketchPath}`, '_blank')}
+                        >
+                          View Document
+                        </button>
+                      </div>
                     </div>
                   ) : (
-                    <Input value={formData.checkSellingPrice} onChange={(e) => handleChange("checkSellingPrice", e.target.value)} />
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label>Guideline Value</Label>
-                  {viewMode ? (
-                    <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                      {formData.checkGuidelineValue || "-"}
-                    </div>
-                  ) : (
-                    <Input value={formData.checkGuidelineValue} onChange={(e) => handleChange("checkGuidelineValue", e.target.value)} />
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label>Location Selling Price</Label>
-                  {viewMode ? (
-                    <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                      {formData.checkLocationSellingPrice || "-"}
-                    </div>
-                  ) : (
-                    <Input value={formData.checkLocationSellingPrice} onChange={(e) => handleChange("checkLocationSellingPrice", e.target.value)} />
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label>Marketing Price</Label>
-                  {viewMode ? (
-                    <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                      {formData.checkMarketingPrice || "-"}
-                    </div>
-                  ) : (
-                    <Input value={formData.checkMarketingPrice} onChange={(e) => handleChange("checkMarketingPrice", e.target.value)} />
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label>Total Saleable Area</Label>
-                  {viewMode ? (
-                    <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                      {formData.checkTotalSaleableArea || "-"}
-                    </div>
-                  ) : (
-                    <Input value={formData.checkTotalSaleableArea} onChange={(e) => handleChange("checkTotalSaleableArea", e.target.value)} />
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <SectionHeader title="Features & Constraints" icon={CheckCircle2} />
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <CheckboxTile label="EB Line" checked={formData.checkEBLine} onChange={(c) => handleCheckboxChange("checkEBLine", c)} />
-                <CheckboxTile label="Quarry / Crusher" checked={formData.checkQuarryCrusher} onChange={(c) => handleCheckboxChange("checkQuarryCrusher", c)} />
-                <CheckboxTile label="Govt. Land Acquisition" checked={formData.checkGovtLandAcquisition} onChange={(c) => handleCheckboxChange("checkGovtLandAcquisition", c)} />
-                <CheckboxTile label="Railway Track NOC" checked={formData.checkRailwayTrackNOC} onChange={(c) => handleCheckboxChange("checkRailwayTrackNOC", c)} />
-                <CheckboxTile label="Bank Issues" checked={formData.checkBankIssues} onChange={(c) => handleCheckboxChange("checkBankIssues", c)} />
-                <CheckboxTile label="Dumpyard / Quarry" checked={formData.checkDumpyardQuarry} onChange={(c) => handleCheckboxChange("checkDumpyardQuarry", c)} />
-                <CheckboxTile label="Waterbody Nearby" checked={formData.checkWaterbodyNearby} onChange={(c) => handleCheckboxChange("checkWaterbodyNearby", c)} />
-                <CheckboxTile label="Nearby HT Line" checked={formData.checkNearbyHTLine} onChange={(c) => handleCheckboxChange("checkNearbyHTLine", c)} />
-                <CheckboxTile label="Temple Land" checked={formData.checkTempleLand} onChange={(c) => handleCheckboxChange("checkTempleLand", c)} />
-                <CheckboxTile label="Future Govt Projects" checked={formData.checkFutureGovtProjects} onChange={(c) => handleCheckboxChange("checkFutureGovtProjects", c)} />
-                <CheckboxTile label="Farm Land" checked={formData.checkFarmLand} onChange={(c) => handleCheckboxChange("checkFarmLand", c)} />
-                <CheckboxTile label="Land Cleaning" checked={formData.checkLandCleaning} onChange={(c) => handleCheckboxChange("checkLandCleaning", c)} />
-                <CheckboxTile label="Sub Division" checked={formData.checkSubDivision} onChange={(c) => handleCheckboxChange("checkSubDivision", c)} />
-                <CheckboxTile label="Soil Test" checked={formData.checkSoilTest} onChange={(c) => handleCheckboxChange("checkSoilTest", c)} />
-                <CheckboxTile label="Water List" checked={formData.checkWaterList} onChange={(c) => handleCheckboxChange("checkWaterList", c)} />
-              </div>
-            </div>
-
-            <div>
-              <SectionHeader title="Documents" icon={Upload} />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className={`border-2 border-dashed rounded-xl p-6 transition-all ${formData.checkFMBSketch ? "border-indigo-400 bg-indigo-50/30" : "border-gray-200 bg-gray-50"}`}>
-                  <div className="flex items-center gap-3 mb-3">
-                    <input
-                      type="checkbox"
-                      checked={formData.checkFMBSketch}
-                      onChange={(e) => handleCheckboxChange("checkFMBSketch", e.target.checked)}
-                      className="w-5 h-5 text-indigo-600 rounded"
-                      disabled={viewMode}
-                    />
-                    <span className="font-semibold text-gray-700">FMB Sketch Available</span>
-                  </div>
-                  {formData.checkFMBSketch && (
-                    <div className="mt-4 animate-in fade-in slide-in-from-top-2">
-                      {viewMode && data?.checkListPage?.[0]?.fmbSketchPath ? (
-                        <div className="space-y-2">
-                          <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">FMB Sketch Document</Label>
-                          <div className="p-3 bg-white border border-gray-200 rounded-md">
-                            <p className="text-sm text-gray-600 truncate">{data.checkListPage[0].fmbSketchPath}</p>
-                            <button
-                              className="mt-2 text-xs text-indigo-600 hover:text-indigo-800 underline"
-                              onClick={() => window.open(`/uploads/${data.checkListPage[0].fmbSketchPath}`, '_blank')}
-                            >
-                              View Document
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Upload File (JPG/PNG, ≤2MB)</Label>
-                          <Input type="file" accept="image/png,image/jpeg,image/jpg" onChange={(e) => handleFileChange("fileFMBSketch", e.target.files?.[0])} className={`bg-white ${errors.fileFMBSketch ? "border-red-500 focus:border-red-500" : ""}`} />
-                          {errors.fileFMBSketch && (
-                            <p className="text-red-500 text-sm flex items-center gap-1 mt-2">
-                              <AlertCircle className="h-4 w-4" />
-                              {errors.fileFMBSketch}
-                            </p>
-                          )}
-                        </>
+                    <>
+                      <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Upload File (JPG/PNG, ≤2MB)</Label>
+                      <Input type="file" accept="image/png,image/jpeg,image/jpg" onChange={(e) => handleFileChange("fileFMBSketch", e.target.files?.[0])} className={`bg-white ${errors.fileFMBSketch ? "border-red-500 focus:border-red-500" : ""}`} />
+                      {errors.fileFMBSketch && (
+                        <p className="text-red-500 text-sm flex items-center gap-1 mt-2">
+                          <AlertCircle className="h-4 w-4" />
+                          {errors.fileFMBSketch}
+                        </p>
                       )}
-                    </div>
+                    </>
                   )}
                 </div>
+              )}
+            </div>
 
-                <div className={`border-2 border-dashed rounded-xl p-6 transition-all ${formData.checkPattaChitta ? "border-indigo-400 bg-indigo-50/30" : "border-gray-200 bg-gray-50"}`}>
-                  <div className="flex items-center gap-3 mb-3">
-                    <input
-                      type="checkbox"
-                      checked={formData.checkPattaChitta}
-                      onChange={(e) => handleCheckboxChange("checkPattaChitta", e.target.checked)}
-                      className="w-5 h-5 text-indigo-600 rounded"
-                      disabled={viewMode}
-                    />
-                    <span className="font-semibold text-gray-700">Patta / Chitta Available</span>
-                  </div>
-                  {formData.checkPattaChitta && (
-                    <div className="mt-4 animate-in fade-in slide-in-from-top-2">
-                      {viewMode && data?.checkListPage?.[0]?.pattaChittaPath ? (
-                        <div className="space-y-2">
-                          <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Patta / Chitta Document</Label>
-                          <div className="p-3 bg-white border border-gray-200 rounded-md">
-                            <p className="text-sm text-gray-600 truncate">{data.checkListPage[0].pattaChittaPath}</p>
-                            <button
-                              className="mt-2 text-xs text-indigo-600 hover:text-indigo-800 underline"
-                              onClick={() => window.open(`/uploads/${data.checkListPage[0].pattaChittaPath}`, '_blank')}
-                            >
-                              View Document
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Upload File (JPG/PNG, ≤2MB)</Label>
-                          <Input type="file" accept="image/png,image/jpeg,image/jpg" onChange={(e) => handleFileChange("filePattaChitta", e.target.files?.[0])} className={`bg-white ${errors.filePattaChitta ? "border-red-500 focus:border-red-500" : ""}`} />
-                          {errors.filePattaChitta && (
-                            <p className="text-red-500 text-sm flex items-center gap-1 mt-2">
-                              <AlertCircle className="h-4 w-4" />
-                              {errors.filePattaChitta}
-                            </p>
-                          )}
-                        </>
+            <div className={`border-2 border-dashed rounded-xl p-6 transition-all ${formData.checkPattaChitta ? "border-indigo-400 bg-indigo-50/30" : "border-gray-200 bg-gray-50"}`}>
+              <div className="flex items-center gap-3 mb-3">
+                <input
+                  type="checkbox"
+                  checked={formData.checkPattaChitta}
+                  onChange={(e) => handleCheckboxChange("checkPattaChitta", e.target.checked)}
+                  className="w-5 h-5 text-indigo-600 rounded"
+                  disabled={viewMode}
+                />
+                <span className="font-semibold text-gray-700">Patta / Chitta Available</span>
+              </div>
+              {formData.checkPattaChitta && (
+                <div className="mt-4 animate-in fade-in slide-in-from-top-2">
+                  {viewMode && data?.checkListPage?.[0]?.pattaChittaPath ? (
+                    <div className="space-y-2">
+                      <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Patta / Chitta Document</Label>
+                      <div className="p-3 bg-white border border-gray-200 rounded-md">
+                        <p className="text-sm text-gray-600 truncate">{data.checkListPage[0].pattaChittaPath}</p>
+                        <button
+                          className="mt-2 text-xs text-indigo-600 hover:text-indigo-800 underline"
+                          onClick={() => window.open(`/uploads/${data.checkListPage[0].pattaChittaPath}`, '_blank')}
+                        >
+                          View Document
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">Upload File (JPG/PNG, ≤2MB)</Label>
+                      <Input type="file" accept="image/png,image/jpeg,image/jpg" onChange={(e) => handleFileChange("filePattaChitta", e.target.files?.[0])} className={`bg-white ${errors.filePattaChitta ? "border-red-500 focus:border-red-500" : ""}`} />
+                      {errors.filePattaChitta && (
+                        <p className="text-red-500 text-sm flex items-center gap-1 mt-2">
+                          <AlertCircle className="h-4 w-4" />
+                          {errors.filePattaChitta}
+                        </p>
                       )}
-                    </div>
+                    </>
                   )}
                 </div>
-              </div>
+              )}
             </div>
+          </div>
+        </div>
 
-            <div>
-              <SectionHeader title="Additional Details" icon={FileText} />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Owner Name</Label>
-                  {viewMode ? (
-                    <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                      {formData.checkOwnerName || "-"}
-                    </div>
-                  ) : (
-                    <Input value={formData.checkOwnerName} onChange={(e) => handleChange("checkOwnerName", e.target.value)} />
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label>Consultant Name</Label>
-                  {viewMode ? (
-                    <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                      {formData.checkConsultantName || "-"}
-                    </div>
-                  ) : (
-                    <Input value={formData.checkConsultantName} onChange={(e) => handleChange("checkConsultantName", e.target.value)} />
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label>Projects</Label>
-                  {viewMode ? (
-                    <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                      {formData.checkProjects || "-"}
-                    </div>
-                  ) : (
-                    <Input value={formData.checkProjects} onChange={(e) => handleChange("checkProjects", e.target.value)} />
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label>Google Location</Label>
-                  {viewMode ? (
-                    <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                      {formData.checkGoogleLocation || "-"}
-                    </div>
-                  ) : (
-                    <Input value={formData.checkGoogleLocation} onChange={(e) => handleChange("checkGoogleLocation", e.target.value)} />
-                  )}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {!viewMode && (
-          <div className="flex justify-end gap-4 pb-8">
-            <Button variant="outline" size="lg" onClick={onClose} className="bg-white border-gray-300" disabled={loading.submit}>
-              Cancel
-            </Button>
-            <Button size="lg" onClick={handleSubmit} className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 shadow-lg" disabled={loading.submit}>
-              {loading.submit ? (
-                <div className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  {data ? "Updating..." : "Submitting..."}
+        <div>
+          <SectionHeader title="Additional Details" icon={FileText} />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Owner Name</Label>
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  {formData.checkOwnerName || "-"}
                 </div>
               ) : (
-                <>{data ? "Update Lead" : "Submit Lead"}</>
+                <Input value={formData.checkOwnerName} onChange={(e) => handleChange("checkOwnerName", e.target.value)} />
               )}
-            </Button>
+            </div>
+            <div className="space-y-2">
+              <Label>Consultant Name</Label>
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  {formData.checkConsultantName || "-"}
+                </div>
+              ) : (
+                <Input value={formData.checkConsultantName} onChange={(e) => handleChange("checkConsultantName", e.target.value)} />
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>Projects</Label>
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  {formData.checkProjects || "-"}
+                </div>
+              ) : (
+                <Input value={formData.checkProjects} onChange={(e) => handleChange("checkProjects", e.target.value)} />
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>Google Location</Label>
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  {formData.checkGoogleLocation || "-"}
+                </div>
+              ) : (
+                <Input value={formData.checkGoogleLocation} onChange={(e) => handleChange("checkGoogleLocation", e.target.value)} />
+              )}
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+
+    {/* Notes & Calls - Full Width */}
+    <Card className="border-0 shadow-md bg-white mt-8 mb-8">
+      <CardHeader>
+        <CardTitle className="text-xl text-gray-800">Notes & Calls</CardTitle>
+        <CardDescription>Additional notes and call history</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Calls Section */}
+        <div className="space-y-4">
+          <Label className="text-gray-700 font-medium">Calls</Label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-gray-600">Call Date</Label>
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  {formData.callDate ? String(formData.callDate).slice(0, 10) : "-"}
+                </div>
+              ) : (
+                <Input
+                  type="date"
+                  value={formData.callDate ? String(formData.callDate).slice(0, 10) : ""}
+                  onChange={(e) => handleChange("callDate", e.target.value)}
+                  className="bg-gray-50/50"
+                />
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label className="text-gray-600">Call Time</Label>
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  {formData.callTime || "-"}
+                </div>
+              ) : (
+                <Input
+                  type="time"
+                  value={formData.callTime || ""}
+                  onChange={(e) => handleChange("callTime", e.target.value)}
+                  className="bg-gray-50/50"
+                />
+              )}
+            </div>
+          </div>
+          <div className="space-y-2 mt-4">
+            <Label className="text-gray-600">Call Notes</Label>
+            {viewMode ? (
+              <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                {formData.callNotes || "-"}
+              </div>
+            ) : (
+              <Input
+                type="text"
+                value={formData.callNotes || ""}
+                onChange={(e) => handleChange("callNotes", e.target.value)}
+                placeholder="Enter call notes..."
+                className="bg-gray-50/50"
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Call History Display */}
+        {calls?.length > 0 && (
+          <div className="space-y-4">
+            <Label className="text-gray-700 font-medium">Call History</Label>
+            <div className="space-y-3">
+              {calls.map((call, idx) => (
+                <div key={idx} className="p-4 border rounded-lg bg-gray-50">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <p className="font-semibold text-gray-800">
+                        {new Date(call.created_at || call.createdAt).toLocaleDateString()}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {new Date(call.created_at || call.createdAt).toLocaleTimeString()}
+                      </p>
+                    </div>
+                    <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
+                      {call.role || 'Call'}
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-700">
+                      <span className="font-medium">Name:</span> {call.name || 'Unknown'}
+                    </p>
+                    <p className="text-sm text-gray-700">
+                      <span className="font-medium">Notes:</span> {call.note || "No notes"}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
+
+        {/* Notes Section */}
+        <div className="space-y-2">
+          <Label className="text-gray-700 font-medium">Notes</Label>
+          {viewMode ? (
+            <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[100px] whitespace-pre-wrap">
+              {formData.checkNotes || "-"}
+            </div>
+          ) : (
+            <Textarea
+              value={formData.checkNotes}
+              onChange={(e) => handleChange("checkNotes", e.target.value)}
+              placeholder="Enter additional notes, observations, or important information about this lead..."
+              rows={5}
+              className="bg-gray-50 resize-y"
+            />
+          )}
+        </div>
+
+      {/* </div> */}
+
+      {/* Remark - Full Width */}
+      <div className="space-y-2">
+        <Label className="text-gray-700 font-medium">Remark</Label>
+        {viewMode ? (
+          <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[100px] whitespace-pre-wrap">
+            {formData.remark || "-"}
+          </div>
+        ) : (
+          <Textarea
+            value={formData.remark}
+            onChange={(e) => handleChange("remark", e.target.value)}
+            rows={4}
+            placeholder="Add any additional context here..."
+            className="bg-gray-50 resize-y"
+          />
+        )}
+      </div>
+    </CardContent>
+  </Card>
+      </div>
+    {/* End Full Width Wrapper */}
+
+    {!viewMode && (
+      <div className="flex justify-end gap-4 pb-8">
+        <Button variant="outline" size="lg" onClick={onClose} className="bg-white border-gray-300" disabled={loading.submit}>
+          Cancel
+        </Button>
+        <Button size="lg" onClick={handleSubmit} className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 shadow-lg" disabled={loading.submit}>
+          {loading.submit ? (
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              {data ? "Updating..." : "Submitting..."}
+            </div>
+          ) : (
+            <>{data ? "Update Lead" : "Submit Lead"}</>
+          )}
+        </Button>
+      </div>
+    )}
       </div>
     </div>
       )}
+    </>
+  );
+}
+
+
+// Export a component for rendering full-width cards separately
+export function LeadsFullWidthCards({ data = null, viewMode = false, formData, handleChange, errors }) {
+  return (
+    <>
+      {/* Competitor Analysis Card */}
+      <Card className="border-0 shadow-md bg-white mt-2">
+        <CardHeader>
+          <CardTitle className="text-xl text-gray-800">Competitor Analysis</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label>Developer Name</Label>
+            {viewMode ? (
+              <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                {formData.competitorDeveloperName || "-"}
+              </div>
+            ) : (
+              <Input value={formData.competitorDeveloperName} onChange={(e) => handleChange("competitorDeveloperName", e.target.value)} />
+            )}
+          </div>
+          {/* Add all other competitor fields here - this is a simplified version */}
+          <div className="text-gray-500 text-center py-4 col-span-3">
+            Additional competitor analysis fields would be implemented here
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Site Visit Checklist Card */}
+      <Card className="border-0 shadow-md bg-white mt-8">
+        <CardHeader className="pb-4 border-b">
+          <CardTitle className="flex items-center gap-2 text-xl text-gray-800">
+            <CheckCircle2 className="text-green-600" />
+            Site Visit Checklist
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-gray-500 text-center py-8">
+            Site Visit Checklist functionality would be implemented here
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Notes & Calls Card */}
+      <Card className="border-0 shadow-md bg-white mt-8 mb-8">
+        <CardHeader>
+          <CardTitle className="text-xl text-gray-800">Notes & Calls</CardTitle>
+          <CardDescription>Additional notes and call history</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-gray-500 text-center py-8">
+            Notes & Calls functionality would be implemented here
+          </div>
+        </CardContent>
+      </Card>
     </>
   )
 }
