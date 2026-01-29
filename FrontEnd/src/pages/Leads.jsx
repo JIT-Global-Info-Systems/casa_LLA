@@ -28,7 +28,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
   // Static roles for assignment (matching LeadStepper) - 12 roles total
   // Form persistence key
-  const FORM_STORAGE_KEY = 'leads_form_draft';
+  // const FORM_STORAGE_KEY = 'leads_form_draft';
   
   // Track if form has unsaved changes
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -50,20 +50,20 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     "admin"
   ]
 
-  // Define role hierarchy - lower number means higher priority
+  // Define role hierarchy - matching Lead Stepper workflow order
   const roleHierarchy = {
-    'admin': 1,
-    'cmo_cro': 2,
-    'management_md_1st_level': 3,
-    'l1_md': 3,
-    'legal': 4,
-    'liaison': 5,
-    'finance': 6,
-    'feasibility_team': 7,
-    'analytics_team': 8,
-    'field_study_product_team': 9,
-    'land_executive': 10,
-    'tele_caller': 11
+    'tele_caller': 1,
+    'land_executive': 2,
+    'analytics_team': 3,
+    'feasibility_team': 4,
+    'field_study_product_team': 5,
+    'management_md_1st_level': 6,
+    'l1_md': 7,
+    'cmo_cro': 8,
+    'legal': 9,
+    'liaison': 10,
+    'finance': 11,
+    'admin': 12
   }
 
   // Get current user role from localStorage
@@ -89,27 +89,69 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     
   }
 
-  // Get static roles filtered by hierarchy and exclude current user's role
+  // Get current user info from localStorage
+  const getCurrentUserInfo = () => {
+    const userData = localStorage.getItem('user')
+    if (userData) {
+      try {
+        const parsed = JSON.parse(userData)
+        return {
+          user_id: parsed._id || parsed.id || '',
+          name: parsed.name || '',
+          role: parsed.role || 'tele_caller'
+        }
+      } catch (e) {
+        console.error("Failed to parse user data", e)
+      }
+    }
+    return {
+      user_id: '',
+      name: '',
+      role: 'tele_caller'
+    }
+  }
+
+  // Get assigned user info based on role
+  const getAssignedUserInfo = (role) => {
+    if (!role || role === getCurrentUserRole()) {
+      // If no role specified or same as current user, assign to current user
+      return getCurrentUserInfo()
+    }
+    
+    // For now, use current user's ID as fallback since user_id is required in backend
+    const currentUserInfo = getCurrentUserInfo();
+    return {
+      user_id: currentUserInfo.user_id, // Use current user's ID as required fallback
+      name: `${role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}`,
+      role: role
+    }
+  }
+
+  // Get static roles filtered by hierarchy - only show next 1 role in workflow, except for admin
   const getFilteredStaticRoles = () => {
     const currentUserRole = getCurrentUserRole()
-    const currentUserLevel = roleHierarchy[currentUserRole.role] || 11
+    const currentUserLevel = roleHierarchy[currentUserRole] || 1
 
-    // For now, show all static roles except current user's role
-    return STATIC_ROLES
-      .filter(role => role !== currentUserRole.role) // Exclude current user's role
-      .sort((a, b) => (roleHierarchy[a] || 12) - (roleHierarchy[b] || 12))
-
-    // Admin can assign to anyone except themselves
-    if (currentUserRole.role === 'admin') {
+    // Admin can see all roles except themselves
+    if (currentUserRole === 'admin') {
       return STATIC_ROLES
-        .filter(role => role !== currentUserRole.role) // Exclude admin from assigning to admin
-        .sort((a, b) => (roleHierarchy[a] || 12) - (roleHierarchy[b] || 12))
+        .filter(role => role !== 'admin') // Exclude admin from assigning to admin
+        .sort((a, b) => (roleHierarchy[a] || 12) - (roleHierarchy[b] || 12)) // Sort by workflow order
     }
 
-    // Other users can only assign to lower priority roles (higher numbers) and not themselves
-    return STATIC_ROLES
-      .filter(role => (roleHierarchy[role] || 12) > currentUserLevel && role !== currentUserRole.role)
-      .sort((a, b) => (roleHierarchy[a] || 12) - (roleHierarchy[b] || 12))
+    // For other users, show only the next 1 role in the workflow (higher numbers = next steps)
+    const filteredRoles = STATIC_ROLES
+      .filter(role => (roleHierarchy[role] || 12) > currentUserLevel) // Only next steps in workflow (higher numbers)
+      .sort((a, b) => (roleHierarchy[a] || 12) - (roleHierarchy[b] || 12)) // Sort by workflow order
+      .slice(0, 1) // Take only the first 1 (next in hierarchy)
+    
+    return filteredRoles
+  }
+
+  // Check if a role can be selected (not same as current user's role)
+  const canSelectRole = (role) => {
+    const currentUserRole = getCurrentUserRole()
+    return role !== currentUserRole
   }
   const [formData, setFormData] = useState({
     // Basic Lead Information
@@ -139,7 +181,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     roadWidth: "",
     sspde: "No",
     leadStatus: "Enquired",
-    status: "active",
     remark: "",
     lead_stage: "",
 
@@ -223,50 +264,50 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
   const [apiError, setApiError] = useState(null)
 
   // Form persistence functions
-  const saveFormDraft = useCallback((formData) => {
-    if (!viewMode && !data) { // Only save drafts for new forms
-      try {
-        localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify({
-          ...formData,
-          timestamp: Date.now()
-        }));
-      } catch (error) {
-        console.warn('Could not save form draft:', error);
-      }
-    }
-  }, [viewMode, data]);
+  // const saveFormDraft = useCallback((formData) => {
+  //   if (!viewMode && !data) { // Only save drafts for new forms
+  //     try {
+  //       localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify({
+  //         ...formData,
+  //         timestamp: Date.now()
+  //       }));
+  //     } catch (error) {
+  //       console.warn('Could not save form draft:', error);
+  //     }
+  //   }
+  // }, [viewMode, data]);
 
-  const loadFormDraft = useCallback(() => {
-    if (!viewMode && !data) { // Only load drafts for new forms
-      try {
-        const saved = localStorage.getItem(FORM_STORAGE_KEY);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          // Check if draft is less than 24 hours old
-          if (Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000) {
-            delete parsed.timestamp;
-            return parsed;
-          } else {
-            // Remove old draft
-            localStorage.removeItem(FORM_STORAGE_KEY);
-          }
-        }
-      } catch (error) {
-        console.warn('Could not load form draft:', error);
-        localStorage.removeItem(FORM_STORAGE_KEY);
-      }
-    }
-    return null;
-  }, [viewMode, data]);
+  // const loadFormDraft = useCallback(() => {
+  //   if (!viewMode && !data) { // Only load drafts for new forms
+  //     try {
+  //       const saved = localStorage.getItem(FORM_STORAGE_KEY);
+  //       if (saved) {
+  //         const parsed = JSON.parse(saved);
+  //         // Check if draft is less than 24 hours old
+  //         if (Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000) {
+  //           delete parsed.timestamp;
+  //           return parsed;
+  //         } else {
+  //           // Remove old draft
+  //           localStorage.removeItem(FORM_STORAGE_KEY);
+  //         }
+  //       }
+  //     } catch (error) {
+  //       console.warn('Could not load form draft:', error);
+  //       localStorage.removeItem(FORM_STORAGE_KEY);
+  //     }
+  //   }
+  //   return null;
+  // }, [viewMode, data]);
 
-  const clearFormDraft = useCallback(() => {
-    try {
-      localStorage.removeItem(FORM_STORAGE_KEY);
-      setHasUnsavedChanges(false);
-    } catch (error) {
-      console.warn('Could not clear form draft:', error);
-    }
-  }, []);
+  // const clearFormDraft = useCallback(() => {
+  //   try {
+  //     localStorage.removeItem(FORM_STORAGE_KEY);
+  //     setHasUnsavedChanges(false);
+  //   } catch (error) {
+  //     console.warn('Could not clear form draft:', error);
+  //   }
+  // }, []);
 
   // Warn user about unsaved changes
   useEffect(() => {
@@ -296,6 +337,11 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     if (!dataToValidate.landName?.trim()) nextErrors.landName = "Land name is required"
     if (!dataToValidate.sourceCategory) nextErrors.sourceCategory = "Source category is required"
     if (!dataToValidate.source) nextErrors.source = "Source is required"
+    
+    // Assign To (User) is required when Assigned To (Role) is selected
+    if (dataToValidate.assignedTo && !dataToValidate.assignToUser?.trim()) {
+      nextErrors.assignToUser = "Please select a user when a role is assigned"
+    }
 
       // Numeric fields (soft validation)
       ;["extent", "fsi", "asp", "revenue", "rate", "builderShare"].forEach((k) => {
@@ -427,23 +473,126 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       const userRole = getCurrentUserRole()
       
       // Try to load form draft first
-      const draft = loadFormDraft();
-      if (draft) {
-        setFormData(prev => ({
-          ...prev,
-          ...draft,
-          currentRole: userRole.role // Store only the role string for form display
-        }));
-        setHasUnsavedChanges(true);
-        toast.success('Draft loaded', { 
-          icon: '📝',
-          duration: 3000 
-        });
-      } else {
-        handleChange("currentRole", userRole.role)
-      }
+      // const draft = loadFormDraft();
+      // if (draft) {
+      //   setFormData(prev => ({
+      //     ...prev,
+      //     ...draft,
+      //     currentRole: userRole // Always use current user role
+      //   }));
+      //   setHasUnsavedChanges(true);
+      //   // toast.success('Draft loaded', { 
+      //   //   icon: '📝',
+      //   //   duration: 3000 
+      //   // });
+      // } else {
+        // Reset form to initial state when creating new lead
+        setFormData({
+          // Basic Lead Information
+          leadType: "mediator",
+          contactNumber: "",
+          mediatorName: "",
+          mediatorId: "",
+          location: "",
+          zone: "",
+          area: "",
+          landName: "",
+          sourceCategory: "",
+          source: "",
+          extent: "",
+          unit: "",
+          propertyType: "",
+          fsi: "",
+          asp: "",
+          revenue: "",
+          transactionType: " ",
+          rate: "",
+          builderShare: "",
+          refundable: "",
+          nonRefundable: "",
+          landmark: "",
+          frontage: "",
+          roadWidth: "",
+          sspde: "No",
+          leadStatus: "Enquired",
+          remark: "",
+          lead_stage: "",
+
+          // Yield Calculation
+          yield: "",
+
+          // Competitor Analysis
+          competitorDeveloperName: "",
+          competitorProjectName: "",
+          competitorProductType: "",
+          competitorLocation: "",
+          competitorPlotSize: "",
+          competitorLandExtent: "",
+          competitorPriceRange: "",
+          competitorApproxPrice: "",
+          competitorApproxPriceCent: "",
+          competitorTotalUnits: "",
+          competitorKeyAmenities: "",
+          competitorUSP: "",
+
+          // Site Visit Checklist
+          checkLandLocation: "",
+          checkLandExtent: "",
+          checkLandZone: "",
+          checkLandClassification: "",
+          checkGooglePin: "",
+          checkApproachRoadWidth: "",
+          checkSoilType: "",
+          checkSellingPrice: "",
+          checkGuidelineValue: "",
+          checkLocationSellingPrice: "",
+          checkMarketingPrice: "",
+          checkRoadWidth: "",
+          checkTotalSaleableArea: "",
+          checkOwnerName: "",
+          checkConsultantName: "",
+          checkNotes: "",
+          checkProjects: "",
+          checkGoogleLocation: "",
+
+          // Checkboxes
+          checkEBLine: false,
+          checkQuarryCrusher: false,
+          checkGovtLandAcquisition: false,
+          checkRailwayTrackNOC: false,
+          checkBankIssues: false,
+          checkDumpyardQuarry: false,
+          checkWaterbodyNearby: false,
+          checkNearbyHTLine: false,
+          checkTempleLand: false,
+          checkFutureGovtProjects: false,
+          checkFarmLand: false,
+          checkLandCleaning: false,
+          checkSubDivision: false,
+          checkSoilTest: false,
+          checkWaterList: false,
+
+          // Special Fields (Checkbox + Upload)
+          checkFMBSketch: false,
+          fileFMBSketch: null,
+          checkPattaChitta: false,
+          filePattaChitta: null,
+
+          currentRole: userRole,
+          assignedTo: "",
+          assignToUser: "",
+          inquiredBy: "",
+          L1_Qualification: "",
+          directorSVStatus: "",
+          callDate: "",
+          callTime: "",
+          callNotes: "",
+        })
+        setOriginalData(null)
+        setHasUnsavedChanges(false)
+      // }
     }
-  }, [data, loadFormDraft])
+  }, [data])
 
   useEffect(() => {
     if (!data) return
@@ -454,13 +603,10 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
     const hydratedData = {
       ...data,
+      leadType: data.leadType || data.lead_type || "mediator", // Ensure leadType is properly mapped
       leadStatus: data.lead_status || "",
       lead_stage: data.lead_stage || "",
       mediatorId: data.mediatorId || "",
-      currentRole: data.currentRole || "",
-      assignedTo: data.assignedTo || "", // Now storing role string, not user ID
-      assignToUser: data.assignToUser || "", // New field for specific user assignment
-      status: data.status || "",
       inquiredBy: data.inquiredBy || "",
       L1_Qualification: data.L1_Qualification || "",
       directorSVStatus: data.directorSVStatus || "",
@@ -547,6 +693,20 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
   const handleChange = (key, value) => {
     const newFormData = { ...formData, [key]: value };
+    setFormData(newFormData);
+    setHasUnsavedChanges(true);
+    
+    // Auto-save draft (debounced)
+    if (!viewMode && !data) {
+      clearTimeout(window.formDraftTimeout);
+      window.formDraftTimeout = setTimeout(() => {
+        saveFormDraft(newFormData);
+      }, 1000);
+    }
+  };
+
+  const handleMultipleChanges = (changes) => {
+    const newFormData = { ...formData, ...changes };
     setFormData(newFormData);
     setHasUnsavedChanges(true);
     
@@ -712,33 +872,23 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
     // For new leads, send all fields
     if (!data) {
-      const currentUser = getCurrentUserRole();
+      const currentUserInfo = getCurrentUserInfo();
+      const assignedUserInfo = getAssignedUserInfo(formData.assignedTo || currentRoleValue);
+      
       const payload = {
         // base schema fields - always required
         leadType: formData.leadType || "mediator",
         contactNumber: formData.contactNumber || "",
         mediatorName: formData.mediatorName || "",
+        date: new Date().toISOString(), // Add current date as required by backend
         location: formData.location || "",
         landName: formData.landName || "",
         sourceCategory: formData.sourceCategory || "",
         source: formData.source || "",
-        status: formData.status || "active",
-        date: new Date(), // Add current date
         
-        // currentRole as array of objects
-        currentRole: [{
-          user_id: currentUser.user_id,
-          role: currentUser.role,
-          name: currentUser.name
-        }],
-        
-        // assignedTo as array of objects (fallback to currentRole if not assigned)
-        assignedTo: formData.assignedTo ? [{
-          // user_id: currentUser.user_id, 
-          role: formData.assignedTo,
-          name: formData.assignToUser || "test"
-        }] : null,
-
+        // Backend expects arrays of objects for currentRole and assignedTo
+        currentRole: [currentUserInfo],
+        assignedTo: [assignedUserInfo],
         assignToUser: formData.assignToUser,
 
         // structured sections
@@ -815,24 +965,18 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     addIfChanged('landName', formData.landName || "", originalData?.landName || "")
     addIfChanged('sourceCategory', formData.sourceCategory || "", originalData?.sourceCategory || "")
     addIfChanged('source', formData.source || "", originalData?.source || "")
-    addIfChanged('status', formData.status || "active", originalData?.status || "active")
     
-    // Handle currentRole as array of objects
-    const currentUser = getCurrentUserRole();
-    const currentRoleArray = [{
-      user_id: currentUser.user_id,
-      role: currentUser.role,
-      name: currentUser.name
-    }];
-    addIfChanged('currentRole', currentRoleArray, originalData?.currentRole || [])
+    // Handle currentRole and assignedTo as arrays of objects
+    const currentUserInfo = getCurrentUserInfo();
+    const assignedUserInfo = getAssignedUserInfo(formData.assignedTo || currentRoleValue);
     
-    // Handle assignedTo as array of objects
-    const assignedToArray = formData.assignedTo ? [{
-      user_id: currentUser.user_id, 
-      role: formData.assignedTo,
-      name: currentUser.name
-    }] : currentRoleArray;
-    addIfChanged('assignedTo', assignedToArray, originalData?.assignedTo || [])
+    // Only update if the role assignment has changed
+    if (!originalData?.currentRole || originalData.currentRole[0]?.role !== currentUserInfo.role) {
+      payload.currentRole = [currentUserInfo];
+    }
+    if (!originalData?.assignedTo || originalData.assignedTo[0]?.role !== assignedUserInfo.role) {
+      payload.assignedTo = [assignedUserInfo];
+    }
     
     addIfChanged('assignToUser', formData.assignToUser, originalData?.assignToUser)
 
@@ -894,9 +1038,23 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       payload.checkListPage = checkListPage
     }
 
-    // Always include currentRole and assignedTo for history tracking
-    payload.currentRole = currentRoleValue
-    payload.assignedTo = formData.assignedTo || currentRoleValue
+    // Always include currentRole and assignedTo for history tracking (in correct array format)
+    if (!payload.currentRole) {
+      const currentUserInfo = getCurrentUserInfo();
+      payload.currentRole = [currentUserInfo];
+    }
+    if (!payload.assignedTo) {
+      const assignedUserInfo = getAssignedUserInfo(formData.assignedTo || currentRoleValue);
+      payload.assignedTo = [assignedUserInfo];
+    }
+
+    // Ensure required fields are included for updates
+    if (!payload.contactNumber && originalData?.contactNumber) {
+      payload.contactNumber = originalData.contactNumber;
+    }
+    if (!payload.date && originalData?.date) {
+      payload.date = originalData.date;
+    }
 
     return payload
   }
@@ -935,7 +1093,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           landName: formData.landName || "",
           sourceCategory: formData.sourceCategory || "",
           source: formData.source || "",
-          status: formData.status || "active",
           currentRole: getCurrentUserRole(),
           assignedTo: formData.assignedTo ,
           assignToUser: formData.assignToUser,
@@ -1020,24 +1177,18 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
         
         try {
           await onSubmit(leadPayload, files)
-          console.log('✅ onSubmit completed successfully')
-          
-          toast.success(data ? 'Lead updated successfully!' : 'Lead created successfully!', {
-            id: submitToast,
-            duration: 3000
-          })
 
-          // Show success message for file uploads if any
+          // clearFormDraft()
+          
+         
+
           if (Object.keys(files).length > 0) {
             toast.success('Files uploaded successfully', { duration: 2000 })
           }
         } catch (onSubmitError) {
-          console.error('❌ onSubmit failed:', onSubmitError)
           throw onSubmitError // Re-throw to be caught by outer catch
         }
-      } else {
-        console.log('❌ onSubmit function does not exist!')
-      }
+      } 
     } catch (error) {
       console.error("Submit error:", error)
       let errorMessage = "Failed to submit lead. Please try again."
@@ -1109,41 +1260,60 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
   return (
     <>
-      <style>{`
-        .restricted-edit-mode input:not([data-editable="true"]),
-        .restricted-edit-mode select:not([data-editable="true"]),
-        .restricted-edit-mode textarea:not([data-editable="true"]),
-        .restricted-edit-mode [role="combobox"]:not([data-editable="true"]) {
-          opacity: 0.5;
-          pointer-events: none;
-          cursor: not-allowed;
-        }
-      `}</style>
+    <style>{`
+      .restricted-edit-mode input:not([data-editable="true"]),
+      .restricted-edit-mode select:not([data-editable="true"]),
+      .restricted-edit-mode textarea:not([data-editable="true"]),
+      .restricted-edit-mode [role="combobox"]:not([data-editable="true"]) {
+        opacity: 0.5;
+        pointer-events: none;
+        cursor: not-allowed;
+      }
+      
+      /* Hide number input arrows */
+      input[type="number"]::-webkit-outer-spin-button,
+      input[type="number"]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      
+      input[type="number"] {
+        -moz-appearance: textfield;
+      }
+    `}</style>
 
-      {/* Stepper Only Mode - Show only the LeadStepper */}
-      {stepperOnly ? (
-        <div className="w-full">
-          <LeadStepper
-            stageName={formData.assignedTo }
-            currentStep={currentStep}
-            className="w-full"
-            isNewLead={!data}
-          />
-        </div>
-      ) : (
-        /* Full Form Mode */
-        <div className={`min-h-screen bg-slate-50/50 p-4 md:p-8 ${getFormWrapperClass()}`}>
-          {/* Lead Stepper - Full Width (conditionally hidden) */}
-          {!hideStepper && (
-            <div className="w-full">
-              <LeadStepper
-                stageName={formData.assignedTo || formData.currentRole || "tele_caller"}
-                currentStep={currentStep}
-                className="w-full"
-                isNewLead={!data}
-              />
-            </div>
-          )}
+    {/* Stepper Only Mode - Show only the LeadStepper */}
+    {stepperOnly ? (
+      <div className="w-full">
+        <LeadStepper
+          stageName={(() => {
+            const assignedRole = Array.isArray(formData.assignedTo) ? formData.assignedTo[0]?.role : formData.assignedTo;
+            const currentRole = Array.isArray(formData.currentRole) ? formData.currentRole[0]?.role : formData.currentRole;
+            return assignedRole || currentRole || "tele_caller";
+          })()}
+          currentStep={currentStep}
+          className="w-full"
+          isNewLead={!data}
+        />
+      </div>
+    ) : (
+      /* Full Form Mode */
+      <div className={`min-h-screen bg-slate-50/50 p-4 md:p-8 ${getFormWrapperClass()}`}>
+        {/* Lead Stepper - Full Width (conditionally hidden) */}
+        {!hideStepper && (
+          <div className="w-full">
+            <LeadStepper
+              stageName={(() => {
+            const assignedRole = Array.isArray(formData.assignedTo) ? formData.assignedTo[0]?.role : formData.assignedTo;
+            const currentRole = Array.isArray(formData.currentRole) ? formData.currentRole[0]?.role : formData.currentRole;
+            return assignedRole || currentRole || "tele_caller";
+          })()}
+              currentStep={currentStep}
+              className="w-full"
+              isNewLead={!data}
+            />
+          </div>
+        )}
 
           <div className="w-full">
 
@@ -1183,6 +1353,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
               {/* LEFT COLUMN – BASIC INFO */}
               <div className="lg:col-span-8">
                 <Card className="border-0 shadow-md bg-white overflow-hidden">
+
                   <div className="h-2 bg-indigo-500 w-full" />
                   <CardHeader>
                     <CardTitle className="text-xl text-gray-800">Basic Information</CardTitle>
@@ -1193,7 +1364,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="space-y-2">
                     <Label className="text-gray-700">Lead Type</Label>
-                    {viewMode ? (
+                    {viewMode || !isFieldEditable('leadType') ? (
                       <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
                         {formData.leadType || "-"}
                       </div>
@@ -1204,13 +1375,14 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                             key={type}
                             type="button"
                             onClick={() => {
-                              handleChange("leadType", type)
-                              // Clear the mediator/owner name when switching types
+                              // Update both leadType and clear mediatorName in a single state update
+                              const changes = { leadType: type };
                               if (formData.leadType !== type) {
-                                handleChange("mediatorName", "")
+                                changes.mediatorName = "";
                               }
+                              handleMultipleChanges(changes);
                             }}
-                            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                            className={`px-4 py-2 rounded-md text-sm font-medium transition-all cursor-pointer ${
                               formData.leadType === type
                                 ? "bg-indigo-600 text-white shadow-sm"
                                 : "bg-transparent text-gray-600 hover:bg-gray-200"
@@ -1231,6 +1403,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                       </div>
                     ) : (
                       <Input
+                        type="number"
                         value={formData.contactNumber}
                         onChange={(e) => handleChange("contactNumber", e.target.value)}
                         className={errors.contactNumber ? "border-red-500 focus:border-red-500" : ""}
@@ -1289,89 +1462,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                     )}
                   </div>
 
-                  {/* ===== NEW FIELDS: Current Role, Assigned To, Assign To ===== */}
-                  
-                  {/* Current Role - Visible field (auto-fetched from localStorage) */}
-                  <div className="space-y-2">
-                    <Label className="text-gray-700 font-medium">Current Role</Label>
-                    {viewMode ? (
-                      <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
-                        {formData.currentRole && typeof formData.currentRole === 'string' ? formData.currentRole.replace(/_/g, ' ') : formData.currentRole || "-"}
-                      </div>
-                    ) : (
-                      <Input 
-                        value={formData.currentRole && typeof formData.currentRole === 'string' ? formData.currentRole.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : ""} 
-                        onChange={(e) => handleChange("currentRole", e.target.value)} 
-                        disabled 
-                        className="bg-gray-50/50" 
-                        placeholder="Current role (auto-fetched)"
-                      />
-                    )}
-                  </div>
-
-                  {/* Assigned To - Role Dropdown */}
-                  <div className="space-y-2">
-                    <Label className="text-gray-700 font-medium">Assigned To (Role)</Label>
-                    {viewMode ? (
-                      <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
-                        {formData.assignedTo && typeof formData.assignedTo === 'string' ? formData.assignedTo.replace(/_/g, ' ') : formData.assignedTo || "-"}
-                      </div>
-                    ) : (
-                      <Select value={formData.assignedTo} onValueChange={(v) => handleChange("assignedTo", v)}>
-                        <SelectTrigger className="bg-gray-50/50">
-                          <SelectValue placeholder="Select Role" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white z-50 shadow-lg">
-                          {getFilteredStaticRoles().map((role) => (
-                            <SelectItem key={role} value={role}>
-                              {role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  </div>
-
-                  {/* Assign To - User Dropdown based on selected role */}
-                  {formData.assignedTo && (
-                    <div className="space-y-2">
-                      <Label className="text-gray-700 font-medium">Assign To (User)</Label>
-                      {viewMode ? (
-                        <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                          {formData.assignToUser || "-"}
-                        </div>
-                      ) : (
-                        <Select value={formData.assignToUser} onValueChange={(v) => handleChange("assignToUser", v)}>
-                          <SelectTrigger className="bg-gray-50/50">
-                            {usersLoading ? (
-                              <div className="flex items-center gap-2">
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                                <SelectValue placeholder="Loading users..." />
-                              </div>
-                            ) : (
-                              <SelectValue placeholder="Select User" />
-                            )}
-                          </SelectTrigger>
-                          <SelectContent className="bg-white z-50 shadow-lg">
-                            {users
-                              .filter(user => user.role === formData.assignedTo).length > 0 ? (
-                                users
-                                  .filter(user => user.role === formData.assignedTo)
-                                  .map((user) => (
-                                    <SelectItem key={user._id || user.id} value={user._id || user.id}>
-                                      {user.name} ({user.role.replace(/_/g, ' ')})
-                                    </SelectItem>
-                                  ))
-                              ) : (
-                                <div className="px-2 py-1 text-sm text-gray-500 italic">
-                                  User not found
-                                </div>
-                              )}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    </div>
-                  )}
 
               <div className="space-y-2 hidden">
                 <Label>Mediator ID (optional)</Label>
@@ -1623,7 +1713,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                     {formData.builderShare || "-"}
                   </div>
                 ) : (
-                  <Input value={formData.builderShare} onChange={(e) => handleChange("builderShare", e.target.value)} className="bg-gray-50/50" />
+                  <Input type="number" value={formData.builderShare} onChange={(e) => handleChange("builderShare", e.target.value)} className="bg-gray-50/50" />
                 )}
               </div>
 
@@ -1648,18 +1738,13 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
               </div>
 
               <div className="space-y-2">
-                  <Input value={formData.builderShare} onChange={(e) => handleChange("builderShare", e.target.value)} className="bg-gray-50/50" />
-                
-              </div>
-
-              <div className="space-y-2">
                 <Label className="text-gray-700 font-medium">Rate</Label>
                 {viewMode ? (
                   <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
                     {formData.rate || "-"}
                   </div>
                 ) : (
-                  <Input value={formData.rate} onChange={(e) => handleChange("rate", e.target.value)} className="bg-gray-50/50" />
+                  <Input type="number" value={formData.rate} onChange={(e) => handleChange("rate", e.target.value)} className="bg-gray-50/50" />
                 )}
               </div>
 
@@ -1671,7 +1756,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                     {formData.refundable || "-"}
                   </div>
                 ) : (
-                  <Input value={formData.refundable} onChange={(e) => handleChange("refundable", e.target.value)} className="bg-gray-50/50" />
+                  <Input type="number" value={formData.refundable} onChange={(e) => handleChange("refundable", e.target.value)} className="bg-gray-50/50" />
                 )}
               </div>
 
@@ -1682,7 +1767,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                     {formData.nonRefundable || "-"}
                   </div>
                 ) : (
-                  <Input value={formData.nonRefundable} onChange={(e) => handleChange("nonRefundable", e.target.value)} className="bg-gray-50/50" />
+                  <Input type="number" value={formData.nonRefundable} onChange={(e) => handleChange("nonRefundable", e.target.value)} className="bg-gray-50/50" />
                 )}
               </div>
 
@@ -1705,7 +1790,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                     {formData.frontage || "-"}
                   </div>
                 ) : (
-                  <Input value={formData.frontage} onChange={(e) => handleChange("frontage", e.target.value)} className="bg-gray-50/50" />
+                  <Input type="number" value={formData.frontage} onChange={(e) => handleChange("frontage", e.target.value)} className="bg-gray-50/50" />
                 )}
               </div>
 
@@ -1716,7 +1801,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                     {formData.roadWidth || "-"}
                   </div>
                 ) : (
-                  <Input value={formData.roadWidth} onChange={(e) => handleChange("roadWidth", e.target.value)} className="bg-gray-50/50" />
+                  <Input type="number" value={formData.roadWidth} onChange={(e) => handleChange("roadWidth", e.target.value)} className="bg-gray-50/50" />
                 )}
               </div>
 
@@ -1751,7 +1836,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                 )}
               </div>
               <div className="space-y-2">
-                <Label className="text-gray-700 font-medium">Lead Stage</Label>
+                <Label className="text-gray-700 font-medium">Lead Stage <span className="text-red-500">*</span></Label>
                 {!isFieldEditable('leadStatus') ? (
                   <div className="p-2 bg-white border border-gray-300 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
                     {formData.leadStatus || "-"}
@@ -1854,81 +1939,119 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
             </div>
           )}
 
-          {/* Status field - only show in edit mode */}
-          {data && (
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Select value={formData.status} onValueChange={(v) => handleChange("status", v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-white z-50 shadow-lg">
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* RIGHT COLUMN – CALL HISTORY / YIELD */}
-              <div className="lg:col-span-4">
-                <Card className="border-0 shadow-md bg-white">
-                  <CardHeader>
-                    <CardTitle className="text-lg text-gray-800">Call History & Yield</CardTitle>
-                    <CardDescription>Quick reference</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    {/* CALL HISTORY */}
-                    <div>
-                      <Label className="text-sm font-medium text-gray-700">Call History</Label>
-                      {calls?.length > 0 ? (
-                        <div className="space-y-3 mt-2">
-                          {calls.map((call, idx) => (
-                            <div key={idx} className="p-3 border rounded-lg bg-gray-50 text-sm">
-                              <div className="flex justify-between items-start mb-2">
-                                <p className="font-medium">
-                                  {new Date(call.created_at || call.createdAt).toLocaleDateString()}
-                                </p>
-                                <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
-                                  {call.role || 'Call'}
-                                </span>
-                              </div>
-                              <p className="text-gray-600">
-                                {call.note || "No notes"}
-                              </p>
-                              <p className="text-xs text-gray-500 mt-1">
-                                {new Date(call.created_at || call.createdAt).toLocaleTimeString()}
-                              </p>
-                            </div>
-                          ))}
+                  {/* ===== NEW FIELDS: Current Role, Assigned To, Assign To ===== */}
+                  {/* 3x3 Grid Layout for Role Assignment Fields */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Current Role - Visible field (auto-fetched from localStorage) */}
+                    <div className="space-y-2">
+                      <Label className="text-gray-700 font-medium">Current Role</Label>
+                      {viewMode ? (
+                        <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
+                          {(() => {
+                            const roleValue = Array.isArray(formData.currentRole) ? formData.currentRole[0]?.role : formData.currentRole;
+                            return roleValue && typeof roleValue === 'string' ? roleValue.replace(/_/g, ' ') : roleValue || "-";
+                          })()}
                         </div>
                       ) : (
-                        <p className="text-sm text-gray-400 italic mt-2">No call history</p>
+                        <Input 
+                          value={formData.currentRole && typeof formData.currentRole === 'string' ? formData.currentRole.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : ""} 
+                          onChange={(e) => handleChange("currentRole", e.target.value)} 
+                          disabled 
+                          className="bg-gray-50/50" 
+                          placeholder="Current role (auto-fetched)"
+                        />
                       )}
                     </div>
 
-                    {/* YIELD */}
-                    <div>
-                      <Label className="text-sm font-medium text-gray-700">Yield (%)</Label>
-                      <div className="p-2 bg-gray-50 border rounded-md mt-1">
-                        {formData.yield || "-"}
-                      </div>
+                    {/* Assigned To - Role Dropdown */}
+                    <div className="space-y-2">
+                      <Label className="text-gray-700 font-medium">Assigned To (Role)</Label>
+                      {viewMode ? (
+                        <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
+                          {(() => {
+                            const roleValue = Array.isArray(formData.assignedTo) ? formData.assignedTo[0]?.role : formData.assignedTo;
+                            return roleValue && typeof roleValue === 'string' ? roleValue.replace(/_/g, ' ') : roleValue || "-";
+                          })()}
+                        </div>
+                      ) : (
+                        <Select value={formData.assignedTo} onValueChange={(v) => handleChange("assignedTo", v)}>
+                          <SelectTrigger className="bg-gray-50/50">
+                            <SelectValue placeholder="Select Role" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-white z-50 shadow-lg">
+                            {getFilteredStaticRoles().map((role) => {
+                              const isSameRole = !canSelectRole(role)
+                              return (
+                                <SelectItem 
+                                  key={role} 
+                                  value={role}
+                                  disabled={isSameRole}
+                                  className={isSameRole ? "opacity-50 cursor-not-allowed" : ""}
+                                >
+                                  {isSameRole 
+                                    ? `${role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} (Can't select - same role)`
+                                    : role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+                                  }
+                                </SelectItem>
+                              )
+                            })}
+                          </SelectContent>
+                        </Select>
+                      )}
                     </div>
+
+                    {/* Assign To - User Dropdown based on selected role */}
+                    {formData.assignedTo && (
+                      <div className="space-y-2">
+                        <Label className="text-gray-700 font-medium">Assign To (User) <span className="text-red-500">*</span></Label>
+                        {viewMode ? (
+                          <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                            {formData.assignToUser || "-"}
+                          </div>
+                        ) : (
+                          <Select value={formData.assignToUser} onValueChange={(v) => handleChange("assignToUser", v)}>
+                            <SelectTrigger className="bg-gray-50/50">
+                              {usersLoading ? (
+                                <div className="flex items-center gap-2">
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                  <SelectValue placeholder="Loading users..." />
+                                </div>
+                              ) : (
+                                <SelectValue placeholder="Select User" />
+                              )}
+                            </SelectTrigger>
+                            <SelectContent className="bg-white z-50 shadow-lg">
+                              {users
+                                .filter(user => user.role === formData.assignedTo).length > 0 ? (
+                                users
+                                  .filter(user => user.role === formData.assignedTo)
+                                  .map((user) => (
+                                    <SelectItem key={user._id || user.id} value={user._id || user.id}>
+                                      {user.name} ({user.role.replace(/_/g, ' ')})
+                                    </SelectItem>
+                                  ))
+                              ) : (
+                                <div className="px-2 py-1 text-sm text-gray-500 italic">
+                                  User not found
+                                </div>
+                              )}
+                            </SelectContent>
+                          </Select>
+                        )}
+                        {errors.assignToUser && !viewMode && (
+                          <p className="text-red-500 text-sm flex items-center gap-1">
+                            <AlertCircle className="h-4 w-4" />
+                            {errors.assignToUser}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
                   </CardContent>
                 </Card>
-              </div>
-            </div>
-            {/* ===== TWO COLUMN ROW END ===== */}
-
-  {/* Full Width Wrapper for Competitor Analysis, Site Visit Checklist & Notes & Calls */ }
-  <div className="w-full mt-8">
-    {/* Competitor Analysis - Full Width */}
-    <Card className="border-0 shadow-md bg-white">
+                {/* test1  */}
+                <Card className="border-0  mt-4 shadow-md bg-white">
       <CardHeader>
         <CardTitle className="text-xl text-gray-800">Competitor Analysis</CardTitle>
       </CardHeader>
@@ -2055,7 +2178,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
         </div>
       </CardContent>
     </Card>
-
     {/* Site Visit Checklist - Full Width */}
     <Card className="border-0 shadow-md bg-white mt-8">
       <CardHeader className="pb-4 border-b">
@@ -2364,8 +2486,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
         </div>
       </CardContent>
     </Card>
-
-    {/* Notes & Calls - Full Width */}
+     {/* Notes & Calls - Full Width */}
     <Card className="border-0 shadow-md bg-white mt-8 mb-8">
       <CardHeader>
         <CardTitle className="text-xl text-gray-800">Notes & Calls</CardTitle>
@@ -2426,7 +2547,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
         </div>
 
         {/* Call History Display */}
-        {calls?.length > 0 && (
+        {/* {calls?.length > 0 && (
           <div className="space-y-4">
             <Label className="text-gray-700 font-medium">Call History</Label>
             <div className="space-y-3">
@@ -2457,29 +2578,9 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
               ))}
             </div>
           </div>
-        )}
+        )} */}
 
-        {/* Notes Section */}
-        {/* <div className="space-y-2">
-          <Label className="text-gray-700 font-medium">Notes</Label>
-          {viewMode ? (
-            <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[100px] whitespace-pre-wrap">
-              {formData.checkNotes || "-"}
-            </div>
-          ) : (
-            <Textarea
-              value={formData.checkNotes}
-              onChange={(e) => handleChange("checkNotes", e.target.value)}
-              placeholder="Enter additional notes, observations, or important information about this lead..."
-              rows={5}
-              className="bg-gray-50 resize-y"
-            />
-          )}
-        </div> */}
-
-      {/* </div> */}
-
-      {/* Remark - Full Width */}
+    
       <div className="space-y-2">
         <Label className="text-gray-700 font-medium">Remark</Label>
         {viewMode ? (
@@ -2498,8 +2599,59 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       </div>
     </CardContent>
   </Card>
-      </div>
-    {/* End Full Width Wrapper */}
+              </div>
+
+              {/* RIGHT COLUMN – CALL HISTORY / YIELD */}
+              <div className="lg:col-span-4 ">
+                <Card className="border-0 shadow-md bg-white sticky top-28">
+                  <CardHeader>
+                    <CardTitle className="text-lg text-gray-800">Call History & Yield</CardTitle>
+                    <CardDescription>Quick reference</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* CALL HISTORY */}
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700">Call History</Label>
+                      {calls?.length > 0 ? (
+                        <div className="space-y-3 mt-2">
+                          {calls.map((call, idx) => (
+                            <div key={idx} className="p-3 border rounded-lg bg-gray-50 text-sm">
+                              <div className="flex justify-between items-start mb-2">
+                                <p className="font-medium">
+                                  {new Date(call.created_at || call.createdAt).toLocaleDateString()}
+                                </p>
+                                <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
+                                  {call.role || 'Call'}
+                                </span>
+                              </div>
+                              <p className="text-gray-600">
+                                {call.note || "No notes"}
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {new Date(call.created_at || call.createdAt).toLocaleTimeString()}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-400 italic mt-2">No call history</p>
+                      )}
+                    </div>
+
+                    {/* YIELD */}
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700">Yield (%)</Label>
+                      <div className="p-2 bg-gray-50 border rounded-md mt-1">
+                        {formData.yield || "-"}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+    
+
+  
 
     {!viewMode && (
       <div className="flex justify-end gap-4 pb-8">

@@ -167,7 +167,7 @@ export const LeadsProvider = ({ children }) => {
 
       return response;
     } catch (err) {
-      console.error('❌ Error updating lead:', err);
+      // console.error('❌ Error updating lead:', err);
       setError(err.message);
       throw err;
     } finally {

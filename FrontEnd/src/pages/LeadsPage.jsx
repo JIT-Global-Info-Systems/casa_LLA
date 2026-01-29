@@ -159,22 +159,24 @@ export default function LeadsPage() {
  
   const handleLeadSubmit = async (leadPayload, files = {}) => {
     const isUpdate = !!selectedLead;
-    const loadingToast = toast.loading(isUpdate ? 'Updating lead...' : 'Creating lead...');
+    // const loadingToast = toast.loading(isUpdate ? 'Updating lead...' : 'Creating lead...');
     
-   
     
     try {
       if (isUpdate) {
-        console.log('📞 Calling updateLead with ID:', selectedLead._id || selectedLead.id);
         await updateLead(selectedLead._id || selectedLead.id, leadPayload, files);
-        console.log('✅ updateLead completed successfully');
       } else {
-        console.log('📞 Calling createLead');
         await createLead(leadPayload, files);
-        console.log('✅ createLead completed successfully');
       }
       
-      
+      // toast.success(
+      //   isUpdate ? 'Lead updated successfully' : 'Lead created successfully',
+      //   { 
+      //     id: loadingToast,
+      //     icon: <Check className="w-5 h-5 text-green-500" />,
+      //     duration: 3000
+      //   }
+      // );
       
       if (Object.keys(files).length > 0) {
         toast.success('Files uploaded successfully', { 
@@ -405,8 +407,7 @@ const handleCancelDelete = () => {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Zone</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property</th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Registered Date</th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Lead Status</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                     </tr>
                   </thead>
@@ -421,14 +422,21 @@ const handleCancelDelete = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.property}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
                           <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
-                            String(lead.status).toLowerCase() === "active" ? "bg-green-100 text-green-700" : 
-                            String(lead.status).toLowerCase() === "inactive" ? "bg-red-100 text-red-700" :
-                            "bg-yellow-100 text-yellow-700"
+                            String(lead.lead_status).toLowerCase() === "Enquired" ? "bg-blue-100 text-blue-700" :
+                            String(lead.lead_status).toLowerCase() === "contacted" ? "bg-purple-100 text-purple-700" :
+                            String(lead.lead_status).toLowerCase() === "qualified" ? "bg-green-100 text-green-700" :
+                            String(lead.lead_status).toLowerCase() === "converted" ? "bg-emerald-100 text-emerald-700" :
+                            String(lead.lead_status).toLowerCase() === "lost" ? "bg-red-100 text-red-700" :
+                            String(lead.lead_status).toLowerCase() === "hold" ? "bg-amber-100 text-amber-700" :
+                            String(lead.lead_status).toLowerCase() === "pending" ? "bg-orange-100 text-orange-700" :
+                            String(lead.lead_status).toLowerCase() === "follow-up" ? "bg-indigo-100 text-indigo-700" :
+                            String(lead.lead_status).toLowerCase() === "interested" ? "bg-teal-100 text-teal-700" :
+                            String(lead.lead_status).toLowerCase() === "not-interested" ? "bg-slate-100 text-slate-700" :
+                            String(lead.lead_status).toLowerCase() === "hot-lead" ? "bg-rose-100 text-rose-700" :
+                            String(lead.lead_status).toLowerCase() === "cold-lead" ? "bg-cyan-100 text-cyan-700" :
+                            "bg-gray-100 text-gray-700"
                           }`}>
-                            {lead.status || "—"}</span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {formatDateWithFallback(lead.created_at, "—")}
+                            {lead.lead_status || "—"}</span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <DropdownMenu>
@@ -507,7 +515,7 @@ const handleCancelDelete = () => {
       
       {/* Simple Delete Confirmation Modal */}
       {deleteModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="relative w-full max-w-md mx-4 bg-white rounded-lg shadow-xl">
             <div className="p-6">
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100">

@@ -90,7 +90,6 @@ export default function ApprovedLeads() {
       setSelectedLead(null);
       fetchApprovedLeads(); // Refresh the list
     } catch (err) {
-      console.error("Error updating lead:", err);
       const errorMessage = err.response?.data?.message || 'Failed to update lead. Please try again.';
       toast.error(errorMessage, { id: editToast });
     }
