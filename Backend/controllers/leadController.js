@@ -464,7 +464,7 @@ exports.getApprovedLeads = async (req, res) => {
   try {
     const { location } = req.query;
     const query = {
-      lead_status: "APPROVED",
+      lead_status: "Approved",
       status: "active"
     };
     
@@ -493,7 +493,7 @@ exports.getPurchasedLeads = async (req, res) => {
   try {
     const { location } = req.query;
     const query = {
-      lead_status: "PURCHASED",
+      lead_status: "purchased",
       status: "active"
     };
     

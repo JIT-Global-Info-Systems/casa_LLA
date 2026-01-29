@@ -255,6 +255,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     callNotes: "", // Call notes for calls
   })
 
+  console.log('formdata :>> ', formData);
   // Store original data for change tracking
   const [originalData, setOriginalData] = useState(null)
 
@@ -339,9 +340,9 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     if (!dataToValidate.source) nextErrors.source = "Source is required"
     
     // Assign To (User) is required when Assigned To (Role) is selected
-    if (dataToValidate.assignedTo && !dataToValidate.assignToUser?.trim()) {
-      nextErrors.assignToUser = "Please select a user when a role is assigned"
-    }
+    // if (dataToValidate.assignedTo && !dataToValidate.assignToUser?.trim()) {
+    //   nextErrors.assignToUser = "Please select a user when a role is assigned"
+    // }
 
       // Numeric fields (soft validation)
       ;["extent", "fsi", "asp", "revenue", "rate", "builderShare"].forEach((k) => {
@@ -424,7 +425,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       console.error("Failed to fetch locations:", err)
       const errorMsg = err.response?.data?.message || "Failed to load locations. Please try again."
       setApiError(errorMsg)
-      toast.error(errorMsg, { id: loadingToast })
+      // toast.error(errorMsg, { id: loadingToast })
     } finally {
       setLoading((prev) => ({ ...prev, locations: false, regions: false, zones: false }))
     }
