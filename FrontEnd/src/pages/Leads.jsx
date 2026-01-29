@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { locationsAPI } from "@/services/api"
 import { useMediators } from "../context/MediatorsContext.jsx"
 import { useUsers } from "../context/UsersContext.jsx"
+import { useMaster } from "../context/Mastercontext.jsx"
 import { ChevronLeft, Upload, FileText, CheckCircle2, AlertCircle, Loader2 } from "lucide-react"
 import LeadStepper from "@/components/ui/LeadStepper"
 import toast from "react-hot-toast"
@@ -18,6 +19,7 @@ const yesNo = (v) => (v ? "Yes" : "No")
 export default function Leads({ data = null, onSubmit, onClose, viewMode = false, currentStep, onStepChange, editableFields = null, stepperOnly = false, hideStepper = false, calls = [] }) {
   const { mediators, loading: mediatorsLoading, fetched: mediatorsFetched, fetchMediators } = useMediators()
   const { users, loading: usersLoading, fetchUsers } = useUsers()
+  const { masters, loading: stagesLoading, fetchStages } = useMaster()
 
   // Helper function to check if a field is editable
   const isFieldEditable = (fieldName) => {
@@ -153,6 +155,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     const currentUserRole = getCurrentUserRole()
     return role !== currentUserRole
   }
+
   const [formData, setFormData] = useState({
     // Basic Lead Information
     leadType: "mediator",
@@ -258,7 +261,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
   // Store original data for change tracking
   const [originalData, setOriginalData] = useState(null)
 
-  const [masters, setMasters] = useState({ locations: [], regions: [], zones: [] })
+  const [locationsData, setLocationsData] = useState({ locations: [], regions: [], zones: [] })
   const [loading, setLoading] = useState({ locations: false, regions: false, zones: false, submit: false })
   const [errors, setErrors] = useState({})
   const [apiError, setApiError] = useState(null)
@@ -418,7 +421,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
         }
       })
 
-      setMasters({ locations: transformedLocations, regions: transformedRegions, zones: transformedZones })
+      setLocationsData({ locations: transformedLocations, regions: transformedRegions, zones: transformedZones })
       // toast.success('Locations loaded successfully', { id: loadingToast })
     } catch (err) {
       console.error("Failed to fetch locations:", err)
@@ -434,6 +437,29 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     const loadData = async () => {
       try {
         await fetchLocations()
+
+        // Fetch stages
+        if (!stagesLoading) {
+          try {
+            await fetchStages()
+            console.log('Stages fetched:', masters.stages)
+            
+            // Temporary test - add mock stages if none exist
+            if (!masters.stages || masters.stages.length === 0) {
+              console.log('No stages from API, adding test stages')
+              // This is just for testing - remove once API works
+              const testStages = [
+                { id: 'test1', name: 'Test Stage 1' },
+                { id: 'test2', name: 'Test Stage 2' },
+                { id: 'test3', name: 'Test Stage 3' }
+              ]
+              console.log('Test stages would be:', testStages)
+            }
+          } catch (err) {
+            console.error('Failed to load stages:', err)
+            toast.error('Failed to load stages. Lead stages may be limited.')
+          }
+        }
 
         // Only fetch mediators if they haven't been fetched yet
         if (!mediatorsFetched && !mediatorsLoading && !mediators.length) {
@@ -465,7 +491,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     }
 
     loadData()
-  }, [fetchLocations, fetchMediators, mediatorsFetched, mediatorsLoading, mediators.length, usersLoading, users.length, fetchUsers])
+  }, [fetchLocations, fetchStages, stagesLoading, masters.stages.length, fetchMediators, mediatorsFetched, mediatorsLoading, mediators.length, usersLoading, users.length, fetchUsers])
 
   useEffect(() => {
     // Auto-set currentRole from localStorage when creating new lead (not editing)
@@ -792,20 +818,20 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
   const getOptions = useCallback(
     (type) => {
-      if (type === "location") return masters.locations.map((l) => ({ value: l.name, label: l.name }))
+      if (type === "location") return locationsData.locations.map((l) => ({ value: l.name, label: l.name }))
       if (type === "region") {
         if (!formData.location) return []
-        return masters.regions.filter((r) => r.location === formData.location).map((r) => ({ value: r.region, label: r.region }))
+        return locationsData.regions.filter((r) => r.location === formData.location).map((r) => ({ value: r.region, label: r.region }))
       }
       if (type === "zone") {
         if (!formData.location || !formData.zone) return []
-        return masters.zones
+        return locationsData.zones
           .filter((z) => z.location === formData.location && z.region === formData.zone)
           .map((z) => ({ value: z.zone, label: z.zone }))
       }
       return []
     },
-    [masters, formData.location, formData.zone],
+    [locationsData, formData.location, formData.zone],
   )
 
   const toLeadPayload = () => {
@@ -1852,19 +1878,39 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                         <SelectItem value="Approved">Purchased</SelectItem>
                       ) : (
                         <>
-                          <SelectItem value="Enquired">Enquired</SelectItem>
-                          <SelectItem value="Lead Allocated">Lead Allocated</SelectItem>
-                          <SelectItem value="First Called">First Called</SelectItem>
-                          <SelectItem value="Site Visit">Site Visit</SelectItem>
-                          <SelectItem value="Owner Meeting">Owner Meeting</SelectItem>
-                          <SelectItem value="Negotiation Started">Negotiation Started</SelectItem>
-                          <SelectItem value="Negotiation_End">Negotiation End</SelectItem>
-                          <SelectItem value="Due_Diligence_Started">Due Diligence Started</SelectItem>
-                          <SelectItem value="Due_Diligence_End">Due Diligence End</SelectItem>
-                          <SelectItem value="Approved">Approved</SelectItem>
-                          <SelectItem value="Hold">Hold</SelectItem>
-                          <SelectItem value="L1_Qualification">L1 Qualification</SelectItem>
-                          <SelectItem value="director_sv">Director sv</SelectItem>
+                          {/* Show stages from API */}
+                          {console.log('masters.stages:', masters.stages) || 
+                          (masters.stages && masters.stages.length > 0) ? (
+                            <>
+                              {console.log('Rendering stages from API:', masters.stages)}
+                              {masters.stages.map((stage) => (
+                                <SelectItem key={stage.id} value={stage.name}>
+                                  {stage.name}
+                                </SelectItem>
+                              ))}
+                            </>
+                          ) : (
+                            <>
+                              {console.log('No stages found, using fallback. masters.stages:', masters.stages)}
+                              {/* Temporarily add test stages to verify rendering works */}
+                              <SelectItem value="Test Stage 1">Test Stage 1</SelectItem>
+                              <SelectItem value="Test Stage 2">Test Stage 2</SelectItem>
+                              <SelectItem value="Test Stage 3">Test Stage 3</SelectItem>
+                              <SelectItem value="Enquired">Enquired</SelectItem>
+                              <SelectItem value="Lead Allocated">Lead Allocated</SelectItem>
+                              <SelectItem value="First Called">First Called</SelectItem>
+                              <SelectItem value="Site Visit">Site Visit</SelectItem>
+                              <SelectItem value="Owner Meeting">Owner Meeting</SelectItem>
+                              <SelectItem value="Negotiation Started">Negotiation Started</SelectItem>
+                              <SelectItem value="Negotiation_End">Negotiation End</SelectItem>
+                              <SelectItem value="Due_Diligence_Started">Due Diligence Started</SelectItem>
+                              <SelectItem value="Due_Diligence_End">Due Diligence End</SelectItem>
+                              <SelectItem value="Approved">Approved</SelectItem>
+                              <SelectItem value="Hold">Hold</SelectItem>
+                              <SelectItem value="L1_Qualification">L1 Qualification</SelectItem>
+                              <SelectItem value="director_sv">Director sv</SelectItem>
+                            </>
+                          )}
                         </>
                       )}
                     </SelectContent>
