@@ -126,14 +126,59 @@ exports.updateLead = async (req, res) => {
     }
 
     const { leadId } = req.params;
-    const { userId, note, notes, role, currentRole, competitorAnalysis, checkListPage, callDate, callTime, ...updateData } = req.body;
+    const { userId, note, notes, role, currentRole, assignedTo, competitorAnalysis, checkListPage, callDate, callTime, ...updateData } = req.body;
 
     const update = {
       ...updateData,
       updated_by: req.user.user_id, // Set updated_by with user ID from JWT token
       updated_at: new Date(), // Set updated_at timestamp
-      ...(currentRole !== undefined && { currentRole }) // Update currentRole if provided
     };
+
+    // Handle currentRole array if provided
+    if (currentRole !== undefined) {
+      console.log("Raw currentRole:", currentRole, "Type:", typeof currentRole);
+      let parsedCurrentRole = currentRole;
+      if (typeof currentRole === 'string') {
+        try {
+          parsedCurrentRole = JSON.parse(currentRole);
+          console.log("Parsed currentRole:", parsedCurrentRole);
+        } catch (e) {
+          console.error("Error parsing currentRole string:", e);
+          return res.status(400).json({ message: "Invalid format for currentRole" });
+        }
+      }
+
+      if (Array.isArray(parsedCurrentRole)) {
+        update.currentRole = parsedCurrentRole;
+      } else if (typeof parsedCurrentRole === 'object' && parsedCurrentRole !== null) {
+        // If single object is provided, wrap it in array
+        update.currentRole = [parsedCurrentRole];
+      }
+      console.log("Final update.currentRole:", update.currentRole);
+    }
+
+    // Handle assignedTo array if provided
+    if (assignedTo !== undefined) {
+      console.log("Raw assignedTo:", assignedTo, "Type:", typeof assignedTo);
+      let parsedAssignedTo = assignedTo;
+      if (typeof assignedTo === 'string') {
+        try {
+          parsedAssignedTo = JSON.parse(assignedTo);
+          console.log("Parsed assignedTo:", parsedAssignedTo);
+        } catch (e) {
+          console.error("Error parsing assignedTo string:", e);
+          return res.status(400).json({ message: "Invalid format for assignedTo" });
+        }
+      }
+
+      if (Array.isArray(parsedAssignedTo)) {
+        update.assignedTo = parsedAssignedTo;
+      } else if (typeof parsedAssignedTo === 'object' && parsedAssignedTo !== null) {
+        // If single object is provided, wrap it in array
+        update.assignedTo = [parsedAssignedTo];
+      }
+      console.log("Final update.assignedTo:", update.assignedTo);
+    }
 
     // Initialize $push if not already set
     update.$push = update.$push || {};
@@ -244,14 +289,15 @@ exports.updateLead = async (req, res) => {
 
     // Track changes to currentRole and assignedTo in LeadHistory
     if (update.currentRole || update.assignedTo) {
+      console.log("Tracking changes for LeadHistory. update.currentRole:", update.currentRole, "update.assignedTo:", update.assignedTo);
       const existingLead = await Lead.findById(leadId);
 
       if (existingLead) {
         // Create a new history entry if either field is being updated
         const historyEntry = {
           leadId: existingLead._id,
-          currentRole: update.currentRole || existingLead.currentRole,
-          assignedTo: update.assignedTo || existingLead.assignedTo,
+          currentRole: update.currentRole || existingLead.currentRole || [],
+          assignedTo: update.assignedTo || existingLead.assignedTo || [],
           createdBy: req.user.user_id
         };
 
@@ -259,11 +305,46 @@ exports.updateLead = async (req, res) => {
       }
     }
 
-    const updatedLead = await Lead.findByIdAndUpdate(
-      leadId,
-      update,
-      { new: true, runValidators: true }
+    console.log("Final update object before database update:", JSON.stringify(update, null, 2));
+
+    // Use direct MongoDB collection update to bypass Mongoose schema issues
+    const collection = Lead.collection;
+    
+    const updateOperation = { 
+      $set: {
+        updated_by: req.user.user_id,
+        updated_at: new Date(),
+        currentRole: update.currentRole || [],
+        assignedTo: update.assignedTo || []
+      }
+    };
+
+    // Add other fields from updateData
+    Object.keys(updateData).forEach(key => {
+      if (key !== 'currentRole' && key !== 'assignedTo') {
+        updateOperation.$set[key] = updateData[key];
+      }
+    });
+
+    // Handle competitorAnalysis if present
+    if (update.competitorAnalysis) {
+      updateOperation.$set.competitorAnalysis = update.competitorAnalysis;
+    }
+
+    // Handle checkListPage if present
+    if (update.checkListPage) {
+      updateOperation.$set.checkListPage = update.checkListPage;
+    }
+
+    console.log("Final update operation:", JSON.stringify(updateOperation, null, 2));
+
+    const result = await collection.updateOne(
+      { _id: leadId },
+      updateOperation
     );
+
+    // Get the updated document
+    const updatedLead = await Lead.findById(leadId);
 
     if (!updatedLead) {
       return res.status(404).json({

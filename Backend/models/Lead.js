@@ -141,10 +141,35 @@ const leadSchema = new mongoose.Schema({
     type: String,
   },
   
-  currentRole: {
-    type: String,
-    // default: 'user' // Default role can be set based on your requirements
-  },
+  currentRole: [{
+    user_id: {
+      type: String,
+      required: true
+    },
+    role: {
+      type: String,
+      required: true
+    },
+    name: {
+      type: String,
+      required: true
+    }
+  }],
+  
+  assignedTo: [{
+    user_id: {
+      type: String,
+      required: true
+    },
+    role: {
+      type: String,
+      required: true
+    },
+    name: {
+      type: String,
+      required: true
+    }
+  }],
   
   lead_stage: {
     type: String,
