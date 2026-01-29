@@ -159,35 +159,24 @@ export default function LeadsPage() {
  
   const handleLeadSubmit = async (leadPayload, files = {}) => {
     const isUpdate = !!selectedLead;
-    const loadingToast = toast.loading(isUpdate ? 'Updating lead...' : 'Creating lead...');
+    // const loadingToast = toast.loading(isUpdate ? 'Updating lead...' : 'Creating lead...');
     
-    console.log('🚀 LeadsPage - handleLeadSubmit called:', {
-      isUpdate,
-      selectedLeadId: selectedLead?._id || selectedLead?.id,
-      payloadKeys: Object.keys(leadPayload),
-      payloadSize: JSON.stringify(leadPayload).length,
-      leadPayload
-    });
     
     try {
       if (isUpdate) {
-        console.log('📞 Calling updateLead with ID:', selectedLead._id || selectedLead.id);
         await updateLead(selectedLead._id || selectedLead.id, leadPayload, files);
-        console.log('✅ updateLead completed successfully');
       } else {
-        console.log('📞 Calling createLead');
         await createLead(leadPayload, files);
-        console.log('✅ createLead completed successfully');
       }
       
-      toast.success(
-        isUpdate ? 'Lead updated successfully' : 'Lead created successfully',
-        { 
-          id: loadingToast,
-          icon: <Check className="w-5 h-5 text-green-500" />,
-          duration: 3000
-        }
-      );
+      // toast.success(
+      //   isUpdate ? 'Lead updated successfully' : 'Lead created successfully',
+      //   { 
+      //     id: loadingToast,
+      //     icon: <Check className="w-5 h-5 text-green-500" />,
+      //     duration: 3000
+      //   }
+      // );
       
       if (Object.keys(files).length > 0) {
         toast.success('Files uploaded successfully', { 
@@ -432,7 +421,7 @@ const handleCancelDelete = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.property}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
                           <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
-                            String(lead.lead_status).toLowerCase() === "new" ? "bg-blue-100 text-blue-700" :
+                            String(lead.lead_status).toLowerCase() === "Enquired" ? "bg-blue-100 text-blue-700" :
                             String(lead.lead_status).toLowerCase() === "contacted" ? "bg-purple-100 text-purple-700" :
                             String(lead.lead_status).toLowerCase() === "qualified" ? "bg-green-100 text-green-700" :
                             String(lead.lead_status).toLowerCase() === "converted" ? "bg-emerald-100 text-emerald-700" :

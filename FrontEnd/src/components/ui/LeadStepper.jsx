@@ -136,7 +136,7 @@ export default function LeadStepper({ stageName, currentStep = 1, onStepChange, 
 
   return (
     <div className={`w-full ${className || ''}`}>
-      <div className="flex mb-2 w-full items-center justify-between">
+      <div className="flex mb-0 w-full items-center justify-between">
         {STAGES.map((s, index) => {
           const step = index + 1
           const active = step <= activeStep
