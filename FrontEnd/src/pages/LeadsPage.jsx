@@ -161,11 +161,23 @@ export default function LeadsPage() {
     const isUpdate = !!selectedLead;
     const loadingToast = toast.loading(isUpdate ? 'Updating lead...' : 'Creating lead...');
     
+    console.log('🚀 LeadsPage - handleLeadSubmit called:', {
+      isUpdate,
+      selectedLeadId: selectedLead?._id || selectedLead?.id,
+      payloadKeys: Object.keys(leadPayload),
+      payloadSize: JSON.stringify(leadPayload).length,
+      leadPayload
+    });
+    
     try {
       if (isUpdate) {
+        console.log('📞 Calling updateLead with ID:', selectedLead._id || selectedLead.id);
         await updateLead(selectedLead._id || selectedLead.id, leadPayload, files);
+        console.log('✅ updateLead completed successfully');
       } else {
+        console.log('📞 Calling createLead');
         await createLead(leadPayload, files);
+        console.log('✅ createLead completed successfully');
       }
       
       toast.success(
@@ -248,12 +260,16 @@ export default function LeadsPage() {
  
   const normalizedLeads = (Array.isArray(leads) ? leads : []).map((lead) => {
     const registeredDate =
-      lead.createdAt || lead.registeredDate
-        ? formatDateWithFallback(lead.createdAt || lead.registeredDate)
+      lead.created_at || lead.createdAt || lead.registeredDate
+        ? formatDateWithFallback(lead.created_at || lead.createdAt || lead.registeredDate)
         : "N/A";
 
     return {
       ...lead,
+      // Map API fields to table fields
+      name: lead.mediatorName || lead.landName || "—",
+      phone: lead.contactNumber || "—",
+      property: lead.propertyType || "—",
       registeredDate,
     };
   });
@@ -261,12 +277,13 @@ export default function LeadsPage() {
   // Filter and paginate leads
   const filteredLeads = normalizedLeads.filter((lead) => {
     const matchesSearch = !searchTerm || 
-      lead.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.phone?.includes(searchTerm) ||
+      lead.mediatorName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.landName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.contactNumber?.includes(searchTerm) ||
       lead.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       lead.zone?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const leadDate = new Date(lead.createdAt || lead.registeredDate);
+    const leadDate = new Date(lead.created_at || lead.createdAt || lead.registeredDate);
     const matchesDateFrom = !dateFrom || leadDate >= new Date(dateFrom);
     const matchesDateTo = !dateTo || leadDate <= new Date(dateTo);
 
@@ -298,6 +315,7 @@ export default function LeadsPage() {
               data={open ? selectedLead : viewLead}
               viewMode={!open}
               onClose={open ? () => setOpen(false) : () => setIsViewMode(false)}
+              onSubmit={handleLeadSubmit}
               currentStep={currentStep}
               onStepChange={setCurrentStep}
               hideStepper={true}
@@ -396,16 +414,19 @@ export default function LeadsPage() {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {paginatedLeads.map((lead) => (
                       <tr key={lead.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{lead.lead_id || lead.id}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{lead.lead_id || lead.id || "—"}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{lead.name}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.phone || "—"}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.location}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.zone}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.property || "—"}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.phone}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.location || "—"}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.zone || "—"}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.property}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                          <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${String(lead.status).toLowerCase() === "approved" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
-                            {lead.status}
-                          </span>
+                          <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
+                            String(lead.status).toLowerCase() === "active" ? "bg-green-100 text-green-700" : 
+                            String(lead.status).toLowerCase() === "inactive" ? "bg-red-100 text-red-700" :
+                            "bg-yellow-100 text-yellow-700"
+                          }`}>
+                            {lead.status || "—"}</span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                           {formatDateWithFallback(lead.registeredDate, "—")}

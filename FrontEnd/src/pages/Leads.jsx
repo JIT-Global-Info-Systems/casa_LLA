@@ -77,22 +77,26 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     return 'tele_caller'
   }
 
-  // Get static roles filtered by hierarchy
+  // Get static roles filtered by hierarchy and exclude current user's role
   const getFilteredStaticRoles = () => {
     const currentUserRole = getCurrentUserRole()
     const currentUserLevel = roleHierarchy[currentUserRole] || 11
 
-    // For now, show all static roles (remove filtering to debug)
-    return STATIC_ROLES.sort((a, b) => (roleHierarchy[a] || 12) - (roleHierarchy[b] || 12))
+    // For now, show all static roles except current user's role
+    return STATIC_ROLES
+      .filter(role => role !== currentUserRole) // Exclude current user's role
+      .sort((a, b) => (roleHierarchy[a] || 12) - (roleHierarchy[b] || 12))
 
-    // Admin can assign to anyone
+    // Admin can assign to anyone except themselves
     if (currentUserRole === 'admin') {
-      return STATIC_ROLES.sort((a, b) => (roleHierarchy[a] || 12) - (roleHierarchy[b] || 12))
+      return STATIC_ROLES
+        .filter(role => role !== currentUserRole) // Exclude admin from assigning to admin
+        .sort((a, b) => (roleHierarchy[a] || 12) - (roleHierarchy[b] || 12))
     }
 
-    // Other users can only assign to lower priority roles (higher numbers)
+    // Other users can only assign to lower priority roles (higher numbers) and not themselves
     return STATIC_ROLES
-      .filter(role => (roleHierarchy[role] || 12) > currentUserLevel)
+      .filter(role => (roleHierarchy[role] || 12) > currentUserLevel && role !== currentUserRole)
       .sort((a, b) => (roleHierarchy[a] || 12) - (roleHierarchy[b] || 12))
   }
   const [formData, setFormData] = useState({
@@ -101,7 +105,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     contactNumber: "",
     mediatorName: "",
     mediatorId: "",
-    date: "",
     location: "",
     zone: "",
     area: "",
@@ -128,7 +131,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     remark: "",
     lead_stage: "",
 
-    // Yield Calculation (UI-only for now; backend schema doesn’t store these fields yet)
+    // Yield Calculation (UI-only for now; backend schema doesn't store these fields yet)
     yield: "",
 
     // Competitor Analysis (mapped to competitorAnalysis[] on submit)
@@ -199,6 +202,9 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     callNotes: "", // Call notes for calls
   })
 
+  // Store original data for change tracking
+  const [originalData, setOriginalData] = useState(null)
+
   const [masters, setMasters] = useState({ locations: [], regions: [], zones: [] })
   const [loading, setLoading] = useState({ locations: false, regions: false, zones: false, submit: false })
   const [errors, setErrors] = useState({})
@@ -214,7 +220,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     }
 
     if (!dataToValidate.mediatorName?.trim()) nextErrors.mediatorName = "Mediator/Owner name is required"
-    if (!dataToValidate.date) nextErrors.date = "Date is required"
     if (!dataToValidate.location) nextErrors.location = "Location is required"
     if (!dataToValidate.landName?.trim()) nextErrors.landName = "Land name is required"
     if (!dataToValidate.sourceCategory) nextErrors.sourceCategory = "Source category is required"
@@ -357,22 +362,36 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     const firstCompetitor = Array.isArray(data.competitorAnalysis) ? data.competitorAnalysis[0] : null
     const firstChecklist = Array.isArray(data.checkListPage) ? data.checkListPage[0] : null
 
-    setFormData((prev) => ({
-      ...prev,
+    const hydratedData = {
       ...data,
-      leadStatus: data.lead_status || prev.leadStatus,
-      lead_stage: data.lead_stage || prev.lead_stage,
-      mediatorId: data.mediatorId || prev.mediatorId,
-      currentRole: data.currentRole || prev.currentRole,
-      assignedTo: data.assignedTo || prev.assignedTo, // Now storing role string, not user ID
-      assignToUser: data.assignToUser || prev.assignToUser, // New field for specific user assignment
-      status: data.status || prev.status,
-      inquiredBy: data.inquiredBy || prev.inquiredBy,
-      L1_Qualification: data.L1_Qualification || prev.L1_Qualification,
-      directorSVStatus: data.directorSVStatus || prev.directorSVStatus,
-      callDate: data.callDate || prev.callDate,
-      callTime: data.callTime || prev.callTime,
-      callNotes: data.callNotes || prev.callNotes,
+      leadStatus: data.lead_status || "",
+      lead_stage: data.lead_stage || "",
+      mediatorId: data.mediatorId || "",
+      currentRole: data.currentRole || "",
+      assignedTo: data.assignedTo || "", // Now storing role string, not user ID
+      assignToUser: data.assignToUser || "", // New field for specific user assignment
+      status: data.status || "",
+      inquiredBy: data.inquiredBy || "",
+      L1_Qualification: data.L1_Qualification || "",
+      directorSVStatus: data.directorSVStatus || "",
+      callDate: data.callDate || "",
+      callTime: data.callTime || "",
+      callNotes: data.callNotes || "",
+
+      // Missing basic fields from API
+      propertyType: data.propertyType || "",
+      fsi: data.fsi || "",
+      asp: data.asp || "",
+      revenue: data.revenue || "",
+      transactionType: data.transactionType || "",
+      rate: data.rate || "",
+      builderShare: data.builderShare || "",
+      refundable: data.refundable || "",
+      nonRefundable: data.nonRefundable || "",
+      landmark: data.landmark || "",
+      frontage: data.frontage || "",
+      roadWidth: data.roadWidth || "",
+      sspde: data.sspde || "No",
 
       // competitor..
       competitorDeveloperName: firstCompetitor?.developerName || "",
@@ -424,7 +443,16 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       checkSubDivision: (firstChecklist?.subDivision || "").toLowerCase() === "yes",
       checkSoilTest: (firstChecklist?.soilTest || "").toLowerCase() === "yes",
       checkWaterList: (firstChecklist?.waterList || "").toLowerCase() === "yes",
-    }))
+      
+      // Document upload fields
+      checkFMBSketch: !!(firstChecklist?.fmbSketchPath),
+      checkPattaChitta: !!(firstChecklist?.pattaChittaPath),
+    }
+
+    setFormData((prev) => ({ ...prev, ...hydratedData }))
+    
+    // Store original data for change tracking (deep clone to avoid reference issues)
+    setOriginalData(JSON.parse(JSON.stringify(hydratedData)))
   }, [data])
 
   const handleChange = (key, value) => setFormData((prev) => ({ ...prev, [key]: value }))
@@ -567,55 +595,162 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       },
     ]
 
-    // Build the payload - only include fields that have values or are required
-    const payload = {
-      // base schema fields - always required
-      leadType: formData.leadType || "mediator",
-      contactNumber: formData.contactNumber || "",
-      mediatorName: formData.mediatorName || "",
-      date: formData.date || "",
-      location: formData.location || "",
-      landName: formData.landName || "",
-      sourceCategory: formData.sourceCategory || "",
-      source: formData.source || "",
-      status: formData.status || "active",
-      currentRole: currentRoleValue,
-      assignedTo: formData.assignedTo || currentRoleValue, // CRITICAL: Always send assignedTo (required for history)
-      assignToUser: formData.assignToUser, // New field for specific user assignment
+    // For new leads, send all fields
+    if (!data) {
+      const payload = {
+        // base schema fields - always required
+        leadType: formData.leadType || "mediator",
+        contactNumber: formData.contactNumber || "",
+        mediatorName: formData.mediatorName || "",
+        location: formData.location || "",
+        landName: formData.landName || "",
+        sourceCategory: formData.sourceCategory || "",
+        source: formData.source || "",
+        status: formData.status || "active",
+        currentRole: currentRoleValue,
+        assignedTo: formData.assignedTo || currentRoleValue,
+        assignToUser: formData.assignToUser,
 
-      // structured sections
-      competitorAnalysis,
-      checkListPage,
+        // structured sections
+        competitorAnalysis,
+        checkListPage,
+      }
+
+      // Add optional fields only if they have values
+      if (formData.mediatorId) payload.mediatorId = formData.mediatorId
+      if (formData.zone) payload.zone = formData.zone
+      if (formData.unit) payload.unit = formData.unit
+      if (formData.propertyType) payload.propertyType = formData.propertyType
+      if (formData.fsi) payload.fsi = formData.fsi
+      if (formData.asp) payload.asp = formData.asp
+      if (formData.revenue) payload.revenue = formData.revenue
+      if (formData.transactionType) payload.transactionType = formData.transactionType
+      if (formData.rate) payload.rate = formData.rate
+      if (formData.builderShare) payload.builderShare = formData.builderShare
+      if (formData.refundable) payload.refundable = formData.refundable
+      if (formData.nonRefundable) payload.nonRefundable = formData.nonRefundable
+      if (formData.landmark) payload.landmark = formData.landmark
+      if (formData.frontage) payload.frontage = formData.frontage
+      if (formData.roadWidth) payload.roadWidth = formData.roadWidth
+      if (formData.sspde) payload.sspde = formData.sspde
+      if (formData.remark) payload.remark = formData.remark
+      if (formData.lead_stage) payload.lead_stage = formData.lead_stage
+      if (formData.leadStatus) payload.lead_status = String(formData.leadStatus).toUpperCase()
+      if (formData.inquiredBy) payload.inquiredBy = formData.inquiredBy
+      if (formData.L1_Qualification) payload.L1_Qualification = formData.L1_Qualification
+      if (formData.directorSVStatus) payload.directorSVStatus = formData.directorSVStatus
+      if (formData.callDate) payload.callDate = formData.callDate
+      if (formData.callTime) payload.callTime = formData.callTime
+      if (formData.callNotes) payload.callNotes = formData.callNotes
+
+      return payload
     }
 
-    // Add optional fields only if they have values
-    if (formData.mediatorId) payload.mediatorId = formData.mediatorId
-    if (formData.zone) payload.zone = formData.zone
-    if (formData.extent) payload.extent = formData.extent
-    if (formData.unit) payload.unit = formData.unit
-    if (formData.propertyType) payload.propertyType = formData.propertyType
-    if (formData.fsi) payload.fsi = formData.fsi
-    if (formData.asp) payload.asp = formData.asp
-    if (formData.revenue) payload.revenue = formData.revenue
-    if (formData.transactionType) payload.transactionType = formData.transactionType
-    if (formData.rate) payload.rate = formData.rate
-    if (formData.builderShare) payload.builderShare = formData.builderShare
-    if (formData.refundable) payload.refundable = formData.refundable
-    if (formData.nonRefundable) payload.nonRefundable = formData.nonRefundable
-    if (formData.landmark) payload.landmark = formData.landmark
-    if (formData.frontage) payload.frontage = formData.frontage
-    if (formData.roadWidth) payload.roadWidth = formData.roadWidth
-    if (formData.sspde) payload.sspde = formData.sspde
-    if (formData.remark) payload.remark = formData.remark
-    if (formData.lead_stage) payload.lead_stage = formData.lead_stage
-    if (formData.leadStatus) payload.lead_status = String(formData.leadStatus).toUpperCase()
-    // assignedTo is now always included in the base payload above
-    if (formData.inquiredBy) payload.inquiredBy = formData.inquiredBy
-    if (formData.L1_Qualification) payload.L1_Qualification = formData.L1_Qualification
-    if (formData.directorSVStatus) payload.directorSVStatus = formData.directorSVStatus
-    if (formData.callDate) payload.callDate = formData.callDate
-    if (formData.callTime) payload.callTime = formData.callTime
-    if (formData.callNotes) payload.callNotes = formData.callNotes
+    // For existing leads, send only changed fields
+    const payload = {}
+    
+    // Debug: Show the data structures we're comparing
+    console.log('🔍 Debug - Original Data:', originalData)
+    console.log('🔍 Debug - Form Data:', formData)
+    console.log('🔍 Debug - Original Data exists?', !!originalData)
+    console.log('🔍 Debug - Original Data keys:', originalData ? Object.keys(originalData) : 'none')
+    
+    // Helper function to compare and add changed fields
+    const addIfChanged = (fieldName, currentValue, originalValue) => {
+      const currentStr = JSON.stringify(currentValue)
+      const originalStr = JSON.stringify(originalValue)
+      const hasChanged = currentStr !== originalStr
+      
+      if (hasChanged) {
+        payload[fieldName] = currentValue
+        console.log(`✅ Changed field: ${fieldName}`, {
+          current: currentValue,
+          original: originalValue,
+          currentStr,
+          originalStr
+        })
+      } else {
+        console.log(`⏸️ Unchanged field: ${fieldName}`, {
+          current: currentValue,
+          original: originalValue
+        })
+      }
+    }
+
+    // Check base fields
+    addIfChanged('leadType', formData.leadType || "mediator", originalData?.leadType || "mediator")
+    addIfChanged('contactNumber', formData.contactNumber || "", originalData?.contactNumber || "")
+    addIfChanged('mediatorName', formData.mediatorName || "", originalData?.mediatorName || "")
+    addIfChanged('location', formData.location || "", originalData?.location || "")
+    addIfChanged('landName', formData.landName || "", originalData?.landName || "")
+    addIfChanged('sourceCategory', formData.sourceCategory || "", originalData?.sourceCategory || "")
+    addIfChanged('source', formData.source || "", originalData?.source || "")
+    addIfChanged('status', formData.status || "active", originalData?.status || "active")
+    addIfChanged('currentRole', currentRoleValue, originalData?.currentRole || "")
+    addIfChanged('assignedTo', formData.assignedTo || currentRoleValue, originalData?.assignedTo || "")
+    addIfChanged('assignToUser', formData.assignToUser, originalData?.assignToUser)
+
+    // Check optional fields
+    addIfChanged('mediatorId', formData.mediatorId, originalData?.mediatorId)
+    addIfChanged('zone', formData.zone, originalData?.zone)
+    addIfChanged('extent', formData.extent, originalData?.extent)
+    addIfChanged('unit', formData.unit, originalData?.unit)
+    addIfChanged('propertyType', formData.propertyType, originalData?.propertyType)
+    addIfChanged('fsi', formData.fsi, originalData?.fsi)
+    addIfChanged('asp', formData.asp, originalData?.asp)
+    addIfChanged('revenue', formData.revenue, originalData?.revenue)
+    addIfChanged('transactionType', formData.transactionType, originalData?.transactionType)
+    addIfChanged('rate', formData.rate, originalData?.rate)
+    addIfChanged('builderShare', formData.builderShare, originalData?.builderShare)
+    addIfChanged('refundable', formData.refundable, originalData?.refundable)
+    addIfChanged('nonRefundable', formData.nonRefundable, originalData?.nonRefundable)
+    addIfChanged('landmark', formData.landmark, originalData?.landmark)
+    addIfChanged('frontage', formData.frontage, originalData?.frontage)
+    addIfChanged('roadWidth', formData.roadWidth, originalData?.roadWidth)
+    addIfChanged('sspde', formData.sspde, originalData?.sspde)
+    addIfChanged('remark', formData.remark, originalData?.remark)
+    addIfChanged('lead_stage', formData.lead_stage, originalData?.lead_stage)
+    addIfChanged('lead_status', String(formData.leadStatus).toUpperCase(), String(originalData?.leadStatus || "").toUpperCase())
+    addIfChanged('inquiredBy', formData.inquiredBy, originalData?.inquiredBy)
+    addIfChanged('L1_Qualification', formData.L1_Qualification, originalData?.L1_Qualification)
+    addIfChanged('directorSVStatus', formData.directorSVStatus, originalData?.directorSVStatus)
+    addIfChanged('callDate', formData.callDate, originalData?.callDate)
+    addIfChanged('callTime', formData.callTime, originalData?.callTime)
+    addIfChanged('callNotes', formData.callNotes, originalData?.callNotes)
+
+    // Check structured data (competitorAnalysis)
+    const originalCompetitor = originalData?.competitorAnalysis?.[0] || {}
+    const currentCompetitor = competitorAnalysis[0]
+    let competitorChanged = false
+    
+    Object.keys(currentCompetitor).forEach(key => {
+      if (JSON.stringify(currentCompetitor[key]) !== JSON.stringify(originalCompetitor[key])) {
+        competitorChanged = true
+      }
+    })
+    
+    if (competitorChanged) {
+      payload.competitorAnalysis = competitorAnalysis
+    }
+
+    // Check structured data (checkListPage)
+    const originalChecklist = originalData?.checkListPage?.[0] || {}
+    const currentChecklist = checkListPage[0]
+    let checklistChanged = false
+    
+    Object.keys(currentChecklist).forEach(key => {
+      if (JSON.stringify(currentChecklist[key]) !== JSON.stringify(originalChecklist[key])) {
+        checklistChanged = true
+      }
+    })
+    
+    if (checklistChanged) {
+      payload.checkListPage = checkListPage
+    }
+
+    // Always include currentRole and assignedTo for history tracking
+    payload.currentRole = currentRoleValue
+    payload.assignedTo = formData.assignedTo || currentRoleValue
 
     return payload
   }
@@ -643,8 +778,90 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     try {
       const leadPayload = toLeadPayload()
 
-      // Debug: Log the payload being sent
-      console.log('Lead Payload being sent:', JSON.stringify(leadPayload, null, 2))
+      // Debug: Show payload optimization for edits
+      if (data) {
+        const fullPayloadSize = JSON.stringify({
+          leadType: formData.leadType || "mediator",
+          contactNumber: formData.contactNumber || "",
+          mediatorName: formData.mediatorName || "",
+          location: formData.location || "",
+          landName: formData.landName || "",
+          sourceCategory: formData.sourceCategory || "",
+          source: formData.source || "",
+          status: formData.status || "active",
+          currentRole: getCurrentUserRole(),
+          assignedTo: formData.assignedTo || getCurrentUserRole(),
+          assignToUser: formData.assignToUser,
+          competitorAnalysis: [
+            {
+              developerName: formData.competitorDeveloperName || "",
+              projectName: formData.competitorProjectName || "",
+              productType: formData.competitorProductType || "",
+              location: formData.competitorLocation || "",
+              plotUnitSize: formData.competitorPlotSize || "",
+              landExtent: formData.competitorLandExtent || "",
+              priceRange: formData.competitorPriceRange || "",
+              approxPrice: formData.competitorApproxPrice || "",
+              approxPriceCent: formData.competitorApproxPriceCent || "",
+              totalPlotsUnits: formData.competitorTotalUnits || "",
+              keyAmenities: String(formData.competitorKeyAmenities || "")
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean),
+              uspPositioning: formData.competitorUSP || "",
+            }
+          ],
+          checkListPage: [
+            {
+              landLocation: formData.checkLandLocation || "",
+              landExtent: formData.checkLandExtent || "",
+              landZone: formData.checkLandZone || "",
+              classificationOfLand: formData.checkLandClassification || "",
+              googlePin: formData.checkGooglePin || "",
+              approachRoadWidth: formData.checkApproachRoadWidth || "",
+              ebLine: yesNo(formData.checkEBLine),
+              soilType: formData.checkSoilType || "",
+              quarryCrusher: yesNo(formData.checkQuarryCrusher),
+              sellingPrice: formData.checkSellingPrice || "",
+              guidelineValue: formData.checkGuidelineValue || "",
+              locationSellingPrice: formData.checkLocationSellingPrice || "",
+              marketingPrice: formData.checkMarketingPrice || "",
+              roadWidth: formData.checkRoadWidth || "",
+              govtLandAcquisition: yesNo(formData.checkGovtLandAcquisition),
+              railwayTrackNoc: yesNo(formData.checkRailwayTrackNOC),
+              bankIssues: yesNo(formData.checkBankIssues),
+              dumpyardQuarryCheck: yesNo(formData.checkDumpyardQuarry),
+              waterbodyNearby: yesNo(formData.checkWaterbodyNearby),
+              nearbyHtLine: yesNo(formData.checkNearbyHTLine),
+              templeLand: yesNo(formData.checkTempleLand),
+              futureGovtProjects: yesNo(formData.checkFutureGovtProjects),
+              farmLand: yesNo(formData.checkFarmLand),
+              totalSaleableArea: formData.checkTotalSaleableArea || "",
+              landCleaning: yesNo(formData.checkLandCleaning),
+              subDivision: yesNo(formData.checkSubDivision),
+              soilTest: yesNo(formData.checkSoilTest),
+              waterList: yesNo(formData.checkWaterList),
+              ownerName: formData.checkOwnerName || "",
+              consultantName: formData.checkConsultantName || "",
+              notes: formData.checkNotes || "",
+              projects: formData.checkProjects || "",
+              googleLocation: formData.checkGoogleLocation || "",
+            }
+          ]
+        }).length
+
+        const optimizedPayloadSize = JSON.stringify(leadPayload).length
+        const savings = fullPayloadSize - optimizedPayloadSize
+        const savingsPercent = ((savings / fullPayloadSize) * 100).toFixed(1)
+
+        console.log(`🚀 Payload Optimization:`)
+        console.log(`   Full payload: ${(fullPayloadSize / 1024).toFixed(2)} KB`)
+        console.log(`   Optimized: ${(optimizedPayloadSize / 1024).toFixed(2)} KB`)
+        console.log(`   Saved: ${(savings / 1024).toFixed(2)} KB (${savingsPercent}%)`)
+        console.log(`   Fields sent: ${Object.keys(leadPayload).length}`)
+      }
+
+      console.log('📤 Lead Payload being sent:', JSON.stringify(leadPayload, null, 2))
 
       const files = {
         ...(formData.checkFMBSketch && formData.fileFMBSketch ? { fmb_sketch: formData.fileFMBSketch } : {}),
@@ -652,16 +869,28 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       }
 
       if (onSubmit) {
-        await onSubmit(leadPayload, files)
-        toast.success(data ? 'Lead updated successfully!' : 'Lead created successfully!', {
-          id: submitToast,
-          duration: 3000
-        })
+        console.log('🎯 About to call onSubmit with payload:', leadPayload)
+        console.log('🎯 onSubmit function exists:', typeof onSubmit)
+        
+        try {
+          await onSubmit(leadPayload, files)
+          console.log('✅ onSubmit completed successfully')
+          
+          toast.success(data ? 'Lead updated successfully!' : 'Lead created successfully!', {
+            id: submitToast,
+            duration: 3000
+          })
 
-        // Show success message for file uploads if any
-        if (Object.keys(files).length > 0) {
-          toast.success('Files uploaded successfully', { duration: 2000 })
+          // Show success message for file uploads if any
+          if (Object.keys(files).length > 0) {
+            toast.success('Files uploaded successfully', { duration: 2000 })
+          }
+        } catch (onSubmitError) {
+          console.error('❌ onSubmit failed:', onSubmitError)
+          throw onSubmitError // Re-throw to be caught by outer catch
         }
+      } else {
+        console.log('❌ onSubmit function does not exist!')
       }
     } catch (error) {
       console.error("Submit error:", error)
@@ -827,7 +1056,13 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                           <button
                             key={type}
                             type="button"
-                            onClick={() => handleChange("leadType", type)}
+                            onClick={() => {
+                              handleChange("leadType", type)
+                              // Clear the mediator/owner name when switching types
+                              if (formData.leadType !== type) {
+                                handleChange("mediatorName", "")
+                              }
+                            }}
                             className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
                               formData.leadType === type
                                 ? "bg-indigo-600 text-white shadow-sm"
@@ -864,12 +1099,21 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Mediator/Owner Name</Label>
+                    <Label>{formData.leadType === "owner" ? "Owner Name" : "Mediator Name"}</Label>
                     {viewMode ? (
                       <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
                         {formData.mediatorName || "-"}
                       </div>
+                    ) : formData.leadType === "owner" ? (
+                      // Show text input when owner is selected
+                      <Input
+                        value={formData.mediatorName}
+                        onChange={(e) => handleChange("mediatorName", e.target.value)}
+                        className={errors.mediatorName ? "border-red-500 focus:border-red-500" : ""}
+                        placeholder="Enter owner name"
+                      />
                     ) : (
+                      // Show dropdown when mediator is selected
                       <Select value={formData.mediatorName} onValueChange={(v) => handleChange("mediatorName", v)}>
                         <SelectTrigger className={errors.mediatorName ? "border-red-500 focus:border-red-500" : ""}>
                           {mediatorsLoading ? (
@@ -878,7 +1122,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                               <SelectValue placeholder="Loading..." />
                             </div>
                           ) : (
-                            <SelectValue placeholder="Select Mediator/Owner" />
+                            <SelectValue placeholder="Select Mediator" />
                           )}
                         </SelectTrigger>
                         <SelectContent className="bg-white z-50 shadow-lg">
@@ -942,36 +1186,45 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                   </div>
 
                   {/* Assign To - User Dropdown based on selected role */}
-                  <div className="space-y-2">
-                    <Label className="text-gray-700 font-medium">Assign To (User)</Label>
-                    {viewMode ? (
-                      <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                        {formData.assignToUser || "-"}
-                      </div>
-                    ) : (
-                      <Select value={formData.assignToUser} onValueChange={(v) => handleChange("assignToUser", v)}>
-                        <SelectTrigger className="bg-gray-50/50">
-                          {usersLoading ? (
-                            <div className="flex items-center gap-2">
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                              <SelectValue placeholder="Loading users..." />
-                            </div>
-                          ) : (
-                            <SelectValue placeholder="Select User" />
-                          )}
-                        </SelectTrigger>
-                        <SelectContent className="bg-white z-50 shadow-lg">
-                          {users
-                            .filter(user => user.role === formData.assignedTo)
-                            .map((user) => (
-                              <SelectItem key={user._id || user.id} value={user._id || user.id}>
-                                {user.name} ({user.role.replace(/_/g, ' ')})
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  </div>
+                  {formData.assignedTo && (
+                    <div className="space-y-2">
+                      <Label className="text-gray-700 font-medium">Assign To (User)</Label>
+                      {viewMode ? (
+                        <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                          {formData.assignToUser || "-"}
+                        </div>
+                      ) : (
+                        <Select value={formData.assignToUser} onValueChange={(v) => handleChange("assignToUser", v)}>
+                          <SelectTrigger className="bg-gray-50/50">
+                            {usersLoading ? (
+                              <div className="flex items-center gap-2">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <SelectValue placeholder="Loading users..." />
+                              </div>
+                            ) : (
+                              <SelectValue placeholder="Select User" />
+                            )}
+                          </SelectTrigger>
+                          <SelectContent className="bg-white z-50 shadow-lg">
+                            {users
+                              .filter(user => user.role === formData.assignedTo).length > 0 ? (
+                                users
+                                  .filter(user => user.role === formData.assignedTo)
+                                  .map((user) => (
+                                    <SelectItem key={user._id || user.id} value={user._id || user.id}>
+                                      {user.name} ({user.role.replace(/_/g, ' ')})
+                                    </SelectItem>
+                                  ))
+                              ) : (
+                                <div className="px-2 py-1 text-sm text-gray-500 italic">
+                                  User not found
+                                </div>
+                              )}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
+                  )}
 
               <div className="space-y-2 hidden">
                 <Label>Mediator ID (optional)</Label>
@@ -984,27 +1237,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label>Date</Label>
-                {viewMode ? (
-                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                    {formData.date ? String(formData.date).slice(0, 10) : "-"}
-                  </div>
-                ) : (
-                  <Input
-                    type="date"
-                    value={formData.date ? String(formData.date).slice(0, 10) : ""}
-                    onChange={(e) => handleChange("date", e.target.value)}
-                    className={`bg-gray-50/50 ${errors.date ? "border-red-500 focus:border-red-500" : ""}`}
-                  />
-                )}
-                {errors.date && !viewMode && (
-                  <p className="text-red-500 text-sm flex items-center gap-1">
-                    <AlertCircle className="h-4 w-4" />
-                    {errors.date}
-                  </p>
-                )}
-              </div>
 
               {/* Row 1: Location, Zone, Area */}
               <div className="space-y-2">
@@ -1026,11 +1258,17 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                       )}
                     </SelectTrigger>
                     <SelectContent className="bg-white z-50 shadow-xl border-gray-200">
-                      {getOptions("location").map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
+                      {getOptions("location").length > 0 ? (
+                        getOptions("location").map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <div className="px-2 py-1 text-sm text-gray-500 italic">
+                          Locations not found
+                        </div>
+                      )}
                     </SelectContent>
                   </Select>
                 )}
@@ -1061,11 +1299,17 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                       )}
                     </SelectTrigger>
                     <SelectContent className="bg-white z-50 shadow-xl border-gray-200">
-                      {getOptions("region").map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
+                      {getOptions("region").length > 0 ? (
+                        getOptions("region").map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <div className="px-2 py-1 text-sm text-gray-500 italic">
+                          Zones not found
+                        </div>
+                      )}
                     </SelectContent>
                   </Select>
                 )}
@@ -1090,11 +1334,17 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                       )}
                     </SelectTrigger>
                     <SelectContent className="bg-white z-50 shadow-xl border-gray-200">
-                      {getOptions("zone").map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
+                      {getOptions("zone").length > 0 ? (
+                        getOptions("zone").map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <div className="px-2 py-1 text-sm text-gray-500 italic">
+                          Areas not found
+                        </div>
+                      )}
                     </SelectContent>
                   </Select>
                 )}
@@ -1218,16 +1468,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label>Date</Label>
-                {viewMode ? (
-                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                    {formData.date || "-"}
-                  </div>
-                ) : (
-                  <Input value={formData.date} onChange={(e) => handleChange("date", e.target.value)} className="bg-gray-50/50" />
-                )}
-              </div>
 
               <div className="space-y-2">
                 <Label className="text-gray-700 font-medium">Builder Share (%)</Label>
@@ -1864,7 +2104,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                         <p className="text-sm text-gray-600 truncate">{data.checkListPage[0].fmbSketchPath}</p>
                         <button
                           className="mt-2 text-xs text-indigo-600 hover:text-indigo-800 underline"
-                          onClick={() => window.open(`/uploads/${data.checkListPage[0].fmbSketchPath}`, '_blank')}
+                          onClick={() => window.open(`/${data.checkListPage[0].fmbSketchPath.replace(/\\/g, '/')}`, '_blank')}
                         >
                           View Document
                         </button>
@@ -1906,7 +2146,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                         <p className="text-sm text-gray-600 truncate">{data.checkListPage[0].pattaChittaPath}</p>
                         <button
                           className="mt-2 text-xs text-indigo-600 hover:text-indigo-800 underline"
-                          onClick={() => window.open(`/uploads/${data.checkListPage[0].pattaChittaPath}`, '_blank')}
+                          onClick={() => window.open(`/${data.checkListPage[0].pattaChittaPath.replace(/\\/g, '/')}`, '_blank')}
                         >
                           View Document
                         </button>

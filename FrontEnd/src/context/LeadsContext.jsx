@@ -134,8 +134,23 @@ export const LeadsProvider = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
+      
+      console.log('🔄 LeadsContext - updateLead called:', {
+        id,
+        leadDataKeys: Object.keys(leadData),
+        leadDataSize: JSON.stringify(leadData).length,
+        leadData,
+        filesKeys: Object.keys(files)
+      });
+      
       const response = await leadsAPI.update(id, leadData, files);
       const updated = response.data ?? response;
+      
+      console.log('✅ LeadsContext - API response received:', {
+        responseStatus: response.status,
+        updatedKeys: Object.keys(updated || {}),
+        updated
+      });
 
       setLeads(prev =>
         prev.map(lead =>
@@ -147,7 +162,7 @@ export const LeadsProvider = ({ children }) => {
 
       return response;
     } catch (err) {
-      console.error('Error updating lead:', err);
+      console.error('❌ Error updating lead:', err);
       setError(err.message);
       throw err;
     } finally {

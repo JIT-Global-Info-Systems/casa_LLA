@@ -230,11 +230,20 @@ export const leadsAPI = {
  
   // Update lead
   update: async (id, leadData, files = {}) => {
+    console.log('🌐 API Service - leadsAPI.update called:', {
+      id,
+      leadDataKeys: Object.keys(leadData),
+      leadDataSize: JSON.stringify(leadData).length,
+      leadData,
+      filesKeys: Object.keys(files),
+      hasFiles: !!(files.fmb_sketch || files.patta_chitta)
+    });
+    
     // If files are provided, use FormData
     if (files.fmb_sketch || files.patta_chitta) {
       const formData = new FormData();
       formData.append('data', JSON.stringify(leadData));
- 
+
       // Add file uploads if present
       if (files.fmb_sketch) {
         formData.append('fmb_sketch', files.fmb_sketch);
@@ -242,17 +251,23 @@ export const leadsAPI = {
       if (files.patta_chitta) {
         formData.append('patta_chitta', files.patta_chitta);
       }
- 
-      return await apiRequest(`/leads/update/${id}`, {
+
+      console.log('📤 Making FormData PUT request to:', `/leads/update/${id}`);
+      const response = await apiRequest(`/leads/update/${id}`, {
         method: 'PUT',
         body: formData,
       });
+      console.log('✅ FormData API response received:', response);
+      return response;
     } else {
       // Regular JSON update
-      return await apiRequest(`/leads/update/${id}`, {
+      console.log('📤 Making JSON PUT request to:', `/leads/update/${id}`);
+      const response = await apiRequest(`/leads/update/${id}`, {
         method: 'PUT',
         body: JSON.stringify(leadData),
       });
+      console.log('✅ JSON API response received:', response);
+      return response;
     }
   },
  
