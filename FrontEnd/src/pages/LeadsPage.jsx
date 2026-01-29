@@ -294,87 +294,15 @@ export default function LeadsPage() {
         </div>
         <div className="w-full">
           <div className="bg-white rounded-lg shadow-md p-6 rounded-t-none">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 align-top">
-              <div className="lg:col-span-2 space-y-4">
-                <Leads
-                  data={open ? selectedLead : viewLead}
-                  viewMode={!open}
-                  onClose={open ? () => setOpen(false) : () => setIsViewMode(false)}
-                  currentStep={currentStep}
-                  onStepChange={setCurrentStep}
-                  hideStepper={true}
-                  calls={calls}
-                />
-              </div>
-              {/* Right Sidebar - Call History & Yield Info for both View and Edit Mode */}
-              {(viewLead || selectedLead) && (
-                <div className="lg:col-span-1 space-y-4 mt-52">
-                  <Card className="bg-white shadow-sm min-h-100">
-                    <CardHeader>
-                      <CardTitle className="text-lg font-semibold text-gray-800">Call History</CardTitle>
-                    </CardHeader>
-                    <CardContent className="overflow-y-auto max-h-80">
-                      <div className="space-y-3">
-                        {/* Show Notes if available from checkListPage */}
-                        {(open ? selectedLead : viewLead)?.checkListPage && (open ? selectedLead : viewLead)?.checkListPage[0]?.notes && (
-                          <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                            <div className="flex items-start gap-2 mb-2">
-                              <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full font-medium">
-                                Notes
-                              </span>
-                            </div>
-                            <p className="text-sm text-gray-700 whitespace-pre-wrap">{(open ? selectedLead : viewLead).checkListPage[0].notes}</p>
-                          </div>
-                        )}
-                        {/* Show Call History */}
-                        {calls && calls.length > 0 ? (
-                          calls.map((call, index) => (
-                            <div key={index} className="p-3 bg-gray-50 rounded-lg border">
-                              <div className="flex justify-between items-start mb-2">
-                                <span className="text-sm font-medium text-gray-700">
-                                  {new Date(call.callDate || call.date || call.createdAt).toLocaleDateString()}
-                                </span>
-                                <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
-                                  {call.type || call.role || 'Call'}
-                                </span>
-                              </div>
-                              <p className="text-sm text-gray-600">{call.note || call.notes || call.description || 'No notes available'}</p>
-                              {call.duration && (
-                                <p className="text-xs text-gray-500 mt-1">Duration: {call.duration}</p>
-                              )}
-                            </div>
-                          ))
-                        ) : null}
-                        {/* Show message if no data at all */}
-                        {((open ? selectedLead : viewLead)?.checkListPage?.[0]?.notes ? false : true) && (!calls || calls.length === 0) && (
-                          <p className="text-sm text-gray-500 italic">No call history or notes available</p>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card className="bg-white shadow-sm min-h-100">
-                    <CardHeader>
-                      <CardTitle className="text-lg font-semibold text-gray-800">Yield Information</CardTitle>
-                    </CardHeader>
-                    <CardContent className="overflow-y-auto max-h-80">
-                      <div className="space-y-3">
-                        {(open ? selectedLead : viewLead)?.yield && (open ? selectedLead : viewLead)?.yield !== '0' && (
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm font-medium text-gray-600">Yield %:</span>
-                            <span className="text-lg font-bold text-green-600">
-                              {(open ? selectedLead : viewLead).yield}%
-                            </span>
-                          </div>
-                        )}
-                        {!((open ? selectedLead : viewLead)?.yield) && (
-                          <p className="text-sm text-gray-500 italic">No yield information available</p>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
-            </div>
+            <Leads
+              data={open ? selectedLead : viewLead}
+              viewMode={!open}
+              onClose={open ? () => setOpen(false) : () => setIsViewMode(false)}
+              currentStep={currentStep}
+              onStepChange={setCurrentStep}
+              hideStepper={true}
+              calls={calls}
+            />
           </div>
         </div>
       </div>

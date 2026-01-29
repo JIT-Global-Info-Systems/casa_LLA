@@ -26,10 +26,10 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     return editableFields.includes(fieldName);
   };
 
-  // Static roles for assignment (matching LeadStepper)
+  // Static roles for assignment (matching LeadStepper) - 12 roles total
   const STATIC_ROLES = [
     "tele_caller",
-    "land_executive",
+    "land_executive", 
     "analytics_team",
     "feasibility_team",
     "field_study_product_team",
@@ -37,7 +37,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     "l1_md",
     "cmo_cro",
     "legal",
-    "liaison",
+    "liaison", 
     "finance",
     "admin"
   ]
@@ -188,14 +188,15 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     checkPattaChitta: false,
     filePattaChitta: null,
 
-    checkRequests: "",
     currentRole: "",
     assignedTo: "",
+    assignToUser: "", // New field for specific user assignment
     inquiredBy: "", // New field for inquiry status (only enabled when leadStatus is "Pending"/Enquired)
     L1_Qualification: "", // L1 Qualification status
     directorSVStatus: "", // Director SV status
     callDate: "", // Call date for calls and notes
     callTime: "", // Call time for calls and notes
+    callNotes: "", // Call notes for calls
   })
 
   const [masters, setMasters] = useState({ locations: [], regions: [], zones: [] })
@@ -364,12 +365,14 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       mediatorId: data.mediatorId || prev.mediatorId,
       currentRole: data.currentRole || prev.currentRole,
       assignedTo: data.assignedTo || prev.assignedTo, // Now storing role string, not user ID
+      assignToUser: data.assignToUser || prev.assignToUser, // New field for specific user assignment
       status: data.status || prev.status,
       inquiredBy: data.inquiredBy || prev.inquiredBy,
       L1_Qualification: data.L1_Qualification || prev.L1_Qualification,
       directorSVStatus: data.directorSVStatus || prev.directorSVStatus,
       callDate: data.callDate || prev.callDate,
       callTime: data.callTime || prev.callTime,
+      callNotes: data.callNotes || prev.callNotes,
 
       // competitor..
       competitorDeveloperName: firstCompetitor?.developerName || "",
@@ -558,7 +561,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
         waterList: yesNo(formData.checkWaterList),
         ownerName: formData.checkOwnerName || "",
         consultantName: formData.checkConsultantName || "",
-        notes: [formData.checkNotes, formData.checkRequests ? `Requests: ${formData.checkRequests}` : ""].filter(Boolean).join("\n"),
+        notes: formData.checkNotes || "",
         projects: formData.checkProjects || "",
         googleLocation: formData.checkGoogleLocation || "",
       },
@@ -578,6 +581,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       status: formData.status || "active",
       currentRole: currentRoleValue,
       assignedTo: formData.assignedTo || currentRoleValue, // CRITICAL: Always send assignedTo (required for history)
+      assignToUser: formData.assignToUser, // New field for specific user assignment
 
       // structured sections
       competitorAnalysis,
@@ -611,6 +615,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     if (formData.directorSVStatus) payload.directorSVStatus = formData.directorSVStatus
     if (formData.callDate) payload.callDate = formData.callDate
     if (formData.callTime) payload.callTime = formData.callTime
+    if (formData.callNotes) payload.callNotes = formData.callNotes
 
     return payload
   }
@@ -797,13 +802,17 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
               </div>
             )}
 
-            <Card className="border-0 shadow-md bg-white overflow-hidden">
-              <div className="h-2 bg-indigo-500 w-full" />
-              <CardHeader>
-                <CardTitle className="text-xl text-gray-800">Basic Information</CardTitle>
-                <CardDescription>Primary contact and property details.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
+            {/* ===== TWO COLUMN ROW START ===== */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* LEFT COLUMN – BASIC INFO */}
+              <div className="lg:col-span-8">
+                <Card className="border-0 shadow-md bg-white overflow-hidden">
+                  <div className="h-2 bg-indigo-500 w-full" />
+                  <CardHeader>
+                    <CardTitle className="text-xl text-gray-800">Basic Information</CardTitle>
+                    <CardDescription>Primary contact and property details.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
                 {/* 3x3 Grid Layout for Basic Information */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="space-y-2">
@@ -886,6 +895,81 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                         <AlertCircle className="h-4 w-4" />
                         {errors.mediatorName}
                       </p>
+                    )}
+                  </div>
+
+                  {/* ===== NEW FIELDS: Current Role, Assigned To, Assign To ===== */}
+                  
+                  {/* Current Role - Visible field (auto-fetched from localStorage) */}
+                  <div className="space-y-2">
+                    <Label className="text-gray-700 font-medium">Current Role</Label>
+                    {viewMode ? (
+                      <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
+                        {formData.currentRole ? formData.currentRole.replace(/_/g, ' ') : "-"}
+                      </div>
+                    ) : (
+                      <Input 
+                        value={formData.currentRole ? formData.currentRole.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : ""} 
+                        onChange={(e) => handleChange("currentRole", e.target.value)} 
+                        disabled 
+                        className="bg-gray-50/50" 
+                        placeholder="Current role (auto-fetched)"
+                      />
+                    )}
+                  </div>
+
+                  {/* Assigned To - Role Dropdown */}
+                  <div className="space-y-2">
+                    <Label className="text-gray-700 font-medium">Assigned To (Role)</Label>
+                    {viewMode ? (
+                      <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
+                        {formData.assignedTo ? formData.assignedTo.replace(/_/g, ' ') : "-"}
+                      </div>
+                    ) : (
+                      <Select value={formData.assignedTo} onValueChange={(v) => handleChange("assignedTo", v)}>
+                        <SelectTrigger className="bg-gray-50/50">
+                          <SelectValue placeholder="Select Role" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white z-50 shadow-lg">
+                          {getFilteredStaticRoles().map((role) => (
+                            <SelectItem key={role} value={role}>
+                              {role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+
+                  {/* Assign To - User Dropdown based on selected role */}
+                  <div className="space-y-2">
+                    <Label className="text-gray-700 font-medium">Assign To (User)</Label>
+                    {viewMode ? (
+                      <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                        {formData.assignToUser || "-"}
+                      </div>
+                    ) : (
+                      <Select value={formData.assignToUser} onValueChange={(v) => handleChange("assignToUser", v)}>
+                        <SelectTrigger className="bg-gray-50/50">
+                          {usersLoading ? (
+                            <div className="flex items-center gap-2">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              <SelectValue placeholder="Loading users..." />
+                            </div>
+                          ) : (
+                            <SelectValue placeholder="Select User" />
+                          )}
+                        </SelectTrigger>
+                        <SelectContent className="bg-white z-50 shadow-lg">
+                          {users
+                            .filter(user => user.role === formData.assignedTo)
+                            .map((user) => (
+                              <SelectItem key={user._id || user.id} value={user._id || user.id}>
+                                {user.name} ({user.role.replace(/_/g, ' ')})
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
                     )}
                   </div>
 
@@ -1134,7 +1218,29 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                 )}
               </div>
 
-              {/* Row 5: Transaction Type, Builder Share, Refundable, Non-Refundable */}
+              <div className="space-y-2">
+                <Label>Date</Label>
+                {viewMode ? (
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                    {formData.date || "-"}
+                  </div>
+                ) : (
+                  <Input value={formData.date} onChange={(e) => handleChange("date", e.target.value)} className="bg-gray-50/50" />
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-gray-700 font-medium">Builder Share (%)</Label>
+                {viewMode ? (
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                    {formData.builderShare || "-"}
+                  </div>
+                ) : (
+                  <Input value={formData.builderShare} onChange={(e) => handleChange("builderShare", e.target.value)} className="bg-gray-50/50" />
+                )}
+              </div>
+
+              {/* Row 5: Transaction Type, Rate, Refundable, Non-Refundable */}
               <div className="space-y-2">
                 <Label className="text-gray-700 font-medium">Transaction Type</Label>
                 {viewMode ? (
@@ -1155,14 +1261,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
               </div>
 
               <div className="space-y-2">
-                <Label className="text-gray-700 font-medium">Builder Share (%)</Label>
-                {viewMode ? (
-                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                    {formData.builderShare || "-"}
-                  </div>
-                ) : (
                   <Input value={formData.builderShare} onChange={(e) => handleChange("builderShare", e.target.value)} className="bg-gray-50/50" />
-                )}
+                
               </div>
 
               <div className="space-y-2">
@@ -1384,10 +1484,59 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           )}
 
 
-        </CardContent>
-        </Card >
+                  </CardContent>
+                </Card>
+              </div>
 
-    {/* Notes & Yield Cards - Moved to bottom, will be repositioned */ }
+              {/* RIGHT COLUMN – CALL HISTORY / YIELD */}
+              <div className="lg:col-span-4">
+                <Card className="border-0 shadow-md bg-white">
+                  <CardHeader>
+                    <CardTitle className="text-lg text-gray-800">Call History & Yield</CardTitle>
+                    <CardDescription>Quick reference</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* CALL HISTORY */}
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700">Call History</Label>
+                      {calls?.length > 0 ? (
+                        <div className="space-y-3 mt-2">
+                          {calls.map((call, idx) => (
+                            <div key={idx} className="p-3 border rounded-lg bg-gray-50 text-sm">
+                              <div className="flex justify-between items-start mb-2">
+                                <p className="font-medium">
+                                  {new Date(call.created_at || call.createdAt).toLocaleDateString()}
+                                </p>
+                                <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
+                                  {call.role || 'Call'}
+                                </span>
+                              </div>
+                              <p className="text-gray-600">
+                                {call.note || "No notes"}
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {new Date(call.created_at || call.createdAt).toLocaleTimeString()}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-400 italic mt-2">No call history</p>
+                      )}
+                    </div>
+
+                    {/* YIELD */}
+                    <div>
+                      <Label className="text-sm font-medium text-gray-700">Yield (%)</Label>
+                      <div className="p-2 bg-gray-50 border rounded-md mt-1">
+                        {formData.yield || "-"}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+            {/* ===== TWO COLUMN ROW END ===== */}
 
   {/* Full Width Wrapper for Competitor Analysis, Site Visit Checklist & Notes & Calls */ }
   <div className="w-full mt-8">
@@ -1833,69 +1982,114 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     <Card className="border-0 shadow-md bg-white mt-8 mb-8">
       <CardHeader>
         <CardTitle className="text-xl text-gray-800">Notes & Calls</CardTitle>
-        <CardDescription>Additional notes, call history, and special requests</CardDescription>
+        <CardDescription>Additional notes and call history</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Calls & Notes */}
-          <div className="space-y-4">
-            <Label className="text-gray-700 font-medium">Calls & Notes</Label>
-            {/* Show call history if available */}
-            {calls && calls.length > 0 ? (
-              <div className="space-y-3">
-                {calls.map((call, idx) => (
-                  <div key={idx} className="p-3 bg-gray-50 rounded-lg border">
-                    <div className="flex justify-between items-start mb-2">
-                      <span className="text-sm font-medium text-gray-700">
-                        {new Date(call.callDate || call.date || call.createdAt).toLocaleDateString()}
-                      </span>
-                      <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
-                        {call.type || call.role || 'Call'}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600">{call.note || call.notes || call.description || 'No notes available'}</p>
-                    {call.duration && (
-                      <p className="text-xs text-gray-500 mt-1">Duration: {call.duration}</p>
-                    )}
-                  </div>
-                ))}
+        {/* Calls Section */}
+        <div className="space-y-4">
+          <Label className="text-gray-700 font-medium">Calls</Label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-gray-600">Call Date</Label>
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  {formData.callDate ? String(formData.callDate).slice(0, 10) : "-"}
+                </div>
+              ) : (
+                <Input
+                  type="date"
+                  value={formData.callDate ? String(formData.callDate).slice(0, 10) : ""}
+                  onChange={(e) => handleChange("callDate", e.target.value)}
+                  className="bg-gray-50/50"
+                />
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label className="text-gray-600">Call Time</Label>
+              {viewMode ? (
+                <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  {formData.callTime || "-"}
+                </div>
+              ) : (
+                <Input
+                  type="time"
+                  value={formData.callTime || ""}
+                  onChange={(e) => handleChange("callTime", e.target.value)}
+                  className="bg-gray-50/50"
+                />
+              )}
+            </div>
+          </div>
+          <div className="space-y-2 mt-4">
+            <Label className="text-gray-600">Call Notes</Label>
+            {viewMode ? (
+              <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                {formData.callNotes || "-"}
               </div>
             ) : (
-              <p className="text-sm text-gray-500 italic">No call history or notes available</p>
+              <Input
+                type="text"
+                value={formData.callNotes || ""}
+                onChange={(e) => handleChange("callNotes", e.target.value)}
+                placeholder="Enter call notes..."
+                className="bg-gray-50/50"
+              />
             )}
           </div>
-          {/* Notes Textarea for edit mode */}
-          {!viewMode && (
-            <div className="space-y-2">
-              <Label className="text-sm text-gray-600">Notes</Label>
-              <Textarea
-                value={formData.checkNotes}
-                onChange={(e) => handleChange("checkNotes", e.target.value)}
-                placeholder="Enter additional notes, calls, observations, or important information about this lead..."
-                rows={5}
-                className="bg-gray-50 resize-y"
-              />
-            </div>
-          )}
         </div>
 
-        {/* Special Requests */}
+        {/* Call History Display */}
+        {calls?.length > 0 && (
+          <div className="space-y-4">
+            <Label className="text-gray-700 font-medium">Call History</Label>
+            <div className="space-y-3">
+              {calls.map((call, idx) => (
+                <div key={idx} className="p-4 border rounded-lg bg-gray-50">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <p className="font-semibold text-gray-800">
+                        {new Date(call.created_at || call.createdAt).toLocaleDateString()}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {new Date(call.created_at || call.createdAt).toLocaleTimeString()}
+                      </p>
+                    </div>
+                    <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
+                      {call.role || 'Call'}
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-700">
+                      <span className="font-medium">Name:</span> {call.name || 'Unknown'}
+                    </p>
+                    <p className="text-sm text-gray-700">
+                      <span className="font-medium">Notes:</span> {call.note || "No notes"}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Notes Section */}
         <div className="space-y-2">
-          <Label className="text-gray-700 font-medium">Special Requests</Label>
+          <Label className="text-gray-700 font-medium">Notes</Label>
           {viewMode ? (
-            <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-800 whitespace-pre-wrap" style={{ minHeight: '280px' }}>
-              {formData.checkRequests || "-"}
+            <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[100px] whitespace-pre-wrap">
+              {formData.checkNotes || "-"}
             </div>
           ) : (
             <Textarea
-              value={formData.checkRequests}
-              onChange={(e) => handleChange("checkRequests", e.target.value)}
-              placeholder="Enter any special requests"
-              rows={11}
+              value={formData.checkNotes}
+              onChange={(e) => handleChange("checkNotes", e.target.value)}
+              placeholder="Enter additional notes, observations, or important information about this lead..."
+              rows={5}
               className="bg-gray-50 resize-y"
             />
           )}
         </div>
+
       {/* </div> */}
 
       {/* Remark - Full Width */}
@@ -1991,7 +2185,7 @@ export function LeadsFullWidthCards({ data = null, viewMode = false, formData, h
       <Card className="border-0 shadow-md bg-white mt-8 mb-8">
         <CardHeader>
           <CardTitle className="text-xl text-gray-800">Notes & Calls</CardTitle>
-          <CardDescription>Additional notes, call history, and special requests</CardDescription>
+          <CardDescription>Additional notes and call history</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-gray-500 text-center py-8">
