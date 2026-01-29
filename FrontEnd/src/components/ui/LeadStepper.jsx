@@ -105,7 +105,7 @@ const STAGES = [
 export default function LeadStepper({ stageName, currentStep = 1, onStepChange, className, isNewLead = false }) {
   // Normalize stageName to match against STAGES
   const findStepIndex = (name) => {
-    if (!name) return 0
+    if (!name || typeof name !== 'string') return 0
     const normalized = name.toLowerCase().replace(/[\s_/]/g, '')
 
     // First try to match by id
