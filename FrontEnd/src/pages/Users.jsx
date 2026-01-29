@@ -749,7 +749,7 @@ function Users() {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="phone">Phone</Label>
+                <Label htmlFor="phone">Status</Label>
                 <Input
                   id="phone"
                   value={formData.phone_number}

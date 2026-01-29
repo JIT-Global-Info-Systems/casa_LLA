@@ -247,14 +247,21 @@ export default function LeadsPage() {
   };
  
   const normalizedLeads = (Array.isArray(leads) ? leads : []).map((lead) => {
-    const registeredDate =
-      lead.createdAt || lead.registeredDate
-        ? formatDateWithFallback(lead.createdAt || lead.registeredDate)
-        : "N/A";
-
+    const registeredDate = lead.createdAt || lead.created_at || lead.date || null;
+    
     return {
-      ...lead,
+      id: lead._id || lead.id || lead.lead_id || "N/A",
+      lead_id: lead.lead_id || "N/A",
+      name: lead.mediatorName || lead.ownerName || lead.name || lead.contactName || "N/A",
+      email: lead.email || lead.contactEmail || "—",
+      phone: lead.contactNumber || lead.phone || "",
+      location: lead.location || lead.address?.city || "N/A",
+      zone: lead.zone || lead.region || "N/A",
+      property: lead.propertyType || "—",
+      status: lead.lead_status || lead.status || "Pending",
+      stageName: lead.lead_stage || lead.currentStage || "Not Started",
       registeredDate,
+      raw: lead,
     };
   });
 
