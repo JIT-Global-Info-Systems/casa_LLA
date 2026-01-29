@@ -69,20 +69,24 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
   // Get current user role from localStorage
   const getCurrentUserRole = () => {
     // Try to get from direct key first
-    const directRole = localStorage.getItem('userRole')
-    if (directRole) return directRole
+    // const directRole = localStorage.getItem('userRole')
+    // if (directRole) return directRole
 
     // Fallback to parsing user object
     const userData = localStorage.getItem('user')
     if (userData) {
       try {
         const parsed = JSON.parse(userData)
-        return parsed.role || 'tele_caller'
+        return {
+          user_id: parsed.id,
+          role: parsed.role,
+          name: parsed.name
+        }
       } catch (e) {
         console.error("Failed to parse user data for role", e)
       }
     }
-    return 'tele_caller'
+    
   }
 
   // Get current user info from localStorage
@@ -1090,7 +1094,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           sourceCategory: formData.sourceCategory || "",
           source: formData.source || "",
           currentRole: getCurrentUserRole(),
-          assignedTo: formData.assignedTo || getCurrentUserRole(),
+          assignedTo: formData.assignedTo ,
           assignToUser: formData.assignToUser,
           competitorAnalysis: [
             {

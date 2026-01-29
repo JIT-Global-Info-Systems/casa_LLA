@@ -10,6 +10,7 @@ import locationRoutes from "./routes/location.js";
 import accessRoutes from "./routes/access.js";
 import typeRoutes from "./routes/typeRoutes.js";
 import dashboardRoutes from "./routes/dashboard.js";
+import stageRoutes from "./routes/stage.js";
 dotenv.config();
 connectDB();
 
@@ -26,6 +27,7 @@ app.use("/api/locations", locationRoutes);
 app.use("/api/access", accessRoutes);
 app.use("/api/types", typeRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/stage", stageRoutes);
 app.get("/", (req, res) => {
   res.send("Casagrand Backend Running");
 });

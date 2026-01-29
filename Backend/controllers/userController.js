@@ -146,37 +146,22 @@ exports.getAllUsers = async (req, res) => {
 exports.deleteUser = async (req, res) => {
   try {
     const { user_id } = req.params;
-    const deletedBy = req.user.user_id;
 
-    // 1️⃣ Find user
-    const user = await User.findById(user_id);
+    // 1️⃣ Find and delete user
+    const user = await User.findByIdAndDelete(user_id);
     if (!user) {
       return res.status(404).json({
         message: "User not found"
       });
     }
 
-    // 2️⃣ Check if already inactive
-    if (user.status === "inactive") {
-      return res.status(200).json({
-        message: "This user is already inactive"
-      });
-    }
-
-    // 3️⃣ Soft delete
-    user.status = "inactive";
-    user.updated_by = deletedBy;
-    user.updated_at = new Date();
-
-    await user.save();
-
     res.status(200).json({
-      message: "User removed successfully"
+      message: "User deleted successfully"
     });
   } catch (error) {
     console.error("Delete User Error:", error);
     res.status(500).json({
-      message: "Could not remove user. Please try again.",
+      message: "Could not delete user. Please try again.",
       error: error.message
     });
   }

@@ -63,11 +63,11 @@ export default function LeadsPage() {
       const loadingToast = toast.loading('Loading leads...');
       try {
         await fetchLeads();
-        toast.success('Leads loaded', { 
-          id: loadingToast,
-          icon: <Check className="w-5 h-5 text-green-500" />,
-          duration: 2000
-        });
+        // toast.success('Leads loaded', { 
+        //   id: loadingToast,
+        //   icon: <Check className="w-5 h-5 text-green-500" />,
+        //   duration: 2000
+        // });
       } catch (err) {
         console.error('Failed to load leads:', err);
         const errorMessage = err.response?.data?.message || 'Could not load leads. Please try again.';
@@ -315,7 +315,8 @@ const handleCancelDelete = () => {
               data={open ? selectedLead : viewLead}
               viewMode={!open}
               onClose={open ? () => setOpen(false) : () => setIsViewMode(false)}
-              onSubmit={handleLeadSubmit}
+              onSubmit={
+                handleLeadSubmit}
               currentStep={currentStep}
               onStepChange={setCurrentStep}
               hideStepper={true}
@@ -341,11 +342,11 @@ const handleCancelDelete = () => {
                     const loadingToast = toast.loading('Refreshing leads...');
                     try {
                       await fetchLeads();
-                      toast.success('Leads refreshed', { 
-                        id: loadingToast,
-                        icon: <Check className="w-5 h-5 text-green-500" />,
-                        duration: 2000
-                      });
+                      // toast.success('Leads refreshed', { 
+                      //   id: loadingToast,
+                      //   icon: <Check className="w-5 h-5 text-green-500" />,
+                      //   duration: 2000
+                      // });
                     } catch (err) {
                       console.error('Failed to refresh leads:', err);
                       const errorMessage = err.response?.data?.message || 'Could not refresh leads. Please try again.';

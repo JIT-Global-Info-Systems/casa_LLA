@@ -158,7 +158,7 @@ export const getDashboardStats = async (req, res) => {
           workStageCounts: [
             {
               $group: {
-                _id: "$currentRole",
+                _id: "$currentRole.role",
                 count: { $sum: 1 }
               }
             }
