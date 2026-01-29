@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
 import { leadsAPI } from '../services/api';
-
+import toast from 'react-hot-toast';
 const LeadsContext = createContext(null);
 
 export const useLeads = () => {
@@ -121,6 +121,10 @@ export const LeadsProvider = ({ children }) => {
       setError(null);
       const response = await leadsAPI.create(leadData);
       setLeads(prev => [...prev, response.data ?? response]);
+      toast.success('Lead created successfully', {
+        icon: <Check className="w-5 h-5 text-green-500" />,
+        duration: 3000
+      });
       return response;
     } catch (err) {
       console.error('Error creating lead:', err);

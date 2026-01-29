@@ -21,9 +21,9 @@ exports.createLead = async (req, res) => {
     }
     const createdBy = req.user.user_id;
 
-    if (!leadData.contactNumber || !leadData.date) {
+    if (!leadData.contactNumber) {
       return res.status(400).json({
-        message: "Contact number and date are required"
+        message: "Contact number required"
       });
     }
 

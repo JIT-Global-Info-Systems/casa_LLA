@@ -63,11 +63,11 @@ export default function LeadsPage() {
       const loadingToast = toast.loading('Loading leads...');
       try {
         await fetchLeads();
-        toast.success('Leads loaded', { 
-          id: loadingToast,
-          icon: <Check className="w-5 h-5 text-green-500" />,
-          duration: 2000
-        });
+        // toast.success('Leads loaded', { 
+        //   id: loadingToast,
+        //   icon: <Check className="w-5 h-5 text-green-500" />,
+        //   duration: 2000
+        // });
       } catch (err) {
         console.error('Failed to load leads:', err);
         const errorMessage = err.response?.data?.message || 'Could not load leads. Please try again.';
@@ -161,13 +161,7 @@ export default function LeadsPage() {
     const isUpdate = !!selectedLead;
     const loadingToast = toast.loading(isUpdate ? 'Updating lead...' : 'Creating lead...');
     
-    console.log('🚀 LeadsPage - handleLeadSubmit called:', {
-      isUpdate,
-      selectedLeadId: selectedLead?._id || selectedLead?.id,
-      payloadKeys: Object.keys(leadPayload),
-      payloadSize: JSON.stringify(leadPayload).length,
-      leadPayload
-    });
+   
     
     try {
       if (isUpdate) {
@@ -180,14 +174,7 @@ export default function LeadsPage() {
         console.log('✅ createLead completed successfully');
       }
       
-      toast.success(
-        isUpdate ? 'Lead updated successfully' : 'Lead created successfully',
-        { 
-          id: loadingToast,
-          icon: <Check className="w-5 h-5 text-green-500" />,
-          duration: 3000
-        }
-      );
+      
       
       if (Object.keys(files).length > 0) {
         toast.success('Files uploaded successfully', { 
@@ -326,7 +313,8 @@ const handleCancelDelete = () => {
               data={open ? selectedLead : viewLead}
               viewMode={!open}
               onClose={open ? () => setOpen(false) : () => setIsViewMode(false)}
-              onSubmit={handleLeadSubmit}
+              onSubmit={
+                handleLeadSubmit}
               currentStep={currentStep}
               onStepChange={setCurrentStep}
               hideStepper={true}
@@ -352,11 +340,11 @@ const handleCancelDelete = () => {
                     const loadingToast = toast.loading('Refreshing leads...');
                     try {
                       await fetchLeads();
-                      toast.success('Leads refreshed', { 
-                        id: loadingToast,
-                        icon: <Check className="w-5 h-5 text-green-500" />,
-                        duration: 2000
-                      });
+                      // toast.success('Leads refreshed', { 
+                      //   id: loadingToast,
+                      //   icon: <Check className="w-5 h-5 text-green-500" />,
+                      //   duration: 2000
+                      // });
                     } catch (err) {
                       console.error('Failed to refresh leads:', err);
                       const errorMessage = err.response?.data?.message || 'Could not refresh leads. Please try again.';

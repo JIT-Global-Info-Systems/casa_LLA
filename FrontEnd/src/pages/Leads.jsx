@@ -69,42 +69,46 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
   // Get current user role from localStorage
   const getCurrentUserRole = () => {
     // Try to get from direct key first
-    const directRole = localStorage.getItem('userRole')
-    if (directRole) return directRole
+    // const directRole = localStorage.getItem('userRole')
+    // if (directRole) return directRole
 
     // Fallback to parsing user object
     const userData = localStorage.getItem('user')
     if (userData) {
       try {
         const parsed = JSON.parse(userData)
-        return parsed.role || 'tele_caller'
+        return {
+          user_id: parsed.id,
+          role: parsed.role,
+          name: parsed.name
+        }
       } catch (e) {
         console.error("Failed to parse user data for role", e)
       }
     }
-    return 'tele_caller'
+    
   }
 
   // Get static roles filtered by hierarchy and exclude current user's role
   const getFilteredStaticRoles = () => {
     const currentUserRole = getCurrentUserRole()
-    const currentUserLevel = roleHierarchy[currentUserRole] || 11
+    const currentUserLevel = roleHierarchy[currentUserRole.role] || 11
 
     // For now, show all static roles except current user's role
     return STATIC_ROLES
-      .filter(role => role !== currentUserRole) // Exclude current user's role
+      .filter(role => role !== currentUserRole.role) // Exclude current user's role
       .sort((a, b) => (roleHierarchy[a] || 12) - (roleHierarchy[b] || 12))
 
     // Admin can assign to anyone except themselves
-    if (currentUserRole === 'admin') {
+    if (currentUserRole.role === 'admin') {
       return STATIC_ROLES
-        .filter(role => role !== currentUserRole) // Exclude admin from assigning to admin
+        .filter(role => role !== currentUserRole.role) // Exclude admin from assigning to admin
         .sort((a, b) => (roleHierarchy[a] || 12) - (roleHierarchy[b] || 12))
     }
 
     // Other users can only assign to lower priority roles (higher numbers) and not themselves
     return STATIC_ROLES
-      .filter(role => (roleHierarchy[role] || 12) > currentUserLevel && role !== currentUserRole)
+      .filter(role => (roleHierarchy[role] || 12) > currentUserLevel && role !== currentUserRole.role)
       .sort((a, b) => (roleHierarchy[a] || 12) - (roleHierarchy[b] || 12))
   }
   const [formData, setFormData] = useState({
@@ -428,7 +432,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
         setFormData(prev => ({
           ...prev,
           ...draft,
-          currentRole: userRole // Always use current user role
+          currentRole: userRole.role // Store only the role string for form display
         }));
         setHasUnsavedChanges(true);
         toast.success('Draft loaded', { 
@@ -436,7 +440,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           duration: 3000 
         });
       } else {
-        handleChange("currentRole", userRole)
+        handleChange("currentRole", userRole.role)
       }
     }
   }, [data, loadFormDraft])
@@ -708,6 +712,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
     // For new leads, send all fields
     if (!data) {
+      const currentUser = getCurrentUserRole();
       const payload = {
         // base schema fields - always required
         leadType: formData.leadType || "mediator",
@@ -718,8 +723,22 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
         sourceCategory: formData.sourceCategory || "",
         source: formData.source || "",
         status: formData.status || "active",
-        currentRole: currentRoleValue,
-        assignedTo: formData.assignedTo || currentRoleValue,
+        date: new Date(), // Add current date
+        
+        // currentRole as array of objects
+        currentRole: [{
+          user_id: currentUser.user_id,
+          role: currentUser.role,
+          name: currentUser.name
+        }],
+        
+        // assignedTo as array of objects (fallback to currentRole if not assigned)
+        assignedTo: formData.assignedTo ? [{
+          // user_id: currentUser.user_id, 
+          role: formData.assignedTo,
+          name: formData.assignToUser || "test"
+        }] : null,
+
         assignToUser: formData.assignToUser,
 
         // structured sections
@@ -797,8 +816,24 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     addIfChanged('sourceCategory', formData.sourceCategory || "", originalData?.sourceCategory || "")
     addIfChanged('source', formData.source || "", originalData?.source || "")
     addIfChanged('status', formData.status || "active", originalData?.status || "active")
-    addIfChanged('currentRole', currentRoleValue, originalData?.currentRole || "")
-    addIfChanged('assignedTo', formData.assignedTo || currentRoleValue, originalData?.assignedTo || "")
+    
+    // Handle currentRole as array of objects
+    const currentUser = getCurrentUserRole();
+    const currentRoleArray = [{
+      user_id: currentUser.user_id,
+      role: currentUser.role,
+      name: currentUser.name
+    }];
+    addIfChanged('currentRole', currentRoleArray, originalData?.currentRole || [])
+    
+    // Handle assignedTo as array of objects
+    const assignedToArray = formData.assignedTo ? [{
+      user_id: currentUser.user_id, 
+      role: formData.assignedTo,
+      name: currentUser.name
+    }] : currentRoleArray;
+    addIfChanged('assignedTo', assignedToArray, originalData?.assignedTo || [])
+    
     addIfChanged('assignToUser', formData.assignToUser, originalData?.assignToUser)
 
     // Check optional fields
@@ -902,7 +937,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           source: formData.source || "",
           status: formData.status || "active",
           currentRole: getCurrentUserRole(),
-          assignedTo: formData.assignedTo || getCurrentUserRole(),
+          assignedTo: formData.assignedTo ,
           assignToUser: formData.assignToUser,
           competitorAnalysis: [
             {
@@ -1089,7 +1124,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       {stepperOnly ? (
         <div className="w-full">
           <LeadStepper
-            stageName={formData.assignedTo || formData.currentRole || "tele_caller"}
+            stageName={formData.assignedTo }
             currentStep={currentStep}
             className="w-full"
             isNewLead={!data}
