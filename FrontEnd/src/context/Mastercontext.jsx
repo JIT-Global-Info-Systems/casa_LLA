@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { locationsAPI, typesAPI } from '@/services/api';
+import { locationsAPI, typesAPI, stagesAPI } from '@/services/api';
 
 const MasterContext = createContext();
 
@@ -18,6 +18,7 @@ export const MasterProvider = ({ children }) => {
     regions: [],
     zones: [],
     types: [],
+    stages: [],
   });
   
   const [loading, setLoading] = useState({
@@ -25,6 +26,7 @@ export const MasterProvider = ({ children }) => {
     regions: false, 
     zones: false,
     types: false,
+    stages: false,
   });
   
   const [error, setError] = useState({
@@ -32,6 +34,7 @@ export const MasterProvider = ({ children }) => {
     regions: null,
     zones: null,
     types: null,
+    stages: null,
   });
 
   // Fetch locations from API
@@ -125,10 +128,37 @@ export const MasterProvider = ({ children }) => {
     }
   }, []);
 
+  // Fetch stages from API
+  const fetchStages = useCallback(async () => {
+    setLoading(prev => ({ ...prev, stages: true }));
+    setError(prev => ({ ...prev, stages: null }));
+    try {
+      const stagesData = await stagesAPI.getAll();
+      // Transform API data to match component structure
+      const transformedStages = stagesData.map(stage => ({
+        id: stage._id,
+        name: stage.stage_name,
+        stage_id: stage.stage_id,
+        status: 'active', // Default status since API doesn't provide it
+        created_by: stage.created_by,
+        created_at: stage.created_at,
+        updated_at: stage.updated_at,
+        updated_by: stage.updated_by
+      }));
+      
+      setMasters(prev => ({ ...prev, stages: transformedStages }));
+    } catch (err) {
+      setError(prev => ({ ...prev, stages: err.message }));
+      console.error('Failed to fetch stages:', err);
+    } finally {
+      setLoading(prev => ({ ...prev, stages: false }));
+    }
+  }, []);
+
   // Fetch all data
   const fetchAllData = useCallback(async () => {
-    await Promise.all([fetchLocations(), fetchTypes()]);
-  }, [fetchLocations, fetchTypes]);
+    await Promise.all([fetchLocations(), fetchTypes(), fetchStages()]);
+  }, [fetchLocations, fetchTypes, fetchStages]);
 
   // API-based CRUD operations for locations
   const addLocation = useCallback(async (data) => {
@@ -353,6 +383,49 @@ export const MasterProvider = ({ children }) => {
     }
   }, [fetchTypes]);
 
+  // API-based CRUD operations for stages
+  const addStage = useCallback(async (data) => {
+    try {
+      const stageData = { stage_name: data.name };
+      const response = await stagesAPI.create(stageData);
+      console.log('Stage created successfully:', response);
+      // Refresh stages after successful creation
+      await fetchStages();
+      return { success: true };
+    } catch (err) {
+      console.error('Failed to create stage:', err);
+      setError(prev => ({ ...prev, stages: err.message }));
+      return { success: false, error: err.message };
+    }
+  }, [fetchStages]);
+
+  const updateStage = useCallback(async (itemId, data) => {
+    try {
+      const stageData = { stage_name: data.name };
+      await stagesAPI.update(itemId, stageData);
+      // Refresh stages after successful update
+      await fetchStages();
+      return { success: true };
+    } catch (err) {
+      console.error('Failed to update stage:', err);
+      setError(prev => ({ ...prev, stages: err.message }));
+      return { success: false, error: err.message };
+    }
+  }, [fetchStages]);
+
+  const deleteStage = useCallback(async (itemId) => {
+    try {
+      await stagesAPI.delete(itemId);
+      // Refresh stages after successful deletion
+      await fetchStages();
+      return { success: true };
+    } catch (err) {
+      console.error('Failed to delete stage:', err);
+      setError(prev => ({ ...prev, stages: err.message }));
+      return { success: false, error: err.message };
+    }
+  }, [fetchStages]);
+
   const value = {
     masters,
     loading,
@@ -360,6 +433,7 @@ export const MasterProvider = ({ children }) => {
     fetchAllData,
     fetchLocations,
     fetchTypes,
+    fetchStages,
     addLocation,
     updateLocation,
     deleteLocation,
@@ -372,6 +446,9 @@ export const MasterProvider = ({ children }) => {
     addType,
     updateType,
     deleteType,
+    addStage,
+    updateStage,
+    deleteStage,
   };
 
   return (
