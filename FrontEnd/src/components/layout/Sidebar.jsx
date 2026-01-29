@@ -68,6 +68,13 @@ function Sidebar() {
     if (!item.page) return true; // Show items without page requirement
     return hasAccess(userRole, item.page);
   });
+
+  // Show disabled items with tooltips for better UX
+  const allNavItemsWithAccess = navItems.map(item => ({
+    ...item,
+    hasAccess: !item.page || hasAccess(userRole, item.page),
+    disabled: item.page && !hasAccess(userRole, item.page)
+  }));
   return (
     <aside className="hidden md:fixed md:inset-y-0 md:flex md:w-52 md:flex-col md:border-r md:border-indigo-700 md:bg-indigo-700">
       <div className="flex h-16 items-center border-b border-indigo-600/60 px-4">

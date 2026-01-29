@@ -37,6 +37,7 @@ export const LeadsProvider = ({ children }) => {
       setLoading(false);
     }
   };
+  
 
   const fetchApprovedLeads = async () => {
     try {

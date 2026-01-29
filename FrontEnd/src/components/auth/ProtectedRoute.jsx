@@ -9,7 +9,7 @@ const ProtectedRoute = ({
   requiredPermission,
   showPermissionDenied = false
 }) => {
-  const { user, isAuthenticated, loading } = useAuth();
+  const { user, isAuthenticated, loading, error } = useAuth();
   const location = useLocation();
 
   // Show loading state while checking authentication
@@ -17,10 +17,20 @@ const ProtectedRoute = ({
     return <LoadingState message="Verifying access..." />;
   }
 
+  // If there's an auth error (like expired session), redirect to login
+  if (error) {
+    const authPages = ['/login', '/forgot-password', '/verify-otp', '/reset-password', '/first-time-password-change'];
+    if (!authPages.includes(location.pathname)) {
+      return <Navigate to="/login" state={{ from: location, error }} replace />;
+    }
+  }
+
   // If user is not authenticated, redirect to login with return path
-  // Prevent redirect loop by checking if we're already coming from login
-  if (!isAuthenticated || !user) {
-    if (location.pathname === '/login') {
+  // Prevent redirect loop by checking current path
+  if (!isAuthenticated || !user?.token) {
+    // Don't redirect if already on login or auth pages
+    const authPages = ['/login', '/forgot-password', '/verify-otp', '/reset-password', '/first-time-password-change'];
+    if (authPages.includes(location.pathname)) {
       return null;
     }
     return <Navigate to="/login" state={{ from: location }} replace />;
@@ -30,7 +40,11 @@ const ProtectedRoute = ({
   if (requiredPermission && !hasPermission(user.role, requiredPermission)) {
     // Show permission denied UI instead of redirecting
     if (showPermissionDenied) {
-      return <PermissionDenied message="You do not have permission to view this page." />;
+      return <PermissionDenied 
+        message="You do not have permission to view this page." 
+        requiredPermission={requiredPermission}
+        userRole={user.role}
+      />;
     }
     return <Navigate to="/unauthorized" replace />;
   }

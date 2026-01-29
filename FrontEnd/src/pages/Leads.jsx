@@ -27,6 +27,14 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
   };
 
   // Static roles for assignment (matching LeadStepper) - 12 roles total
+  // Form persistence key
+  const FORM_STORAGE_KEY = 'leads_form_draft';
+  
+  // Track if form has unsaved changes
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Static roles for assignment (matching LeadStepper)
   const STATIC_ROLES = [
     "tele_caller",
     "land_executive", 
@@ -204,6 +212,66 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
   const [errors, setErrors] = useState({})
   const [apiError, setApiError] = useState(null)
 
+  // Form persistence functions
+  const saveFormDraft = useCallback((formData) => {
+    if (!viewMode && !data) { // Only save drafts for new forms
+      try {
+        localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify({
+          ...formData,
+          timestamp: Date.now()
+        }));
+      } catch (error) {
+        console.warn('Could not save form draft:', error);
+      }
+    }
+  }, [viewMode, data]);
+
+  const loadFormDraft = useCallback(() => {
+    if (!viewMode && !data) { // Only load drafts for new forms
+      try {
+        const saved = localStorage.getItem(FORM_STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          // Check if draft is less than 24 hours old
+          if (Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000) {
+            delete parsed.timestamp;
+            return parsed;
+          } else {
+            // Remove old draft
+            localStorage.removeItem(FORM_STORAGE_KEY);
+          }
+        }
+      } catch (error) {
+        console.warn('Could not load form draft:', error);
+        localStorage.removeItem(FORM_STORAGE_KEY);
+      }
+    }
+    return null;
+  }, [viewMode, data]);
+
+  const clearFormDraft = useCallback(() => {
+    try {
+      localStorage.removeItem(FORM_STORAGE_KEY);
+      setHasUnsavedChanges(false);
+    } catch (error) {
+      console.warn('Could not clear form draft:', error);
+    }
+  }, []);
+
+  // Warn user about unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (hasUnsavedChanges && !isSubmitting) {
+        e.preventDefault();
+        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges, isSubmitting]);
+
   const validateForm = (dataToValidate) => {
     const nextErrors = {}
 
@@ -345,10 +413,28 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
   }, [fetchLocations, fetchMediators, mediatorsFetched, mediatorsLoading, mediators.length, usersLoading, users.length, fetchUsers])
 
   useEffect(() => {
-    // Auto-set currentRole from localStorage
-    const userRole = getCurrentUserRole()
-    handleChange("currentRole", userRole)
-  }, [data])
+    // Auto-set currentRole from localStorage when creating new lead (not editing)
+    if (!data) {
+      const userRole = getCurrentUserRole()
+      
+      // Try to load form draft first
+      const draft = loadFormDraft();
+      if (draft) {
+        setFormData(prev => ({
+          ...prev,
+          ...draft,
+          currentRole: userRole // Always use current user role
+        }));
+        setHasUnsavedChanges(true);
+        toast.success('Draft loaded', { 
+          icon: '📝',
+          duration: 3000 
+        });
+      } else {
+        handleChange("currentRole", userRole)
+      }
+    }
+  }, [data, loadFormDraft])
 
   useEffect(() => {
     if (!data) return
@@ -427,8 +513,33 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     }))
   }, [data])
 
-  const handleChange = (key, value) => setFormData((prev) => ({ ...prev, [key]: value }))
-  const handleCheckboxChange = (key, checked) => setFormData((prev) => ({ ...prev, [key]: checked }))
+  const handleChange = (key, value) => {
+    const newFormData = { ...formData, [key]: value };
+    setFormData(newFormData);
+    setHasUnsavedChanges(true);
+    
+    // Auto-save draft (debounced)
+    if (!viewMode && !data) {
+      clearTimeout(window.formDraftTimeout);
+      window.formDraftTimeout = setTimeout(() => {
+        saveFormDraft(newFormData);
+      }, 1000);
+    }
+  };
+  
+  const handleCheckboxChange = (key, checked) => {
+    const newFormData = { ...formData, [key]: checked };
+    setFormData(newFormData);
+    setHasUnsavedChanges(true);
+    
+    // Auto-save draft (debounced)
+    if (!viewMode && !data) {
+      clearTimeout(window.formDraftTimeout);
+      window.formDraftTimeout = setTimeout(() => {
+        saveFormDraft(newFormData);
+      }, 1000);
+    }
+  };
 
   // Update currentStep when assignedTo changes to sync with LeadStepper
   useEffect(() => {
@@ -641,6 +752,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     const submitToast = toast.loading(data ? 'Updating lead...' : 'Creating lead...')
 
     try {
+      setIsSubmitting(true);
       const leadPayload = toLeadPayload()
 
       // Debug: Log the payload being sent
@@ -653,6 +765,10 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
       if (onSubmit) {
         await onSubmit(leadPayload, files)
+        
+        // Clear form draft on successful submission
+        clearFormDraft();
+        
         toast.success(data ? 'Lead updated successfully!' : 'Lead created successfully!', {
           id: submitToast,
           duration: 3000
@@ -684,6 +800,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       })
     } finally {
       setLoading((prev) => ({ ...prev, submit: false }))
+      setIsSubmitting(false);
     }
   }
 
