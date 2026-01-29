@@ -60,7 +60,7 @@ export default function LeadsPage() {
  
   useEffect(() => {
     const loadLeads = async () => {
-      const loadingToast = toast.loading('Loading leads...');
+      // const loadingToast = toast.loading('Loading leads...');
       try {
         await fetchLeads();
         // toast.success('Leads loaded', { 
@@ -72,11 +72,11 @@ export default function LeadsPage() {
         console.error('Failed to load leads:', err);
         const errorMessage = err.response?.data?.message || 'Could not load leads. Please try again.';
         
-        toast.error(errorMessage, { 
-          id: loadingToast,
-          icon: <AlertCircle className="w-5 h-5 text-red-500" />,
-          duration: 5000
-        });
+        // toast.error(errorMessage, { 
+        //   id: loadingToast,
+        //   icon: <AlertCircle className="w-5 h-5 text-red-500" />,
+        //   duration: 5000
+        // });
       }
     };
     
@@ -422,18 +422,14 @@ const handleCancelDelete = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.property}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
                           <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
-                            String(lead.lead_status).toLowerCase() === "Enquired" ? "bg-blue-100 text-blue-700" :
-                            String(lead.lead_status).toLowerCase() === "contacted" ? "bg-purple-100 text-purple-700" :
-                            String(lead.lead_status).toLowerCase() === "qualified" ? "bg-green-100 text-green-700" :
-                            String(lead.lead_status).toLowerCase() === "converted" ? "bg-emerald-100 text-emerald-700" :
-                            String(lead.lead_status).toLowerCase() === "lost" ? "bg-red-100 text-red-700" :
-                            String(lead.lead_status).toLowerCase() === "hold" ? "bg-amber-100 text-amber-700" :
-                            String(lead.lead_status).toLowerCase() === "pending" ? "bg-orange-100 text-orange-700" :
-                            String(lead.lead_status).toLowerCase() === "follow-up" ? "bg-indigo-100 text-indigo-700" :
-                            String(lead.lead_status).toLowerCase() === "interested" ? "bg-teal-100 text-teal-700" :
-                            String(lead.lead_status).toLowerCase() === "not-interested" ? "bg-slate-100 text-slate-700" :
-                            String(lead.lead_status).toLowerCase() === "hot-lead" ? "bg-rose-100 text-rose-700" :
-                            String(lead.lead_status).toLowerCase() === "cold-lead" ? "bg-cyan-100 text-cyan-700" :
+                            String(lead.lead_status) == "Enquired" ? "bg-blue-100 text-blue-700" :
+                            String(lead.lead_status) == "Lead Allocated" ? "bg-purple-100 text-purple-700" :
+                            String(lead.lead_status) == "First Called" ? "bg-green-100 text-green-700" :
+                            String(lead.lead_status) == "Site Visit" ? "bg-emerald-100 text-emerald-700" :
+                            String(lead.lead_status) == "lost" ? "bg-red-100 text-red-700" :
+                            String(lead.lead_status) == "hold" ? "bg-amber-100 text-amber-700" :
+                            String(lead.lead_status) == "pending" ? "bg-orange-100 text-orange-700" :
+                           
                             "bg-gray-100 text-gray-700"
                           }`}>
                             {lead.lead_status || "—"}</span>
@@ -478,7 +474,7 @@ const handleCancelDelete = () => {
                 </table>
               </div>
  
-              {loading && <div className="text-center py-12 text-gray-500"><p>Loading leads...</p></div>}
+              {/* {loading && <div className="text-center py-12 text-gray-500"><p>Loading leads...</p></div>} */}
               {error && <div className="text-center py-12 text-red-500"><p>Error: {error}</p></div>}
               {!loading && !error && filteredLeads.length === 0 && <div className="text-center py-12 text-gray-500"><p>No leads found matching your criteria.</p></div>}
  
