@@ -6,9 +6,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
-import { locationsAPI } from "@/services/api"
 import { useMediators } from "../context/MediatorsContext.jsx"
 import { useUsers } from "../context/UsersContext.jsx"
+import { useLeads } from "../context/LeadsContext.jsx"
 import { ChevronLeft, Upload, FileText, CheckCircle2, AlertCircle, Loader2 } from "lucide-react"
 import LeadStepper from "@/components/ui/LeadStepper"
 import toast from "react-hot-toast"
@@ -18,6 +18,17 @@ const yesNo = (v) => (v ? "Yes" : "No")
 export default function Leads({ data = null, onSubmit, onClose, viewMode = false, currentStep, onStepChange, editableFields = null, stepperOnly = false, hideStepper = false, calls = [] }) {
   const { mediators, loading: mediatorsLoading, fetched: mediatorsFetched, fetchMediators } = useMediators()
   const { users, loading: usersLoading, fetchUsers } = useUsers()
+  const {
+    formLoading,
+    formError,
+    masters,
+    getCurrentUserRole,
+    getCurrentUserInfo,
+    getAssignedUserInfo,
+    validateLeadForm,
+    fetchLocations,
+    submitLeadForm
+  } = useLeads()
 
   // Helper function to check if a field is editable
   const isFieldEditable = (fieldName) => {
@@ -26,7 +37,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     return editableFields.includes(fieldName);
   };
 
-  // Static roles for assignment (matching LeadStepper) - 12 roles total
   // Form persistence key
   const FORM_STORAGE_KEY = 'leads_form_draft';
   
@@ -64,63 +74,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     'liaison': 10,
     'finance': 11,
     'admin': 12
-  }
-
-  // Get current user role from localStorage
-  const getCurrentUserRole = () => {
-    // Try to get from direct key first
-    const directRole = localStorage.getItem('userRole')
-    if (directRole) return directRole
-
-    // Fallback to parsing user object
-    const userData = localStorage.getItem('user')
-    if (userData) {
-      try {
-        const parsed = JSON.parse(userData)
-        return parsed.role || 'tele_caller'
-      } catch (e) {
-        console.error("Failed to parse user data for role", e)
-      }
-    }
-    return 'tele_caller'
-  }
-
-  // Get current user info from localStorage
-  const getCurrentUserInfo = () => {
-    const userData = localStorage.getItem('user')
-    if (userData) {
-      try {
-        const parsed = JSON.parse(userData)
-        return {
-          user_id: parsed._id || parsed.id || '',
-          name: parsed.name || '',
-          role: parsed.role || 'tele_caller'
-        }
-      } catch (e) {
-        console.error("Failed to parse user data", e)
-      }
-    }
-    return {
-      user_id: '',
-      name: '',
-      role: 'tele_caller'
-    }
-  }
-
-  // Get assigned user info based on role
-  const getAssignedUserInfo = (role) => {
-    if (!role || role === getCurrentUserRole()) {
-      // If no role specified or same as current user, assign to current user
-      return getCurrentUserInfo()
-    }
-    
-    // For now, use current user's ID as fallback since user_id is required in backend
-    const currentUserInfo = getCurrentUserInfo();
-    return {
-      user_id: currentUserInfo.user_id, // Use current user's ID as required fallback
-      name: `${role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}`,
-      role: role
-    }
   }
 
   // Get static roles filtered by hierarchy - only show next 1 role in workflow, except for admin
@@ -176,9 +129,9 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     frontage: "",
     roadWidth: "",
     sspde: "No",
-    leadStatus: "Enquired",
+    leadStatus: "",
     remark: "",
-    lead_stage: "",
+    lead_stage: "Enquired",
 
     // Yield Calculation (UI-only for now; backend schema doesn't store these fields yet)
     yield: "",
@@ -253,11 +206,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
   // Store original data for change tracking
   const [originalData, setOriginalData] = useState(null)
-
-  const [masters, setMasters] = useState({ locations: [], regions: [], zones: [] })
-  const [loading, setLoading] = useState({ locations: false, regions: false, zones: false, submit: false })
   const [errors, setErrors] = useState({})
-  const [apiError, setApiError] = useState(null)
 
   // Form persistence functions
   const saveFormDraft = useCallback((formData) => {
@@ -320,108 +269,9 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
   }, [hasUnsavedChanges, isSubmitting]);
 
   const validateForm = (dataToValidate) => {
-    const nextErrors = {}
-
-    if (!dataToValidate.contactNumber?.trim()) {
-      nextErrors.contactNumber = "Contact number is required"
-    } else if (!/^[+]?[0-9]{10,15}$/.test(dataToValidate.contactNumber.replace(/\s/g, ""))) {
-      nextErrors.contactNumber = "Invalid contact number format"
-    }
-
-    if (!dataToValidate.mediatorName?.trim()) nextErrors.mediatorName = "Mediator/Owner name is required"
-    if (!dataToValidate.location) nextErrors.location = "Location is required"
-    if (!dataToValidate.landName?.trim()) nextErrors.landName = "Land name is required"
-    if (!dataToValidate.sourceCategory) nextErrors.sourceCategory = "Source category is required"
-    if (!dataToValidate.source) nextErrors.source = "Source is required"
-    
-    // Assign To (User) is optional - removed required validation
-
-      // Numeric fields (soft validation)
-      ;["extent", "fsi", "asp", "revenue", "rate", "builderShare"].forEach((k) => {
-        const v = dataToValidate[k]
-        if (v && isNaN(parseFloat(v))) nextErrors[k] = `${k} must be a number`
-      })
-
-    // Files: backend allows only JPG/PNG/JPEG and 2MB
-    const validateFile = (fileKey, file) => {
-      if (!file) return ""
-      const maxSize = 2 * 1024 * 1024
-      const allowed = ["image/jpeg", "image/jpg", "image/png"]
-      if (file.size > maxSize) return "File size must be less than 2MB"
-      if (!allowed.includes(file.type)) return "Invalid file type. Only JPG/PNG images are allowed"
-      return ""
-    }
-
-    if (dataToValidate.checkFMBSketch) {
-      if (!dataToValidate.fileFMBSketch) nextErrors.fileFMBSketch = "FMB Sketch file is required when checkbox is checked"
-      else {
-        const msg = validateFile("fileFMBSketch", dataToValidate.fileFMBSketch)
-        if (msg) nextErrors.fileFMBSketch = msg
-      }
-    }
-
-    if (dataToValidate.checkPattaChitta) {
-      if (!dataToValidate.filePattaChitta) nextErrors.filePattaChitta = "Patta/Chitta file is required when checkbox is checked"
-      else {
-        const msg = validateFile("filePattaChitta", dataToValidate.filePattaChitta)
-        if (msg) nextErrors.filePattaChitta = msg
-      }
-    }
-
-    return nextErrors
+    return validateLeadForm(dataToValidate)
   }
 
-  const fetchLocations = useCallback(async () => {
-    setLoading((prev) => ({ ...prev, locations: true, regions: true, zones: true }))
-    setApiError(null)
-    // const loadingToast = toast.loading('Loading locations...')
-
-    try {
-      const locationsData = await locationsAPI.getAll()
-      const transformedLocations = locationsData.map((loc) => ({
-        id: loc._id,
-        name: loc.location,
-        regions: loc.regions || [],
-      }))
-
-      const transformedRegions = []
-      const transformedZones = []
-
-      locationsData.forEach((location) => {
-        if (location.regions?.length > 0) {
-          location.regions.forEach((region) => {
-            transformedRegions.push({
-              id: region._id,
-              location: location.location,
-              region: region.region,
-              zones: region.zones || [],
-            })
-
-            if (region.zones?.length > 0) {
-              region.zones.forEach((zone) => {
-                transformedZones.push({
-                  id: zone._id,
-                  location: location.location,
-                  region: region.region,
-                  zone: zone.zone,
-                })
-              })
-            }
-          })
-        }
-      })
-
-      setMasters({ locations: transformedLocations, regions: transformedRegions, zones: transformedZones })
-      // toast.success('Locations loaded successfully', { id: loadingToast })
-    } catch (err) {
-      console.error("Failed to fetch locations:", err)
-      const errorMsg = err.response?.data?.message || "Failed to load locations. Please try again."
-      setApiError(errorMsg)
-      toast.error(errorMsg, { id: loadingToast })
-    } finally {
-      setLoading((prev) => ({ ...prev, locations: false, regions: false, zones: false }))
-    }
-  }, [])
 
   useEffect(() => {
     const loadData = async () => {
@@ -430,13 +280,11 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
         // Only fetch mediators if they haven't been fetched yet
         if (!mediatorsFetched && !mediatorsLoading && !mediators.length) {
-          // const mediatorsToast = toast.loading('Loading mediators...')
           try {
             await fetchMediators()
-            // toast.success('Mediators loaded successfully', { id: mediatorsToast })
           } catch (err) {
             console.error('Failed to load mediators:', err)
-            toast.error('Failed to load mediators. Some features may be limited.', { id: mediatorsToast })
+            toast.error('Failed to load mediators. Some features may be limited.')
           }
         }
 
@@ -458,7 +306,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     }
 
     loadData()
-  }, [fetchLocations, fetchMediators, mediatorsFetched, mediatorsLoading, mediators.length, usersLoading, users.length, fetchUsers])
+  }, []) // Remove function dependencies to prevent infinite loops
 
   useEffect(() => {
     // Auto-set currentRole from localStorage when creating new lead (not editing)
@@ -507,9 +355,9 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           frontage: "",
           roadWidth: "",
           sspde: "No",
-          leadStatus: "Enquired",
+          leadStatus: "",
           remark: "",
-          lead_stage: "",
+          lead_stage: "Enquired",
 
           // Yield Calculation
           yield: "",
@@ -684,19 +532,18 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     setOriginalData(JSON.parse(JSON.stringify(hydratedData)))
   }, [data])
 
-  const handleChange = (key, value) => {
-    const newFormData = { ...formData, [key]: value };
-    setFormData(newFormData);
-    setHasUnsavedChanges(true);
+  const handleChange = useCallback((key, value) => {
+    setFormData(prev => ({ ...prev, [key]: value }))
     
-    // Auto-save draft (debounced)
-    if (!viewMode && !data) {
-      clearTimeout(window.formDraftTimeout);
-      window.formDraftTimeout = setTimeout(() => {
-        saveFormDraft(newFormData);
-      }, 1000);
+    // Clear error for this field when user starts typing
+    if (errors[key]) {
+      setErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors[key]
+        return newErrors
+      })
     }
-  };
+  }, [errors])
 
   const handleMultipleChanges = (changes) => {
     const newFormData = { ...formData, ...changes };
@@ -801,453 +648,36 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     [masters, formData.location, formData.zone],
   )
 
-  const toLeadPayload = () => {
-    // Always get currentRole from localStorage to ensure it's never missing
-    const currentRoleValue = getCurrentUserRole()
-
-    const competitorAnalysis = [
-      {
-        developerName: formData.competitorDeveloperName || "",
-        projectName: formData.competitorProjectName || "",
-        productType: formData.competitorProductType || "",
-        location: formData.competitorLocation || "",
-        plotUnitSize: formData.competitorPlotSize || "",
-        landExtent: formData.competitorLandExtent || "",
-        priceRange: formData.competitorPriceRange || "",
-        approxPrice: formData.competitorApproxPrice || "",
-        approxPriceCent: formData.competitorApproxPriceCent || "",
-        totalPlotsUnits: formData.competitorTotalUnits || "",
-        keyAmenities: String(formData.competitorKeyAmenities || "")
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean),
-        uspPositioning: formData.competitorUSP || "",
-      },
-    ]
-
-    const checkListPage = [
-      {
-        landLocation: formData.checkLandLocation || "",
-        landExtent: formData.checkLandExtent || "",
-        landZone: formData.checkLandZone || "",
-        classificationOfLand: formData.checkLandClassification || "",
-        googlePin: formData.checkGooglePin || "",
-        approachRoadWidth: formData.checkApproachRoadWidth || "",
-        ebLine: yesNo(formData.checkEBLine),
-        soilType: formData.checkSoilType || "",
-        quarryCrusher: yesNo(formData.checkQuarryCrusher),
-        sellingPrice: formData.checkSellingPrice || "",
-        guidelineValue: formData.checkGuidelineValue || "",
-        locationSellingPrice: formData.checkLocationSellingPrice || "",
-        marketingPrice: formData.checkMarketingPrice || "",
-        roadWidth: formData.checkRoadWidth || "",
-        govtLandAcquisition: yesNo(formData.checkGovtLandAcquisition),
-        railwayTrackNoc: yesNo(formData.checkRailwayTrackNOC),
-        bankIssues: yesNo(formData.checkBankIssues),
-        dumpyardQuarryCheck: yesNo(formData.checkDumpyardQuarry),
-        waterbodyNearby: yesNo(formData.checkWaterbodyNearby),
-        nearbyHtLine: yesNo(formData.checkNearbyHTLine),
-        templeLand: yesNo(formData.checkTempleLand),
-        futureGovtProjects: yesNo(formData.checkFutureGovtProjects),
-        farmLand: yesNo(formData.checkFarmLand),
-        totalSaleableArea: formData.checkTotalSaleableArea || "",
-        landCleaning: yesNo(formData.checkLandCleaning),
-        subDivision: yesNo(formData.checkSubDivision),
-        soilTest: yesNo(formData.checkSoilTest),
-        waterList: yesNo(formData.checkWaterList),
-        ownerName: formData.checkOwnerName || "",
-        consultantName: formData.checkConsultantName || "",
-        notes: formData.checkNotes || "",
-        projects: formData.checkProjects || "",
-        googleLocation: formData.checkGoogleLocation || "",
-      },
-    ]
-
-    // For new leads, send all fields
-    if (!data) {
-      const currentUserInfo = getCurrentUserInfo();
-      const assignedUserInfo = getAssignedUserInfo(formData.assignedTo || currentRoleValue);
-      
-      const payload = {
-        // base schema fields - always required
-        leadType: formData.leadType || "mediator",
-        contactNumber: formData.contactNumber || "",
-        mediatorName: formData.mediatorName || "",
-        date: new Date().toISOString(), // Add current date as required by backend
-        location: formData.location || "",
-        landName: formData.landName || "",
-        sourceCategory: formData.sourceCategory || "",
-        source: formData.source || "",
-        
-        // Backend expects arrays of objects for currentRole and assignedTo
-        currentRole: [currentUserInfo],
-        assignedTo: [assignedUserInfo],
-        assignToUser: formData.assignToUser,
-
-        // structured sections
-        competitorAnalysis,
-        checkListPage,
-      }
-
-      // Add optional fields only if they have values
-      if (formData.mediatorId) payload.mediatorId = formData.mediatorId
-      if (formData.zone) payload.zone = formData.zone
-      if (formData.unit) payload.unit = formData.unit
-      if (formData.propertyType) payload.propertyType = formData.propertyType
-      if (formData.fsi) payload.fsi = formData.fsi
-      if (formData.asp) payload.asp = formData.asp
-      if (formData.revenue) payload.revenue = formData.revenue
-      if (formData.transactionType) payload.transactionType = formData.transactionType
-      if (formData.rate) payload.rate = formData.rate
-      if (formData.builderShare) payload.builderShare = formData.builderShare
-      if (formData.refundable) payload.refundable = formData.refundable
-      if (formData.nonRefundable) payload.nonRefundable = formData.nonRefundable
-      if (formData.landmark) payload.landmark = formData.landmark
-      if (formData.frontage) payload.frontage = formData.frontage
-      if (formData.roadWidth) payload.roadWidth = formData.roadWidth
-      if (formData.sspde) payload.sspde = formData.sspde
-      if (formData.remark) payload.remark = formData.remark
-      if (formData.lead_stage) payload.lead_stage = formData.lead_stage
-      if (formData.leadStatus) payload.lead_status = String(formData.leadStatus).toUpperCase()
-      if (formData.inquiredBy) payload.inquiredBy = formData.inquiredBy
-      if (formData.L1_Qualification) payload.L1_Qualification = formData.L1_Qualification
-      if (formData.directorSVStatus) payload.directorSVStatus = formData.directorSVStatus
-      if (formData.callDate) payload.callDate = formData.callDate
-      if (formData.callTime) payload.callTime = formData.callTime
-      if (formData.callNotes) {
-        payload.note = formData.callNotes  // Backend expects 'note' not 'notes'
-        // Add userId to trigger Call record creation in backend
-        const currentUser = getCurrentUserInfo()
-        payload.userId = currentUser.user_id
-        payload.role = currentUser.role
-        payload.name = currentUser.name || formData.mediatorName || 'Unknown User'
-        // Backend createLead doesn't use callDate/callTime for Call records, but we'll send them anyway
-        payload.callDate = formData.callDate
-        payload.callTime = formData.callTime
-      }
-
-      return payload
-    }
-
-    // For existing leads, send only changed fields
-    const payload = {}
-    
-    // Debug: Show the data structures we're comparing
-    console.log('🔍 Debug - Original Data:', originalData)
-    console.log('🔍 Debug - Form Data:', formData)
-    console.log('🔍 Debug - Original Data exists?', !!originalData)
-    console.log('🔍 Debug - Original Data keys:', originalData ? Object.keys(originalData) : 'none')
-    
-    // Helper function to compare and add changed fields
-    const addIfChanged = (fieldName, currentValue, originalValue) => {
-      const currentStr = JSON.stringify(currentValue)
-      const originalStr = JSON.stringify(originalValue)
-      const hasChanged = currentStr !== originalStr
-      
-      if (hasChanged) {
-        payload[fieldName] = currentValue
-        console.log(`✅ Changed field: ${fieldName}`, {
-          current: currentValue,
-          original: originalValue,
-          currentStr,
-          originalStr
-        })
-      } else {
-        console.log(`⏸️ Unchanged field: ${fieldName}`, {
-          current: currentValue,
-          original: originalValue
-        })
-      }
-    }
-
-    // Check base fields
-    addIfChanged('leadType', formData.leadType || "mediator", originalData?.leadType || "mediator")
-    addIfChanged('contactNumber', formData.contactNumber || "", originalData?.contactNumber || "")
-    addIfChanged('mediatorName', formData.mediatorName || "", originalData?.mediatorName || "")
-    addIfChanged('location', formData.location || "", originalData?.location || "")
-    addIfChanged('landName', formData.landName || "", originalData?.landName || "")
-    addIfChanged('sourceCategory', formData.sourceCategory || "", originalData?.sourceCategory || "")
-    addIfChanged('source', formData.source || "", originalData?.source || "")
-    
-    // Handle currentRole and assignedTo as arrays of objects
-    const currentUserInfo = getCurrentUserInfo();
-    const assignedUserInfo = getAssignedUserInfo(formData.assignedTo || currentRoleValue);
-    
-    // Only update if the role assignment has changed
-    if (!originalData?.currentRole || originalData.currentRole[0]?.role !== currentUserInfo.role) {
-      payload.currentRole = [currentUserInfo];
-    }
-    if (!originalData?.assignedTo || originalData.assignedTo[0]?.role !== assignedUserInfo.role) {
-      payload.assignedTo = [assignedUserInfo];
-    }
-    
-    addIfChanged('assignToUser', formData.assignToUser, originalData?.assignToUser)
-
-    // Check optional fields
-    addIfChanged('mediatorId', formData.mediatorId, originalData?.mediatorId)
-    addIfChanged('zone', formData.zone, originalData?.zone)
-    addIfChanged('extent', formData.extent, originalData?.extent)
-    addIfChanged('unit', formData.unit, originalData?.unit)
-    addIfChanged('propertyType', formData.propertyType, originalData?.propertyType)
-    addIfChanged('fsi', formData.fsi, originalData?.fsi)
-    addIfChanged('asp', formData.asp, originalData?.asp)
-    addIfChanged('revenue', formData.revenue, originalData?.revenue)
-    addIfChanged('transactionType', formData.transactionType, originalData?.transactionType)
-    addIfChanged('rate', formData.rate, originalData?.rate)
-    addIfChanged('builderShare', formData.builderShare, originalData?.builderShare)
-    addIfChanged('refundable', formData.refundable, originalData?.refundable)
-    addIfChanged('nonRefundable', formData.nonRefundable, originalData?.nonRefundable)
-    addIfChanged('landmark', formData.landmark, originalData?.landmark)
-    addIfChanged('frontage', formData.frontage, originalData?.frontage)
-    addIfChanged('roadWidth', formData.roadWidth, originalData?.roadWidth)
-    addIfChanged('sspde', formData.sspde, originalData?.sspde)
-    addIfChanged('remark', formData.remark, originalData?.remark)
-    addIfChanged('lead_stage', formData.lead_stage, originalData?.lead_stage)
-    addIfChanged('lead_status', String(formData.leadStatus).toUpperCase(), String(originalData?.leadStatus || "").toUpperCase())
-    addIfChanged('inquiredBy', formData.inquiredBy, originalData?.inquiredBy)
-    addIfChanged('L1_Qualification', formData.L1_Qualification, originalData?.L1_Qualification)
-    addIfChanged('directorSVStatus', formData.directorSVStatus, originalData?.directorSVStatus)
-    addIfChanged('callDate', formData.callDate, originalData?.callDate)
-    addIfChanged('callTime', formData.callTime, originalData?.callTime)
-    // For updateLead, backend expects 'notes' field
-    addIfChanged('notes', formData.callNotes, originalData?.callNotes)
-
-    // Check structured data (competitorAnalysis)
-    const originalCompetitor = originalData?.competitorAnalysis?.[0] || {}
-    const currentCompetitor = competitorAnalysis[0]
-    let competitorChanged = false
-    
-    Object.keys(currentCompetitor).forEach(key => {
-      if (JSON.stringify(currentCompetitor[key]) !== JSON.stringify(originalCompetitor[key])) {
-        competitorChanged = true
-      }
-    })
-    
-    if (competitorChanged) {
-      payload.competitorAnalysis = competitorAnalysis
-    }
-
-    // Check structured data (checkListPage)
-    const originalChecklist = originalData?.checkListPage?.[0] || {}
-    const currentChecklist = checkListPage[0]
-    let checklistChanged = false
-    
-    Object.keys(currentChecklist).forEach(key => {
-      if (JSON.stringify(currentChecklist[key]) !== JSON.stringify(originalChecklist[key])) {
-        checklistChanged = true
-      }
-    })
-    
-    if (checklistChanged) {
-      payload.checkListPage = checkListPage
-    }
-
-    // Always include currentRole and assignedTo for history tracking (in correct array format)
-    if (!payload.currentRole) {
-      const currentUserInfo = getCurrentUserInfo();
-      payload.currentRole = [currentUserInfo];
-    }
-    if (!payload.assignedTo) {
-      const assignedUserInfo = getAssignedUserInfo(formData.assignedTo || currentRoleValue);
-      payload.assignedTo = [assignedUserInfo];
-    }
-
-    // Ensure required fields are included for updates
-    if (!payload.contactNumber && originalData?.contactNumber) {
-      payload.contactNumber = originalData.contactNumber;
-    }
-    if (!payload.date && originalData?.date) {
-      payload.date = originalData.date;
-    }
-
-    return payload
-  }
-
   const handleSubmit = async () => {
-    setErrors({})
-    const validationErrors = validateForm(formData)
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors)
-      const errorMessages = Object.values(validationErrors).join('\n')
-      toast.error("Please fix the following errors:\n" + errorMessages, {
-        duration: 5000,
-        style: {
-          whiteSpace: 'pre-line',
-          maxWidth: '500px'
-        }
-      })
-      return
-    }
-
-    setLoading((prev) => ({ ...prev, submit: true }))
-    setApiError(null)
-    const submitToast = toast.loading(data ? 'Updating lead...' : 'Creating lead...')
-
     try {
       setIsSubmitting(true);
-      const leadPayload = toLeadPayload()
-
-      // Debug: Show payload optimization for edits
-      if (data) {
-        const fullPayloadSize = JSON.stringify({
-          leadType: formData.leadType || "mediator",
-          contactNumber: formData.contactNumber || "",
-          mediatorName: formData.mediatorName || "",
-          location: formData.location || "",
-          landName: formData.landName || "",
-          sourceCategory: formData.sourceCategory || "",
-          source: formData.source || "",
-          currentRole: getCurrentUserRole(),
-          assignedTo: formData.assignedTo || getCurrentUserRole(),
-          assignToUser: formData.assignToUser,
-          competitorAnalysis: [
-            {
-              developerName: formData.competitorDeveloperName || "",
-              projectName: formData.competitorProjectName || "",
-              productType: formData.competitorProductType || "",
-              location: formData.competitorLocation || "",
-              plotUnitSize: formData.competitorPlotSize || "",
-              landExtent: formData.competitorLandExtent || "",
-              priceRange: formData.competitorPriceRange || "",
-              approxPrice: formData.competitorApproxPrice || "",
-              approxPriceCent: formData.competitorApproxPriceCent || "",
-              totalPlotsUnits: formData.competitorTotalUnits || "",
-              keyAmenities: String(formData.competitorKeyAmenities || "")
-                .split(",")
-                .map((s) => s.trim())
-                .filter(Boolean),
-              uspPositioning: formData.competitorUSP || "",
-            }
-          ],
-          checkListPage: [
-            {
-              landLocation: formData.checkLandLocation || "",
-              landExtent: formData.checkLandExtent || "",
-              landZone: formData.checkLandZone || "",
-              classificationOfLand: formData.checkLandClassification || "",
-              googlePin: formData.checkGooglePin || "",
-              approachRoadWidth: formData.checkApproachRoadWidth || "",
-              ebLine: yesNo(formData.checkEBLine),
-              soilType: formData.checkSoilType || "",
-              quarryCrusher: yesNo(formData.checkQuarryCrusher),
-              sellingPrice: formData.checkSellingPrice || "",
-              guidelineValue: formData.checkGuidelineValue || "",
-              locationSellingPrice: formData.checkLocationSellingPrice || "",
-              marketingPrice: formData.checkMarketingPrice || "",
-              roadWidth: formData.checkRoadWidth || "",
-              govtLandAcquisition: yesNo(formData.checkGovtLandAcquisition),
-              railwayTrackNoc: yesNo(formData.checkRailwayTrackNOC),
-              bankIssues: yesNo(formData.checkBankIssues),
-              dumpyardQuarryCheck: yesNo(formData.checkDumpyardQuarry),
-              waterbodyNearby: yesNo(formData.checkWaterbodyNearby),
-              nearbyHtLine: yesNo(formData.checkNearbyHTLine),
-              templeLand: yesNo(formData.checkTempleLand),
-              futureGovtProjects: yesNo(formData.checkFutureGovtProjects),
-              farmLand: yesNo(formData.checkFarmLand),
-              totalSaleableArea: formData.checkTotalSaleableArea || "",
-              landCleaning: yesNo(formData.checkLandCleaning),
-              subDivision: yesNo(formData.checkSubDivision),
-              soilTest: yesNo(formData.checkSoilTest),
-              waterList: yesNo(formData.checkWaterList),
-              ownerName: formData.checkOwnerName || "",
-              consultantName: formData.checkConsultantName || "",
-              notes: formData.checkNotes || "",
-              projects: formData.checkProjects || "",
-              googleLocation: formData.checkGoogleLocation || "",
-            }
-          ]
-        }).length
-
-        const optimizedPayloadSize = JSON.stringify(leadPayload).length
-        const savings = fullPayloadSize - optimizedPayloadSize
-        const savingsPercent = ((savings / fullPayloadSize) * 100).toFixed(1)
-
-        console.log(`🚀 Payload Optimization:`)
-        console.log(`   Full payload: ${(fullPayloadSize / 1024).toFixed(2)} KB`)
-        console.log(`   Optimized: ${(optimizedPayloadSize / 1024).toFixed(2)} KB`)
-        console.log(`   Saved: ${(savings / 1024).toFixed(2)} KB (${savingsPercent}%)`)
-        console.log(`   Fields sent: ${Object.keys(leadPayload).length}`)
-      }
-
-      console.log('📤 Final Lead Payload being sent:', JSON.stringify(leadPayload, null, 2))
       
       const files = {
         ...(formData.checkFMBSketch && formData.fileFMBSketch ? { fmb_sketch: formData.fileFMBSketch } : {}),
         ...(formData.checkPattaChitta && formData.filePattaChitta ? { patta_chitta: formData.filePattaChitta } : {}),
       }
       
-      console.log('📋 Files being sent:', Object.keys(files))
-
+      const result = await submitLeadForm(formData, data, files)
+      
+      // Clear form draft on successful submission
+      clearFormDraft()
+      
+      // Call onSubmit if provided (for backward compatibility)
       if (onSubmit) {
-        try {
-          const result = await onSubmit(leadPayload, files)
-          console.log('📥 Backend response:', JSON.stringify(result, null, 2))
-          
-          // Backend workaround: Immediately update lead_status after creation
-          console.log('🔧 Checking workaround conditions:')
-          console.log('  - isNewLead:', !data)
-          console.log('  - hasLeadId:', !!result?.data?._id)
-          console.log('  - hasLeadStatus:', !!leadPayload.lead_status)
-          console.log('  - leadStatusValue:', leadPayload.lead_status)
-          
-          if (!data && result?.data?._id && leadPayload.lead_status) {
-            console.log('🔧 Backend workaround: Updating lead_status after creation')
-            console.log('🎯 Target lead_id:', result.data._id)
-            console.log('🎯 Target status:', leadPayload.lead_status)
-            try {
-              // Use the leadsAPI directly for update
-              const { leadsAPI } = await import('../services/api')
-              console.log('📞 Making API call to leadsAPI.update...')
-              const updateResult = await leadsAPI.update(result.data._id, { lead_status: leadPayload.lead_status })
-              console.log('✅ lead_status updated successfully:', updateResult)
-            } catch (updateError) {
-              console.warn('⚠️ Failed to update lead_status:', updateError)
-              // Don't fail the whole operation if status update fails
-            }
-          } else {
-            console.log('⏭️ Skipping lead_status workaround - conditions not met')
-          }
-          
-          // Clear form draft on successful submission
-          clearFormDraft()
-          
-          toast.success(data ? 'Lead updated successfully!' : 'Lead created successfully!', {
-            id: submitToast,
-            duration: 3000
-          })
-
-          // Show success message for file uploads if any
-          if (Object.keys(files).length > 0) {
-            toast.success('Files uploaded successfully', { duration: 2000 })
-          }
-        } catch (onSubmitError) {
-          console.error('❌ onSubmit failed:', onSubmitError)
-          throw onSubmitError // Re-throw to be caught by outer catch
-        }
-      } else {
-        console.log('❌ onSubmit function does not exist!')
+        onSubmit(result);
+      }
+      
+      // Close the form if onClose is provided
+      if (onClose) {
+        onClose();
       }
     } catch (error) {
-      console.error("Submit error:", error)
-      let errorMessage = "Failed to submit lead. Please try again."
-
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message
-      } else if (error.message) {
-        errorMessage = error.message
+      // Set validation errors if they exist
+      if (error.validationErrors) {
+        setErrors(error.validationErrors)
       }
-
-      setApiError(errorMessage)
-      toast.error(errorMessage, {
-        id: submitToast,
-        duration: 5000,
-        style: {
-          whiteSpace: 'pre-line',
-          maxWidth: '500px'
-        }
-      })
+      console.error("Submit error:", error)
     } finally {
-      setLoading((prev) => ({ ...prev, submit: false }))
       setIsSubmitting(false);
     }
   }
@@ -1373,14 +803,14 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
               </div>
             </div>
 
-            {apiError && (
+            {formError && (
               <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
                 <AlertCircle className="h-5 w-5 text-red-600 shrink-0" />
                 <div className="flex-1">
                   <p className="text-red-800 font-medium">Error</p>
-                  <p className="text-red-600 text-sm">{apiError}</p>
+                  <p className="text-red-600 text-sm">{formError}</p>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => setApiError(null)} className="text-red-600 hover:text-red-800 hover:bg-red-100">
+                <Button variant="ghost" size="sm" onClick={() => setFormError(null)} className="text-red-600 hover:text-red-800 hover:bg-red-100">
                   ×
                 </Button>
               </div>
@@ -1521,9 +951,9 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                     {formData.location || "-"}
                   </div>
                 ) : (
-                  <Select value={formData.location} onValueChange={handleLocationChange} disabled={loading.locations}>
+                  <Select value={formData.location} onValueChange={handleLocationChange} disabled={formLoading.locations}>
                     <SelectTrigger className={`bg-gray-50/50 ${errors.location ? "border-red-500 focus:border-red-500" : ""}`}>
-                      {loading.locations ? (
+                      {formLoading.locations ? (
                         <div className="flex items-center gap-2">
                           <Loader2 className="h-4 w-4 animate-spin" />
                           <SelectValue placeholder="Loading..." />
@@ -1562,9 +992,9 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                     {formData.zone || "-"}
                   </div>
                 ) : (
-                  <Select value={formData.zone} onValueChange={handleZoneChange} disabled={!formData.location || loading.regions}>
+                  <Select value={formData.zone} onValueChange={handleZoneChange} disabled={!formData.location || formLoading.regions}>
                     <SelectTrigger className={`bg-gray-50/50 ${errors.zone ? "border-red-500 focus:border-red-500" : ""}`}>
-                      {loading.regions ? (
+                      {formLoading.regions ? (
                         <div className="flex items-center gap-2">
                           <Loader2 className="h-4 w-4 animate-spin" />
                           <SelectValue placeholder="Loading..." />
@@ -1597,9 +1027,9 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                     {formData.area || "-"}
                   </div>
                 ) : (
-                  <Select value={formData.area} onValueChange={(val) => handleChange("area", val)} disabled={!formData.zone || loading.zones}>
+                  <Select value={formData.area} onValueChange={(val) => handleChange("area", val)} disabled={!formData.zone || formLoading.zones}>
                     <SelectTrigger className={`bg-gray-50/50 ${errors.area ? "border-red-500 focus:border-red-500" : ""}`}>
-                      {loading.zones ? (
+                      {formLoading.zones ? (
                         <div className="flex items-center gap-2">
                           <Loader2 className="h-4 w-4 animate-spin" />
                           <SelectValue placeholder="Loading..." />
@@ -2690,11 +2120,11 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
             {/* ===== TWO COLUMN ROW END ===== */}
     {!viewMode && (
       <div className="flex justify-end gap-4 pb-8">
-        <Button variant="outline" size="lg" onClick={onClose} className="bg-white border-gray-300" disabled={loading.submit}>
+        <Button variant="outline" size="lg" onClick={onClose} className="bg-white border-gray-300" disabled={formLoading.submit}>
           Cancel
         </Button>
-        <Button size="lg" onClick={handleSubmit} className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 shadow-lg" disabled={loading.submit}>
-          {loading.submit ? (
+        <Button size="lg" onClick={handleSubmit} className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 shadow-lg" disabled={formLoading.submit}>
+          {formLoading.submit ? (
             <div className="flex items-center gap-2">
               <Loader2 className="h-4 w-4 animate-spin" />
               {data ? "Updating..." : "Submitting..."}

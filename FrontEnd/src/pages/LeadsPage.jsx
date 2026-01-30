@@ -157,85 +157,42 @@ export default function LeadsPage() {
     }
   };
  
-  const handleLeadSubmit = async (leadPayload, files = {}) => {
-    const isUpdate = !!selectedLead;
-    const loadingToast = toast.loading(isUpdate ? 'Updating lead...' : 'Creating lead...');
+  const handleLeadSubmit = async (result) => {
+    // The actual submission is now handled by the context
+    // This function is called after successful submission
+    console.log('🚀 LeadsPage - handleLeadSubmit called with result:', result);
     
-    console.log('🚀 LeadsPage - handleLeadSubmit called:', {
-      isUpdate,
-      selectedLeadId: selectedLead?._id || selectedLead?.id,
-      payloadKeys: Object.keys(leadPayload),
-      payloadSize: JSON.stringify(leadPayload).length,
-      leadPayload
-    });
-    
+    // Close the form and refresh leads
+    setOpen(false);
+    fetchLeads();
+  };
+
+  const handleDeleteLead = (lead) => {
+    console.log('Delete clicked for lead:', lead);
+    setLeadToDelete(lead);
+    setDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!leadToDelete) return;
+  
     try {
-      if (isUpdate) {
-        console.log('📞 Calling updateLead with ID:', selectedLead._id || selectedLead.id);
-        await updateLead(selectedLead._id || selectedLead.id, leadPayload, files);
-        console.log('✅ updateLead completed successfully');
-      } else {
-        console.log('📞 Calling createLead');
-        await createLead(leadPayload, files);
-        console.log('✅ createLead completed successfully');
-      }
-      
-      toast.success(
-        isUpdate ? 'Lead updated successfully' : 'Lead created successfully',
-        { 
-          id: loadingToast,
-          icon: <Check className="w-5 h-5 text-green-500" />,
-          duration: 3000
-        }
-      );
-      
-      if (Object.keys(files).length > 0) {
-        toast.success('Files uploaded successfully', { 
-          icon: '📎',
-          duration: 2000 
-        });
-      }
-      
-      setOpen(false);
-      fetchLeads();
-    } catch (err) {
-      console.error("Failed to submit lead:", err);
-      const errorMessage = err.response?.data?.message || 'Could not save lead. Please try again.';
-      
-      toast.error(errorMessage, { 
-        id: loadingToast,
-        icon: <X className="w-5 h-5 text-red-500" />,
-        duration: 5000
-      });
+      console.log('Performing delete for lead:', leadToDelete._id || leadToDelete.id);
+      await deleteLead(leadToDelete._id || leadToDelete.id);
+      fetchLeads(); // Refresh list
+      setDeleteModalOpen(false);
+      setLeadToDelete(null);
+      toast.success('Lead deleted successfully');
+    } catch (error) {
+      console.error('Delete failed:', error);
+      toast.error('Failed to delete lead');
     }
   };
- 
-  const handleDeleteLead = (lead) => {
-  console.log('Delete clicked for lead:', lead);
-  setLeadToDelete(lead);
-  setDeleteModalOpen(true);
-};
 
-const handleConfirmDelete = async () => {
-  if (!leadToDelete) return;
-  
-  try {
-    console.log('Performing delete for lead:', leadToDelete._id || leadToDelete.id);
-    await deleteLead(leadToDelete._id || leadToDelete.id);
-    fetchLeads(); // Refresh list
+  const handleCancelDelete = () => {
     setDeleteModalOpen(false);
     setLeadToDelete(null);
-    toast.success('Lead deleted successfully');
-  } catch (error) {
-    console.error('Delete failed:', error);
-    toast.error('Failed to delete lead');
-  }
-};
-
-const handleCancelDelete = () => {
-  setDeleteModalOpen(false);
-  setLeadToDelete(null);
-};
+  };
  
   const handleView = async (lead) => {
     setIsFetchingLead(true);
@@ -431,22 +388,30 @@ const handleCancelDelete = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.zone || "—"}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.property}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                          <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
-                            String(lead.lead_status).toLowerCase() === "new" ? "bg-blue-100 text-blue-700" :
-                            String(lead.lead_status).toLowerCase() === "contacted" ? "bg-purple-100 text-purple-700" :
-                            String(lead.lead_status).toLowerCase() === "qualified" ? "bg-green-100 text-green-700" :
-                            String(lead.lead_status).toLowerCase() === "converted" ? "bg-emerald-100 text-emerald-700" :
-                            String(lead.lead_status).toLowerCase() === "lost" ? "bg-red-100 text-red-700" :
-                            String(lead.lead_status).toLowerCase() === "hold" ? "bg-amber-100 text-amber-700" :
-                            String(lead.lead_status).toLowerCase() === "pending" ? "bg-orange-100 text-orange-700" :
-                            String(lead.lead_status).toLowerCase() === "follow-up" ? "bg-indigo-100 text-indigo-700" :
-                            String(lead.lead_status).toLowerCase() === "interested" ? "bg-teal-100 text-teal-700" :
-                            String(lead.lead_status).toLowerCase() === "not-interested" ? "bg-slate-100 text-slate-700" :
-                            String(lead.lead_status).toLowerCase() === "hot-lead" ? "bg-rose-100 text-rose-700" :
-                            String(lead.lead_status).toLowerCase() === "cold-lead" ? "bg-cyan-100 text-cyan-700" :
-                            "bg-gray-100 text-gray-700"
-                          }`}>
-                            {lead.lead_status || "—"}</span>
+                          {(() => {
+                            const statusValue = lead.lead_status || lead.lead_stage;
+                            return (
+                              <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
+                                String(statusValue).toLowerCase() === "new" ? "bg-blue-100 text-blue-700" :
+                                String(statusValue).toLowerCase() === "contacted" ? "bg-purple-100 text-purple-700" :
+                                String(statusValue).toLowerCase() === "qualified" ? "bg-green-100 text-green-700" :
+                                String(statusValue).toLowerCase() === "converted" ? "bg-emerald-100 text-emerald-700" :
+                                String(statusValue).toLowerCase() === "lost" ? "bg-red-100 text-red-700" :
+                                String(statusValue).toLowerCase() === "hold" ? "bg-amber-100 text-amber-700" :
+                                String(statusValue).toLowerCase() === "pending" ? "bg-orange-100 text-orange-700" :
+                                String(statusValue).toLowerCase() === "follow-up" ? "bg-indigo-100 text-indigo-700" :
+                                String(statusValue).toLowerCase() === "interested" ? "bg-teal-100 text-teal-700" :
+                                String(statusValue).toLowerCase() === "not-interested" ? "bg-slate-100 text-slate-700" :
+                                String(statusValue).toLowerCase() === "hot-lead" ? "bg-rose-100 text-rose-700" :
+                                String(statusValue).toLowerCase() === "cold-lead" ? "bg-cyan-100 text-cyan-700" :
+                                String(statusValue).toLowerCase() === "warm" ? "bg-orange-100 text-orange-700" :
+                                String(statusValue).toLowerCase() === "hot" ? "bg-red-100 text-red-700" :
+                                String(statusValue).toLowerCase() === "enquired" ? "bg-blue-100 text-blue-700" :
+                                "bg-gray-100 text-gray-700"
+                              }`}>
+                                {statusValue || "—"}</span>
+                            );
+                          })()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <DropdownMenu>
