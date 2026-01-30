@@ -10,6 +10,7 @@ import { useMediators } from "../context/MediatorsContext.jsx"
 import { useUsers } from "../context/UsersContext.jsx"
 import { useMaster } from "../context/Mastercontext.jsx"
 import { useLeads } from "../context/LeadsContext.jsx"
+import { useYield } from "../context/YieldContext.jsx"
 import { ChevronLeft, Upload, FileText, CheckCircle2, AlertCircle, Loader2 } from "lucide-react"
 import LeadStepper from "@/components/ui/LeadStepper"
 import toast from "react-hot-toast"
@@ -21,6 +22,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
   const { users, loading: usersLoading, fetchUsers } = useUsers()
   const { masters, loading: stagesLoading, fetchStages } = useMaster()
   const { formError, formLoading, clearFormError, getCurrentUserRole, setFormError, transformLeadPayload, submitLeadForm } = useLeads()
+  const { yieldResult, calculateYieldPercentage, updateYieldData, updateNestedYieldData } = useYield()
 
   // Helper function to check if a field is editable
   const isFieldEditable = (fieldName) => {
@@ -630,6 +632,137 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       }
     }
   }, [formData.assignedTo, onStepChange])
+
+  // Calculate yield when relevant form data changes
+  useEffect(() => {
+    // Only calculate if we have the necessary data
+    if (formData.area && formData.areaValue) {
+      const yieldData = {
+        area: {
+          value: parseFloat(formData.areaValue) || 0,
+          unit: formData.areaUnit || 'cents'
+        },
+        channel: {
+          width: parseFloat(formData.channelWidth) || 0,
+          length: parseFloat(formData.channelLength) || 0,
+          inBetween: parseFloat(formData.channelInBetween) || 0,
+          nearBoundary: parseFloat(formData.channelNearBoundary) || 0
+        },
+        gasLine: {
+          width: parseFloat(formData.gasLineWidth) || 0,
+          length: parseFloat(formData.gasLineLength) || 0,
+          inBetween: parseFloat(formData.gasLineInBetween) || 0,
+          nearBoundary: parseFloat(formData.gasLineNearBoundary) || 0
+        },
+        htTowerLine: {
+          width: parseFloat(formData.htTowerLineWidth) || 0,
+          length: parseFloat(formData.htTowerLineLength) || 0,
+          inBetween: parseFloat(formData.htTowerLineInBetween) || 0,
+          nearBoundary: parseFloat(formData.htTowerLineNearBoundary) || 0
+        },
+        river: {
+          length: parseFloat(formData.riverLength) || 0,
+          nearBoundary: parseFloat(formData.riverNearBoundary) || 0
+        },
+        lake: {
+          length: parseFloat(formData.lakeLength) || 0,
+          nearBoundary: parseFloat(formData.lakeNearBoundary) || 0
+        },
+        railwayBoundary: {
+          length: parseFloat(formData.railwayBoundaryLength) || 0,
+          nearBoundary: parseFloat(formData.railwayBoundaryNearBoundary) || 0
+        },
+        burialGround: {
+          length: parseFloat(formData.burialGroundLength) || 0,
+          nearBoundary: parseFloat(formData.burialGroundNearBoundary) || 0
+        },
+        highway: {
+          length: parseFloat(formData.highwayLength) || 0,
+          nearBoundary: parseFloat(formData.highwayNearBoundary) || 0
+        },
+        roadArea: {
+          siteArea: parseFloat(formData.roadSiteArea) || 0,
+          manualRoadArea: parseFloat(formData.manualRoadArea) || 0
+        },
+        osr: formData.osrApplicable ? {
+          siteArea: parseFloat(formData.osrSiteArea) || 0,
+          manualRoadArea: parseFloat(formData.osrManualRoadArea) || 0,
+          percentage: parseFloat(formData.osrPercentage) || 0
+        } : null,
+        tneb: formData.tnebApplicable ? {
+          siteArea: parseFloat(formData.tnebSiteArea) || 0,
+          manualRoadArea: parseFloat(formData.tnebManualRoadArea) || 0,
+          percentage: parseFloat(formData.tnebPercentage) || 0
+        } : null,
+        localBody: formData.localBodyApplicable ? {
+          siteArea: parseFloat(formData.localBodySiteArea) || 0,
+          manualRoadArea: parseFloat(formData.localBodyManualRoadArea) || 0,
+          percentage: parseFloat(formData.localBodyPercentage) || 0
+        } : null
+      };
+
+      // Update the yield context data
+      Object.entries(yieldData).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+          if (typeof value === 'object' && !Array.isArray(value)) {
+            Object.entries(value).forEach(([subKey, subValue]) => {
+              // Update nested data in context
+              updateNestedYieldData(key, subKey, subValue);
+            });
+          } else {
+            // Update simple data in context
+            updateYieldData(key, value);
+          }
+        }
+      });
+
+      // Calculate yield percentage
+      calculateYieldPercentage();
+    }
+  }, [
+    formData.area, 
+    formData.areaValue, 
+    formData.areaUnit,
+    formData.channelWidth, 
+    formData.channelLength, 
+    formData.channelInBetween, 
+    formData.channelNearBoundary,
+    formData.gasLineWidth, 
+    formData.gasLineLength, 
+    formData.gasLineInBetween, 
+    formData.gasLineNearBoundary,
+    formData.htTowerLineWidth, 
+    formData.htTowerLineLength, 
+    formData.htTowerLineInBetween, 
+    formData.htTowerLineNearBoundary,
+    formData.riverLength, 
+    formData.riverNearBoundary,
+    formData.lakeLength, 
+    formData.lakeNearBoundary,
+    formData.railwayBoundaryLength, 
+    formData.railwayBoundaryNearBoundary,
+    formData.burialGroundLength, 
+    formData.burialGroundNearBoundary,
+    formData.highwayLength, 
+    formData.highwayNearBoundary,
+    formData.roadSiteArea, 
+    formData.manualRoadArea,
+    formData.osrApplicable,
+    formData.osrSiteArea, 
+    formData.osrManualRoadArea, 
+    formData.osrPercentage,
+    formData.tnebApplicable,
+    formData.tnebSiteArea, 
+    formData.tnebManualRoadArea, 
+    formData.tnebPercentage,
+    formData.localBodyApplicable,
+    formData.localBodySiteArea, 
+    formData.localBodyManualRoadArea, 
+    formData.localBodyPercentage,
+    calculateYieldPercentage,
+    updateYieldData,
+    updateNestedYieldData
+  ])
 
   const handleFileChange = (key, file) => {
     if (file) {
@@ -2233,7 +2366,10 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                     <div>
                       <Label className="text-sm font-medium text-gray-700">Yield (%)</Label>
                       <div className="p-2 bg-gray-50 border rounded-md mt-1">
-                        {formData.yield || "-"}
+                        {yieldResult ? 
+                          `${(yieldResult.yieldPercentage * 100).toFixed(2)}%` : 
+                          formData.yield || "-"
+                        }
                       </div>
                     </div>
                   </CardContent>
