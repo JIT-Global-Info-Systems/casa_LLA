@@ -958,9 +958,6 @@ exports.getApprovedLeads = async (req, res) => {
 
     }
 
-<<<<<<< HEAD
-
-=======
      if (userId) {
 
       // Get lead IDs from LeadHistory where user is assignedTo
@@ -984,7 +981,6 @@ exports.getApprovedLeads = async (req, res) => {
       ];
 
     }
->>>>>>> 25c0943a3df136975ae2b086f07d7f7d6eb9a64f
     const leads = await Lead.find(query)
     // .sort({ created_at: -1 });
     console.log('leads :>> ', leads);
@@ -1038,9 +1034,6 @@ exports.getPurchasedLeads = async (req, res) => {
 
     }
 
-<<<<<<< HEAD
-
-=======
      if (userId) {
 
       // Get lead IDs from LeadHistory where user is assignedTo
@@ -1064,7 +1057,6 @@ exports.getPurchasedLeads = async (req, res) => {
       ];
 
     }
->>>>>>> 25c0943a3df136975ae2b086f07d7f7d6eb9a64f
 
     const leads = await Lead.find(query).sort({ created_at: -1 });
 
