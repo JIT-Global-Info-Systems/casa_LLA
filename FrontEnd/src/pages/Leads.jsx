@@ -647,6 +647,22 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       // Document upload fields
       checkFMBSketch: !!(firstChecklist?.fmbSketchPath),
       checkPattaChitta: !!(firstChecklist?.pattaChittaPath),
+
+      // Assignment fields
+      assignedTo: (() => {
+        if (Array.isArray(data.assignedTo) && data.assignedTo.length > 0) {
+          // Extract the role from the first assigned user
+          return data.assignedTo[0].role || "";
+        }
+        return "";
+      })(),
+      assignToUser: (() => {
+        if (Array.isArray(data.assignedTo) && data.assignedTo.length > 0) {
+          // Extract the user_id from the first assigned user
+          return data.assignedTo[0].user_id || "";
+        }
+        return "";
+      })(),
     }
 
     setFormData((prev) => ({ ...prev, ...hydratedData }))
@@ -788,7 +804,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           source: formData.source || "",
           currentRole: getCurrentUserRole(),
           assignedTo: formData.assignedTo ,
-          assignToUser: formData.assignToUser,
           competitorAnalysis: [
             {
               developerName: formData.competitorDeveloperName || "",
@@ -1658,7 +1673,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                         <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
                           {(() => {
                             const roleValue = Array.isArray(formData.assignedTo) ? formData.assignedTo[0]?.role : formData.assignedTo;
-                            return roleValue && typeof roleValue === 'string' ? roleValue.replace(/_/g, ' ') : roleValue || "-";
+                            return roleValue ? (typeof roleValue === 'string' ? roleValue.replace(/_/g, ' ') : String(roleValue)) : "-";
                           })()}
                         </div>
                       ) : (
@@ -1694,10 +1709,50 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                         <Label className="text-gray-700 font-medium">Assign To (User)</Label>
                         {viewMode ? (
                           <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                            {formData.assignToUser || "-"}
+                            {(() => {
+                              const assignToUserId = formData.assignToUser;
+                              console.log('View mode - assignToUserId:', assignToUserId, 'type:', typeof assignToUserId);
+                              if (!assignToUserId) return "-";
+                              
+                              // If it's already a string ID, find the user
+                              if (typeof assignToUserId === 'string') {
+                                const user = users.find(u => (u._id || u.user_id || u.id) === assignToUserId);
+                                console.log('Found user for ID:', user);
+                                return user ? user.name : assignToUserId;
+                              }
+                              
+                              // If it's an object, get the name
+                              if (typeof assignToUserId === 'object') {
+                                console.log('assignToUserId is object, using name:', assignToUserId.name);
+                                return assignToUserId.name || String(assignToUserId._id || assignToUserId.user_id || assignToUserId.id || "-");
+                              }
+                              
+                              console.log('assignToUserId is unexpected type, converting to string');
+                              return String(assignToUserId);
+                            })()}
                           </div>
                         ) : (
-                          <Select value={formData.assignToUser} onValueChange={(v) => handleChange("assignToUser", v)}>
+                          <Select value={(() => {
+                            const assignToUser = formData.assignToUser;
+                            console.log('Select value calculation - assignToUser:', assignToUser, 'type:', typeof assignToUser);
+                            if (!assignToUser) return "";
+                            
+                            // If it's already a string, use it
+                            if (typeof assignToUser === 'string') {
+                              console.log('Using string value:', assignToUser);
+                              return assignToUser;
+                            }
+                            
+                            // If it's an object, extract the ID
+                            if (typeof assignToUser === 'object') {
+                              const id = String(assignToUser._id || assignToUser.user_id || assignToUser.id || "");
+                              console.log('Extracted ID from object:', id);
+                              return id;
+                            }
+                            
+                            console.log('Unexpected type, converting to string:', String(assignToUser));
+                            return String(assignToUser);
+                          })()} onValueChange={(v) => handleChange("assignToUser", v)}>
                             <SelectTrigger className="bg-gray-50/50">
                               {usersLoading ? (
                                 <div className="flex items-center gap-2">
@@ -1711,18 +1766,21 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                             <SelectContent className="bg-white z-50 shadow-lg">
                               {users
                                 .filter(user => user.role === formData.assignedTo).length > 0 ? (
-                                users
-                                  .filter(user => user.role === formData.assignedTo)
-                                  .map((user) => (
-                                    <SelectItem key={user._id || user.id} value={user._id || user.id}>
-                                      {user.name} ({user.role && typeof user.role === 'string' ? user.role.replace(/_/g, ' ') : 'No role'})
-                                    </SelectItem>
-                                  ))
-                              ) : (
-                                <div className="px-2 py-1 text-sm text-gray-500 italic">
-                                  User not found
-                                </div>
-                              )}
+                                  users
+                                    .filter(user => user.role === formData.assignedTo)
+                                    .map((user) => {
+                                      const userId = user._id || user.user_id || user.id;
+                                      return (
+                                        <SelectItem key={userId} value={String(userId)}>
+                                          {user.name} ({user.role ? (typeof user.role === 'string' ? user.role.replace(/_/g, ' ') : String(user.role)) : 'No role'})
+                                        </SelectItem>
+                                      );
+                                    })
+                                ) : (
+                                  <div className="px-2 py-1 text-sm text-gray-500 italic">
+                                    No users found for role: {typeof formData.assignedTo === 'string' ? formData.assignedTo : String(formData.assignedTo)}
+                                  </div>
+                                )}
                             </SelectContent>
                           </Select>
                         )}

@@ -237,9 +237,9 @@ export const LeadsProvider = ({ children }) => {
     }
   }, []);
 
-  const getAssignedUserInfo = useCallback((role) => {
+  const getAssignedUserInfo = useCallback((role, selectedUserId = null, users = []) => {
     // Debug logging to understand the input
-    console.log('🔍 getAssignedUserInfo input:', { role, type: typeof role, isArray: Array.isArray(role) });
+    console.log('🔍 getAssignedUserInfo input:', { role, selectedUserId, usersLength: users.length, type: typeof role, isArray: Array.isArray(role) });
     
     // Handle different input types for role parameter
     let roleValue = role;
@@ -264,6 +264,23 @@ export const LeadsProvider = ({ children }) => {
       return getCurrentUserInfo()
     }
     
+    // If a specific user ID is provided, find that user's info
+    if (selectedUserId && users.length > 0) {
+      const selectedUser = users.find(user => 
+        (user._id || user.user_id || user.id) === selectedUserId
+      );
+      
+      if (selectedUser) {
+        console.log('🔍 Found selected user:', selectedUser);
+        return {
+          user_id: selectedUserId,
+          name: selectedUser.name || `User ${selectedUserId}`,
+          role: roleValue
+        };
+      }
+    }
+    
+    // Default: create a user object for the role
     const currentUserInfo = getCurrentUserInfo();
     const result = {
       user_id: currentUserInfo.user_id,
@@ -454,7 +471,7 @@ export const LeadsProvider = ({ children }) => {
     // For new leads, send all fields
     if (!originalData) {
       const currentUserInfo = getCurrentUserInfo();
-      const assignedUserInfo = getAssignedUserInfo(formData.assignedTo || currentRoleValue);
+      const assignedUserInfo = getAssignedUserInfo(formData.assignedTo || currentRoleValue, formData.assignToUser);
       
       const payload = {
         leadType: formData.leadType || "mediator",
@@ -467,7 +484,6 @@ export const LeadsProvider = ({ children }) => {
         source: formData.source || "",
         currentRole: [currentUserInfo],
         assignedTo: [assignedUserInfo],
-        assignToUser: formData.assignToUser,
         competitorAnalysis,
         checkListPage,
       }
@@ -542,7 +558,7 @@ export const LeadsProvider = ({ children }) => {
     
     // Handle role assignments
     const currentUserInfo = getCurrentUserInfo();
-    const assignedUserInfo = getAssignedUserInfo(formData.assignedTo || currentRoleValue);
+    const assignedUserInfo = getAssignedUserInfo(formData.assignedTo || currentRoleValue, formData.assignToUser);
     
     // Ensure we're comparing role strings properly
     const originalCurrentRole = Array.isArray(originalData?.currentRole) ? originalData.currentRole[0]?.role : originalData?.currentRole;
@@ -555,7 +571,6 @@ export const LeadsProvider = ({ children }) => {
       payload.assignedTo = [assignedUserInfo];
     }
     
-    addIfChanged('assignToUser', formData.assignToUser, originalData?.assignToUser)
 
     // Check other fields
     const fieldsToCheck = [
