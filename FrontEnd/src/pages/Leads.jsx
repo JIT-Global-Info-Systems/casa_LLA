@@ -2437,7 +2437,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
             </div>
             {/* ===== TWO COLUMN ROW END ===== */}
     {!viewMode && (
-      <div className="flex justify-end gap-4 pb-8">
+      <div className="flex justify-start gap-4 pb-8">
         <Button variant="outline" size="lg" onClick={onClose} className="bg-white border-gray-300" disabled={formLoading.submit}>
           Cancel
         </Button>
