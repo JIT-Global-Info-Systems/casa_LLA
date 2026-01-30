@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Input } from './input';
 import { Label } from './label';
+import { Tooltip, TooltipContent, TooltipTrigger } from './tooltip';
 import { formatPhoneInput, validatePhoneNumber } from '@/utils/phoneValidation';
 import { cn } from '@/lib/utils';
 
@@ -90,21 +91,28 @@ const PhoneInput = React.forwardRef(({
       )}
       
       <div className="relative">
-        <Input
-          ref={ref}
-          type="tel"
-          value={inputValue}
-          onChange={handleInputChange}
-          onBlur={handleBlur}
-          onFocus={handleFocus}
-          placeholder={placeholder}
-          disabled={disabled}
-          className={cn(
-            className,
-            hasError && "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-          )}
-          {...props}
-        />
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Input
+              ref={ref}
+              type="tel"
+              value={inputValue}
+              onChange={handleInputChange}
+              onBlur={handleBlur}
+              onFocus={handleFocus}
+              placeholder={placeholder}
+              disabled={disabled}
+              className={cn(
+                className,
+                hasError && "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+              )}
+              {...props}
+            />
+          </TooltipTrigger>
+          <TooltipContent>
+            Enter a valid phone number (10-15 digits). International format (+country code) is supported.
+          </TooltipContent>
+        </Tooltip>
         
         {/* Phone icon */}
         <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
