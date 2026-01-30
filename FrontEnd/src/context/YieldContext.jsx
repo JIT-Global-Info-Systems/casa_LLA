@@ -201,12 +201,16 @@ export function YieldProvider({ children }) {
   }, []);
 
   const calculateYieldPercentage = useCallback(() => {
+    console.log('🚀 YieldContext: calculateYieldPercentage called');
+    console.log('🚀 YieldContext: Current yieldData:', yieldData);
+    
     try {
       const result = calculateYield(yieldData);
+      console.log('✅ YieldContext: Calculation successful:', result);
       setYieldResult(result);
       return result;
     } catch (error) {
-      console.error('Error calculating yield:', error);
+      console.error('❌ YieldContext: Error calculating yield:', error);
       return null;
     }
   }, [yieldData]);

@@ -199,6 +199,130 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     callNotes: "", // Call notes for calls
   })
 
+  // Calculate OSR eligibility based on area input
+  const isOSREligible = useCallback(() => {
+    if (!formData.areaValue || !formData.areaUnit) return false;
+    
+    const value = parseFloat(formData.areaValue);
+    if (isNaN(value) || value <= 0) return false;
+
+    // Convert area to cents
+    let areaInCents;
+    switch (formData.areaUnit) {
+      case "cents":
+        areaInCents = value;
+        break;
+      case "acres":
+        areaInCents = value * 100;
+        break;
+      case "hectare":
+        areaInCents = value * 247.105;
+        break;
+      default:
+        return false;
+    }
+
+    // OSR eligible if area is >= 247 cents (with tolerance for rounding)
+    return Math.abs(areaInCents - 247) <= 0.5 || areaInCents > 247;
+  }, [formData.areaValue, formData.areaUnit]);
+
+  // Calculate yield with current form data
+  const handleCalculateYield = useCallback(() => {
+    console.log('🔥 Calculate Yield Button Clicked!');
+    
+    // First update the context with current form data
+    const yieldData = {
+      area: {
+        value: parseFloat(formData.areaValue) || 0,
+        unit: formData.areaUnit || 'cents'
+      },
+      channel: {
+        width: parseFloat(formData.channelWidth) || 0,
+        length: parseFloat(formData.channelLength) || 0,
+        inBetween: parseFloat(formData.channelInBetween) || 0,
+        nearBoundary: parseFloat(formData.channelNearBoundary) || 0
+      },
+      gasLine: {
+        width: parseFloat(formData.gasLineWidth) || 0,
+        length: parseFloat(formData.gasLineLength) || 0,
+        inBetween: parseFloat(formData.gasLineInBetween) || 0,
+        nearBoundary: parseFloat(formData.gasLineNearBoundary) || 0
+      },
+      htTowerLine: {
+        width: parseFloat(formData.htTowerLineWidth) || 0,
+        length: parseFloat(formData.htTowerLineLength) || 0,
+        inBetween: parseFloat(formData.htTowerLineInBetween) || 0,
+        nearBoundary: parseFloat(formData.htTowerLineNearBoundary) || 0
+      },
+      river: {
+        length: parseFloat(formData.riverLength) || 0,
+        nearBoundary: parseFloat(formData.riverNearBoundary) || 0
+      },
+      lake: {
+        length: parseFloat(formData.lakeLength) || 0,
+        nearBoundary: parseFloat(formData.lakeNearBoundary) || 0
+      },
+      railwayBoundary: {
+        length: parseFloat(formData.railwayBoundaryLength) || 0,
+        nearBoundary: parseFloat(formData.railwayBoundaryNearBoundary) || 0
+      },
+      burialGround: {
+        length: parseFloat(formData.burialGroundLength) || 0,
+        nearBoundary: parseFloat(formData.burialGroundNearBoundary) || 0
+      },
+      highway: {
+        length: parseFloat(formData.highwayLength) || 0,
+        nearBoundary: parseFloat(formData.highwayNearBoundary) || 0
+      },
+      roadArea: {
+        siteArea: parseFloat(formData.roadSiteArea) || 0,
+        manualRoadArea: parseFloat(formData.manualRoadArea) || 0
+      },
+      osr: isOSREligible() ? {
+        siteArea: parseFloat(formData.osrSiteArea) || 0,
+        manualRoadArea: parseFloat(formData.osrManualRoadArea) || 0,
+        percentage: parseFloat(formData.osrPercentage) || 0
+      } : null,
+      tneb: {
+        siteArea: parseFloat(formData.tnebSiteArea) || 0,
+        manualRoadArea: parseFloat(formData.tnebManualRoadArea) || 0,
+        percentage: parseFloat(formData.tnebPercentage) || 0
+      },
+      localBody: {
+        siteArea: parseFloat(formData.localBodySiteArea) || 0,
+        manualRoadArea: parseFloat(formData.localBodyManualRoadArea) || 0,
+        percentage: parseFloat(formData.localBodyPercentage) || 0
+      }
+    };
+
+    console.log('📊 Yield Data:', yieldData);
+
+    // Update all context data
+    Object.entries(yieldData).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        if (typeof value === 'object' && !Array.isArray(value)) {
+          Object.entries(value).forEach(([subKey, subValue]) => {
+            updateNestedYieldData(key, subKey, subValue);
+          });
+        } else {
+          updateYieldData(key, value);
+        }
+      }
+    });
+
+    // Then calculate yield
+    const result = calculateYieldPercentage();
+    console.log('🎯 Calculation Result:', result);
+    console.log('🎯 Current yieldResult from context:', yieldResult);
+  }, [
+    formData, 
+    isOSREligible, 
+    updateYieldData, 
+    updateNestedYieldData, 
+    calculateYieldPercentage,
+    yieldResult
+  ]);
+
   // Store original data for change tracking
   const [originalData, setOriginalData] = useState(null)
 
@@ -684,21 +808,21 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           siteArea: parseFloat(formData.roadSiteArea) || 0,
           manualRoadArea: parseFloat(formData.manualRoadArea) || 0
         },
-        osr: formData.osrApplicable ? {
+        osr: isOSREligible() ? {
           siteArea: parseFloat(formData.osrSiteArea) || 0,
           manualRoadArea: parseFloat(formData.osrManualRoadArea) || 0,
           percentage: parseFloat(formData.osrPercentage) || 0
         } : null,
-        tneb: formData.tnebApplicable ? {
+        tneb: {
           siteArea: parseFloat(formData.tnebSiteArea) || 0,
           manualRoadArea: parseFloat(formData.tnebManualRoadArea) || 0,
           percentage: parseFloat(formData.tnebPercentage) || 0
-        } : null,
-        localBody: formData.localBodyApplicable ? {
+        },
+        localBody: {
           siteArea: parseFloat(formData.localBodySiteArea) || 0,
           manualRoadArea: parseFloat(formData.localBodyManualRoadArea) || 0,
           percentage: parseFloat(formData.localBodyPercentage) || 0
-        } : null
+        }
       };
 
       // Update the yield context data
@@ -747,21 +871,19 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     formData.highwayNearBoundary,
     formData.roadSiteArea, 
     formData.manualRoadArea,
-    formData.osrApplicable,
     formData.osrSiteArea, 
     formData.osrManualRoadArea, 
     formData.osrPercentage,
-    formData.tnebApplicable,
     formData.tnebSiteArea, 
     formData.tnebManualRoadArea, 
     formData.tnebPercentage,
-    formData.localBodyApplicable,
     formData.localBodySiteArea, 
     formData.localBodyManualRoadArea, 
     formData.localBodyPercentage,
     calculateYieldPercentage,
     updateYieldData,
-    updateNestedYieldData
+    updateNestedYieldData,
+    isOSREligible
   ])
 
   const handleFileChange = (key, file) => {
@@ -2372,6 +2494,499 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                         }
                       </div>
                     </div>
+
+                   
+
+                    {/* YIELD CALCULATION INPUTS */}
+                    {!viewMode && (
+                      <div className="space-y-6 border-t pt-6">
+                        <Label className="text-sm font-medium text-gray-700">Yield Calculation Fields</Label>
+                        
+                        {/* 1️⃣ Site Area */}
+                        <div className="space-y-3">
+                          <Label className="text-sm font-medium text-gray-700">1️⃣ Site Area (Mandatory)</Label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs text-gray-600">Value</Label>
+                              <Input
+                                type="number"
+                                value={formData.areaValue || ""}
+                                onChange={(e) => handleChange("areaValue", e.target.value)}
+                                placeholder="Area value"
+                                className="bg-gray-50/50"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-gray-600">Unit</Label>
+                              <Select value={formData.areaUnit || "cents"} onValueChange={(value) => handleChange("areaUnit", value)}>
+                                <SelectTrigger className="bg-gray-50/50">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="cents">Cents</SelectItem>
+                                  <SelectItem value="acres">Acres</SelectItem>
+                                  <SelectItem value="hectare">Hectare</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 2️⃣ Channel */}
+                        <div className="space-y-3">
+                          <Label className="text-sm font-medium text-gray-700">2️⃣ Channel (Deduction 1)</Label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs text-gray-600">Width</Label>
+                              <Input
+                                type="number"
+                                value={formData.channelWidth || ""}
+                                onChange={(e) => handleChange("channelWidth", e.target.value)}
+                                placeholder="Width"
+                                className="bg-gray-50/50"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-gray-600">Manual Length</Label>
+                              <Input
+                                type="number"
+                                value={formData.channelLength || ""}
+                                onChange={(e) => handleChange("channelLength", e.target.value)}
+                                placeholder="Manual length"
+                                className="bg-gray-50/50"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-gray-600">In Between Site</Label>
+                              <Input
+                                type="number"
+                                value={formData.channelInBetween || ""}
+                                onChange={(e) => handleChange("channelInBetween", e.target.value)}
+                                placeholder="In between site"
+                                className="bg-gray-50/50"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-gray-600">Nearby Site Boundary</Label>
+                              <Input
+                                type="number"
+                                value={formData.channelNearBoundary || ""}
+                                onChange={(e) => handleChange("channelNearBoundary", e.target.value)}
+                                placeholder="Nearby boundary"
+                                className="bg-gray-50/50"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 3️⃣ Gas Line */}
+                        <div className="space-y-3">
+                          <Label className="text-sm font-medium text-gray-700">3️⃣ Gas Line (Deduction 2)</Label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs text-gray-600">Width</Label>
+                              <Input
+                                type="number"
+                                value={formData.gasLineWidth || ""}
+                                onChange={(e) => handleChange("gasLineWidth", e.target.value)}
+                                placeholder="Width"
+                                className="bg-gray-50/50"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-gray-600">Length</Label>
+                              <Input
+                                type="number"
+                                value={formData.gasLineLength || ""}
+                                onChange={(e) => handleChange("gasLineLength", e.target.value)}
+                                placeholder="Length"
+                                className="bg-gray-50/50"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-gray-600">In Between Site</Label>
+                              <Input
+                                type="number"
+                                value={formData.gasLineInBetween || ""}
+                                onChange={(e) => handleChange("gasLineInBetween", e.target.value)}
+                                placeholder="In between site"
+                                className="bg-gray-50/50"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-gray-600">Nearby Site Boundary</Label>
+                              <Input
+                                type="number"
+                                value={formData.gasLineNearBoundary || ""}
+                                onChange={(e) => handleChange("gasLineNearBoundary", e.target.value)}
+                                placeholder="Nearby boundary"
+                                className="bg-gray-50/50"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 4️⃣ HT Tower Line */}
+                        <div className="space-y-3">
+                          <Label className="text-sm font-medium text-gray-700">4️⃣ HT Tower Line (Deduction 3)</Label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs text-gray-600">Width</Label>
+                              <Input
+                                type="number"
+                                value={formData.htTowerLineWidth || ""}
+                                onChange={(e) => handleChange("htTowerLineWidth", e.target.value)}
+                                placeholder="Width"
+                                className="bg-gray-50/50"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-gray-600">Manual Length</Label>
+                              <Input
+                                type="number"
+                                value={formData.htTowerLineLength || ""}
+                                onChange={(e) => handleChange("htTowerLineLength", e.target.value)}
+                                placeholder="Manual length"
+                                className="bg-gray-50/50"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-gray-600">In Between Site</Label>
+                              <Input
+                                type="number"
+                                value={formData.htTowerLineInBetween || ""}
+                                onChange={(e) => handleChange("htTowerLineInBetween", e.target.value)}
+                                placeholder="In between site"
+                                className="bg-gray-50/50"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-gray-600">Nearby Site Boundary</Label>
+                              <Input
+                                type="number"
+                                value={formData.htTowerLineNearBoundary || ""}
+                                onChange={(e) => handleChange("htTowerLineNearBoundary", e.target.value)}
+                                placeholder="Nearby boundary"
+                                className="bg-gray-50/50"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 5️⃣ River */}
+                        <div className="space-y-3">
+                          <Label className="text-sm font-medium text-gray-700">5️⃣ River (Deduction 4)</Label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs text-gray-600">Length</Label>
+                              <Input
+                                type="number"
+                                value={formData.riverLength || ""}
+                                onChange={(e) => handleChange("riverLength", e.target.value)}
+                                placeholder="Length"
+                                className="bg-gray-50/50"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-gray-600">Nearby Site Boundary</Label>
+                              <Input
+                                type="number"
+                                value={formData.riverNearBoundary || ""}
+                                onChange={(e) => handleChange("riverNearBoundary", e.target.value)}
+                                placeholder="Nearby boundary"
+                                className="bg-gray-50/50"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 6️⃣ Lake */}
+                        <div className="space-y-3">
+                          <Label className="text-sm font-medium text-gray-700">6️⃣ Lake (Deduction 5)</Label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs text-gray-600">Length</Label>
+                              <Input
+                                type="number"
+                                value={formData.lakeLength || ""}
+                                onChange={(e) => handleChange("lakeLength", e.target.value)}
+                                placeholder="Length"
+                                className="bg-gray-50/50"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-gray-600">Nearby Site Boundary</Label>
+                              <Input
+                                type="number"
+                                value={formData.lakeNearBoundary || ""}
+                                onChange={(e) => handleChange("lakeNearBoundary", e.target.value)}
+                                placeholder="Nearby boundary"
+                                className="bg-gray-50/50"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 7️⃣ Railway Boundary */}
+                        <div className="space-y-3">
+                          <Label className="text-sm font-medium text-gray-700">7️⃣ Railway Boundary (Deduction 6)</Label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs text-gray-600">Length</Label>
+                              <Input
+                                type="number"
+                                value={formData.railwayBoundaryLength || ""}
+                                onChange={(e) => handleChange("railwayBoundaryLength", e.target.value)}
+                                placeholder="Length"
+                                className="bg-gray-50/50"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-gray-600">Nearby Site Boundary</Label>
+                              <Input
+                                type="number"
+                                value={formData.railwayBoundaryNearBoundary || ""}
+                                onChange={(e) => handleChange("railwayBoundaryNearBoundary", e.target.value)}
+                                placeholder="Nearby boundary"
+                                className="bg-gray-50/50"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 8️⃣ Burial Ground */}
+                        <div className="space-y-3">
+                          <Label className="text-sm font-medium text-gray-700">8️⃣ Burial Ground (Deduction 7)</Label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs text-gray-600">Length</Label>
+                              <Input
+                                type="number"
+                                value={formData.burialGroundLength || ""}
+                                onChange={(e) => handleChange("burialGroundLength", e.target.value)}
+                                placeholder="Length"
+                                className="bg-gray-50/50"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-gray-600">Nearby Site Boundary</Label>
+                              <Input
+                                type="number"
+                                value={formData.burialGroundNearBoundary || ""}
+                                onChange={(e) => handleChange("burialGroundNearBoundary", e.target.value)}
+                                placeholder="Nearby boundary"
+                                className="bg-gray-50/50"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 9️⃣ State / National Highway */}
+                        <div className="space-y-3">
+                          <Label className="text-sm font-medium text-gray-700">9️⃣ State / National Highway (Deduction 8)</Label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs text-gray-600">Length</Label>
+                              <Input
+                                type="number"
+                                value={formData.highwayLength || ""}
+                                onChange={(e) => handleChange("highwayLength", e.target.value)}
+                                placeholder="Length"
+                                className="bg-gray-50/50"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-gray-600">Nearby Site Boundary</Label>
+                              <Input
+                                type="number"
+                                value={formData.highwayNearBoundary || ""}
+                                onChange={(e) => handleChange("highwayNearBoundary", e.target.value)}
+                                placeholder="Nearby boundary"
+                                className="bg-gray-50/50"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 🔟 Road Area */}
+                        <div className="space-y-3">
+                          <Label className="text-sm font-medium text-gray-700">🔟 Road Area (Deduction 9)</Label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs text-gray-600">Site Area</Label>
+                              <Input
+                                type="number"
+                                value={formData.roadSiteArea || ""}
+                                onChange={(e) => handleChange("roadSiteArea", e.target.value)}
+                                placeholder="Site area"
+                                className="bg-gray-50/50"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-gray-600">Manual Road Area</Label>
+                              <Input
+                                type="number"
+                                value={formData.manualRoadArea || ""}
+                                onChange={(e) => handleChange("manualRoadArea", e.target.value)}
+                                placeholder="Manual road area"
+                                className="bg-gray-50/50"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 1️⃣1️⃣ OSR (Optional - Conditional) */}
+                        {isOSREligible() && (
+                          <div className="space-y-3">
+                            <Label className="text-sm font-medium text-gray-700">1️⃣1️⃣ OSR (Deduction 10 - Auto-applied for ≥247 cents)</Label>
+                            <div className="grid grid-cols-3 gap-2">
+                              <div>
+                                <Label className="text-xs text-gray-600">Site Area</Label>
+                                <Input
+                                  type="number"
+                                  value={formData.osrSiteArea || ""}
+                                  onChange={(e) => handleChange("osrSiteArea", e.target.value)}
+                                  placeholder="Site area"
+                                  className="bg-gray-50/50"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs text-gray-600">Manual Road Area</Label>
+                                <Input
+                                  type="number"
+                                  value={formData.osrManualRoadArea || ""}
+                                  onChange={(e) => handleChange("osrManualRoadArea", e.target.value)}
+                                  placeholder="Manual road area"
+                                  className="bg-gray-50/50"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs text-gray-600">Percentage</Label>
+                                <Input
+                                  type="number"
+                                  value={formData.osrPercentage || ""}
+                                  onChange={(e) => handleChange("osrPercentage", e.target.value)}
+                                  placeholder="Percentage"
+                                  className="bg-gray-50/50"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 1️⃣2️⃣ TNEB */}
+                        <div className="space-y-3">
+                          <Label className="text-sm font-medium text-gray-700">1️⃣2️⃣ TNEB (Deduction 11)</Label>
+                          <div className="grid grid-cols-3 gap-2">
+                            <div>
+                              <Label className="text-xs text-gray-600">Site Area</Label>
+                              <Input
+                                type="number"
+                                value={formData.tnebSiteArea || ""}
+                                onChange={(e) => handleChange("tnebSiteArea", e.target.value)}
+                                placeholder="Site area"
+                                className="bg-gray-50/50"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-gray-600">Manual Road Area</Label>
+                              <Input
+                                type="number"
+                                value={formData.tnebManualRoadArea || ""}
+                                onChange={(e) => handleChange("tnebManualRoadArea", e.target.value)}
+                                placeholder="Manual road area"
+                                className="bg-gray-50/50"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-gray-600">Percentage</Label>
+                              <Input
+                                type="number"
+                                value={formData.tnebPercentage || ""}
+                                onChange={(e) => handleChange("tnebPercentage", e.target.value)}
+                                placeholder="Percentage"
+                                className="bg-gray-50/50"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 1️⃣3️⃣ Local Body Deduction */}
+                        <div className="space-y-3">
+                          <Label className="text-sm font-medium text-gray-700">1️⃣3️⃣ Local Body Deduction (Deduction 12)</Label>
+                          <div className="grid grid-cols-3 gap-2">
+                            <div>
+                              <Label className="text-xs text-gray-600">Site Area</Label>
+                              <Input
+                                type="number"
+                                value={formData.localBodySiteArea || ""}
+                                onChange={(e) => handleChange("localBodySiteArea", e.target.value)}
+                                placeholder="Site area"
+                                className="bg-gray-50/50"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-gray-600">Manual Road Area</Label>
+                              <Input
+                                type="number"
+                                value={formData.localBodyManualRoadArea || ""}
+                                onChange={(e) => handleChange("localBodyManualRoadArea", e.target.value)}
+                                placeholder="Manual road area"
+                                className="bg-gray-50/50"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-gray-600">Percentage</Label>
+                              <Input
+                                type="number"
+                                value={formData.localBodyPercentage || ""}
+                                onChange={(e) => handleChange("localBodyPercentage", e.target.value)}
+                                placeholder="Percentage"
+                                className="bg-gray-50/50"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* YIELD RESULTS - Visible only after calculation */}
+                        {(() => {
+                          console.log('🔍 UI Render Check - yieldResult:', yieldResult);
+                          return yieldResult;
+                        })() && (
+                          <div className="space-y-3 p-4 bg-green-50 border border-green-200 rounded-md">
+                            <Label className="text-sm font-medium text-green-800">Yield Calculation Results</Label>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <Label className="text-xs text-green-600">Yield Area (cents)</Label>
+                                <div className="p-2 bg-white border border-green-300 rounded text-sm font-medium text-green-800">
+                                  {yieldResult.yieldArea ? yieldResult.yieldArea.toFixed(2) : "0.00"}
+                                </div>
+                              </div>
+                              <div>
+                                <Label className="text-xs text-green-600">Yield Percentage (%)</Label>
+                                <div className="p-2 bg-white border border-green-300 rounded text-sm font-medium text-green-800">
+                                  {yieldResult.yieldPercentage ? (yieldResult.yieldPercentage * 100).toFixed(2) : "0.00"}%
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                         {/* CALCULATE YIELD BUTTON */}
+                    {!viewMode && (
+                      <div>
+                        <Button 
+                          onClick={handleCalculateYield}
+                          variant="outline" 
+                          size="sm"
+                          className="w-full bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100"
+                        >
+                          Calculate Yield
+                        </Button>
+                      </div>
+                    )}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
