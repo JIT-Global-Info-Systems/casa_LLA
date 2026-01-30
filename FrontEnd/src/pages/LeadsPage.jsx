@@ -439,7 +439,7 @@ export default function LeadsPage() {
                             String(lead.lead_status) == "HOT" ? "bg-orange-100 text-orange-700" :
                             "bg-gray-100 text-gray-700"
                           }`}>
-                            {lead.lead_status || lead.lead_stage || "—"}</span>
+                            {lead.lead_stage || "—"}</span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <DropdownMenu>
