@@ -46,7 +46,8 @@ const isTokenExpired = (token) => {
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
     const currentTime = Date.now() / 1000;
-    return payload.exp < currentTime;
+    // Add 30 second buffer to handle clock skew and timing issues
+    return payload.exp < (currentTime + 30);
   } catch (error) {
     console.error('Invalid token format:', error);
     return true;
