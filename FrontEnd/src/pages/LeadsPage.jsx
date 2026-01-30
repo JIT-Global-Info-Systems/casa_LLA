@@ -122,6 +122,8 @@ export default function LeadsPage() {
  
   const handleCreate = () => {
     setSelectedLead(null);
+    setViewLead(null);
+    setCalls([]); // Clear call history for new lead
     setOpen(true);
   };
  

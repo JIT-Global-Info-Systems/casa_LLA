@@ -2370,18 +2370,24 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                     {call.role || 'Call'}
                                   </span>
                                 </div>
-                                <p className="text-gray-600">
-                                  {call.note || "No notes"}
-                                </p>
                                 <p className="text-xs text-gray-500 mt-1">
                                   {new Date(call.created_at || call.createdAt).toLocaleTimeString()}
                                 </p>
                               </div>
                             ))}
-                          </div>
-                        ) : (
-                          <p className="text-sm text-gray-400 italic">No call history</p>
-                        )}
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                              <div className="text-center">
+                                <div className="text-lg font-medium mb-2">
+                                  {data ? "No call history available" : "New lead - No calls yet"}
+                                </div>
+                                <div className="text-sm">
+                                  {data ? "This lead has no recorded calls" : "Start making calls to see them here"}
+                                </div>
+                              </div>
+                            </div>
+                          )}
                       </div>
                     </div>
                   </CardContent>
