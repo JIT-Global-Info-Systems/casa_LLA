@@ -418,13 +418,28 @@ export default function LeadsPage() {
                             String(lead.lead_status) == "Lead Allocated" ? "bg-purple-100 text-purple-700" :
                             String(lead.lead_status) == "First Called" ? "bg-green-100 text-green-700" :
                             String(lead.lead_status) == "Site Visit" ? "bg-emerald-100 text-emerald-700" :
+                            String(lead.lead_status) == "Owner Meeting" ? "bg-indigo-100 text-indigo-700" :
+                            String(lead.lead_status) == "Negotiation Started" ? "bg-yellow-100 text-yellow-700" :
+                            String(lead.lead_status) == "Negotiation_End" ? "bg-orange-100 text-orange-700" :
+                            String(lead.lead_status) == "Due_Diligence_Started" ? "bg-teal-100 text-teal-700" :
+                            String(lead.lead_status) == "Due_Diligence_End" ? "bg-cyan-100 text-cyan-700" :
+                            String(lead.lead_status) == "Approved" ? "bg-green-200 text-green-800" :
+                            String(lead.lead_status) == "Hold" ? "bg-amber-100 text-amber-700" :
+                            String(lead.lead_status) == "L1_Qualification" ? "bg-violet-100 text-violet-700" :
+                            String(lead.lead_status) == "director_sv" ? "bg-rose-100 text-rose-700" :
+                            String(lead.lead_status) == "Test Stage 1" ? "bg-gray-200 text-gray-800" :
+                            String(lead.lead_status) == "Test Stage 2" ? "bg-gray-200 text-gray-800" :
+                            String(lead.lead_status) == "Test Stage 3" ? "bg-gray-200 text-gray-800" :
                             String(lead.lead_status) == "lost" ? "bg-red-100 text-red-700" :
                             String(lead.lead_status) == "hold" ? "bg-amber-100 text-amber-700" :
                             String(lead.lead_status) == "pending" ? "bg-orange-100 text-orange-700" :
-                           
+                            // Handle old API values (warm, cold, hot)
+                            String(lead.lead_status) == "WARM" ? "bg-red-100 text-red-700" :
+                            String(lead.lead_status) == "COLD" ? "bg-blue-100 text-blue-700" :
+                            String(lead.lead_status) == "HOT" ? "bg-orange-100 text-orange-700" :
                             "bg-gray-100 text-gray-700"
                           }`}>
-                            {lead.lead_status || "—"}</span>
+                            {lead.lead_status || lead.lead_stage || "—"}</span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <DropdownMenu>

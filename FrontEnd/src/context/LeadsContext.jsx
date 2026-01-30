@@ -459,17 +459,18 @@ export const LeadsProvider = ({ children }) => {
           if (formData[field]) {
             if (field === 'lead_stage') payload.lead_stage = formData[field]
             else if (field === 'leadStatus') payload.lead_status = String(formData[field]).toUpperCase()
+
             else payload[field] = formData[field]
           }
         })
       }
 
-      // Use lead_stage if available (user's selection), otherwise use leadStatus (default)
-      const leadStatusValue = formData.lead_stage || formData.leadStatus;
-      
-      if (leadStatusValue !== undefined && leadStatusValue !== null && leadStatusValue !== '') {
-        payload.lead_status = String(leadStatusValue).toUpperCase()
-      }
+      // ✅ Always send lead_stage
+      payload.lead_stage = formData.lead_stage || "Enquired"
+
+      // ✅ Always send lead_status separately
+      payload.lead_status = formData.leadStatus ? String(formData.leadStatus).toUpperCase() : "WARM"
+
       if (formData.callNotes) {
         payload.note = formData.callNotes
         const currentUser = getCurrentUserInfo()
@@ -545,9 +546,13 @@ export const LeadsProvider = ({ children }) => {
     }
 
     // Handle lead_status from either lead_stage (user's selection) or leadStatus (default)
-    const currentLeadStatusValue = formData.lead_stage || formData.leadStatus;
-    const originalLeadStatusValue = originalData?.lead_stage || originalData?.leadStatus || "";
-    addIfChanged('lead_status', String(currentLeadStatusValue).toUpperCase(), String(originalLeadStatusValue).toUpperCase())
+    addIfChanged("lead_stage", formData.lead_stage, originalData?.lead_stage)
+    
+    addIfChanged(
+      "lead_status",
+      String(formData.leadStatus).toUpperCase(),
+      String(originalData?.lead_status).toUpperCase()
+    )
     addIfChanged('notes', formData.callNotes, originalData?.callNotes)
 
     // Check structured data
@@ -631,15 +636,6 @@ export const LeadsProvider = ({ children }) => {
       } else {
         // Create new lead
         result = await createLead(leadPayload, filesToUpload)
-        
-        // Backend workaround: Update lead_status after creation
-        if (result?.data?._id && leadPayload.lead_status) {
-          try {
-            await leadsAPI.update(result.data._id, { lead_status: leadPayload.lead_status })
-          } catch (updateError) {
-            console.warn('Failed to update lead_status:', updateError)
-          }
-        }
       }
 
       toast.success(originalData ? 'Lead updated successfully!' : 'Lead created successfully!', {

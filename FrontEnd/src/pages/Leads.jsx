@@ -122,7 +122,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     frontage: "",
     roadWidth: "",
     sspde: "No",
-    leadStatus: "",
+    leadStatus: "warm",
     remark: "",
     lead_stage: "Enquired",
 
@@ -391,7 +391,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           frontage: "",
           roadWidth: "",
           sspde: "No",
-          leadStatus: "",
+          leadStatus: "warm",
           remark: "",
           lead_stage: "Enquired",
 
@@ -478,7 +478,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       ...data,
       leadType: data.leadType || data.lead_type || "mediator", // Ensure leadType is properly mapped
       leadStatus: data.lead_status || "",
-      lead_stage: data.lead_stage || "",
+      lead_stage: data.lead_stage || "Enquired",
       mediatorId: data.mediatorId || "",
       inquiredBy: data.inquiredBy || "",
       L1_Qualification: data.L1_Qualification || "",
@@ -775,9 +775,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       }
       
       const result = await submitLeadForm(formData, data, files)
-      
-      // Clear form draft on successful submission
-      clearFormDraft()
       
       // Call onSubmit if provided (for backward compatibility)
       if (onSubmit) {
@@ -1213,7 +1210,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
               <div className="space-y-2">
                 <Label>Lead Status</Label>
-                <Select value={formData.lead_stage} onValueChange={(v) => handleChange("lead_stage", v)}>
+                <Select value={formData.leadStatus} onValueChange={(v) => handleChange("leadStatus", v)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
@@ -1431,18 +1428,18 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
               </div>
               <div className="space-y-2">
                 <Label className="text-gray-700 font-medium">Lead Stage <span className="text-red-500">*</span></Label>
-                {!isFieldEditable('leadStatus') ? (
+                {!isFieldEditable('lead_stage') ? (
                   <div className="p-2 bg-white border border-gray-300 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
-                    {formData.leadStatus || "-"}
+                    {formData.lead_stage || "-"}
                   </div>
                 ) : (
-                  <Select value={formData.leadStatus} onValueChange={(v) => handleChange("leadStatus", v)}>
+                  <Select value={formData.lead_stage} onValueChange={(v) => handleChange("lead_stage", v)}>
                     <SelectTrigger className="bg-white border-gray-300" data-editable="true">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-white z-50 shadow-lg">
                       {/* Show only "Purchased" option when in restricted edit mode (Approved Leads page) */}
-                      {editableFields && editableFields.length > 0 && editableFields.includes('leadStatus') ? (
+                      {editableFields && editableFields.length > 0 && editableFields.includes('lead_stage') ? (
                         <SelectItem value="Approved">Purchased</SelectItem>
                       ) : (
                         <>
@@ -1467,7 +1464,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
               </div>
 
               {/* Inquired By field - only show when Lead Stage is "Enquired" (Pending) */}
-              {formData.leadStatus === "Enquired" && (
+              {formData.lead_stage === "Enquired" && (
                 <div className="space-y-2">
                   <Label className="text-gray-700 font-medium">Inquired By</Label>
                   {!isFieldEditable('inquiredBy') ? (
@@ -1489,7 +1486,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
               )}
           </div>
           {/* Lead Qualification */}
-          {formData.leadStatus === "L1_Qualification" && (
+          {formData.lead_stage === "L1_Qualification" && (
             <div className="space-y-2">
               <Label className="text-gray-700">L1_Qualification</Label>
               {!isFieldEditable('L1_Qualification') ? (
@@ -1511,7 +1508,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           )}
 
           {/* Director SV Status */}
-          {formData.leadStatus === "director_sv" && (
+          {formData.lead_stage === "director_sv" && (
             <div className="space-y-2">
               <Label className="text-gray-700">Director SV Status</Label>
               {!isFieldEditable('directorSVStatus') ? (
