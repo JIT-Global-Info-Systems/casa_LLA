@@ -5,6 +5,7 @@ import { UsersProvider } from "./context/UsersContext.jsx"
 import { AuthProvider } from "./context/AuthContext.jsx"
 import { CallsProvider } from "./context/CallsContext.jsx"
 import { MasterProvider } from "./context/Mastercontext.jsx"
+import { DashboardProvider } from "./context/DashboardContext.jsx"
 import { Toaster } from "./components/ui/toaster"
 
 function App() {
@@ -15,8 +16,10 @@ function App() {
           <UsersProvider>
             <CallsProvider>
               <MasterProvider>
-                <AppRoutes />
-                <Toaster />
+                <DashboardProvider>
+                  <AppRoutes />
+                  <Toaster />
+                </DashboardProvider>
               </MasterProvider>
             </CallsProvider>
           </UsersProvider>
