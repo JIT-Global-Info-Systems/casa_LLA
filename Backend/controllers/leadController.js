@@ -86,7 +86,7 @@ exports.createLead = async (req, res) => {
 
       role,
 
-      currentRole , // Default to 'user' if not provided
+      currentRole, // Default to 'user' if not provided
 
       competitorAnalysis = [],
 
@@ -122,47 +122,47 @@ exports.createLead = async (req, res) => {
 
       ? checkListPage.map(item => ({
 
-          ...item,
+        ...item,
 
-          fmbSketchPath,
+        fmbSketchPath,
 
-          pattaChittaPath
+        pattaChittaPath
 
-        }))
+      }))
 
       : [];
 
-     const formattedCompetitorAnalysis = Array.isArray(competitorAnalysis)
+    const formattedCompetitorAnalysis = Array.isArray(competitorAnalysis)
 
       ? competitorAnalysis.map(comp => ({
 
-          developerName: comp.developerName || '',
+        developerName: comp.developerName || '',
 
-          projectName: comp.projectName || '',
+        projectName: comp.projectName || '',
 
-          productType: comp.productType || '',
+        productType: comp.productType || '',
 
-          location: comp.location || '',
+        location: comp.location || '',
 
-          plotUnitSize: comp.plotUnitSize || '',
+        plotUnitSize: comp.plotUnitSize || '',
 
-          landExtent: comp.landExtent || '',
+        landExtent: comp.landExtent || '',
 
-          priceRange: comp.priceRange || '',
+        priceRange: comp.priceRange || '',
 
-          approxPrice: comp.approxPrice || '',
+        approxPrice: comp.approxPrice || '',
 
-          approxPriceCent: comp.approxPriceCent || '',
+        approxPriceCent: comp.approxPriceCent || '',
 
-          totalPlotsUnits: comp.totalPlotsUnits || '',
+        totalPlotsUnits: comp.totalPlotsUnits || '',
 
-          keyAmenities: Array.isArray(comp.keyAmenities) ? comp.keyAmenities : [],
+        keyAmenities: Array.isArray(comp.keyAmenities) ? comp.keyAmenities : [],
 
-          uspPositioning: comp.uspPositioning || '',
+        uspPositioning: comp.uspPositioning || '',
 
-          timestamp: new Date()
+        timestamp: new Date()
 
-        }))
+      }))
 
       : [];
 
@@ -179,7 +179,7 @@ exports.createLead = async (req, res) => {
 
       competitorAnalysis: formattedCompetitorAnalysis,
 
-      lead_status: lead_status ,
+      lead_status: lead_status,
 
       lead_stage: lead_stage,
 
@@ -388,33 +388,33 @@ exports.updateLead = async (req, res) => {
 
         ? competitorAnalysis.map(comp => ({
 
-            developerName: comp.developerName || '',
+          developerName: comp.developerName || '',
 
-            projectName: comp.projectName || '',
+          projectName: comp.projectName || '',
 
-            productType: comp.productType || '',
+          productType: comp.productType || '',
 
-            location: comp.location || '',
+          location: comp.location || '',
 
-            plotUnitSize: comp.plotUnitSize || '',
+          plotUnitSize: comp.plotUnitSize || '',
 
-            landExtent: comp.landExtent || '',
+          landExtent: comp.landExtent || '',
 
-            priceRange: comp.priceRange || '',
+          priceRange: comp.priceRange || '',
 
-            approxPrice: comp.approxPrice || '',
+          approxPrice: comp.approxPrice || '',
 
-            approxPriceCent: comp.approxPriceCent || '',
+          approxPriceCent: comp.approxPriceCent || '',
 
-            totalPlotsUnits: comp.totalPlotsUnits || '',
+          totalPlotsUnits: comp.totalPlotsUnits || '',
 
-            keyAmenities: Array.isArray(comp.keyAmenities) ? comp.keyAmenities : [],
+          keyAmenities: Array.isArray(comp.keyAmenities) ? comp.keyAmenities : [],
 
-            uspPositioning: comp.uspPositioning || '',
+          uspPositioning: comp.uspPositioning || '',
 
-            timestamp: new Date()
+          timestamp: new Date()
 
-          }))
+        }))
 
         : [];
 
@@ -442,13 +442,13 @@ exports.updateLead = async (req, res) => {
 
         ? checkListPage.map(item => ({
 
-            ...item,
+          ...item,
 
-            ...(fmbSketchPath && { fmbSketchPath }),
+          ...(fmbSketchPath && { fmbSketchPath }),
 
-            ...(pattaChittaPath && { pattaChittaPath })
+          ...(pattaChittaPath && { pattaChittaPath })
 
-          }))
+        }))
 
         : [];
 
@@ -468,7 +468,7 @@ exports.updateLead = async (req, res) => {
 
       const { callDate, callTime } = updateData;
 
-      
+
 
       // Create call timestamp from provided date and time, or use current date/time as fallback
 
@@ -482,7 +482,7 @@ exports.updateLead = async (req, res) => {
 
         callTimestamp = new Date(dateTimeString);
 
-        
+
 
         // If invalid date, fallback to current date/time
 
@@ -494,7 +494,7 @@ exports.updateLead = async (req, res) => {
 
       }
 
-      
+
 
       await Call.create({
 
@@ -530,7 +530,7 @@ exports.updateLead = async (req, res) => {
 
       const { callDate, callTime } = updateData;
 
-      
+
 
       // Create call timestamp from provided date and time, or use current date/time as fallback
 
@@ -550,7 +550,7 @@ exports.updateLead = async (req, res) => {
 
       }
 
-      
+
 
       await Call.create({
 
@@ -632,9 +632,9 @@ exports.updateLead = async (req, res) => {
 
     const collection = Lead.collection;
 
-    
 
-    const updateOperation = { 
+
+    const updateOperation = {
 
       $set: {
 
@@ -814,7 +814,7 @@ exports.getAllLeads = async (req, res) => {
 
     const query = {};
 
-    
+
 
     if (location) {
 
@@ -822,7 +822,7 @@ exports.getAllLeads = async (req, res) => {
 
     }
 
-    
+
 
     const leads = await Lead.find(query)
 
@@ -866,7 +866,7 @@ exports.getPendingLeads = async (req, res) => {
 
     };
 
-    
+
 
     if (location) {
 
@@ -874,48 +874,30 @@ exports.getPendingLeads = async (req, res) => {
 
     }
 
-    
-
     // If userId is provided, filter leads created by user or assigned to user
-
     if (userId) {
-
       // Get lead IDs from LeadHistory where user is assignedTo
 
       const assignedLeadIds = await LeadHistory.find({
-
         'assignedTo.user_id': userId
-
       }).distinct('leadId');
 
-      
 
       // Query for leads created by user OR assigned to user via LeadHistory
-
       query.$or = [
-
         { created_by: userId },
-
         { _id: { $in: assignedLeadIds } }
-
       ];
-
     }
 
-    
 
     const leads = await Lead.find(query)
-
       .sort({ created_at: -1 });
 
 
-
     return res.status(200).json({
-
       count: leads.length,
-
       data: leads
-
     });
 
   } catch (error) {
@@ -946,7 +928,7 @@ exports.getApprovedLeads = async (req, res) => {
 
     };
 
-    
+
 
     if (location) {
 
@@ -954,10 +936,10 @@ exports.getApprovedLeads = async (req, res) => {
 
     }
 
-    
+
     const leads = await Lead.find(query)
     // .sort({ created_at: -1 });
-console.log('leads :>> ', leads);
+    console.log('leads :>> ', leads);
     return res.status(200).json({
 
       message: "Approved leads loaded successfully",
@@ -1000,7 +982,7 @@ exports.getPurchasedLeads = async (req, res) => {
 
     };
 
-    
+
 
     if (location) {
 
@@ -1008,7 +990,7 @@ exports.getPurchasedLeads = async (req, res) => {
 
     }
 
-    
+
 
     const leads = await Lead.find(query).sort({ created_at: -1 });
 
@@ -1138,7 +1120,7 @@ exports.getAllCalls = async (req, res) => {
 
     const query = {};
 
-    
+
 
     if (leadId) {
 
@@ -1158,7 +1140,7 @@ exports.getAllCalls = async (req, res) => {
 
     }
 
-    
+
 
     if (location) {
 
@@ -1193,7 +1175,7 @@ exports.getAllCalls = async (req, res) => {
       count: calls.length,
 
       data: calls
-//lead controller
+      //lead controller
     });
 
   } catch (error) {
