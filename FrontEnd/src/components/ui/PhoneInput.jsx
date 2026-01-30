@@ -4,6 +4,7 @@ import { Label } from './label';
 import { Tooltip, TooltipContent, TooltipTrigger } from './tooltip';
 import { formatPhoneInput, validatePhoneNumber } from '@/utils/phoneValidation';
 import { cn } from '@/lib/utils';
+import { AlertCircle, CheckCircle } from 'lucide-react';
 
 const PhoneInput = React.forwardRef(({
   label,
@@ -82,7 +83,7 @@ const PhoneInput = React.forwardRef(({
   const hasError = showValidation && touched && error;
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 w-full">
       {label && (
         <Label className="text-gray-700 font-medium">
           {label}
@@ -90,7 +91,7 @@ const PhoneInput = React.forwardRef(({
         </Label>
       )}
       
-      <div className="relative">
+      <div className="relative w-full">
         <Tooltip>
           <TooltipTrigger asChild>
             <Input
@@ -103,6 +104,7 @@ const PhoneInput = React.forwardRef(({
               placeholder={placeholder}
               disabled={disabled}
               className={cn(
+                "w-full",
                 className,
                 hasError && "border-red-500 focus:border-red-500 focus:ring-red-500/20"
               )}
@@ -115,7 +117,7 @@ const PhoneInput = React.forwardRef(({
         </Tooltip>
         
         {/* Phone icon */}
-        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+        {/* <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
           <svg
             className={cn(
               "h-4 w-4",
@@ -132,20 +134,13 @@ const PhoneInput = React.forwardRef(({
               d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
             />
           </svg>
-        </div>
+        </div> */}
       </div>
       
       {/* Error message */}
       {hasError && (
         <p className="text-sm text-red-600 flex items-center gap-1">
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
+          <AlertCircle className="h-4 w-4" />
           {error}
         </p>
       )}
@@ -153,14 +148,7 @@ const PhoneInput = React.forwardRef(({
       {/* Helper text for valid input */}
       {showValidation && !hasError && inputValue && touched && (
         <p className="text-sm text-green-600 flex items-center gap-1">
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M5 13l4 4L19 7"
-            />
-          </svg>
+          <CheckCircle className="h-4 w-4" />
           Valid phone number
         </p>
       )}
