@@ -82,6 +82,14 @@ const Button = React.forwardRef(
     }, []);
 
     const handleClick = async (event) => {
+      // For submit buttons in forms, let the form handle submission
+      const buttonType = props.type || 'button';
+      
+      if (buttonType === 'submit') {
+        // Don't interfere with form submission - let the form's onSubmit handle it
+        return;
+      }
+      
       if (disabled || isDisabled || isLoading || loading) {
         event.preventDefault();
         return;

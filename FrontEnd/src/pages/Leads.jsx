@@ -768,6 +768,22 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       // Document upload fields
       checkFMBSketch: !!(firstChecklist?.fmbSketchPath),
       checkPattaChitta: !!(firstChecklist?.pattaChittaPath),
+
+      // Assignment fields
+      assignedTo: (() => {
+        if (Array.isArray(data.assignedTo) && data.assignedTo.length > 0) {
+          // Extract the role from the first assigned user
+          return data.assignedTo[0].role || "";
+        }
+        return "";
+      })(),
+      assignToUser: (() => {
+        if (Array.isArray(data.assignedTo) && data.assignedTo.length > 0) {
+          // Extract the user_id from the first assigned user
+          return data.assignedTo[0].user_id || "";
+        }
+        return "";
+      })(),
     }
 
     setFormData((prev) => ({ ...prev, ...hydratedData }))
@@ -1101,7 +1117,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           source: formData.source || "",
           currentRole: getCurrentUserRole(),
           assignedTo: formData.assignedTo ,
-          assignToUser: formData.assignToUser,
           competitorAnalysis: [
             {
               developerName: formData.competitorDeveloperName || "",
@@ -1965,7 +1980,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                         <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
                           {(() => {
                             const roleValue = Array.isArray(formData.assignedTo) ? formData.assignedTo[0]?.role : formData.assignedTo;
-                            return roleValue && typeof roleValue === 'string' ? roleValue.replace(/_/g, ' ') : roleValue || "-";
+                            return roleValue ? (typeof roleValue === 'string' ? roleValue.replace(/_/g, ' ') : String(roleValue)) : "-";
                           })()}
                         </div>
                       ) : (
@@ -2001,10 +2016,50 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                         <Label className="text-gray-700 font-medium">Assign To (User)</Label>
                         {viewMode ? (
                           <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                            {formData.assignToUser || "-"}
+                            {(() => {
+                              const assignToUserId = formData.assignToUser;
+                              console.log('View mode - assignToUserId:', assignToUserId, 'type:', typeof assignToUserId);
+                              if (!assignToUserId) return "-";
+                              
+                              // If it's already a string ID, find the user
+                              if (typeof assignToUserId === 'string') {
+                                const user = users.find(u => (u._id || u.user_id || u.id) === assignToUserId);
+                                console.log('Found user for ID:', user);
+                                return user ? user.name : assignToUserId;
+                              }
+                              
+                              // If it's an object, get the name
+                              if (typeof assignToUserId === 'object') {
+                                console.log('assignToUserId is object, using name:', assignToUserId.name);
+                                return assignToUserId.name || String(assignToUserId._id || assignToUserId.user_id || assignToUserId.id || "-");
+                              }
+                              
+                              console.log('assignToUserId is unexpected type, converting to string');
+                              return String(assignToUserId);
+                            })()}
                           </div>
                         ) : (
-                          <Select value={formData.assignToUser} onValueChange={(v) => handleChange("assignToUser", v)}>
+                          <Select value={(() => {
+                            const assignToUser = formData.assignToUser;
+                            console.log('Select value calculation - assignToUser:', assignToUser, 'type:', typeof assignToUser);
+                            if (!assignToUser) return "";
+                            
+                            // If it's already a string, use it
+                            if (typeof assignToUser === 'string') {
+                              console.log('Using string value:', assignToUser);
+                              return assignToUser;
+                            }
+                            
+                            // If it's an object, extract the ID
+                            if (typeof assignToUser === 'object') {
+                              const id = String(assignToUser._id || assignToUser.user_id || assignToUser.id || "");
+                              console.log('Extracted ID from object:', id);
+                              return id;
+                            }
+                            
+                            console.log('Unexpected type, converting to string:', String(assignToUser));
+                            return String(assignToUser);
+                          })()} onValueChange={(v) => handleChange("assignToUser", v)}>
                             <SelectTrigger className="bg-gray-50/50">
                               {usersLoading ? (
                                 <div className="flex items-center gap-2">
@@ -2018,18 +2073,21 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                             <SelectContent className="bg-white z-50 shadow-lg">
                               {users
                                 .filter(user => user.role === formData.assignedTo).length > 0 ? (
-                                users
-                                  .filter(user => user.role === formData.assignedTo)
-                                  .map((user) => (
-                                    <SelectItem key={user._id || user.id} value={user._id || user.id}>
-                                      {user.name} ({user.role && typeof user.role === 'string' ? user.role.replace(/_/g, ' ') : 'No role'})
-                                    </SelectItem>
-                                  ))
-                              ) : (
-                                <div className="px-2 py-1 text-sm text-gray-500 italic">
-                                  User not found
-                                </div>
-                              )}
+                                  users
+                                    .filter(user => user.role === formData.assignedTo)
+                                    .map((user) => {
+                                      const userId = user._id || user.user_id || user.id;
+                                      return (
+                                        <SelectItem key={userId} value={String(userId)}>
+                                          {user.name} ({user.role ? (typeof user.role === 'string' ? user.role.replace(/_/g, ' ') : String(user.role)) : 'No role'})
+                                        </SelectItem>
+                                      );
+                                    })
+                                ) : (
+                                  <div className="px-2 py-1 text-sm text-gray-500 italic">
+                                    No users found for role: {typeof formData.assignedTo === 'string' ? formData.assignedTo : String(formData.assignedTo)}
+                                  </div>
+                                )}
                             </SelectContent>
                           </Select>
                         )}
@@ -2595,10 +2653,10 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     </CardContent>
   </Card>
               </div>
-
-              {/* RIGHT COLUMN – CALL HISTORY / YIELD */}
-              <div className="lg:col-span-4 ">
-                <Card className="border-0 shadow-md bg-white sticky top-28">
+              {/* RIGHT COLUMN – CALL HISTORY */}
+              <div className="lg:col-span-4 space-y-6">
+                {/* CALL HISTORY CARD */}
+                <Card className="border-0 shadow-md bg-white sticky top-20 mt-16">
                   <CardHeader>
                     <CardTitle className="text-lg text-gray-800">Call History & Yield</CardTitle>
                     <CardDescription>Quick reference</CardDescription>
@@ -2606,31 +2664,84 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                   <CardContent className="space-y-6">
                     {/* CALL HISTORY */}
                     <div>
-                      <Label className="text-sm font-medium text-gray-700">Call History</Label>
-                      {calls?.length > 0 ? (
-                        <div className="space-y-3 mt-2">
-                          {calls.map((call, idx) => (
-                            <div key={idx} className="p-3 border rounded-lg bg-gray-50 text-sm">
-                              <div className="flex justify-between items-start mb-2">
-                                <p className="font-medium">
-                                  {new Date(call.created_at || call.createdAt).toLocaleDateString()}
+                      <div className="h-[35vh] overflow-y-auto border border-gray-200 rounded-lg bg-gray-50/50 p-3 mb-2">
+                        {calls?.length > 0 ? (
+                          <div className="space-y-3">
+                            {calls.map((call, idx) => (
+                              <div key={idx} className="p-3 border rounded-lg bg-white text-sm shadow-sm">
+                                <div className="flex justify-between items-start mb-2">
+                                  <p className="font-medium">
+                                    {new Date(call.created_at || call.createdAt).toLocaleDateString()}
+                                  </p>
+                                  <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
+                                    {call.role || 'Call'}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  {new Date(call.created_at || call.createdAt).toLocaleTimeString()}
                                 </p>
                                 <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
                                   {call.role || 'Call'}
                                 </span>
                               </div>
-                              <p className="text-gray-600">
-                                {call.note || "No notes"}
-                              </p>
-                              <p className="text-xs text-gray-500 mt-1">
-                                {new Date(call.created_at || call.createdAt).toLocaleTimeString()}
-                              </p>
+                            ))}
                             </div>
-                          ))}
+                          ) : (
+                            <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                              <div className="text-center">
+                                <div className="text-lg font-medium mb-2">
+                                  {data ? "No call history available" : "New lead - No calls yet"}
+                                </div>
+                                <div className="text-sm">
+                                  {data ? "This lead has no recorded calls" : "Start making calls to see them here"}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* YIELD CARD */}
+                <Card className="border-0 shadow-md bg-white sticky top-[50vh] mt-8">
+                  <CardHeader>
+                    <CardTitle className="text-lg text-gray-800">Yield</CardTitle>
+                    <CardDescription>Quick reference</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label className="text-gray-700 font-medium">Yield (%)</Label>
+                        {viewMode ? (
+                          <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-800 min-h-[40px] flex items-center">
+                            {formData.yield ? `${formData.yield}%` : "-"}
+                          </div>
+                        ) : (
+                          <div className="relative">
+                            <Input 
+                              value={formData.yield} 
+                              onChange={(e) => handleChange("yield", e.target.value)} 
+                              className="bg-gray-50/50 pr-8" 
+                              placeholder="Enter yield percentage"
+                            />
+                            <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">%</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* {formData.yield && (
+                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                            <p className="text-sm text-blue-700">
+                              Current yield: <span className="font-semibold">{formData.yield}%</span>
+                            </p>
+                          </div>
                         </div>
                       ) : (
                         <p className="text-sm text-gray-400 italic mt-2">No call history</p>
-                      )}
+                      )} */}
                     </div>
 
                     {/* YIELD */}
@@ -3160,7 +3271,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
             </div>
             {/* ===== TWO COLUMN ROW END ===== */}
     {!viewMode && (
-      <div className="flex justify-end gap-4 pb-8">
+      <div className="flex justify-start gap-4 pb-8">
         <Button variant="outline" size="lg" onClick={onClose} className="bg-white border-gray-300" disabled={formLoading.submit}>
           Cancel
         </Button>

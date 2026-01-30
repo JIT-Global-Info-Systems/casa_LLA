@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { locationsAPI, typesAPI, stagesAPI } from '@/services/api';
+import { useAuth } from './AuthContext';
 
 const MasterContext = createContext();
 
@@ -12,6 +13,8 @@ export const useMaster = () => {
 };
 
 export const MasterProvider = ({ children }) => {
+  const { isAuthenticated, loading: authLoading } = useAuth();
+  
   // Single source of truth for all masters data
   const [masters, setMasters] = useState({
     locations: [],
@@ -157,8 +160,19 @@ export const MasterProvider = ({ children }) => {
 
   // Fetch all data
   const fetchAllData = useCallback(async () => {
-    await Promise.all([fetchLocations(), fetchTypes(), fetchStages()]);
-  }, [fetchLocations, fetchTypes, fetchStages]);
+    // Double-check authentication before making API calls
+    if (!isAuthenticated) {
+      console.log('Skipping master data fetch - user not authenticated');
+      return;
+    }
+    
+    try {
+      await Promise.all([fetchLocations(), fetchTypes(), fetchStages()]);
+    } catch (error) {
+      console.error('Error fetching master data:', error);
+      // Don't throw error to prevent breaking the app
+    }
+  }, [fetchLocations, fetchTypes, fetchStages, isAuthenticated]);
 
   // API-based CRUD operations for locations
   const addLocation = useCallback(async (data) => {
@@ -399,10 +413,13 @@ export const MasterProvider = ({ children }) => {
     }
   }, [fetchStages]);
 
-  // Fetch all data on component mount
+  // Fetch all data on component mount - only when authenticated
   useEffect(() => {
-    fetchAllData();
-  }, [fetchAllData]);
+    // Wait for auth to be ready and user to be authenticated
+    if (!authLoading && isAuthenticated) {
+      fetchAllData();
+    }
+  }, [fetchAllData, authLoading, isAuthenticated]);
 
   const updateStage = useCallback(async (itemId, data) => {
     try {

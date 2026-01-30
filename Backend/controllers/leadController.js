@@ -863,11 +863,9 @@ exports.getAllLeads = async (req, res) => {
   } catch (error) {
 
     return res.status(500).json({
-
       message: "Could not load leads. Please try again.",
 
       error: error.message
-
     });
 
   }
