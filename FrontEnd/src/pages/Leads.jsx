@@ -2562,7 +2562,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      <div className="space-y-2">
+                      {/* <div className="space-y-2">
                         <Label className="text-gray-700 font-medium">Yield (%)</Label>
                         {viewMode ? (
                           <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-800 min-h-[40px] flex items-center">
@@ -2579,7 +2579,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                             <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">%</span>
                           </div>
                         )}
-                      </div>
+                      </div> */}
                       
                       {/* {formData.yield && (
                         <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
