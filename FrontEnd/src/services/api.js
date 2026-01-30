@@ -630,6 +630,26 @@ export const authAPI = {
   },
 };
 
+// Dashboard API
+export const dashboardAPI = {
+  // Get dashboard data with optional filters
+  getDashboardData: async (filters = {}) => {
+    const params = new URLSearchParams();
+    
+    // Add query parameters if provided
+    if (filters.fromDate) params.append('fromDate', filters.fromDate);
+    if (filters.toDate) params.append('toDate', filters.toDate);
+    if (filters.location && filters.location !== 'all') params.append('location', filters.location);
+    
+    const queryString = params.toString() ? `?${params}` : '';
+    const response = await apiRequest(`/dashboard${queryString}`);
+    
+    // The API returns { data: {...} }
+    // We want to return the data object
+    return response.data || response;
+  },
+};
+
 export const accessAPI = {
   getAll: async () => {
     const response = await apiRequest('/access/get');
@@ -646,5 +666,6 @@ export default {
   stagesAPI,
   callsAPI,
   authAPI,
+  dashboardAPI,
   accessAPI,
 }
