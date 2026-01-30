@@ -9,7 +9,7 @@ import { format } from "date-fns";
 import { Search, MoreVertical, RefreshCw, Eye, ChevronDown, AlertCircle } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { formatCallDate } from "@/utils/dateUtils";
-import axios from "axios";
+import { useLeads } from "../context/LeadsContext";
 import Leads from "./Leads";
 import LeadStepper from "@/components/ui/LeadStepper";
 
@@ -27,9 +27,7 @@ const getStatusBadge = (status) => {
 };
 
 const PurchasedLeads = () => {
-  const [leads, setLeads] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { purchasedLeads, loading, error, fetchPurchasedLeads } = useLeads();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedLead, setSelectedLead] = useState(null);
@@ -53,41 +51,6 @@ const PurchasedLeads = () => {
     fetchPurchasedLeads()
   }, [])
 
-  const fetchPurchasedLeads = async () => {
-    const loadingToast = toast.loading('Loading leads...');
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await axios.get("http://13.201.132.94:5000/api/leads/purchased", {
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("token")}`
-        }
-      });
-
-      const leadsData = response.data?.data || [];
-      setLeads(leadsData);
-
-      if (leadsData.length === 0) {
-        toast.success('No purchased leads found', { id: loadingToast });
-      } else {
-        toast.success(`${leadsData.length} leads loaded`, {
-          id: loadingToast,
-          icon: '✅'
-        });
-      }
-    } catch (err) {
-      console.error("Error fetching purchased leads:", err);
-      const errorMessage = err.response?.data?.message || 'Could not load leads. Please try again.';
-      setError(errorMessage);
-      toast.error(errorMessage, {
-        id: loadingToast,
-        duration: 5000
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleView = (lead) => {
     setSelectedLead(lead);
@@ -95,7 +58,7 @@ const PurchasedLeads = () => {
     // Don't open modal for view mode - this prevents the popup from showing
   };
 
-  const filteredLeads = leads.filter((lead) => {
+  const filteredLeads = purchasedLeads.filter((lead) => {
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch = searchTerm === "" ||
       (lead.mediatorName && lead.mediatorName.toLowerCase().includes(searchLower)) ||
@@ -358,7 +321,7 @@ const PurchasedLeads = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {loading && leads.length === 0 ? (
+                    {loading && purchasedLeads.length === 0 ? (
                       <tr>
                         <td colSpan="8" className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                           <div className="flex items-center justify-center space-x-2">
