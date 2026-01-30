@@ -329,7 +329,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
         }
       } catch (error) {
         console.error('Initial data loading error:', error)
-        toast.error('Failed to load initial data. Please refresh the page.')
       }
     }
 
@@ -337,27 +336,11 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
   }, []) // Remove function dependencies to prevent infinite loops
 
   useEffect(() => {
-    // Auto-set currentRole from localStorage when creating new lead (not editing)
     if (!data) {
       const userRole = getCurrentUserRole()
       
-      // Try to load form draft first
-      // const draft = loadFormDraft();
-      // if (draft) {
-      //   setFormData(prev => ({
-      //     ...prev,
-      //     ...draft,
-      //     currentRole: userRole // Always use current user role
-      //   }));
-      //   setHasUnsavedChanges(true);
-      //   // toast.success('Draft loaded', { 
-      //   //   icon: '📝',
-      //   //   duration: 3000 
-      //   // });
-      // } else {
-        // Reset form to initial state when creating new lead
+ 
         setFormData({
-          // Basic Lead Information
           leadType: "mediator",
           contactNumber: "",
           mediatorName: "",
@@ -390,7 +373,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           // Yield Calculation
           yield: "",
 
-          // Competitor Analysis
           competitorDeveloperName: "",
           competitorProjectName: "",
           competitorProductType: "",
@@ -441,7 +423,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           checkSoilTest: false,
           checkWaterList: false,
 
-          // Special Fields (Checkbox + Upload)
           checkFMBSketch: false,
           fileFMBSketch: null,
           checkPattaChitta: false,
@@ -459,14 +440,12 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
         })
         setOriginalData(null)
         setHasUnsavedChanges(false)
-      // }
     }
   }, [data])
 
   useEffect(() => {
     if (!data) return
 
-    // hydrate from backend schema
     const firstCompetitor = Array.isArray(data.competitorAnalysis) ? data.competitorAnalysis[0] : null
     const firstChecklist = Array.isArray(data.checkListPage) ? data.checkListPage[0] : null
 
@@ -1363,9 +1342,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                             <>
                               {console.log('No stages found, using fallback. masters.stages:', masters.stages)}
                               {/* Temporarily add test stages to verify rendering works */}
-                              <SelectItem value="Test Stage 1">Test Stage 1</SelectItem>
-                              <SelectItem value="Test Stage 2">Test Stage 2</SelectItem>
-                              <SelectItem value="Test Stage 3">Test Stage 3</SelectItem>
+                              
                               <SelectItem value="Enquired">Enquired</SelectItem>
                               <SelectItem value="Lead Allocated">Lead Allocated</SelectItem>
                               <SelectItem value="First Called">First Called</SelectItem>

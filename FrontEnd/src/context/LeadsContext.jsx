@@ -28,15 +28,10 @@ export const LeadsProvider = ({ children }) => {
       setError(null);
       const response = await leadsAPI.getAll();
       setLeads(response.data ?? response);
-      console.log('API response:', response);
-      // Handle both response formats: { data: [...] } or direct array
       const leadsData = response.data || response;
       setLeads(Array.isArray(leadsData) ? leadsData : []);
-      console.log('Leads set:', Array.isArray(leadsData) ? leadsData : []);
     } catch (err) {
-      console.error('Error fetching leads:', err);
       setError(err.message);
-      // Don't throw - let UI handle the error state
     } finally {
       setLoading(false);
     }
@@ -64,7 +59,6 @@ export const LeadsProvider = ({ children }) => {
       const response = await leadsAPI.getPurchased();
       setPurchasedLeads(response.data ?? response);
     } catch (err) {
-      console.error('Error fetching purchased leads:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -81,7 +75,6 @@ export const LeadsProvider = ({ children }) => {
         fetchPurchasedLeads()
       ]);
     } catch (err) {
-      console.error('Error fetching all lead statuses:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -97,12 +90,10 @@ export const LeadsProvider = ({ children }) => {
       
       // Extract the latest assignedTo from history array
       if (leadData.history && Array.isArray(leadData.history) && leadData.history.length > 0) {
-        // Sort history by createdAt in descending order to get the latest
         const sortedHistory = leadData.history.sort((a, b) => 
           new Date(b.createdAt || b.created_at) - new Date(a.createdAt || a.created_at)
         );
         
-        // Get the latest assignment
         const latestAssignment = sortedHistory[0];
         if (latestAssignment && latestAssignment.assignedTo) {
           leadData.assignedTo = latestAssignment.assignedTo;
@@ -111,7 +102,6 @@ export const LeadsProvider = ({ children }) => {
       
       return leadData;
     } catch (err) {
-      console.error('Error fetching lead:', err);
       setError(err.message);
       throw err;
     } finally {
@@ -131,7 +121,6 @@ export const LeadsProvider = ({ children }) => {
       });
       return response;
     } catch (err) {
-      console.error('Error creating lead:', err);
       setError(err.message);
       throw err;
     } finally {
@@ -143,23 +132,12 @@ export const LeadsProvider = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
-      
-      console.log('🔄 LeadsContext - updateLead called:', {
-        id,
-        leadDataKeys: Object.keys(leadData),
-        leadDataSize: JSON.stringify(leadData).length,
-        leadData,
-        filesKeys: Object.keys(files)
-      });
+ 
       
       const response = await leadsAPI.update(id, leadData, files);
       const updated = response.data ?? response;
       
-      console.log('✅ LeadsContext - API response received:', {
-        responseStatus: response.status,
-        updatedKeys: Object.keys(updated || {}),
-        updated
-      });
+  
 
       setLeads(prev =>
         prev.map(lead =>
@@ -171,7 +149,6 @@ export const LeadsProvider = ({ children }) => {
 
       return response;
     } catch (err) {
-      // console.error('❌ Error updating lead:', err);
       setError(err.message);
       throw err;
     } finally {
@@ -188,7 +165,6 @@ export const LeadsProvider = ({ children }) => {
         prev.filter(lead => lead._id !== id && lead.id !== id)
       );
     } catch (err) {
-      console.error('Error deleting lead:', err);
       setError(err.message);
       throw err;
     } finally {
@@ -210,7 +186,6 @@ export const LeadsProvider = ({ children }) => {
         const parsed = JSON.parse(userData)
         return parsed.role || 'tele_caller'
       } catch (e) {
-        console.error("Failed to parse user data for role", e)
       }
     }
     return 'tele_caller'
@@ -227,7 +202,6 @@ export const LeadsProvider = ({ children }) => {
           role: parsed.role || 'tele_caller'
         }
       } catch (e) {
-        console.error("Failed to parse user data", e)
       }
     }
     return {
