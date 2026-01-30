@@ -295,7 +295,6 @@ export const leadsAPI = {
         formData.append('patta_chitta', files.patta_chitta);
       }
 
-      console.log('📤 Making FormData PUT request to:', `/leads/update/${id}`);
       const response = await apiRequest(`/leads/update/${id}`, {
         method: 'PUT',
         body: formData,
@@ -304,7 +303,6 @@ export const leadsAPI = {
       return response;
     } else {
       // Regular JSON update
-      console.log('📤 Making JSON PUT request to:', `/leads/update/${id}`);
       const response = await apiRequest(`/leads/update/${id}`, {
         method: 'PUT',
         body: JSON.stringify(leadData),
