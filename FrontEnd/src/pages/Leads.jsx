@@ -355,7 +355,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           frontage: "",
           roadWidth: "",
           sspde: "No",
-          leadStatus: "Enquired",
+          leadStatus: "",
           remark: "",
           lead_stage: "Enquired",
 
@@ -1320,6 +1320,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                         <SelectItem value="Approved">Purchased</SelectItem>
                       ) : (
                         <>
+                          
                           <SelectItem value="Enquired">Enquired</SelectItem>
                           <SelectItem value="Lead Allocated">Lead Allocated</SelectItem>
                           <SelectItem value="First Called">First Called</SelectItem>
@@ -1457,8 +1458,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                   className={isSameRole ? "opacity-50 cursor-not-allowed" : ""}
                                 >
                                   {isSameRole 
-                                    ? `${role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} (Can't select - same role)`
-                                    : role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+                                    ? `${role && typeof role === 'string' ? role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Unknown Role'} (Can't select - same role)`
+                                    : role && typeof role === 'string' ? role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Unknown Role'
                                   }
                                 </SelectItem>
                               )
@@ -1495,7 +1496,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                   .filter(user => user.role === formData.assignedTo)
                                   .map((user) => (
                                     <SelectItem key={user._id || user.id} value={user._id || user.id}>
-                                      {user.name} ({user.role.replace(/_/g, ' ')})
+                                      {user.name} ({user.role && typeof user.role === 'string' ? user.role.replace(/_/g, ' ') : 'No role'})
                                     </SelectItem>
                                   ))
                               ) : (

@@ -389,7 +389,7 @@ export default function LeadsPage() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.property}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
                           {(() => {
-                            const statusValue = lead.lead_status || lead.lead_stage;
+                            const statusValue = lead.lead_stage || lead.lead_status;
                             return (
                               <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
                                 String(statusValue).toLowerCase() === "new" ? "bg-blue-100 text-blue-700" :
@@ -406,6 +406,7 @@ export default function LeadsPage() {
                                 String(statusValue).toLowerCase() === "cold-lead" ? "bg-cyan-100 text-cyan-700" :
                                 String(statusValue).toLowerCase() === "warm" ? "bg-orange-100 text-orange-700" :
                                 String(statusValue).toLowerCase() === "hot" ? "bg-red-100 text-red-700" :
+                                String(statusValue).toLowerCase() === "cold" ? "bg-blue-100 text-blue-700" :
                                 String(statusValue).toLowerCase() === "enquired" ? "bg-blue-100 text-blue-700" :
                                 "bg-gray-100 text-gray-700"
                               }`}>

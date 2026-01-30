@@ -234,16 +234,41 @@ export const LeadsProvider = ({ children }) => {
   }, []);
 
   const getAssignedUserInfo = useCallback((role) => {
-    if (!role || role === getCurrentUserRole()) {
+    // Debug logging to understand the input
+    console.log('🔍 getAssignedUserInfo input:', { role, type: typeof role, isArray: Array.isArray(role) });
+    
+    // Handle different input types for role parameter
+    let roleValue = role;
+    
+    if (Array.isArray(role)) {
+      // If it's an array, take the first element
+      roleValue = role[0];
+      console.log('🔍 Extracted from array:', roleValue);
+      
+      // If the extracted element is an object with a role property, extract the role string
+      if (roleValue && typeof roleValue === 'object' && roleValue.role) {
+        roleValue = roleValue.role;
+        console.log('🔍 Extracted role string from object:', roleValue);
+      }
+    } else if (role && typeof role === 'object' && role.role) {
+      // If it's a user object, extract the role string
+      roleValue = role.role;
+      console.log('🔍 Extracted from object:', roleValue);
+    }
+    
+    if (!roleValue || roleValue === getCurrentUserRole()) {
       return getCurrentUserInfo()
     }
     
     const currentUserInfo = getCurrentUserInfo();
-    return {
+    const result = {
       user_id: currentUserInfo.user_id,
-      name: `${role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}`,
-      role: role
-    }
+      name: `${roleValue && typeof roleValue === 'string' ? roleValue.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Unknown Role'}`,
+      role: roleValue
+    };
+    
+    console.log('🔍 getAssignedUserInfo result:', result);
+    return result;
   }, [getCurrentUserRole, getCurrentUserInfo]);
 
   // Form validation
@@ -484,12 +509,20 @@ export const LeadsProvider = ({ children }) => {
     const payload = {}
     
     const addIfChanged = (fieldName, currentValue, originalValue) => {
-      const currentStr = JSON.stringify(currentValue)
-      const originalStr = JSON.stringify(originalValue)
+      // Handle undefined/null values by treating them as empty strings for comparison
+      const normalizedCurrent = currentValue === undefined || currentValue === null ? "" : currentValue;
+      const normalizedOriginal = originalValue === undefined || originalValue === null ? "" : originalValue;
+      
+      const currentStr = JSON.stringify(normalizedCurrent)
+      const originalStr = JSON.stringify(normalizedOriginal)
       const hasChanged = currentStr !== originalStr
       
-      if (hasChanged) {
-        payload[fieldName] = currentValue
+      // Only add to payload if the value is not empty or if it actually changed
+      if (hasChanged && normalizedCurrent !== "") {
+        payload[fieldName] = normalizedCurrent
+        console.log(`📝 Adding to payload: ${fieldName} = ${normalizedCurrent}`)
+      } else {
+        console.log(`⏭️ Skipping ${fieldName}: current="${normalizedCurrent}", original="${normalizedOriginal}", changed=${hasChanged}`)
       }
     }
 
@@ -506,10 +539,14 @@ export const LeadsProvider = ({ children }) => {
     const currentUserInfo = getCurrentUserInfo();
     const assignedUserInfo = getAssignedUserInfo(formData.assignedTo || currentRoleValue);
     
-    if (!originalData?.currentRole || originalData.currentRole[0]?.role !== currentUserInfo.role) {
+    // Ensure we're comparing role strings properly
+    const originalCurrentRole = Array.isArray(originalData?.currentRole) ? originalData.currentRole[0]?.role : originalData?.currentRole;
+    const originalAssignedRole = Array.isArray(originalData?.assignedTo) ? originalData.assignedTo[0]?.role : originalData?.assignedTo;
+    
+    if (!originalCurrentRole || originalCurrentRole !== currentUserInfo.role) {
       payload.currentRole = [currentUserInfo];
     }
-    if (!originalData?.assignedTo || originalData.assignedTo[0]?.role !== assignedUserInfo.role) {
+    if (!originalAssignedRole || originalAssignedRole !== assignedUserInfo.role) {
       payload.assignedTo = [assignedUserInfo];
     }
     
@@ -568,13 +605,8 @@ export const LeadsProvider = ({ children }) => {
       payload.checkListPage = checkListPage
     }
 
-    // Always include currentRole and assignedTo for history tracking
-    if (!payload.currentRole) {
-      payload.currentRole = [currentUserInfo];
-    }
-    if (!payload.assignedTo) {
-      payload.assignedTo = [assignedUserInfo];
-    }
+    // Only include currentRole and assignedTo if they actually changed
+    // Don't force include them for updates to avoid validation issues
 
     // Ensure required fields are included for updates
     if (!payload.contactNumber && originalData?.contactNumber) {
