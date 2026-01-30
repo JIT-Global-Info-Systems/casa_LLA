@@ -37,6 +37,7 @@ import {
 } from "lucide-react";
 import { formatDisplayDate } from "@/utils/dateUtils";
 import PhoneInput from "@/components/ui/PhoneInput";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 function Mediators() {
   const { mediators, loading, error, fetchMediators, createMediator, updateMediator, deleteMediator } = useMediators();
@@ -75,6 +76,8 @@ function Mediators() {
     pan_upload: null,
     aadhar_upload: null,
   });
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const filteredMediators = mediators.filter((mediator) => {
     const matchesSearch =
@@ -115,6 +118,7 @@ function Mediators() {
   };
 
   const handleSave = async () => {
+    setIsSubmitting(true);
     try {
       const apiData = {
         name: formData.mediatorName,
@@ -140,6 +144,8 @@ function Mediators() {
       resetForm();
     } catch (error) {
       console.error("Error saving mediator:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -621,12 +627,26 @@ function Mediators() {
                 >
                   Cancel
                 </Button>
-                <Button
-                  onClick={handleSave}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
-                >
-                  {selectedMediator ? "Update Mediator" : "Add Mediator"}
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={handleSave}
+                      disabled={isSubmitting}
+                      loading={isSubmitting}
+                    >
+                      {isSubmitting 
+                        ? (selectedMediator ? "Updating..." : "Adding...") 
+                        : (selectedMediator ? "Update Mediator" : "Add Mediator")
+                      }
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {selectedMediator 
+                      ? "Save changes to this mediator" 
+                      : "Create the new mediator"
+                    }
+                  </TooltipContent>
+                </Tooltip>
 
 
 
@@ -834,7 +854,6 @@ function Mediators() {
                       handleEdit(viewMediator);
                       setIsViewMode(false);
                     }}
-                    className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white shadow-lg shadow-indigo-500/30 transition-all duration-200"
                   >
                     <Edit className="h-4 w-4 mr-2" />
                     Edit Mediator
@@ -857,22 +876,36 @@ function Mediators() {
                 <p className="text-sm text-gray-500 mt-1">Mediator list · Last updated today</p>
               </div>
               <div className="flex items-center gap-3">
-                <Button
-                  variant="ghost"
-                  className="text-gray-700"
-                  onClick={handleRefresh}
-                  disabled={loading}
-                >
-                  <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-                  Refresh
-                </Button>
-                <Button
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
-                  onClick={handleCreate}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="text-gray-700"
+                      onClick={handleRefresh}
+                      disabled={loading}
+                    >
+                      <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+                      Refresh
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Refresh the mediators list to get the latest data
+                  </TooltipContent>
+                </Tooltip>
+                
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={handleCreate}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Create a new mediator
+                  </TooltipContent>
+                </Tooltip>
               </div>
             </div>
           </div>

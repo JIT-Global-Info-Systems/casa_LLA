@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Search, Plus, Edit, Trash2, Eye, MoreVertical, RefreshCw, ChevronLeft } from "lucide-react";
 import { useUsers } from "../context/UsersContext";
 import ConfirmModal from "@/components/ui/ConfirmModal";
@@ -39,6 +40,8 @@ function Users() {
   // Form validation state
   const [formErrors, setFormErrors] = useState({});
   const [isFormValid, setIsFormValid] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(new Set());
 
   // Entity action hook for status-aware delete
   const { handleDelete, canPerformAction, confirmModal } = useEntityAction('user');
@@ -182,6 +185,7 @@ function Users() {
       return;
     }
 
+    setIsSubmitting(true);
     try {
       await createUser(formData);
       toast.success('User added successfully');
@@ -199,6 +203,8 @@ function Users() {
     } catch (err) {
       toast.error(err.message || 'Could not add user. Please try again.');
       console.error(err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -208,6 +214,7 @@ function Users() {
       return;
     }
 
+    setIsSubmitting(true);
     try {
       await updateUser(selectedUser.user_id, formData);
       toast.success('User updated successfully');
@@ -226,6 +233,8 @@ function Users() {
     } catch (err) {
       toast.error(err.message || 'Could not update user. Please try again.');
       console.error(err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -286,35 +295,49 @@ function Users() {
                 <p className="text-sm text-gray-500 mt-1">User list · Last updated today</p>
               </div>
               <div className="flex items-center gap-3">
-                <Button
-                  variant="ghost"
-                  className="text-gray-700"
-                  onClick={fetchUsers}
-                  disabled={loading}
-                >
-                  <RefreshCw
-                    className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
-                  />
-                  Refresh
-                </Button>
-                <Button
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
-                  onClick={() => {
-                    setSelectedUser(null);
-                    setFormData({
-                      name: "",
-                      email: "",
-                      password: "",
-                      role: "telecaller",
-                      phone_number: "",
-                      status: "active",
-                    });
-                    setMode("add");
-                  }}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="text-gray-700"
+                      onClick={fetchUsers}
+                      disabled={loading}
+                    >
+                      <RefreshCw
+                        className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
+                      />
+                      Refresh
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Refresh the users list to get the latest data
+                  </TooltipContent>
+                </Tooltip>
+                
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={() => {
+                        setSelectedUser(null);
+                        setFormData({
+                          name: "",
+                          email: "",
+                          password: "",
+                          role: "telecaller",
+                          phone_number: "",
+                          status: "active",
+                        });
+                        setMode("add");
+                      }}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Create a new user account
+                  </TooltipContent>
+                </Tooltip>
               </div>
             </div>
           </div>
@@ -326,107 +349,142 @@ function Users() {
               <div className="p-6 border-b flex flex-wrap gap-4 items-center">
                 <div className="relative flex-1 min-w-[250px]">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
-                    placeholder="Search users..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 border-gray-300"
-                  />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Input
+                        placeholder="Search users..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10 border-gray-300"
+                      />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Search by name, email, or phone number
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <Label className="text-sm text-gray-600 whitespace-nowrap">Role:</Label>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="min-w-[140px] justify-between border-gray-300 capitalize"
-                      >
-                        {roleFilter === "all" ? "Select" : roleFilter}
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="bg-white border shadow-lg">
-                      <DropdownMenuItem
-                        onClick={() => setRoleFilter("all")}
-                        className="cursor-pointer"
-                      >
-                        All Roles
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => setRoleFilter("admin")}
-                        className="cursor-pointer"
-                      >
-                        Admin
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => setRoleFilter("manager")}
-                        className="cursor-pointer"
-                      >
-                        Manager
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => setRoleFilter("executive")}
-                        className="cursor-pointer"
-                      >
-                        Executive
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => setRoleFilter("telecaller")}
-                        className="cursor-pointer"
-                      >
-                        Telecaller
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="min-w-[140px] justify-between border-gray-300 capitalize"
+                          >
+                            {roleFilter === "all" ? "Select" : roleFilter}
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="bg-white border shadow-lg">
+                          <DropdownMenuItem
+                            onClick={() => setRoleFilter("all")}
+                            className="cursor-pointer"
+                          >
+                            All Roles
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => setRoleFilter("admin")}
+                            className="cursor-pointer"
+                          >
+                            Admin
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => setRoleFilter("manager")}
+                            className="cursor-pointer"
+                          >
+                            Manager
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => setRoleFilter("executive")}
+                            className="cursor-pointer"
+                          >
+                            Executive
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => setRoleFilter("telecaller")}
+                            className="cursor-pointer"
+                          >
+                            Telecaller
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Filter users by their role
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <Label className="text-sm text-gray-600 whitespace-nowrap">From:</Label>
-                  <Input
-                    type="date"
-                    value={fromDate}
-                    onChange={(e) => setFromDate(e.target.value)}
-                    className="w-[150px] border-gray-300"
-                  />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Input
+                        type="date"
+                        value={fromDate}
+                        onChange={(e) => setFromDate(e.target.value)}
+                        className="w-[150px] border-gray-300"
+                      />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Filter users created from this date
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <Label className="text-sm text-gray-600 whitespace-nowrap">To:</Label>
-                  <Input
-                    type="date"
-                    value={toDate}
-                    onChange={(e) => setToDate(e.target.value)}
-                    className="w-[150px] border-gray-300"
-                  />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Input
+                        type="date"
+                        value={toDate}
+                        onChange={(e) => setToDate(e.target.value)}
+                        className="w-[150px] border-gray-300"
+                      />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Filter users created up to this date
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
 
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="border-gray-300 capitalize">
-                      {statusFilter === "all" ? "Status" : statusFilter}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="bg-white border shadow-lg">
-                    <DropdownMenuItem
-                      onClick={() => setStatusFilter("all")}
-                      className="cursor-pointer"
-                    >
-                      All Status
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => setStatusFilter("active")}
-                      className="cursor-pointer"
-                    >
-                      Active
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => setStatusFilter("inactive")}
-                      className="cursor-pointer"
-                    >
-                      Inactive
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="border-gray-300 capitalize">
+                          {statusFilter === "all" ? "Status" : statusFilter}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="bg-white border shadow-lg">
+                        <DropdownMenuItem
+                          onClick={() => setStatusFilter("all")}
+                          className="cursor-pointer"
+                        >
+                          All Status
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setStatusFilter("active")}
+                          className="cursor-pointer"
+                        >
+                          Active
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setStatusFilter("inactive")}
+                          className="cursor-pointer"
+                        >
+                          Inactive
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Filter users by their status
+                  </TooltipContent>
+                </Tooltip>
               </div>
 
               {/* Table */}
@@ -489,31 +547,53 @@ function Users() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <div className="flex items-center justify-center gap-3">
-                            <Switch
-                              checked={user.status === "active"}
-                              onCheckedChange={async (checked) => {
-                                try {
-                                  const newStatus = checked ? "active" : "inactive";
-                                  await updateUser(user.user_id, { status: newStatus });
-                                  await fetchUsers(); // Refresh list to maintain sorting
-                                  toast.success(`User ${checked ? 'activated' : 'deactivated'} successfully`);
-                                } catch (error) {
-                                  toast.error('Could not update status. Please try again.');
-                                  console.error("Error updating user status:", error);
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="flex items-center gap-3">
+                                  <Switch
+                                    checked={user.status === "active"}
+                                    disabled={updatingStatus.has(user.user_id)}
+                                    onCheckedChange={async (checked) => {
+                                      if (updatingStatus.has(user.user_id)) return;
+                                      
+                                      setUpdatingStatus(prev => new Set(prev).add(user.user_id));
+                                      try {
+                                        const newStatus = checked ? "active" : "inactive";
+                                        await updateUser(user.user_id, { status: newStatus });
+                                        await fetchUsers(); // Refresh list to maintain sorting
+                                        toast.success(`User ${checked ? 'activated' : 'deactivated'} successfully`);
+                                      } catch (error) {
+                                        toast.error('Could not update status. Please try again.');
+                                        console.error("Error updating user status:", error);
+                                      } finally {
+                                        setUpdatingStatus(prev => {
+                                          const newSet = new Set(prev);
+                                          newSet.delete(user.user_id);
+                                          return newSet;
+                                        });
+                                      }
+                                    }}
+                                    id={`status-toggle-${user.user_id}`}
+                                    className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-gray-300 h-4 w-8.5 [&>span]:h-3 [&>span]:w-3"
+                                  />
+                                  <Label
+                                    htmlFor={`status-toggle-${user.user_id}`}
+                                    className={`text-sm font-medium cursor-pointer ${user.status === "active"
+                                        ? "text-green-700"
+                                        : "text-gray-500"
+                                      }`}
+                                  >
+                                    {user.status === "active" ? "Active" : "Inactive"}
+                                  </Label>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {user.status === "active" 
+                                  ? "Click to deactivate this user" 
+                                  : "Click to activate this user"
                                 }
-                              }}
-                              id={`status-toggle-${user.user_id}`}
-                              className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-gray-300 h-4 w-8.5 [&>span]:h-3 [&>span]:w-3"
-                            />
-                            <Label
-                              htmlFor={`status-toggle-${user.user_id}`}
-                              className={`text-sm font-medium cursor-pointer ${user.status === "active"
-                                  ? "text-green-700"
-                                  : "text-gray-500"
-                                }`}
-                            >
-                              {user.status === "active" ? "Active" : "Inactive"}
-                            </Label>
+                              </TooltipContent>
+                            </Tooltip>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
@@ -521,15 +601,22 @@ function Users() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0"
-                              >
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                User actions menu
+                              </TooltipContent>
+                            </Tooltip>
                             <DropdownMenuContent
                               align="end"
                               className="bg-white border shadow-lg"
@@ -756,16 +843,34 @@ function Users() {
                 </div>
               </CardContent>
               <div className="border-t px-6 py-4 bg-gray-50/50 flex justify-end gap-3">
-                <Button variant="outline" onClick={() => setMode("list")} className="border-gray-300">
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleAddUser}
-                  disabled={!isFormValid}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white disabled:bg-gray-400 disabled:cursor-not-allowed"
-                >
-                  Add User
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" onClick={() => setMode("list")} className="border-gray-300">
+                      Cancel
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Cancel and return to users list without saving
+                  </TooltipContent>
+                </Tooltip>
+                
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={handleAddUser}
+                      disabled={!isFormValid || isSubmitting}
+                      loading={isSubmitting}
+                    >
+                      {isSubmitting ? 'Adding User...' : 'Add User'}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {!isFormValid 
+                      ? "Please fill in all required fields correctly" 
+                      : "Create the new user account"
+                    }
+                  </TooltipContent>
+                </Tooltip>
               </div>
             </Card>
           </div>
@@ -927,23 +1032,41 @@ function Users() {
                 </div>
               </CardContent>
               <div className="border-t px-6 py-4 bg-gray-50/50 flex justify-end gap-3">
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    setMode("list");
-                    setSelectedUser(null);
-                  }}
-                  className="border-gray-300"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleEditUser}
-                  disabled={!isFormValid}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white disabled:bg-gray-400 disabled:cursor-not-allowed"
-                >
-                  Update User
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        setMode("list");
+                        setSelectedUser(null);
+                      }}
+                      className="border-gray-300"
+                    >
+                      Cancel
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Cancel editing and return to users list
+                  </TooltipContent>
+                </Tooltip>
+                
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={handleEditUser}
+                      disabled={!isFormValid || isSubmitting}
+                      loading={isSubmitting}
+                    >
+                      {isSubmitting ? 'Updating User...' : 'Update User'}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {!isFormValid 
+                      ? "Please fill in all required fields correctly" 
+                      : "Save changes to this user account"
+                    }
+                  </TooltipContent>
+                </Tooltip>
               </div>
             </Card>
           </div>
@@ -1043,7 +1166,6 @@ function Users() {
                 </Button>
                 <Button
                   onClick={() => openEditDialog(selectedUser)}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
                 >
                   <Edit className="h-4 w-4 mr-2" />
                   Edit User
