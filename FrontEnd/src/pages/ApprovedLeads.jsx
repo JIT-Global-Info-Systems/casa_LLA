@@ -12,6 +12,7 @@ import axios from "axios";
 import Modal from "@/components/ui/modal";
 import Leads from "./Leads";
 import LeadStepper from "@/components/ui/LeadStepper";
+import { getToken } from "@/utils/authStorage";
 
 const getStatusBadge = (status) => {
   switch (status?.toUpperCase()) {
@@ -79,7 +80,7 @@ export default function ApprovedLeads() {
         formData,
         {
           headers: {
-            "Authorization": `Bearer ${localStorage.getItem("token")}`,
+            "Authorization": `Bearer ${getToken()}`,
             "Content-Type": "multipart/form-data"
           }
         }
@@ -103,7 +104,7 @@ export default function ApprovedLeads() {
       const response = await axios.get("http://13.201.132.94:5000/api/leads/approved", {
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("token")}`
+          "Authorization": `Bearer ${getToken()}`
         }
       });
 
