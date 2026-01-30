@@ -1,5 +1,5 @@
-// const API_BASE_URL = 'http://13.201.132.94:5000/api';
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'http://13.201.132.94:5000/api';
+// const API_BASE_URL = 'http://localhost:5000/api';
 const REQUEST_TIMEOUT = 30000; // 30 seconds
 const MAX_RETRIES = 2;
 
@@ -68,7 +68,7 @@ const apiRequest = async (endpoint, options = {}, retryCount = 0) => {
   const token = localStorage.getItem('token');
  
   // Skip authentication for auth endpoints
-  const isAuthEndpoint = endpoint.startsWith('/auth/') || endpoint.startsWith('/users/create');
+  const isAuthEndpoint = endpoint.startsWith('/auth/');
  
   // Validate token before making request
   if (!isAuthEndpoint) {
@@ -98,9 +98,9 @@ const apiRequest = async (endpoint, options = {}, retryCount = 0) => {
     ...options,
     headers,
   };
-  //  const userId =
+
   try {
-    const response = await fetch(url, config);
+    const response = await fetchWithTimeout(url, config);
  
     // Handle 401 - clear auth but don't redirect (let auth context handle it)
     if (response.status === 401) {
@@ -110,7 +110,13 @@ const apiRequest = async (endpoint, options = {}, retryCount = 0) => {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      const errorMessage = getErrorMessage(
+        { message: errorData.message },
+        response.status
+      );
+      const error = new Error(errorMessage);
+      error.statusCode = response.status;
+      throw error;
     }
  
     return await response.json();
@@ -351,7 +357,7 @@ export const usersAPI = {
     return response.data || response;
   },
  
-  // Create new user (no auth required)
+  // Create new user (requires authentication)
   create: async (userData) => {
     return await apiRequest('/users/create', {
       method: 'POST',
@@ -430,13 +436,13 @@ export const locationsAPI = {
       body: JSON.stringify(regionData),
     });
   },
- 
+
   deleteRegion: async (locationId, regionId) => {
-    return await apiRequest(`/locations/${locationId}/regions/${regionId}`, {
+    return await apiRequest(`/locations/${locationId}/regions/delete/${regionId}`, {
       method: 'DELETE',
     });
   },
- 
+
   // Zone operations
   addZone: async (locationId, regionId, zoneData) => {
     return await apiRequest(`/locations/${locationId}/regions/${regionId}/zones`, {
@@ -444,18 +450,96 @@ export const locationsAPI = {
       body: JSON.stringify(zoneData),
     });
   },
- 
+
   updateZone: async (locationId, regionId, zoneId, zoneData) => {
     return await apiRequest(`/locations/update/${locationId}/regions/${regionId}/zones/${zoneId}`, {
       method: 'PUT',
       body: JSON.stringify(zoneData),
     });
   },
- 
+
   deleteZone: async (locationId, regionId, zoneId) => {
     return await apiRequest(`/locations/${locationId}/regions/${regionId}/zones/${zoneId}`, {
       method: "DELETE",
     })
+  },
+}
+
+// Types API
+export const typesAPI = {
+  // Get all types
+  getAll: async () => {
+    const response = await apiRequest('/types/');
+    // The API returns { message: string, count: number, data: [...] }
+    // We want to return the data array
+    return response.data || [];
+  },
+
+  // Get type by ID
+  getById: async (id) => {
+    return await apiRequest(`/types/${id}`);
+  },
+
+  // Create new type
+  create: async (typeData) => {
+    return await apiRequest('/types', {
+      method: 'POST',
+      body: JSON.stringify(typeData),
+    });
+  },
+
+  // Update type
+  update: async (id, typeData) => {
+    return await apiRequest(`/types/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(typeData),
+    });
+  },
+
+  // Delete type
+  delete: async (id) => {
+    return await apiRequest(`/types/${id}`, {
+      method: 'DELETE',
+    });
+  },
+}
+
+// Stages API
+export const stagesAPI = {
+  // Get all stages
+  getAll: async () => {
+    const response = await apiRequest('/stage/');
+    // The API returns { count: number, data: [...] }
+    // We want to return the data array
+    return response.data || [];
+  },
+
+  // Get stage by ID
+  getById: async (id) => {
+    return await apiRequest(`/stage/${id}`);
+  },
+
+  // Create new stage
+  create: async (stageData) => {
+    return await apiRequest('/stage/', {
+      method: 'POST',
+      body: JSON.stringify(stageData),
+    });
+  },
+
+  // Update stage
+  update: async (id, stageData) => {
+    return await apiRequest(`/stage/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(stageData),
+    });
+  },
+
+  // Delete stage
+  delete: async (id) => {
+    return await apiRequest(`/stage/${id}`, {
+      method: 'DELETE',
+    });
   },
 }
  
@@ -546,6 +630,30 @@ export const authAPI = {
   },
 };
 
+// Dashboard API
+export const dashboardAPI = {
+  // Get dashboard data with optional filters
+  getDashboardData: async (filters = {}) => {
+    const params = new URLSearchParams();
+    
+    // Add query parameters if provided
+    if (filters.fromDate) params.append('fromDate', filters.fromDate);
+    if (filters.toDate) params.append('toDate', filters.toDate);
+    
+    // Only add location parameter if it's not 'all' and not empty
+    if (filters.location && filters.location !== 'all' && filters.location.trim() !== '') {
+      params.append('location', filters.location);
+    }
+    
+    const queryString = params.toString() ? `?${params}` : '';
+    const response = await apiRequest(`/dashboard${queryString}`);
+    
+    // The API returns { data: {...} }
+    // We want to return the data object
+    return response.data || response;
+  },
+};
+
 export const accessAPI = {
   getAll: async () => {
     const response = await apiRequest('/access/get');
@@ -558,7 +666,10 @@ export default {
   leadsAPI,
   usersAPI,
   locationsAPI,
+  typesAPI,
+  stagesAPI,
   callsAPI,
   authAPI,
+  dashboardAPI,
   accessAPI,
 }

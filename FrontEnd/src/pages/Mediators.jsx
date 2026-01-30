@@ -2,12 +2,14 @@
  
 import React, { useState, useEffect } from "react";
 import { useMediators } from "../context/MediatorsContext.jsx";
-import { Card, CardContent } from "@/components/ui/card";
+import { useMaster } from "../context/Mastercontext.jsx";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import Modal from "@/components/ui/modal";
+import ConfirmModal from "@/components/ui/ConfirmModal";
+import { useEntityAction } from "@/hooks/useEntityAction";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,6 +39,7 @@ import { formatDisplayDate } from "@/utils/dateUtils";
 
 function Mediators() {
   const { mediators, loading, error, fetchMediators, createMediator, updateMediator, deleteMediator } = useMediators();
+  const { masters, fetchTypes } = useMaster();
   const [open, setOpen] = useState(false);
   const [selectedMediator, setSelectedMediator] = useState(null);
   const [viewMediator, setViewMediator] = useState(null);
@@ -51,6 +54,7 @@ function Mediators() {
 
   useEffect(() => {
     fetchMediators();
+    fetchTypes();
   }, []);
 
   const [formData, setFormData] = useState({
@@ -58,7 +62,7 @@ function Mediators() {
     email: "",
     phonePrimary: "",
     phoneSecondary: "",
-    category: "",
+    type: "",
     panNumber: "",
     aadhaarNumber: "",
     location: "",
@@ -117,7 +121,7 @@ function Mediators() {
         email: formData.email,
         phone_primary: formData.phonePrimary,
         phone_secondary: formData.phoneSecondary,
-        category: formData.category,
+        category: formData.type,
         pan_number: formData.panNumber,
         aadhar_number: formData.aadhaarNumber,
         location: formData.location,
@@ -160,7 +164,7 @@ function Mediators() {
       email: "",
       phonePrimary: "",
       phoneSecondary: "",
-      category: "",
+      type: "",
       panNumber: "",
       aadhaarNumber: "",
       location: "",
@@ -196,7 +200,7 @@ function Mediators() {
       email: mediator.email || "",
       phonePrimary: mediator.phone_primary || "",
       phoneSecondary: mediator.phone_secondary || "",
-      category: mediator.category || "",
+      type: mediator.category || "",
       panNumber: mediator.pan_number || "",
       aadhaarNumber: mediator.aadhar_number || "",
       location: mediator.location || "",
@@ -830,115 +834,7 @@ function Mediators() {
                     Edit Mediator
                   </Button>
                 </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700">
-                    Email
-                  </Label>
-                  <div className="text-sm text-slate-900 bg-gray-50 p-2 rounded">
-                    {viewMediator.email || 'N/A'}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700">
-                    Phone Primary
-                  </Label>
-                  <div className="text-sm text-slate-900 bg-gray-50 p-2 rounded">
-                    {viewMediator.phone_primary || 'N/A'}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700">
-                    Phone Secondary
-                  </Label>
-                  <div className="text-sm text-slate-900 bg-gray-50 p-2 rounded">
-                    {viewMediator.phone_secondary || 'N/A'}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700">
-                    Category
-                  </Label>
-                  <div className="text-sm text-slate-900 bg-gray-50 p-2 rounded">
-                    {viewMediator.category || 'N/A'}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700">
-                    PAN Number
-                  </Label>
-                  <div className="text-sm text-slate-900 bg-gray-50 p-2 rounded">
-                    {viewMediator.pan_number || 'N/A'}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700">
-                    Aadhaar Number
-                  </Label>
-                  <div className="text-sm text-slate-900 bg-gray-50 p-2 rounded">
-                    {viewMediator.aadhar_number || 'N/A'}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700">
-                    Location
-                  </Label>
-                  <div className="text-sm text-slate-900 bg-gray-50 p-2 rounded">
-                    {viewMediator.location || 'N/A'}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700">
-                    Linked Executive
-                  </Label>
-                  <div className="text-sm text-slate-900 bg-gray-50 p-2 rounded">
-                    {viewMediator.linked_executive || 'N/A'}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700">
-                    Office / Individual
-                  </Label>
-                  <div className="text-sm text-slate-900 bg-gray-50 p-2 rounded">
-                    {viewMediator.mediator_type || 'N/A'}
-                  </div>
-                </div>
-
-                <div className="col-span-2 space-y-2">
-                  <Label className="text-sm font-medium text-slate-700">
-                    Address
-                  </Label>
-                  <div className="text-sm text-slate-900 bg-gray-50 p-2 rounded min-h-[60px]">
-                    {viewMediator.address || 'N/A'}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700">
-                    Created Date
-                  </Label>
-                  <div className="text-sm text-slate-900 bg-gray-50 p-2 rounded">
-                    {viewMediator.created_at ? new Date(viewMediator.created_at).toLocaleDateString() : 'N/A'}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700">
-                    Mediator ID
-                  </Label>
-                  <div className="text-sm text-slate-900 bg-gray-50 p-2 rounded">
-                    {viewMediator._id || 'N/A'}
-                  </div>
-                </div>
-              </div>
+              </Card>
             )}
           </div>
         </div>

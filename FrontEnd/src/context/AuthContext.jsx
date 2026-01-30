@@ -44,14 +44,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userId = localStorage.getItem('user_id');
-    const userData = localStorage.getItem('user');
-
-    console.log('AuthContext useEffect - token:', !!token, 'userId:', userId, 'userData:', !!userData);
-
-    if (token && userData) {
-      // Parse stored user data
+    const initAuth = async () => {
       try {
         const token = localStorage.getItem('token');
         const userId = localStorage.getItem('user_id');
@@ -135,25 +128,7 @@ export const AuthProvider = ({ children }) => {
       } finally {
         setLoading(false);
       }
-      setLoading(false);
-    } else if (token && userId) {
-      // Fetch user profile using token and user ID (legacy support)
-      const fetchUserProfile = async () => {
-        try {
-          console.log('Fetching user profile for ID:', userId);
-          const response = await usersAPI.getById(userId);
-          console.log('User profile response:', response);
-          const userData = { ...response, token };
-          setUser(userData);
-          // Store user data in localStorage for future use
-          localStorage.setItem('user', JSON.stringify(response));
-        } catch (error) {
-          console.error('Failed to fetch user profile:', error);
-          setUser({ token }); // Fallback to token only
-        } finally {
-          setLoading(false);
-        }
-      };
+    };
 
     // Listen for logout events from API layer
     const handleLogout = () => {
@@ -201,10 +176,22 @@ export const AuthProvider = ({ children }) => {
 
         localStorage.setItem('token', response.token);
 
+        // Handle remember me
+        if (rememberMe) {
+          localStorage.setItem('rememberMe', 'true');
+          localStorage.setItem('rememberedEmail', credentials.email);
+        } else {
+          localStorage.removeItem('rememberMe');
+          localStorage.removeItem('rememberedEmail');
+        }
+
         // Store user data if available
         if (response.user) {
           localStorage.setItem('user_id', response.user.id || response.user.user_id);
           localStorage.setItem('user', JSON.stringify(response.user));
+          if (response.user.role) {
+            localStorage.setItem('userRole', response.user.role);
+          }
           setUser({ ...response.user, token: response.token });
 
           // Check if it's first login
@@ -248,6 +235,9 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('token');
     localStorage.removeItem('user_id');
     localStorage.removeItem('user');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('rememberMe');
+    localStorage.removeItem('rememberedEmail');
     setUser(null);
     setError(null);
     setIsFirstLogin(false);

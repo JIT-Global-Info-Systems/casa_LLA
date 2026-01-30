@@ -12,266 +12,47 @@ import {
 } from '@/components/ui/table';
 import Modal from '@/components/ui/modal';
 import { Edit, Plus, Trash2 } from 'lucide-react';
-import { locationsAPI } from '@/services/api';
+import { useMaster } from '@/context/Mastercontext';
 
 const Masters = () => {
-  // Single source of truth for all masters data
-  const [masters, setMasters] = useState({
-    locations: [],
-    regions: [],
-    zones: [],
-  });
-  const [loading, setLoading] = useState({ locations: false, regions: false, zones: false });
-  const [error, setError] = useState({ locations: null, regions: null, zones: null });
+  const {
+    masters,
+    loading,
+    error,
+    fetchAllData,
+    addLocation,
+    updateLocation,
+    deleteLocation,
+    addRegion,
+    updateRegion,
+    deleteRegion,
+    addZone,
+    updateZone,
+    deleteZone,
+    addType,
+    updateType,
+    deleteType,
+  } = useMaster();
 
   const [activeTab, setActiveTab] = useState('location');
   const [form, setForm] = useState({ open: false, type: '', data: {}, editing: null });
   const [deleteDialog, setDeleteDialog] = useState({ open: false, type: '', item: null });
+  const [currentPage, setCurrentPage] = useState({
+    location: 1,
+    region: 1,
+    zone: 1,
+    type: 1,
+  });
+  const itemsPerPage = 10;
 
-  // Fetch locations from API
-  const fetchLocations = useCallback(async () => {
-    setLoading(prev => ({ ...prev, locations: true, regions: true, zones: true }));
-    setError(prev => ({ ...prev, locations: null, regions: null, zones: null }));
-    try {
-      const locationsData = await locationsAPI.getAll();
-      // Transform API data to match component structure
-      const transformedLocations = locationsData.map(loc => ({
-        id: loc._id,
-        name: loc.location,
-        status: loc.status,
-        regions: loc.regions || [],
-        created_by: loc.created_by,
-        created_at: loc.created_at,
-        updated_at: loc.updated_at,
-        updated_by: loc.updated_by
-      }));
-      
-      // Extract regions and zones from locations data
-      const transformedRegions = [];
-      const transformedZones = [];
-      
-      locationsData.forEach(location => {
-        if (location.regions && location.regions.length > 0) {
-          location.regions.forEach(region => {
-            transformedRegions.push({
-              id: region._id,
-              location: location.location,
-              region: region.region,
-              zones: region.zones || []
-            });
-            
-            if (region.zones && region.zones.length > 0) {
-              region.zones.forEach(zone => {
-                transformedZones.push({
-                  id: zone._id,
-                  location: location.location,
-                  region: region.region,
-                  zone: zone.zone
-                });
-              });
-            }
-          });
-        }
-      });
-      
-      setMasters(prev => ({ 
-        ...prev, 
-        locations: transformedLocations,
-        regions: transformedRegions,
-        zones: transformedZones
-      }));
-    } catch (err) {
-      setError(prev => ({ 
-        ...prev, 
-        locations: err.message, 
-        regions: err.message, 
-        zones: err.message 
-      }));
-      console.error('Failed to fetch locations:', err);
-    } finally {
-      setLoading(prev => ({ ...prev, locations: false, regions: false, zones: false }));
-    }
-  }, []);
-
-  // Fetch locations on component mount
+  // Fetch all data on component mount
   useEffect(() => {
-    fetchLocations();
-  }, [fetchLocations]);
+    fetchAllData();
+  }, [fetchAllData]);
 
   const formatName = useCallback((value) => 
     value.charAt(0).toUpperCase() + value.slice(1).toLowerCase()
   , []);
-
-  // API-based CRUD operations for locations
-  const addLocation = useCallback(async (data) => {
-    try {
-      const locationData = { location: data.name };
-      const response = await locationsAPI.create(locationData);
-      console.log('Location created successfully:', response);
-      // Refresh locations after successful creation
-      await fetchLocations();
-      closeForm();
-    } catch (err) {
-      console.error('Failed to create location:', err);
-      setError(prev => ({ ...prev, locations: err.message }));
-    }
-  }, [fetchLocations]);
-
-  const updateLocation = useCallback(async (itemId, data) => {
-    try {
-      const locationData = { location: data.name };
-      await locationsAPI.update(itemId, locationData);
-      // Refresh locations after successful update
-      await fetchLocations();
-      closeForm();
-    } catch (err) {
-      console.error('Failed to update location:', err);
-      setError(prev => ({ ...prev, locations: err.message }));
-    }
-  }, [fetchLocations]);
-
-  const deleteLocation = useCallback(async (itemId) => {
-    try {
-      await locationsAPI.delete(itemId);
-      // Refresh locations after successful deletion
-      await fetchLocations();
-      setDeleteDialog({ open: false, type: '', item: null });
-    } catch (err) {
-      console.error('Failed to delete location:', err);
-      setError(prev => ({ ...prev, locations: err.message }));
-    }
-  }, [fetchLocations]);
-
-  // API-based CRUD operations for regions
-  const addRegion = useCallback(async (data) => {
-    try {
-      // Find the location ID from the location name
-      const location = masters.locations.find(loc => loc.name === data.location);
-      if (!location) {
-        throw new Error('Location not found');
-      }
-      
-      const regionData = { region: data.region };
-      const response = await locationsAPI.addRegion(location.id, regionData);
-      console.log('Region created successfully:', response);
-      // Refresh data after successful creation
-      await fetchLocations();
-      closeForm();
-    } catch (err) {
-      console.error('Failed to create region:', err);
-      setError(prev => ({ ...prev, regions: err.message }));
-    }
-  }, [masters.locations, fetchLocations]);
-
-  const updateRegion = useCallback(async (itemId, data) => {
-    try {
-      // Find the location and region IDs
-      const location = masters.locations.find(loc => loc.name === data.location);
-      const region = masters.regions.find(r => r.id === itemId);
-      
-      if (!location || !region) {
-        throw new Error('Location or region not found');
-      }
-      
-      const regionData = { region: data.region };
-      await locationsAPI.updateRegion(location.id, region.id, regionData);
-      // Refresh data after successful update
-      await fetchLocations();
-      closeForm();
-    } catch (err) {
-      console.error('Failed to update region:', err);
-      setError(prev => ({ ...prev, regions: err.message }));
-    }
-  }, [masters.locations, masters.regions, fetchLocations]);
-
-  const deleteRegion = useCallback(async (itemId) => {
-    try {
-      // Find the location and region IDs
-      const region = masters.regions.find(r => r.id === itemId);
-      const location = masters.locations.find(loc => loc.name === region.location);
-      
-      if (!location || !region) {
-        throw new Error('Location or region not found');
-      }
-      
-      await locationsAPI.deleteRegion(location.id, region.id);
-      // Refresh data after successful deletion
-      await fetchLocations();
-      setDeleteDialog({ open: false, type: '', item: null });
-    } catch (err) {
-      console.error('Failed to delete region:', err);
-      setError(prev => ({ ...prev, regions: err.message }));
-    }
-  }, [masters.regions, masters.locations, fetchLocations]);
-
-  // API-based CRUD operations for zones
-  const addZone = useCallback(async (data) => {
-    try {
-      // Find the location and region IDs
-      const location = masters.locations.find(loc => loc.name === data.location);
-      const region = masters.regions.find(r => r.region === data.region && r.location === data.location);
-      
-      if (!location) {
-        throw new Error('Location not found');
-      }
-      if (!region) {
-        throw new Error('Region not found');
-      }
-      
-      const zoneData = { zone: data.zone };
-      const response = await locationsAPI.addZone(location.id, region.id, zoneData);
-      console.log('Zone created successfully:', response);
-      // Refresh data after successful creation
-      await fetchLocations();
-      closeForm();
-    } catch (err) {
-      console.error('Failed to create zone:', err);
-      setError(prev => ({ ...prev, zones: err.message }));
-    }
-  }, [masters.locations, masters.regions, fetchLocations]);
-
-  const updateZone = useCallback(async (itemId, data) => {
-    try {
-      // Find the location, region, and zone IDs
-      const location = masters.locations.find(loc => loc.name === data.location);
-      const region = masters.regions.find(r => r.region === data.region && r.location === data.location);
-      const zone = masters.zones.find(z => z.id === itemId);
-      
-      if (!location || !region || !zone) {
-        throw new Error('Location, region, or zone not found');
-      }
-      
-      const zoneData = { zone: data.zone };
-      await locationsAPI.updateZone(location.id, region.id, zone.id, zoneData);
-      // Refresh data after successful update
-      await fetchLocations();
-      closeForm();
-    } catch (err) {
-      console.error('Failed to update zone:', err);
-      setError(prev => ({ ...prev, zones: err.message }));
-    }
-  }, [masters.locations, masters.regions, masters.zones, fetchLocations]);
-
-  const deleteZone = useCallback(async (itemId) => {
-    try {
-      // Find the location, region, and zone IDs
-      const zone = masters.zones.find(z => z.id === itemId);
-      const region = masters.regions.find(r => r.region === zone.region && r.location === zone.location);
-      const location = masters.locations.find(loc => loc.name === zone.location);
-      
-      if (!location || !region || !zone) {
-        throw new Error('Location, region, or zone not found');
-      }
-      
-      await locationsAPI.deleteZone(location.id, region.id, zone.id);
-      // Refresh data after successful deletion
-      await fetchLocations();
-      setDeleteDialog({ open: false, type: '', item: null });
-    } catch (err) {
-      console.error('Failed to delete zone:', err);
-      setError(prev => ({ ...prev, zones: err.message }));
-    }
-  }, [masters.zones, masters.regions, masters.locations, fetchLocations]);
 
   // Generic CRUD handlers
   const getList = useCallback((type) => {
@@ -305,13 +86,12 @@ const Masters = () => {
     closeForm();
   }, [getList, setList]);
 
-  const deleteItem = useCallback((type, itemId) => {
+  const deleteItem = useCallback(async (type, itemId) => {
+    let result;
     if (type === 'location') {
-      // Use API-based deletion for locations
-      deleteLocation(itemId);
+      result = await deleteLocation(itemId);
     } else if (type === 'region') {
-      // Use API-based deletion for regions
-      deleteRegion(itemId);
+      result = await deleteRegion(itemId);
     } else if (type === 'zone') {
       result = await deleteZone(itemId);
     } else if (type === 'type') {
@@ -346,7 +126,7 @@ const Masters = () => {
     setDeleteDialog({ open: true, type, item });
   }, []);
 
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback(async () => {
     const { type, data, editing } = form;
     const formattedData = { ...data };
     
@@ -354,26 +134,30 @@ const Masters = () => {
     if ('region' in formattedData) formattedData.region = formatName(formattedData.region);
     if ('zone' in formattedData) formattedData.zone = formatName(formattedData.zone);
 
+    let result;
     if (type === 'location') {
-      // Use API-based operations for locations
       if (editing) {
-        updateLocation(editing.id, formattedData);
+        result = await updateLocation(editing.id, formattedData);
       } else {
-        addLocation(formattedData);
+        result = await addLocation(formattedData);
       }
     } else if (type === 'region') {
-      // Use API-based operations for regions
       if (editing) {
-        updateRegion(editing.id, formattedData);
+        result = await updateRegion(editing.id, formattedData);
       } else {
-        addRegion(formattedData);
+        result = await addRegion(formattedData);
       }
     } else if (type === 'zone') {
-      // Use API-based operations for zones
       if (editing) {
-        updateZone(editing.id, formattedData);
+        result = await updateZone(editing.id, formattedData);
       } else {
-        addZone(formattedData);
+        result = await addZone(formattedData);
+      }
+    } else if (type === 'type') {
+      if (editing) {
+        result = await updateType(editing.id, formattedData);
+      } else {
+        result = await addType(formattedData);
       }
     } else if (type === 'stage') {
       if (editing) {
@@ -382,7 +166,11 @@ const Masters = () => {
         result = await addStage(formattedData);
       }
     }
-  }, [form, addItem, updateItem, formatName, addLocation, updateLocation, addRegion, updateRegion, addZone, updateZone]);
+
+    if (result?.success) {
+      closeForm();
+    }
+  }, [form, formatName, addLocation, updateLocation, addRegion, updateRegion, addZone, updateZone, addType, updateType]);
 
   const sidebarTabs = [
     { id: 'location', label: 'Location', columns: ['S.No', 'Location', 'Status', 'Action'] },
@@ -468,7 +256,11 @@ const Masters = () => {
           </>
         )}
         <Input
-          value={type === 'region' ? (data.region || '') : type === 'zone' ? (data.zone || '') : (data.name || '')}
+          value={
+            type === 'region' ? (data.region || '') : 
+            type === 'zone' ? (data.zone || '') : 
+            (data.name || '')
+          }
           onChange={(e) => {
             const value = e.target.value;
             const key = type === 'region' ? 'region' : type === 'zone' ? 'zone' : 'name';
@@ -499,11 +291,17 @@ const Masters = () => {
         <div className="bg-white rounded-lg shadow p-8">
           <div className="text-center text-red-500">Error: {error[type]}</div>
           <div className="text-center mt-4">
-            <Button onClick={fetchLocations} variant="outline">Retry</Button>
+            <Button onClick={fetchAllData} variant="outline">Retry</Button>
           </div>
         </div>
       );
     }
+
+    // Calculate pagination
+    const totalPages = Math.ceil(items.length / itemsPerPage);
+    const startIndex = (currentPage[type] - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedItems = items.slice(startIndex, endIndex);
     
     return (
       <div className="bg-white rounded-lg shadow">
@@ -518,9 +316,9 @@ const Masters = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {items.map((item, index) => (
+            {paginatedItems.map((item, index) => (
               <TableRow key={item.id}>
-                <TableCell>{index + 1}</TableCell>
+                <TableCell>{startIndex + index + 1}</TableCell>
                 {type === 'location' && (
                   <>
                     <TableCell className="text-center">{item.name}</TableCell>
@@ -535,7 +333,20 @@ const Masters = () => {
                     </TableCell>
                   </>
                 )}
-                {type === 'type' && <TableCell className="text-center">{item.name || item.type}</TableCell>}
+                {type === 'type' && (
+                  <>
+                    <TableCell className="text-center">{item.name}</TableCell>
+                    <TableCell className="text-center">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        item.status === 'active' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {item.status || 'active'}
+                      </span>
+                    </TableCell>
+                  </>
+                )}
                 {type !== 'location' && type !== 'type' && <TableCell className="text-center">{item.location}</TableCell>}
                 {type === 'region' && <TableCell className="text-center">{item.region}</TableCell>}
                 {type === 'zone' && (
@@ -548,13 +359,45 @@ const Masters = () => {
                   <ActionButtons
                     onEdit={() => openForm(type, item)}
                     onDelete={() => openDelete(type, item)}
-                    showDelete={type !== 'location'}
+                    showDelete={true}
                   />
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
+
+        {/* Pagination Footer */}
+        {items.length > 0 && (
+          <div className="px-6 py-4 border-t flex items-center justify-between bg-gray-50">
+            <p className="text-sm text-gray-600">
+              Showing {startIndex + 1} to {Math.min(endIndex, items.length)} of {items.length} results
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage[type] === 1}
+                onClick={() => setCurrentPage(prev => ({ ...prev, [type]: prev[type] - 1 }))}
+                className="text-gray-700"
+              >
+                Previous
+              </Button>
+              <span className="px-3 py-1 text-sm text-gray-600 flex items-center">
+                Page {currentPage[type]} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage[type] === totalPages}
+                onClick={() => setCurrentPage(prev => ({ ...prev, [type]: prev[type] + 1 }))}
+                className="text-gray-700"
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
       </div>);
   };
 
@@ -604,7 +447,12 @@ const Masters = () => {
 
       {/* Generic Add/Edit Modal */}
       <Modal open={form.open} onClose={closeForm}>
-        <div className="space-y-4">
+        <div className="space-y-4" onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            handleSubmit();
+          }
+        }}>
           <h2 className="text-xl font-bold text-indigo-700">
             {form.editing ? `Edit ${form.type === 'region' ? 'Zone' : form.type === 'zone' ? 'Area' : form.type}` : `Add New ${form.type === 'region' ? 'Zone' : form.type === 'zone' ? 'Area' : form.type}`}
           </h2>
@@ -620,7 +468,12 @@ const Masters = () => {
 
       {/* Generic Delete Modal */}
       <Modal open={deleteDialog.open} onClose={() => setDeleteDialog({ open: false, type: '', item: null })}>
-        <div className="space-y-4">
+        <div className="space-y-4" onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            deleteItem(deleteDialog.type, deleteDialog.item?.id);
+          }
+        }}>
           <h2 className="text-xl font-bold text-red-600">Delete {activeTab === 'region' ? 'Zone' : activeTab === 'zone' ? 'Area' : activeTab}</h2>
           <p className="text-gray-700">
             Are you sure you want to delete <strong>"{deleteDialog.item?.name || deleteDialog.item?.region || deleteDialog.item?.zone || ''}"</strong>?
