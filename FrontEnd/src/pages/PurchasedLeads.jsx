@@ -12,7 +12,8 @@ import { formatCallDate } from "@/utils/dateUtils";
 import { useLeads } from "../context/LeadsContext";
 import Leads from "./Leads";
 import LeadStepper from "@/components/ui/LeadStepper";
- 
+import { getToken } from "@/utils/authStorage";
+
 const getStatusBadge = (status) => {
   switch (status?.toUpperCase()) {
     case 'PURCHASED':

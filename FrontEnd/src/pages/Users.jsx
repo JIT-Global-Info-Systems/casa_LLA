@@ -7,15 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Search, Plus, Edit, Trash2, Eye, MoreVertical, RefreshCw, ChevronLeft } from "lucide-react";
 import { useUsers } from "../context/UsersContext";
-// Import the Table components
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import ConfirmModal from "@/components/ui/ConfirmModal";
+import { useEntityAction } from "@/hooks/useEntityAction";
+import toast from "react-hot-toast";
+import { formatDisplayDate, safeDate } from "@/utils/dateUtils";
+import PhoneInput from "@/components/ui/PhoneInput";
 
 function Users() {
   // Get users data and functions from context
@@ -38,6 +34,13 @@ function Users() {
     status: "active"
   });
 
+  // Form validation state
+  const [formErrors, setFormErrors] = useState({});
+  const [isFormValid, setIsFormValid] = useState(false);
+
+  // Entity action hook for status-aware delete
+  const { handleDelete, canPerformAction, confirmModal } = useEntityAction('user');
+
   useEffect(() => {
     fetchUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -51,6 +54,70 @@ function Users() {
     filterUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [users, searchTerm, roleFilter, statusFilter, fromDate, toDate]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, roleFilter, statusFilter, fromDate, toDate]);
+
+  // Validate form whenever formData changes
+  useEffect(() => {
+    validateForm();
+  }, [formData]);
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+
+  // Validate form
+  const validateForm = () => {
+    const errors = {};
+    
+    if (!formData.name.trim()) {
+      errors.name = 'Name is required';
+    }
+    
+    if (!formData.email.trim()) {
+      errors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = 'Please enter a valid email address';
+    }
+    
+    if (!formData.role) {
+      errors.role = 'Role is required';
+    }
+    
+    if (!formData.phone_number || !formData.phone_number.trim()) {
+      errors.phone_number = 'Phone number is required';
+    }
+    
+    setFormErrors(errors);
+    const phoneValid = !formErrors.phone_number;
+    const formValid = Object.keys(errors).length === 0 && phoneValid;
+    setIsFormValid(formValid);
+    
+    return formValid;
+  };
+
+  // Handle phone validation change
+  const handlePhoneValidation = (isValid, error) => {
+    setFormErrors(prev => ({
+      ...prev,
+      phone_number: isValid ? '' : error
+    }));
+  };
+
+  // Handle form input changes
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Clear error for this field when user starts typing
+    if (formErrors[field]) {
+      setFormErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
 
   const filterUsers = () => {
     if (!users) return;
@@ -86,12 +153,33 @@ function Users() {
       );
     }
 
+    // Sort users by creation date (newest first)
+    filtered.sort((a, b) => {
+      const dateA = safeDate(a.created_at);
+      const dateB = safeDate(b.created_at);
+      
+      // Handle null dates - put them at the end
+      if (!dateA && !dateB) return 0;
+      if (!dateA) return 1;
+      if (!dateB) return -1;
+      
+      // Sort in descending order (newest first)
+      return dateB.getTime() - dateA.getTime();
+    });
+
     setFilteredUsers(filtered);
   };
 
   const handleAddUser = async () => {
+    if (!validateForm()) {
+      toast.error('Please fix the form errors before submitting');
+      return;
+    }
+
     try {
       await createUser(formData);
+      toast.success('User added successfully');
+      await fetchUsers(); // Refresh list to show new user at top
       setMode("list");
       setFormData({
         name: "",
@@ -101,6 +189,7 @@ function Users() {
         phone_number: "",
         
       });
+      setFormErrors({});
     } catch (err) {
       // Error handled by context
       console.error(err);
@@ -108,8 +197,15 @@ function Users() {
   };
 
   const handleEditUser = async () => {
+    if (!validateForm()) {
+      toast.error('Please fix the form errors before submitting');
+      return;
+    }
+
     try {
       await updateUser(selectedUser.user_id, formData);
+      toast.success('User updated successfully');
+      await fetchUsers(); // Refresh list to maintain sorting
       setMode("list");
       setSelectedUser(null);
       setFormData({
@@ -120,6 +216,7 @@ function Users() {
         phone_number: "",
         status: "active",
       });
+      setFormErrors({});
     } catch (err) {
       console.error(err);
     }
@@ -382,6 +479,8 @@ function Users() {
                                 try {
                                   const newStatus = checked ? "active" : "inactive";
                                   await updateUser(user.user_id, { status: newStatus });
+                                  await fetchUsers(); // Refresh list to maintain sorting
+                                  toast.success(`User ${checked ? 'activated' : 'deactivated'} successfully`);
                                 } catch (error) {
                                   console.error("Error updating user status:", error);
                                 }
@@ -401,7 +500,7 @@ function Users() {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {new Date(user.created_at).toISOString().split("T")[0]}
+                          {formatDisplayDate(user.created_at)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <DropdownMenu>
@@ -667,18 +766,150 @@ function Users() {
              
             </div>
 
-            <div className="flex justify-end gap-3 mt-4">
-              <Button variant="outline" onClick={() => setMode("list")}>
-                Cancel
-              </Button>
-              <Button
-                onClick={handleAddUser}
-                className="bg-indigo-600 hover:bg-indigo-700"
-              >
-                Add User
-              </Button>
-            </div>
-            {/* ... rest of edit inputs ... */}
+            <Card className="border-0 shadow-md bg-white overflow-hidden">
+              <div className="h-2 bg-indigo-500 w-full" />
+              <CardHeader>
+                <CardTitle className="text-xl text-gray-800">User Information</CardTitle>
+                <CardDescription>Personal and account details.</CardDescription>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-gray-700 font-medium">Name</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => handleInputChange('name', e.target.value)}
+                    placeholder="Enter user name"
+                    className="bg-gray-50/50"
+                  />
+                  {formErrors.name && (
+                    <p className="text-sm text-red-600">{formErrors.name}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-gray-700 font-medium">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    placeholder="Enter email address"
+                    className="bg-gray-50/50"
+                  />
+                  {formErrors.email && (
+                    <p className="text-sm text-red-600">{formErrors.email}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <PhoneInput
+                    label="Phone"
+                    value={formData.phone_number}
+                    onChange={(value) => handleInputChange('phone_number', value)}
+                    onValidationChange={handlePhoneValidation}
+                    placeholder="Enter phone number"
+                    className="bg-gray-50/50"
+                    required={true}
+                    showValidation={true}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-gray-700 font-medium">Role</Label>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" className="w-full justify-between capitalize bg-gray-50/50 border-gray-300">
+                        {formData.role ? formData.role.replace(/_/g, ' ') : "Select role"}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] bg-white border shadow-lg">
+                      <DropdownMenuItem
+                        onClick={() =>
+                          setFormData({ ...formData, role: "tele_caller" })
+                        }
+                        className="cursor-pointer"
+                      >
+                        Telecaller
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() =>
+                          setFormData({ ...formData, role: "land_executive" })
+                        }
+                        className="cursor-pointer"
+                      >
+                        Land Executive
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() =>
+                          setFormData({ ...formData, role: "feasibility_team" })
+                        }
+                        className="cursor-pointer"
+                      >
+                        Feasibility Team
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() =>
+                          setFormData({ ...formData, role: "l1_md" })
+                        }
+                        className="cursor-pointer"
+                      >
+                        L1 Management
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() =>
+                          setFormData({ ...formData, role: "cmo_cro" })
+                        }
+                        className="cursor-pointer"
+                      >
+                        CMO/CRO
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() =>
+                          setFormData({ ...formData, role: "legal" })
+                        }
+                        className="cursor-pointer"
+                      >
+                        Legal
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() =>
+                          setFormData({ ...formData, role: "liaison" })
+                        }
+                        className="cursor-pointer"
+                      >
+                        Liaison
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() =>
+                          setFormData({ ...formData, role: "finance" })
+                        }
+                        className="cursor-pointer"
+                      >
+                        Finance
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() =>
+                          setFormData({ ...formData, role: "admin" })
+                        }
+                        className="cursor-pointer"
+                      >
+                        Admin
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </CardContent>
+              <div className="border-t px-6 py-4 bg-gray-50/50 flex justify-end gap-3">
+                <Button variant="outline" onClick={() => setMode("list")} className="border-gray-300">
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleAddUser}
+                  disabled={!isFormValid}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  Add User
+                </Button>
+              </div>
+            </Card>
           </div>
         </div>
       )}
@@ -855,23 +1086,157 @@ function Users() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 mt-4">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setMode("list");
-                  setSelectedUser(null);
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleEditUser}
-                className="bg-indigo-600 hover:bg-indigo-700"
-              >
-                Update User
-              </Button>
-            </div>
+            <Card className="border-0 shadow-md bg-white overflow-hidden">
+              <div className="h-2 bg-indigo-500 w-full" />
+              <CardHeader>
+                <CardTitle className="text-xl text-gray-800">User Information</CardTitle>
+                <CardDescription>Personal and account details.</CardDescription>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-name" className="text-gray-700 font-medium">Name</Label>
+                  <Input
+                    id="edit-name"
+                    value={formData.name}
+                    onChange={(e) => handleInputChange('name', e.target.value)}
+                    placeholder="Enter user name"
+                    className="bg-gray-50/50"
+                  />
+                  {formErrors.name && (
+                    <p className="text-sm text-red-600">{formErrors.name}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-email" className="text-gray-700 font-medium">Email</Label>
+                  <Input
+                    id="edit-email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    placeholder="Enter email address"
+                    className="bg-gray-50/50"
+                  />
+                  {formErrors.email && (
+                    <p className="text-sm text-red-600">{formErrors.email}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <PhoneInput
+                    label="Phone"
+                    value={formData.phone_number}
+                    onChange={(value) => handleInputChange('phone_number', value)}
+                    onValidationChange={handlePhoneValidation}
+                    placeholder="Enter phone number"
+                    className="bg-gray-50/50"
+                    required={true}
+                    showValidation={true}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-gray-700 font-medium">Role</Label>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" className="w-full justify-between capitalize bg-gray-50/50 border-gray-300">
+                        {formData.role ? formData.role.replace(/_/g, ' ') : "Select role"}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] bg-white border shadow-lg">
+                      <DropdownMenuItem
+                        onClick={() =>
+                          setFormData({ ...formData, role: "tele_caller" })
+                        }
+                        className="cursor-pointer"
+                      >
+                        Telecaller
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() =>
+                          setFormData({ ...formData, role: "land_executive" })
+                        }
+                        className="cursor-pointer"
+                      >
+                        Land Executive
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() =>
+                          setFormData({ ...formData, role: "feasibility_team" })
+                        }
+                        className="cursor-pointer"
+                      >
+                        Feasibility Team
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() =>
+                          setFormData({ ...formData, role: "l1_md" })
+                        }
+                        className="cursor-pointer"
+                      >
+                        L1 Management
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() =>
+                          setFormData({ ...formData, role: "cmo_cro" })
+                        }
+                        className="cursor-pointer"
+                      >
+                        CMO/CRO
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() =>
+                          setFormData({ ...formData, role: "legal" })
+                        }
+                        className="cursor-pointer"
+                      >
+                        Legal
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() =>
+                          setFormData({ ...formData, role: "liaison" })
+                        }
+                        className="cursor-pointer"
+                      >
+                        Liaison
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() =>
+                          setFormData({ ...formData, role: "finance" })
+                        }
+                        className="cursor-pointer"
+                      >
+                        Finance
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() =>
+                          setFormData({ ...formData, role: "admin" })
+                        }
+                        className="cursor-pointer"
+                      >
+                        Admin
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </CardContent>
+              <div className="border-t px-6 py-4 bg-gray-50/50 flex justify-end gap-3">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setMode("list");
+                    setSelectedUser(null);
+                  }}
+                  className="border-gray-300"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleEditUser}
+                  disabled={!isFormValid}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  Update User
+                </Button>
+              </div>
+            </Card>
           </div>
         </div>
       )}

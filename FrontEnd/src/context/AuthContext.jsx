@@ -1,5 +1,15 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { usersAPI, authAPI } from '../services/api';
+import { 
+  getToken, 
+  getUserId, 
+  getUserData, 
+  getUserRole,
+  clearAllAuthData,
+  storeAuthSession,
+  isRememberMeEnabled,
+  getRememberedEmail
+} from '../utils/authStorage';
 
 const AuthContext = createContext(null);
 
@@ -34,9 +44,7 @@ export const AuthProvider = ({ children }) => {
 
   // Clear session helper
   const clearSession = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user_id');
-    localStorage.removeItem('user');
+    clearAllAuthData();
     setUser(null);
     setError(null);
     setIsFirstLogin(false);
@@ -46,9 +54,9 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const userId = localStorage.getItem('user_id');
-        const userData = localStorage.getItem('user');
+        const token = getToken(); // Check both localStorage and sessionStorage
+        const userId = getUserId();
+        const userData = getUserData();
 
         if (!token) {
           setLoading(false);
@@ -82,7 +90,7 @@ export const AuthProvider = ({ children }) => {
                 const response = await usersAPI.getById(userId);
                 const userData = { ...response, token };
                 setUser(userData);
-                localStorage.setItem('user', JSON.stringify(response));
+                storeAuthSession({ user: response, rememberMe: isRememberMeEnabled() });
               } catch (fetchError) {
                 console.error('Failed to fetch user profile:', fetchError);
                 // If we can't get user data but token is valid, keep minimal user
@@ -98,11 +106,8 @@ export const AuthProvider = ({ children }) => {
             const response = await usersAPI.getById(userId);
             const userData = { ...response, token };
             setUser(userData);
-            // Store user data in localStorage for future use
-            localStorage.setItem('user', JSON.stringify(response));
-            if (response.role) {
-              localStorage.setItem('userRole', response.role);
-            }
+            // Store user data for future use
+            storeAuthSession({ user: response, rememberMe: isRememberMeEnabled() });
           } catch (fetchError) {
             console.error('Failed to fetch user profile:', fetchError);
             // If token is expired, this will be caught by API layer
@@ -174,24 +179,16 @@ export const AuthProvider = ({ children }) => {
           throw new Error('Received expired token from server');
         }
 
-        localStorage.setItem('token', response.token);
+        // Store complete auth session with proper persistence
+        storeAuthSession({
+          token: response.token,
+          user: response.user,
+          rememberMe,
+          email: credentials.email
+        });
 
-        // Handle remember me
-        if (rememberMe) {
-          localStorage.setItem('rememberMe', 'true');
-          localStorage.setItem('rememberedEmail', credentials.email);
-        } else {
-          localStorage.removeItem('rememberMe');
-          localStorage.removeItem('rememberedEmail');
-        }
-
-        // Store user data if available
+        // Set user state
         if (response.user) {
-          localStorage.setItem('user_id', response.user.id || response.user.user_id);
-          localStorage.setItem('user', JSON.stringify(response.user));
-          if (response.user.role) {
-            localStorage.setItem('userRole', response.user.role);
-          }
           setUser({ ...response.user, token: response.token });
 
           // Check if it's first login
@@ -232,17 +229,11 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user_id');
-    localStorage.removeItem('user');
-    localStorage.removeItem('userRole');
-    localStorage.removeItem('rememberMe');
-    localStorage.removeItem('rememberedEmail');
+    clearAllAuthData();
     setUser(null);
     setError(null);
     setIsFirstLogin(false);
     setForcePasswordChange(false);
-    clearSession();
   };
 
   const markPasswordChanged = () => {
@@ -251,7 +242,7 @@ export const AuthProvider = ({ children }) => {
     // Update stored user data
     if (user) {
       const updatedUser = { ...user, firstLogin: false };
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      storeAuthSession({ user: updatedUser, rememberMe: isRememberMeEnabled() });
       setUser(updatedUser);
     }
   };

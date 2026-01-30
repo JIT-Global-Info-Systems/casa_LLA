@@ -1,5 +1,7 @@
-// const API_BASE_URL = 'http://13.201.132.94:5000/api';
-const API_BASE_URL = 'http://localhost:5000/api';
+import { getToken, clearAllAuthData } from '../utils/authStorage';
+
+const API_BASE_URL = 'http://13.201.132.94:5000/api';
+// const API_BASE_URL = 'http://localhost:5000/api';
 const REQUEST_TIMEOUT = 30000; // 30 seconds
 const MAX_RETRIES = 2;
 
@@ -53,9 +55,7 @@ const isTokenExpired = (token) => {
 
 // Session cleanup helper
 const clearSession = () => {
-  localStorage.removeItem('token');
-  localStorage.removeItem('user_id');
-  localStorage.removeItem('user');
+  clearAllAuthData();
   // Dispatch custom event for auth context to listen
   window.dispatchEvent(new CustomEvent('auth:logout'));
 };
@@ -64,8 +64,8 @@ const clearSession = () => {
 const apiRequest = async (endpoint, options = {}, retryCount = 0) => {
   const url = `${API_BASE_URL}${endpoint}`;
  
-  // Get token from localStorage
-  const token = localStorage.getItem('token');
+  // Get token from centralized storage (checks both localStorage and sessionStorage)
+  const token = getToken();
  
   // Skip authentication for auth endpoints
   const isAuthEndpoint = endpoint.startsWith('/auth/');
@@ -623,7 +623,7 @@ export const authAPI = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Authorization': `Bearer ${getToken()}`,
       },
       body: JSON.stringify({ oldPassword, newPassword }),
     });

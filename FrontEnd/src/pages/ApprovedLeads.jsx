@@ -13,7 +13,8 @@ import { useLeads } from "../context/LeadsContext";
 import Modal from "@/components/ui/modal";
 import Leads from "./Leads";
 import LeadStepper from "@/components/ui/LeadStepper";
- 
+import { getToken } from "@/utils/authStorage";
+
 const getStatusBadge = (status) => {
   switch (status?.toUpperCase()) {
     case 'APPROVED':

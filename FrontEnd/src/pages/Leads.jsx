@@ -2192,49 +2192,84 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
   </Card>
               </div>
 
-              {/* RIGHT COLUMN – CALL HISTORY / YIELD */}
-              <div className="lg:col-span-4 ">
-                <Card className="border-0 shadow-md bg-white sticky top-28">
+              {/* RIGHT COLUMN – CALL HISTORY */}
+              <div className="lg:col-span-4 space-y-6">
+                {/* CALL HISTORY CARD */}
+                <Card className="border-0 shadow-md bg-white sticky top-4">
                   <CardHeader>
-                    <CardTitle className="text-lg text-gray-800">Call History & Yield</CardTitle>
+                    <CardTitle className="text-lg text-gray-800">Call History</CardTitle>
                     <CardDescription>Quick reference</CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-6">
+                  <CardContent>
                     {/* CALL HISTORY */}
                     <div>
-                      <Label className="text-sm font-medium text-gray-700">Call History</Label>
-                      {calls?.length > 0 ? (
-                        <div className="space-y-3 mt-2">
-                          {calls.map((call, idx) => (
-                            <div key={idx} className="p-3 border rounded-lg bg-gray-50 text-sm">
-                              <div className="flex justify-between items-start mb-2">
-                                <p className="font-medium">
-                                  {new Date(call.created_at || call.createdAt).toLocaleDateString()}
+                      <div className="h-[35vh] overflow-y-auto border border-gray-200 rounded-lg bg-gray-50/50 p-3 mb-2">
+                        {calls?.length > 0 ? (
+                          <div className="space-y-3">
+                            {calls.map((call, idx) => (
+                              <div key={idx} className="p-3 border rounded-lg bg-white text-sm shadow-sm">
+                                <div className="flex justify-between items-start mb-2">
+                                  <p className="font-medium">
+                                    {new Date(call.created_at || call.createdAt).toLocaleDateString()}
+                                  </p>
+                                  <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
+                                    {call.role || 'Call'}
+                                  </span>
+                                </div>
+                                <p className="text-gray-600">
+                                  {call.note || "No notes"}
                                 </p>
-                                <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
-                                  {call.role || 'Call'}
-                                </span>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  {new Date(call.created_at || call.createdAt).toLocaleTimeString()}
+                                </p>
                               </div>
-                              <p className="text-gray-600">
-                                {call.note || "No notes"}
-                              </p>
-                              <p className="text-xs text-gray-500 mt-1">
-                                {new Date(call.created_at || call.createdAt).toLocaleTimeString()}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-gray-400 italic mt-2">No call history</p>
-                      )}
-                    </div>
-
-                    {/* YIELD */}
-                    <div>
-                      <Label className="text-sm font-medium text-gray-700">Yield (%)</Label>
-                      <div className="p-2 bg-gray-50 border rounded-md mt-1">
-                        {formData.yield || "-"}
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-400 italic">No call history</p>
+                        )}
                       </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* YIELD CARD */}
+                <Card className="border-0 shadow-md bg-white sticky top-[50vh] mt-8">
+                  <CardHeader>
+                    <CardTitle className="text-lg text-gray-800">Yield</CardTitle>
+                    <CardDescription>Quick reference</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label className="text-gray-700 font-medium">Yield (%)</Label>
+                        {viewMode ? (
+                          <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-800 min-h-[40px] flex items-center">
+                            {formData.yield ? `${formData.yield}%` : "-"}
+                          </div>
+                        ) : (
+                          <div className="relative">
+                            <Input 
+                              value={formData.yield} 
+                              onChange={(e) => handleChange("yield", e.target.value)} 
+                              className="bg-gray-50/50 pr-8" 
+                              placeholder="Enter yield percentage"
+                            />
+                            <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">%</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {formData.yield && (
+                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                            <p className="text-sm text-blue-700">
+                              Current yield: <span className="font-semibold">{formData.yield}%</span>
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
