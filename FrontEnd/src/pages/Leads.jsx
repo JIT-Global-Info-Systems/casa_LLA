@@ -355,7 +355,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           frontage: "",
           roadWidth: "",
           sspde: "No",
-          leadStatus: "",
+          leadStatus: "Enquired",
           remark: "",
           lead_stage: "Enquired",
 
