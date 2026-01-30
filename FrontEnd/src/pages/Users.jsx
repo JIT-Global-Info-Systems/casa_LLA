@@ -39,6 +39,8 @@ function Users() {
   // Form validation state
   const [formErrors, setFormErrors] = useState({});
   const [isFormValid, setIsFormValid] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(new Set());
 
   // Entity action hook for status-aware delete
   const { handleDelete, canPerformAction, confirmModal } = useEntityAction('user');
@@ -182,6 +184,7 @@ function Users() {
       return;
     }
 
+    setIsSubmitting(true);
     try {
       await createUser(formData);
       toast.success('User added successfully');
@@ -199,6 +202,8 @@ function Users() {
     } catch (err) {
       toast.error(err.message || 'Could not add user. Please try again.');
       console.error(err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -208,6 +213,7 @@ function Users() {
       return;
     }
 
+    setIsSubmitting(true);
     try {
       await updateUser(selectedUser.user_id, formData);
       toast.success('User updated successfully');
@@ -226,6 +232,8 @@ function Users() {
     } catch (err) {
       toast.error(err.message || 'Could not update user. Please try again.');
       console.error(err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -298,7 +306,6 @@ function Users() {
                   Refresh
                 </Button>
                 <Button
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
                   onClick={() => {
                     setSelectedUser(null);
                     setFormData({
@@ -491,7 +498,11 @@ function Users() {
                           <div className="flex items-center justify-center gap-3">
                             <Switch
                               checked={user.status === "active"}
+                              disabled={updatingStatus.has(user.user_id)}
                               onCheckedChange={async (checked) => {
+                                if (updatingStatus.has(user.user_id)) return;
+                                
+                                setUpdatingStatus(prev => new Set(prev).add(user.user_id));
                                 try {
                                   const newStatus = checked ? "active" : "inactive";
                                   await updateUser(user.user_id, { status: newStatus });
@@ -500,6 +511,12 @@ function Users() {
                                 } catch (error) {
                                   toast.error('Could not update status. Please try again.');
                                   console.error("Error updating user status:", error);
+                                } finally {
+                                  setUpdatingStatus(prev => {
+                                    const newSet = new Set(prev);
+                                    newSet.delete(user.user_id);
+                                    return newSet;
+                                  });
                                 }
                               }}
                               id={`status-toggle-${user.user_id}`}
@@ -761,10 +778,10 @@ function Users() {
                 </Button>
                 <Button
                   onClick={handleAddUser}
-                  disabled={!isFormValid}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  disabled={!isFormValid || isSubmitting}
+                  loading={isSubmitting}
                 >
-                  Add User
+                  {isSubmitting ? 'Adding User...' : 'Add User'}
                 </Button>
               </div>
             </Card>
@@ -939,10 +956,10 @@ function Users() {
                 </Button>
                 <Button
                   onClick={handleEditUser}
-                  disabled={!isFormValid}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  disabled={!isFormValid || isSubmitting}
+                  loading={isSubmitting}
                 >
-                  Update User
+                  {isSubmitting ? 'Updating User...' : 'Update User'}
                 </Button>
               </div>
             </Card>
@@ -1043,7 +1060,6 @@ function Users() {
                 </Button>
                 <Button
                   onClick={() => openEditDialog(selectedUser)}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
                 >
                   <Edit className="h-4 w-4 mr-2" />
                   Edit User

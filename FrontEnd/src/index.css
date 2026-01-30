@@ -74,4 +74,34 @@
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: oklch(0.6 0.03 250);
   }
+
+  /* Enhanced button interactions */
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+
+  button:not(:disabled):active {
+    transform: translateY(1px);
+  }
+
+  /* Ensure all clickable elements have proper cursor */
+  [role="button"]:not(:disabled),
+  .cursor-pointer:not(:disabled) {
+    cursor: pointer;
+  }
+
+  /* Add subtle feedback for all interactive elements */
+  button:not(:disabled):hover,
+  [role="button"]:not(:disabled):hover,
+  .cursor-pointer:not(:disabled):hover {
+    filter: brightness(0.95);
+  }
+
+  /* Ensure disabled elements look disabled */
+  button:disabled,
+  [role="button"]:disabled,
+  .cursor-pointer:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
 }

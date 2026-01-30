@@ -76,6 +76,8 @@ function Mediators() {
     aadhar_upload: null,
   });
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const filteredMediators = mediators.filter((mediator) => {
     const matchesSearch =
       searchTerm === "" ||
@@ -115,6 +117,7 @@ function Mediators() {
   };
 
   const handleSave = async () => {
+    setIsSubmitting(true);
     try {
       const apiData = {
         name: formData.mediatorName,
@@ -140,6 +143,8 @@ function Mediators() {
       resetForm();
     } catch (error) {
       console.error("Error saving mediator:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -623,9 +628,13 @@ function Mediators() {
                 </Button>
                 <Button
                   onClick={handleSave}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                  disabled={isSubmitting}
+                  loading={isSubmitting}
                 >
-                  {selectedMediator ? "Update Mediator" : "Add Mediator"}
+                  {isSubmitting 
+                    ? (selectedMediator ? "Updating..." : "Adding...") 
+                    : (selectedMediator ? "Update Mediator" : "Add Mediator")
+                  }
                 </Button>
 
 
@@ -834,7 +843,6 @@ function Mediators() {
                       handleEdit(viewMediator);
                       setIsViewMode(false);
                     }}
-                    className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white shadow-lg shadow-indigo-500/30 transition-all duration-200"
                   >
                     <Edit className="h-4 w-4 mr-2" />
                     Edit Mediator
@@ -867,7 +875,6 @@ function Mediators() {
                   Refresh
                 </Button>
                 <Button
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
                   onClick={handleCreate}
                 >
                   <Plus className="h-4 w-4 mr-2" />
