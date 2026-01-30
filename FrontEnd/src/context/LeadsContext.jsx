@@ -500,7 +500,7 @@ export const LeadsProvider = ({ children }) => {
         optionalFields.forEach(field => {
           if (formData[field]) {
             if (field === 'lead_stage') payload.lead_stage = formData[field]
-            else if (field === 'leadStatus') payload.lead_status = String(formData[field]).toUpperCase()
+            else if (field === 'leadStatus') payload.lead_status = String(formData[field]).toLowerCase()
 
             else payload[field] = formData[field]
           }
@@ -511,7 +511,7 @@ export const LeadsProvider = ({ children }) => {
       payload.lead_stage = formData.lead_stage || "Enquired"
 
       // ✅ Always send lead_status separately
-      payload.lead_status = formData.leadStatus ? String(formData.leadStatus).toUpperCase() : "WARM"
+      payload.lead_status = formData.leadStatus ? String(formData.leadStatus).toLowerCase() : "warm"
 
       if (formData.callNotes) {
         payload.note = formData.callNotes
@@ -591,8 +591,8 @@ export const LeadsProvider = ({ children }) => {
     
     addIfChanged(
       "lead_status",
-      String(formData.leadStatus).toUpperCase(),
-      String(originalData?.lead_status).toUpperCase()
+      String(formData.leadStatus).toLowerCase(),
+      String(originalData?.lead_status).toLowerCase()
     )
     addIfChanged('notes', formData.callNotes, originalData?.callNotes)
 
