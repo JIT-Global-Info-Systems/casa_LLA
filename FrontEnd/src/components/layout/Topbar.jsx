@@ -418,7 +418,7 @@ function Topbar() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+          {/* <Select value={selectedLocation} onValueChange={setSelectedLocation}>
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Location" />
             </SelectTrigger>
@@ -432,7 +432,7 @@ function Topbar() {
           </Select>
           <Button variant="ghost" size="icon" aria-label="Notifications">
             <Bell />
-          </Button>
+          </Button> */}
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
