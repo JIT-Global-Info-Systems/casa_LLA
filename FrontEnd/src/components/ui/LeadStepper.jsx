@@ -137,7 +137,7 @@ export default function LeadStepper({ stageName, currentStep = 1, onStepChange, 
   return (
     <div className={`w-full relative ${className || ''}`}>
       {/* Topbar-style Header */}
-      <header className="fixed top-16 left-0 md:left-52 right-0 z-50 h-16 border-b border-border bg-white shadow-sm mb-4 backdrop-blur-sm bg-white/95">
+      <header className="fixed top-16 left-0 md:left-52 right-0 z-50 h-12 border-b border-border bg-white shadow-sm mb-4 backdrop-blur-sm bg-white/95">
         <div className="flex h-full items-center justify-between gap-4 px-4 sm:px-6">
           <div className="flex items-center gap-3 w-full">
             {/* Stepper Stages in Header - Full Width */}
@@ -150,9 +150,9 @@ export default function LeadStepper({ stageName, currentStep = 1, onStepChange, 
                 return (
                   <div key={s.id} className="flex items-center flex-1">
                     <div className="flex flex-col items-center w-full">
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors flex-shrink-0
+                      <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold transition-colors flex-shrink-0
                         ${active ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-600"}`}>
-                        {active > step ? <Check size={12} /> : step}
+                        {active > step ? <Check size={10} /> : step}
                       </div>
                       <span className={`text-xs font-medium whitespace-nowrap mt-1 ${
                         active ? "text-indigo-700" : "text-gray-500"
