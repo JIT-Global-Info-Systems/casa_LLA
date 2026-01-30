@@ -1537,39 +1537,25 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                         <SelectItem value="Approved">Purchased</SelectItem>
                       ) : (
                         <>
-                          {/* Show stages from API */}
-                          {console.log('masters.stages:', masters.stages) || 
-                          (masters.stages && masters.stages.length > 0) ? (
-                            <>
-                              {console.log('Rendering stages from API:', masters.stages)}
-                              {masters.stages.map((stage) => (
-                                <SelectItem key={stage.id} value={stage.name}>
-                                  {stage.name}
-                                </SelectItem>
-                              ))}
-                            </>
-                          ) : (
-                            <>
-                              {console.log('No stages found, using fallback. masters.stages:', masters.stages)}
-                              {/* Temporarily add test stages to verify rendering works */}
-                              <SelectItem value="Test Stage 1">Test Stage 1</SelectItem>
-                              <SelectItem value="Test Stage 2">Test Stage 2</SelectItem>
-                              <SelectItem value="Test Stage 3">Test Stage 3</SelectItem>
-                              <SelectItem value="Enquired">Enquired</SelectItem>
-                              <SelectItem value="Lead Allocated">Lead Allocated</SelectItem>
-                              <SelectItem value="First Called">First Called</SelectItem>
-                              <SelectItem value="Site Visit">Site Visit</SelectItem>
-                              <SelectItem value="Owner Meeting">Owner Meeting</SelectItem>
-                              <SelectItem value="Negotiation Started">Negotiation Started</SelectItem>
-                              <SelectItem value="Negotiation_End">Negotiation End</SelectItem>
-                              <SelectItem value="Due_Diligence_Started">Due Diligence Started</SelectItem>
-                              <SelectItem value="Due_Diligence_End">Due Diligence End</SelectItem>
-                              <SelectItem value="Approved">Approved</SelectItem>
-                              <SelectItem value="Hold">Hold</SelectItem>
-                              <SelectItem value="L1_Qualification">L1 Qualification</SelectItem>
-                              <SelectItem value="director_sv">Director sv</SelectItem>
-                            </>
-                          )}
+                          {/* Always use predefined stages instead of API stages */}
+                          <>
+                            <SelectItem value="Test Stage 1">Test Stage 1</SelectItem>
+                            <SelectItem value="Test Stage 2">Test Stage 2</SelectItem>
+                            <SelectItem value="Test Stage 3">Test Stage 3</SelectItem>
+                            <SelectItem value="Enquired">Enquired</SelectItem>
+                            <SelectItem value="Lead Allocated">Lead Allocated</SelectItem>
+                            <SelectItem value="First Called">First Called</SelectItem>
+                            <SelectItem value="Site Visit">Site Visit</SelectItem>
+                            <SelectItem value="Owner Meeting">Owner Meeting</SelectItem>
+                            <SelectItem value="Negotiation Started">Negotiation Started</SelectItem>
+                            <SelectItem value="Negotiation_End">Negotiation End</SelectItem>
+                            <SelectItem value="Due_Diligence_Started">Due Diligence Started</SelectItem>
+                            <SelectItem value="Due_Diligence_End">Due Diligence End</SelectItem>
+                            <SelectItem value="Approved">Approved</SelectItem>
+                            <SelectItem value="Hold">Hold</SelectItem>
+                            <SelectItem value="L1_Qualification">L1 Qualification</SelectItem>
+                            <SelectItem value="director_sv">Director sv</SelectItem>
+                          </>
                         </>
                       )}
                     </SelectContent>
