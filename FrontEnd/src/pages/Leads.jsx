@@ -8,7 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Label } from "@/components/ui/label"
 import { useMediators } from "../context/MediatorsContext.jsx"
 import { useUsers } from "../context/UsersContext.jsx"
+import { useMaster } from "../context/Mastercontext.jsx"
 import { useLeads } from "../context/LeadsContext.jsx"
+import { locationsAPI } from "../services/api"
 import { ChevronLeft, Upload, FileText, CheckCircle2, AlertCircle, Loader2 } from "lucide-react"
 import LeadStepper from "@/components/ui/LeadStepper"
 import toast from "react-hot-toast"
@@ -18,17 +20,8 @@ const yesNo = (v) => (v ? "Yes" : "No")
 export default function Leads({ data = null, onSubmit, onClose, viewMode = false, currentStep, onStepChange, editableFields = null, stepperOnly = false, hideStepper = false, calls = [] }) {
   const { mediators, loading: mediatorsLoading, fetched: mediatorsFetched, fetchMediators } = useMediators()
   const { users, loading: usersLoading, fetchUsers } = useUsers()
-  const {
-    formLoading,
-    formError,
-    masters,
-    getCurrentUserRole,
-    getCurrentUserInfo,
-    getAssignedUserInfo,
-    validateLeadForm,
-    fetchLocations,
-    submitLeadForm
-  } = useLeads()
+  const { masters, loading: stagesLoading, fetchStages } = useMaster()
+  const { formError, formLoading, clearFormError, getCurrentUserRole, setFormError, transformLeadPayload, submitLeadForm } = useLeads()
 
   // Helper function to check if a field is editable
   const isFieldEditable = (fieldName) => {
@@ -38,7 +31,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
   };
 
   // Form persistence key
-  const FORM_STORAGE_KEY = 'leads_form_draft';
+  // const FORM_STORAGE_KEY = 'leads_form_draft';
   
   // Track if form has unsaved changes
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -102,6 +95,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     const currentUserRole = getCurrentUserRole()
     return role !== currentUserRole
   }
+
   const [formData, setFormData] = useState({
     // Basic Lead Information
     leadType: "mediator",
@@ -204,55 +198,59 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     callNotes: "", // Call notes for calls
   })
 
+  console.log('formdata :>> ', formData);
   // Store original data for change tracking
   const [originalData, setOriginalData] = useState(null)
+
+  const [locationsData, setLocationsData] = useState({ locations: [], regions: [], zones: [] })
+  const [loading, setLoading] = useState({ locations: false, regions: false, zones: false, submit: false })
   const [errors, setErrors] = useState({})
 
   // Form persistence functions
-  const saveFormDraft = useCallback((formData) => {
-    if (!viewMode && !data) { // Only save drafts for new forms
-      try {
-        localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify({
-          ...formData,
-          timestamp: Date.now()
-        }));
-      } catch (error) {
-        console.warn('Could not save form draft:', error);
-      }
-    }
-  }, [viewMode, data]);
+  // const saveFormDraft = useCallback((formData) => {
+  //   if (!viewMode && !data) { // Only save drafts for new forms
+  //     try {
+  //       localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify({
+  //         ...formData,
+  //         timestamp: Date.now()
+  //       }));
+  //     } catch (error) {
+  //       console.warn('Could not save form draft:', error);
+  //     }
+  //   }
+  // }, [viewMode, data]);
 
-  const loadFormDraft = useCallback(() => {
-    if (!viewMode && !data) { // Only load drafts for new forms
-      try {
-        const saved = localStorage.getItem(FORM_STORAGE_KEY);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          // Check if draft is less than 24 hours old
-          if (Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000) {
-            delete parsed.timestamp;
-            return parsed;
-          } else {
-            // Remove old draft
-            localStorage.removeItem(FORM_STORAGE_KEY);
-          }
-        }
-      } catch (error) {
-        console.warn('Could not load form draft:', error);
-        localStorage.removeItem(FORM_STORAGE_KEY);
-      }
-    }
-    return null;
-  }, [viewMode, data]);
+  // const loadFormDraft = useCallback(() => {
+  //   if (!viewMode && !data) { // Only load drafts for new forms
+  //     try {
+  //       const saved = localStorage.getItem(FORM_STORAGE_KEY);
+  //       if (saved) {
+  //         const parsed = JSON.parse(saved);
+  //         // Check if draft is less than 24 hours old
+  //         if (Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000) {
+  //           delete parsed.timestamp;
+  //           return parsed;
+  //         } else {
+  //           // Remove old draft
+  //           localStorage.removeItem(FORM_STORAGE_KEY);
+  //         }
+  //       }
+  //     } catch (error) {
+  //       console.warn('Could not load form draft:', error);
+  //       localStorage.removeItem(FORM_STORAGE_KEY);
+  //     }
+  //   }
+  //   return null;
+  // }, [viewMode, data]);
 
-  const clearFormDraft = useCallback(() => {
-    try {
-      localStorage.removeItem(FORM_STORAGE_KEY);
-      setHasUnsavedChanges(false);
-    } catch (error) {
-      console.warn('Could not clear form draft:', error);
-    }
-  }, []);
+  // const clearFormDraft = useCallback(() => {
+  //   try {
+  //     localStorage.removeItem(FORM_STORAGE_KEY);
+  //     setHasUnsavedChanges(false);
+  //   } catch (error) {
+  //     console.warn('Could not clear form draft:', error);
+  //   }
+  // }, []);
 
   // Warn user about unsaved changes
   useEffect(() => {
@@ -269,14 +267,139 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
   }, [hasUnsavedChanges, isSubmitting]);
 
   const validateForm = (dataToValidate) => {
-    return validateLeadForm(dataToValidate)
+    const nextErrors = {}
+
+    if (!dataToValidate.contactNumber?.trim()) {
+      nextErrors.contactNumber = "Contact number is required"
+    } else if (!/^[+]?[0-9]{10,15}$/.test(dataToValidate.contactNumber.replace(/\s/g, ""))) {
+      nextErrors.contactNumber = "Invalid contact number format"
+    }
+
+    if (!dataToValidate.mediatorName?.trim()) nextErrors.mediatorName = "Mediator/Owner name is required"
+    if (!dataToValidate.location) nextErrors.location = "Location is required"
+    if (!dataToValidate.landName?.trim()) nextErrors.landName = "Land name is required"
+    if (!dataToValidate.sourceCategory) nextErrors.sourceCategory = "Source category is required"
+    if (!dataToValidate.source) nextErrors.source = "Source is required"
+    
+    // Assign To (User) is required when Assigned To (Role) is selected
+    // if (dataToValidate.assignedTo && !dataToValidate.assignToUser?.trim()) {
+    //   nextErrors.assignToUser = "Please select a user when a role is assigned"
+    // }
+
+      // Numeric fields (soft validation)
+      ;["extent", "fsi", "asp", "revenue", "rate", "builderShare"].forEach((k) => {
+        const v = dataToValidate[k]
+        if (v && isNaN(parseFloat(v))) nextErrors[k] = `${k} must be a number`
+      })
+
+    // Files: backend allows only JPG/PNG/JPEG and 2MB
+    const validateFile = (fileKey, file) => {
+      if (!file) return ""
+      const maxSize = 2 * 1024 * 1024
+      const allowed = ["image/jpeg", "image/jpg", "image/png"]
+      if (file.size > maxSize) return "File size must be less than 2MB"
+      if (!allowed.includes(file.type)) return "Invalid file type. Only JPG/PNG images are allowed"
+      return ""
+    }
+
+    if (dataToValidate.checkFMBSketch) {
+      if (!dataToValidate.fileFMBSketch) nextErrors.fileFMBSketch = "FMB Sketch file is required when checkbox is checked"
+      else {
+        const msg = validateFile("fileFMBSketch", dataToValidate.fileFMBSketch)
+        if (msg) nextErrors.fileFMBSketch = msg
+      }
+    }
+
+    if (dataToValidate.checkPattaChitta) {
+      if (!dataToValidate.filePattaChitta) nextErrors.filePattaChitta = "Patta/Chitta file is required when checkbox is checked"
+      else {
+        const msg = validateFile("filePattaChitta", dataToValidate.filePattaChitta)
+        if (msg) nextErrors.filePattaChitta = msg
+      }
+    }
+
+    return nextErrors
   }
 
+  const fetchLocations = useCallback(async () => {
+    setLoading((prev) => ({ ...prev, locations: true, regions: true, zones: true }))
+    setFormError(null)
+    // const loadingToast = toast.loading('Loading locations...')
+
+    try {
+      const locationsData = await locationsAPI.getAll()
+      const transformedLocations = locationsData.map((loc) => ({
+        id: loc._id,
+        name: loc.location,
+        regions: loc.regions || [],
+      }))
+
+      const transformedRegions = []
+      const transformedZones = []
+
+      locationsData.forEach((location) => {
+        if (location.regions?.length > 0) {
+          location.regions.forEach((region) => {
+            transformedRegions.push({
+              id: region._id,
+              location: location.location,
+              region: region.region,
+              zones: region.zones || [],
+            })
+
+            if (region.zones?.length > 0) {
+              region.zones.forEach((zone) => {
+                transformedZones.push({
+                  id: zone._id,
+                  location: location.location,
+                  region: region.region,
+                  zone: zone.zone,
+                })
+              })
+            }
+          })
+        }
+      })
+
+      setLocationsData({ locations: transformedLocations, regions: transformedRegions, zones: transformedZones })
+      // toast.success('Locations loaded successfully', { id: loadingToast })
+    } catch (err) {
+      console.error("Failed to fetch locations:", err)
+      const errorMsg = err.response?.data?.message || "Failed to load locations. Please try again."
+      setFormError(errorMsg)
+      // toast.error(errorMsg, { id: loadingToast })
+    } finally {
+      setLoading((prev) => ({ ...prev, locations: false, regions: false, zones: false }))
+    }
+  }, [])
 
   useEffect(() => {
     const loadData = async () => {
       try {
         await fetchLocations()
+
+        // Fetch stages
+        if (!stagesLoading) {
+          try {
+            await fetchStages()
+            console.log('Stages fetched:', masters.stages)
+            
+            // Temporary test - add mock stages if none exist
+            if (!masters.stages || masters.stages.length === 0) {
+              console.log('No stages from API, adding test stages')
+              // This is just for testing - remove once API works
+              const testStages = [
+                { id: 'test1', name: 'Test Stage 1' },
+                { id: 'test2', name: 'Test Stage 2' },
+                { id: 'test3', name: 'Test Stage 3' }
+              ]
+              console.log('Test stages would be:', testStages)
+            }
+          } catch (err) {
+            console.error('Failed to load stages:', err)
+            toast.error('Failed to load stages. Lead stages may be limited.')
+          }
+        }
 
         // Only fetch mediators if they haven't been fetched yet
         if (!mediatorsFetched && !mediatorsLoading && !mediators.length) {
@@ -306,7 +429,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     }
 
     loadData()
-  }, []) // Remove function dependencies to prevent infinite loops
+  }, [fetchLocations, fetchStages, stagesLoading, masters.stages.length, fetchMediators, mediatorsFetched, mediatorsLoading, mediators.length, usersLoading, users.length, fetchUsers])
 
   useEffect(() => {
     // Auto-set currentRole from localStorage when creating new lead (not editing)
@@ -314,19 +437,19 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       const userRole = getCurrentUserRole()
       
       // Try to load form draft first
-      const draft = loadFormDraft();
-      if (draft) {
-        setFormData(prev => ({
-          ...prev,
-          ...draft,
-          currentRole: userRole // Always use current user role
-        }));
-        setHasUnsavedChanges(true);
-        // toast.success('Draft loaded', { 
-        //   icon: '📝',
-        //   duration: 3000 
-        // });
-      } else {
+      // const draft = loadFormDraft();
+      // if (draft) {
+      //   setFormData(prev => ({
+      //     ...prev,
+      //     ...draft,
+      //     currentRole: userRole // Always use current user role
+      //   }));
+      //   setHasUnsavedChanges(true);
+      //   // toast.success('Draft loaded', { 
+      //   //   icon: '📝',
+      //   //   duration: 3000 
+      //   // });
+      // } else {
         // Reset form to initial state when creating new lead
         setFormData({
           // Basic Lead Information
@@ -431,9 +554,9 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
         })
         setOriginalData(null)
         setHasUnsavedChanges(false)
-      }
+      // }
     }
-  }, [data, loadFormDraft])
+  }, [data])
 
   useEffect(() => {
     if (!data) return
@@ -632,26 +755,111 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
   const getOptions = useCallback(
     (type) => {
-      if (type === "location") return masters.locations.map((l) => ({ value: l.name, label: l.name }))
+      if (type === "location") return locationsData.locations.map((l) => ({ value: l.name, label: l.name }))
       if (type === "region") {
         if (!formData.location) return []
-        return masters.regions.filter((r) => r.location === formData.location).map((r) => ({ value: r.region, label: r.region }))
+        return locationsData.regions.filter((r) => r.location === formData.location).map((r) => ({ value: r.region, label: r.region }))
       }
       if (type === "zone") {
         if (!formData.location || !formData.zone) return []
-        return masters.zones
+        return locationsData.zones
           .filter((z) => z.location === formData.location && z.region === formData.zone)
           .map((z) => ({ value: z.zone, label: z.zone }))
       }
       return []
     },
-    [masters, formData.location, formData.zone],
+    [locationsData, formData.location, formData.zone],
   )
 
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
-      
+      const leadPayload = transformLeadPayload(formData, data)
+
+      // Debug: Show payload optimization for edits
+      if (data) {
+        const fullPayloadSize = JSON.stringify({
+          leadType: formData.leadType || "mediator",
+          contactNumber: formData.contactNumber || "",
+          mediatorName: formData.mediatorName || "",
+          location: formData.location || "",
+          landName: formData.landName || "",
+          sourceCategory: formData.sourceCategory || "",
+          source: formData.source || "",
+          currentRole: getCurrentUserRole(),
+          assignedTo: formData.assignedTo ,
+          assignToUser: formData.assignToUser,
+          competitorAnalysis: [
+            {
+              developerName: formData.competitorDeveloperName || "",
+              projectName: formData.competitorProjectName || "",
+              productType: formData.competitorProductType || "",
+              location: formData.competitorLocation || "",
+              plotUnitSize: formData.competitorPlotSize || "",
+              landExtent: formData.competitorLandExtent || "",
+              priceRange: formData.competitorPriceRange || "",
+              approxPrice: formData.competitorApproxPrice || "",
+              approxPriceCent: formData.competitorApproxPriceCent || "",
+              totalPlotsUnits: formData.competitorTotalUnits || "",
+              keyAmenities: String(formData.competitorKeyAmenities || "")
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean),
+              uspPositioning: formData.competitorUSP || "",
+            }
+          ],
+          checkListPage: [
+            {
+              landLocation: formData.checkLandLocation || "",
+              landExtent: formData.checkLandExtent || "",
+              landZone: formData.checkLandZone || "",
+              classificationOfLand: formData.checkLandClassification || "",
+              googlePin: formData.checkGooglePin || "",
+              approachRoadWidth: formData.checkApproachRoadWidth || "",
+              ebLine: yesNo(formData.checkEBLine),
+              soilType: formData.checkSoilType || "",
+              quarryCrusher: yesNo(formData.checkQuarryCrusher),
+              sellingPrice: formData.checkSellingPrice || "",
+              guidelineValue: formData.checkGuidelineValue || "",
+              locationSellingPrice: formData.checkLocationSellingPrice || "",
+              marketingPrice: formData.checkMarketingPrice || "",
+              roadWidth: formData.checkRoadWidth || "",
+              govtLandAcquisition: yesNo(formData.checkGovtLandAcquisition),
+              railwayTrackNoc: yesNo(formData.checkRailwayTrackNOC),
+              bankIssues: yesNo(formData.checkBankIssues),
+              dumpyardQuarryCheck: yesNo(formData.checkDumpyardQuarry),
+              waterbodyNearby: yesNo(formData.checkWaterbodyNearby),
+              nearbyHtLine: yesNo(formData.checkNearbyHTLine),
+              templeLand: yesNo(formData.checkTempleLand),
+              futureGovtProjects: yesNo(formData.checkFutureGovtProjects),
+              farmLand: yesNo(formData.checkFarmLand),
+              totalSaleableArea: formData.checkTotalSaleableArea || "",
+              landCleaning: yesNo(formData.checkLandCleaning),
+              subDivision: yesNo(formData.checkSubDivision),
+              soilTest: yesNo(formData.checkSoilTest),
+              waterList: yesNo(formData.checkWaterList),
+              ownerName: formData.checkOwnerName || "",
+              consultantName: formData.checkConsultantName || "",
+              notes: formData.checkNotes || "",
+              projects: formData.checkProjects || "",
+              googleLocation: formData.checkGoogleLocation || "",
+            }
+          ]
+        }).length
+
+        const optimizedPayloadSize = JSON.stringify(leadPayload).length
+        const savings = fullPayloadSize - optimizedPayloadSize
+        const savingsPercent = ((savings / fullPayloadSize) * 100).toFixed(1)
+
+        console.log(`🚀 Payload Optimization:`)
+        console.log(`   Full payload: ${(fullPayloadSize / 1024).toFixed(2)} KB`)
+        console.log(`   Optimized: ${(optimizedPayloadSize / 1024).toFixed(2)} KB`)
+        console.log(`   Saved: ${(savings / 1024).toFixed(2)} KB (${savingsPercent}%)`)
+        console.log(`   Fields sent: ${Object.keys(leadPayload).length}`)
+      }
+
+      console.log('📤 Lead Payload being sent:', JSON.stringify(leadPayload, null, 2))
+
       const files = {
         ...(formData.checkFMBSketch && formData.fileFMBSketch ? { fmb_sketch: formData.fileFMBSketch } : {}),
         ...(formData.checkPattaChitta && formData.filePattaChitta ? { patta_chitta: formData.filePattaChitta } : {}),
@@ -664,13 +872,22 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       
       // Call onSubmit if provided (for backward compatibility)
       if (onSubmit) {
-        onSubmit(result);
-      }
-      
-      // Close the form if onClose is provided
-      if (onClose) {
-        onClose();
-      }
+       
+        
+        try {
+          await onSubmit(leadPayload, files)
+
+          // clearFormDraft()
+          
+         
+
+          if (Object.keys(files).length > 0) {
+            toast.success('Files uploaded successfully', { duration: 2000 })
+          }
+        } catch (onSubmitError) {
+          throw onSubmitError // Re-throw to be caught by outer catch
+        }
+      } 
     } catch (error) {
       // Set validation errors if they exist
       if (error.validationErrors) {
@@ -810,7 +1027,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                   <p className="text-red-800 font-medium">Error</p>
                   <p className="text-red-600 text-sm">{formError}</p>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => setFormError(null)} className="text-red-600 hover:text-red-800 hover:bg-red-100">
+                <Button variant="ghost" size="sm" onClick={clearFormError} className="text-red-600 hover:text-red-800 hover:bg-red-100">
                   ×
                 </Button>
               </div>
@@ -1320,20 +1537,39 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                         <SelectItem value="Approved">Purchased</SelectItem>
                       ) : (
                         <>
-                          
-                          <SelectItem value="Enquired">Enquired</SelectItem>
-                          <SelectItem value="Lead Allocated">Lead Allocated</SelectItem>
-                          <SelectItem value="First Called">First Called</SelectItem>
-                          <SelectItem value="Site Visit">Site Visit</SelectItem>
-                          <SelectItem value="Owner Meeting">Owner Meeting</SelectItem>
-                          <SelectItem value="Negotiation Started">Negotiation Started</SelectItem>
-                          <SelectItem value="Negotiation_End">Negotiation End</SelectItem>
-                          <SelectItem value="Due_Diligence_Started">Due Diligence Started</SelectItem>
-                          <SelectItem value="Due_Diligence_End">Due Diligence End</SelectItem>
-                          <SelectItem value="Approved">Approved</SelectItem>
-                          <SelectItem value="Hold">Hold</SelectItem>
-                          <SelectItem value="L1_Qualification">L1 Qualification</SelectItem>
-                          <SelectItem value="director_sv">Director sv</SelectItem>
+                          {/* Show stages from API */}
+                          {console.log('masters.stages:', masters.stages) || 
+                          (masters.stages && masters.stages.length > 0) ? (
+                            <>
+                              {console.log('Rendering stages from API:', masters.stages)}
+                              {masters.stages.map((stage) => (
+                                <SelectItem key={stage.id} value={stage.name}>
+                                  {stage.name}
+                                </SelectItem>
+                              ))}
+                            </>
+                          ) : (
+                            <>
+                              {console.log('No stages found, using fallback. masters.stages:', masters.stages)}
+                              {/* Temporarily add test stages to verify rendering works */}
+                              <SelectItem value="Test Stage 1">Test Stage 1</SelectItem>
+                              <SelectItem value="Test Stage 2">Test Stage 2</SelectItem>
+                              <SelectItem value="Test Stage 3">Test Stage 3</SelectItem>
+                              <SelectItem value="Enquired">Enquired</SelectItem>
+                              <SelectItem value="Lead Allocated">Lead Allocated</SelectItem>
+                              <SelectItem value="First Called">First Called</SelectItem>
+                              <SelectItem value="Site Visit">Site Visit</SelectItem>
+                              <SelectItem value="Owner Meeting">Owner Meeting</SelectItem>
+                              <SelectItem value="Negotiation Started">Negotiation Started</SelectItem>
+                              <SelectItem value="Negotiation_End">Negotiation End</SelectItem>
+                              <SelectItem value="Due_Diligence_Started">Due Diligence Started</SelectItem>
+                              <SelectItem value="Due_Diligence_End">Due Diligence End</SelectItem>
+                              <SelectItem value="Approved">Approved</SelectItem>
+                              <SelectItem value="Hold">Hold</SelectItem>
+                              <SelectItem value="L1_Qualification">L1 Qualification</SelectItem>
+                              <SelectItem value="director_sv">Director sv</SelectItem>
+                            </>
+                          )}
                         </>
                       )}
                     </SelectContent>
@@ -1520,7 +1756,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                   </CardContent>
                 </Card>
                 {/* test1  */}
-                <Card className="border-0 shadow-md bg-white mt-3">
+                <Card className="border-0  mt-4 shadow-md bg-white">
       <CardHeader>
         <CardTitle className="text-xl text-gray-800">Competitor Analysis</CardTitle>
       </CardHeader>
@@ -2016,7 +2252,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
         </div>
 
         {/* Call History Display */}
-        {calls?.length > 0 && (
+        {/* {calls?.length > 0 && (
           <div className="space-y-4">
             <Label className="text-gray-700 font-medium">Call History</Label>
             <div className="space-y-3">
@@ -2047,7 +2283,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
               ))}
             </div>
           </div>
-        )}
+        )} */}
 
     
       <div className="space-y-2">

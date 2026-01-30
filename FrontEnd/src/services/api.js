@@ -1,5 +1,5 @@
-// const API_BASE_URL = 'http://13.201.132.94:5000/api';
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'http://13.201.132.94:5000/api';
+// const API_BASE_URL = 'http://localhost:5000/api';
 const REQUEST_TIMEOUT = 30000; // 30 seconds
 const MAX_RETRIES = 2;
 
@@ -503,6 +503,45 @@ export const typesAPI = {
     });
   },
 }
+
+// Stages API
+export const stagesAPI = {
+  // Get all stages
+  getAll: async () => {
+    const response = await apiRequest('/stage/');
+    // The API returns { count: number, data: [...] }
+    // We want to return the data array
+    return response.data || [];
+  },
+
+  // Get stage by ID
+  getById: async (id) => {
+    return await apiRequest(`/stage/${id}`);
+  },
+
+  // Create new stage
+  create: async (stageData) => {
+    return await apiRequest('/stage/', {
+      method: 'POST',
+      body: JSON.stringify(stageData),
+    });
+  },
+
+  // Update stage
+  update: async (id, stageData) => {
+    return await apiRequest(`/stage/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(stageData),
+    });
+  },
+
+  // Delete stage
+  delete: async (id) => {
+    return await apiRequest(`/stage/${id}`, {
+      method: 'DELETE',
+    });
+  },
+}
  
 // Calls API
 export const callsAPI = {
@@ -604,6 +643,7 @@ export default {
   usersAPI,
   locationsAPI,
   typesAPI,
+  stagesAPI,
   callsAPI,
   authAPI,
   accessAPI,

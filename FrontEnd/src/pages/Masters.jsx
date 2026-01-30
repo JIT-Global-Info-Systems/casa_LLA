@@ -32,6 +32,9 @@ const Masters = () => {
     addType,
     updateType,
     deleteType,
+    addStage,
+    updateStage,
+    deleteStage,
   } = useMaster();
 
   const [activeTab, setActiveTab] = useState('location');
@@ -42,6 +45,7 @@ const Masters = () => {
     region: 1,
     zone: 1,
     type: 1,
+    stage: 1,
   });
   const itemsPerPage = 10;
 
@@ -96,15 +100,14 @@ const Masters = () => {
       result = await deleteZone(itemId);
     } else if (type === 'type') {
       result = await deleteType(itemId);
-    
-  } else if (type === 'stage') {
-    result = await deleteType(itemId);
-  }
+    } else if (type === 'stage') {
+      result = await deleteStage(itemId);
+    }
     
     if (result?.success) {
       setDeleteDialog({ open: false, type: '', item: null });
     }
-  }, [deleteLocation, deleteRegion, deleteZone, deleteType]);
+  }, [deleteLocation, deleteRegion, deleteZone, deleteType, deleteStage]);
 
   const openForm = useCallback((type, editing = null) => {
     setForm({ open: true, type, editing, data: editing || getDefaultData(type) });
@@ -170,14 +173,14 @@ const Masters = () => {
     if (result?.success) {
       closeForm();
     }
-  }, [form, formatName, addLocation, updateLocation, addRegion, updateRegion, addZone, updateZone, addType, updateType]);
+  }, [form, formatName, addLocation, updateLocation, addRegion, updateRegion, addZone, updateZone, addType, updateType, addStage, updateStage]);
 
   const sidebarTabs = [
     { id: 'location', label: 'Location', columns: ['S.No', 'Location', 'Status', 'Action'] },
     { id: 'region', label: 'Zone', columns: ['S.No', 'Location', 'Zone', 'Action'] },
     { id: 'zone', label: 'Area', columns: ['S.No', 'Location', 'Zone', 'Area', 'Action'] },
     { id: 'type', label: 'Type', columns: ['S.No', 'Type', 'Status', 'Action'] },
-    { id: 'stage', label: 'Stage', columns: ['S.No', 'Type', 'Status','Action'] },
+    { id: 'stage', label: 'Stage', columns: ['S.No', 'Stage', 'Status','Action'] },
   ];
 
   const getOptions = useCallback((type, selectedLocation = null) => {
@@ -259,6 +262,7 @@ const Masters = () => {
           value={
             type === 'region' ? (data.region || '') : 
             type === 'zone' ? (data.zone || '') : 
+            type === 'stage' ? (data.name || '') :
             (data.name || '')
           }
           onChange={(e) => {
@@ -266,7 +270,7 @@ const Masters = () => {
             const key = type === 'region' ? 'region' : type === 'zone' ? 'zone' : 'name';
             setForm(prev => ({ ...prev, data: { ...prev.data, [key]: value } }));
           }}
-          placeholder={`Enter ${type === 'region' ? 'zone' : type === 'zone' ? 'area' : type} name`}
+          placeholder={`Enter ${type === 'region' ? 'zone' : type === 'zone' ? 'area' : type === 'stage' ? 'stage' : type} name`}
         />
       </>
     );
@@ -347,7 +351,21 @@ const Masters = () => {
                     </TableCell>
                   </>
                 )}
-                {type !== 'location' && type !== 'type' && <TableCell className="text-center">{item.location}</TableCell>}
+                {type === 'stage' && (
+                  <>
+                    <TableCell className="text-center">{item.name}</TableCell>
+                    <TableCell className="text-center">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        item.status === 'active' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {item.status || 'active'}
+                      </span>
+                    </TableCell>
+                  </>
+                )}
+                {type !== 'location' && type !== 'type' && type !== 'stage' && <TableCell className="text-center">{item.location}</TableCell>}
                 {type === 'region' && <TableCell className="text-center">{item.region}</TableCell>}
                 {type === 'zone' && (
                   <>
@@ -454,7 +472,7 @@ const Masters = () => {
           }
         }}>
           <h2 className="text-xl font-bold text-indigo-700">
-            {form.editing ? `Edit ${form.type === 'region' ? 'Zone' : form.type === 'zone' ? 'Area' : form.type}` : `Add New ${form.type === 'region' ? 'Zone' : form.type === 'zone' ? 'Area' : form.type}`}
+            {form.editing ? `Edit ${form.type === 'region' ? 'Zone' : form.type === 'zone' ? 'Area' : form.type === 'stage' ? 'Stage' : form.type}` : `Add New ${form.type === 'region' ? 'Zone' : form.type === 'zone' ? 'Area' : form.type === 'stage' ? 'Stage' : form.type}`}
           </h2>
           {renderFormFields()}
           <div className="flex justify-end space-x-2">
@@ -474,7 +492,7 @@ const Masters = () => {
             deleteItem(deleteDialog.type, deleteDialog.item?.id);
           }
         }}>
-          <h2 className="text-xl font-bold text-red-600">Delete {activeTab === 'region' ? 'Zone' : activeTab === 'zone' ? 'Area' : activeTab}</h2>
+          <h2 className="text-xl font-bold text-red-600">Delete {activeTab === 'region' ? 'Zone' : activeTab === 'zone' ? 'Area' : activeTab === 'stage' ? 'Stage' : activeTab}</h2>
           <p className="text-gray-700">
             Are you sure you want to delete <strong>"{deleteDialog.item?.name || deleteDialog.item?.region || deleteDialog.item?.zone || ''}"</strong>?
           </p>

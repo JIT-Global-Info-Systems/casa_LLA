@@ -158,7 +158,7 @@ export const getDashboardStats = async (req, res) => {
           workStageCounts: [
             {
               $group: {
-                _id: "$currentRole",
+                _id: "$currentRole.role",
                 count: { $sum: 1 }
               }
             }
@@ -166,15 +166,15 @@ export const getDashboardStats = async (req, res) => {
 
           // 4️⃣ Approved Leads
           approvedLeads: [
-            ...(Object.keys(matchStage).length ? [{ $match: { ...matchStage, lead_status: "APPROVED" } }] : [{ $match: { lead_status: "APPROVED" } }]),
+            ...(Object.keys(matchStage).length ? [{ $match: { ...matchStage, lead_status: "Approved" } }] : [{ $match: { lead_status: "APPROVED" } }]),
             { $count: "count" }
           ],
 
           // 5️⃣ Pending Leads
           pendingLeads: [
             ...(Object.keys(matchStage).length ? 
-              [{ $match: { ...matchStage, lead_status: { $nin: ["APPROVED", "PURCHASED"] } } }] : 
-              [{ $match: { lead_status: { $nin: ["APPROVED", "PURCHASED"] } } }]
+              [{ $match: { ...matchStage, lead_status: { $nin: ["Approved", "Purchased"] } } }] : 
+              [{ $match: { lead_status: { $nin: ["Approved", "Purchased"] } } }]
             ),
             { $count: "count" }
           ],
@@ -182,8 +182,8 @@ export const getDashboardStats = async (req, res) => {
           // 6️⃣ Purchased Leads
           purchasedLeads: [
             ...(Object.keys(matchStage).length ? 
-              [{ $match: { ...matchStage, lead_status: "PURCHASED" } }] : 
-              [{ $match: { lead_status: "PURCHASED" } }]
+              [{ $match: { ...matchStage, lead_status: "Purchased" } }] : 
+              [{ $match: { lead_status: "Purchased" } }]
             ),
             { $count: "count" }
           ]

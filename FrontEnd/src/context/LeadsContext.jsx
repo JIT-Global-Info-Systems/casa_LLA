@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { leadsAPI, locationsAPI } from '../services/api';
+import { leadsAPI } from '../services/api';
 import toast from 'react-hot-toast';
-
+import { Check } from 'lucide-react';
 const LeadsContext = createContext(null);
 
 export const useLeads = () => {
@@ -125,6 +125,10 @@ export const LeadsProvider = ({ children }) => {
       setError(null);
       const response = await leadsAPI.create(leadData);
       setLeads(prev => [...prev, response.data ?? response]);
+      toast.success('Lead created successfully', {
+        icon: <Check className="w-5 h-5 text-green-500" />,
+        duration: 3000
+      });
       return response;
     } catch (err) {
       console.error('Error creating lead:', err);
@@ -167,7 +171,7 @@ export const LeadsProvider = ({ children }) => {
 
       return response;
     } catch (err) {
-      console.error('❌ Error updating lead:', err);
+      // console.error('❌ Error updating lead:', err);
       setError(err.message);
       throw err;
     } finally {
@@ -728,6 +732,7 @@ export const LeadsProvider = ({ children }) => {
         // Form state
         formLoading,
         formError,
+        setFormError,
         masters,
       }}
     >

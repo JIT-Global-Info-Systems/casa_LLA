@@ -32,7 +32,7 @@ import {
   Calendar,
   FileText,
   Building2,
-  Filter,
+  Search,
   X,
 } from "lucide-react";
 import { formatDisplayDate } from "@/utils/dateUtils";
@@ -48,7 +48,6 @@ function Mediators() {
   const [selectedExecutive, setSelectedExecutive] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
 
   const { handleDelete, canPerformAction, confirmModal } = useEntityAction('mediator');
 
@@ -226,10 +225,10 @@ function Mediators() {
     }, mediator.name);
   };
 
-  const activeFiltersCount = [searchTerm, selectedExecutive, dateFrom, dateTo].filter(Boolean).length;
+
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40">
+    <div className="min-h-screen bg-gray-50">
       {/* FORM VIEW */}
       {open && (
         <div className="p-4 md:p-8">
@@ -842,318 +841,256 @@ function Mediators() {
 
       {/* LIST VIEW */}
       {!open && !isViewMode && (
-        <div>
-          {/* Enhanced Header */}
-          <div className="bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm sticky top-0 z-10">
-            <div className="px-8 py-5">
-              <div className="flex items-center justify-between max-w-[1600px] mx-auto">
-                <div>
-                  <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
-                    Mediators
-                  </h1>
-                  <p className="text-sm text-slate-600 mt-1.5 flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    Manage your mediator database · {filteredMediators.length} total
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Button
-                    variant="ghost"
-                    className="text-slate-700 hover:bg-slate-100 transition-colors"
-                    onClick={handleRefresh}
-                    disabled={loading}
-                  >
-                    <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-                    Refresh
-                  </Button>
-                  <Button
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white"
-                    onClick={handleCreate}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Mediator
-                  </Button>
-                </div>
+        <div className="min-h-screen bg-gray-50">
+          {/* Header */}
+          <div className="bg-white border-b px-8 py-4">
+            <div className="flex items-center justify-between max-w-[1600px] mx-auto">
+              <div>
+                <h1 className="text-2xl font-semibold text-indigo-700">Mediators</h1>
+                <p className="text-sm text-gray-500 mt-1">Mediator list · Last updated today</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="ghost"
+                  className="text-gray-700"
+                  onClick={handleRefresh}
+                  disabled={loading}
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+                  Refresh
+                </Button>
+                <Button
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                  onClick={handleCreate}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add
+                </Button>
               </div>
             </div>
           </div>
 
+          {/* Main Content */}
           <div className="max-w-[1600px] mx-auto px-8 py-6">
-            {/* Loading State */}
-            {loading && (
-              <div className="text-center py-12">
-                <div className="inline-flex items-center gap-3 px-6 py-3 bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-slate-200">
-                  <RefreshCw className="h-5 w-5 animate-spin text-indigo-600" />
-                  <p className="text-slate-700 font-medium">Loading mediators...</p>
+            <Card className="bg-white shadow-sm">
+              {/* Filters */}
+              <div className="p-6 border-b flex flex-wrap gap-4 items-center">
+                <div className="relative flex-1 min-w-[250px]">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder="Search mediators..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 border-gray-300"
+                  />
                 </div>
-              </div>
-            )}
 
-            {/* Error State */}
-            {error && (
-              <div className="bg-red-50 border-2 border-red-200 rounded-xl p-6 shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-red-100 rounded-lg">
-                    <X className="h-5 w-5 text-red-600" />
-                  </div>
-                  <p className="text-red-700 font-medium">Error: {error}</p>
-                </div>
-              </div>
-            )}
-
-            {/* Main Content */}
-            {!loading && !error && (
-              <Card className="bg-white/80 backdrop-blur-sm shadow-xl border-0 overflow-hidden">
-                {/* Enhanced Filters */}
-                <div className="p-6 border-b border-slate-200 bg-gradient-to-br from-slate-50 to-blue-50/20">
-                  <div className="flex flex-wrap gap-4 items-center">
-                    <div className="relative flex-1 min-w-[280px]">
-                      <Input
-                        placeholder="Search by name, email, phone or ID..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-4 pr-10 bg-white border-slate-300 focus:border-indigo-400 focus:ring-indigo-400/20 transition-all"
-                      />
-                      {searchTerm && (
-                        <button
-                          onClick={() => setSearchTerm("")}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowFilters(!showFilters)}
-                      className={`border-slate-300 hover:bg-slate-100 transition-all ${showFilters ? 'bg-slate-100 border-slate-400' : ''}`}
-                    >
-                      <Filter className="h-4 w-4 mr-2" />
-                      Filters
-                      {activeFiltersCount > 0 && (
-                        <span className="ml-2 px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs rounded-full font-medium">
-                          {activeFiltersCount}
-                        </span>
-                      )}
-                    </Button>
-
-                    {activeFiltersCount > 0 && (
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm text-gray-600 whitespace-nowrap">Executive:</Label>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
                       <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={clearFilters}
-                        className="text-slate-600 hover:bg-slate-100"
+                        variant="outline"
+                        className="min-w-[140px] justify-between border-gray-300"
                       >
-                        <X className="h-4 w-4 mr-1" />
-                        Clear all
+                        {selectedExecutive || "All Executives"}
+                        <ChevronDown className="ml-2 h-4 w-4" />
                       </Button>
-                    )}
-                  </div>
-
-                  {/* Expandable Filters */}
-                  {showFilters && (
-                    <div className="mt-4 pt-4 border-t border-slate-200 grid grid-cols-1 md:grid-cols-3 gap-4 animate-in slide-in-from-top-2 duration-200">
-                      <div className="space-y-2">
-                        <Label className="text-sm text-slate-600 font-medium">Executive</Label>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="w-full justify-between bg-white border-slate-300 hover:bg-slate-50 h-10"
-                            >
-                              <span className="truncate text-slate-700">{selectedExecutive || "All Executives"}</span>
-                              <ChevronDown className="h-4 w-4 ml-2 shrink-0 text-slate-400" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent 
-                            align="end"
-                            className="w-full bg-white border-slate-200 shadow-lg"
-                          >
-                            <DropdownMenuItem onClick={() => setSelectedExecutive("")} className="hover:bg-indigo-50">
-                              All Executives
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setSelectedExecutive("Admin")} className="hover:bg-indigo-50">
-                              Admin
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setSelectedExecutive("Manager")} className="hover:bg-indigo-50">
-                              Manager
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setSelectedExecutive("Executive")} className="hover:bg-indigo-50">
-                              Executive
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label className="text-sm text-slate-600 font-medium">From Date</Label>
-                        <Input
-                          type="date"
-                          value={dateFrom}
-                          onChange={(e) => setDateFrom(e.target.value)}
-                          className="bg-white border-slate-300 focus:border-indigo-400 focus:ring-indigo-400/20"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label className="text-sm text-slate-600 font-medium">To Date</Label>
-                        <Input
-                          type="date"
-                          value={dateTo}
-                          onChange={(e) => setDateTo(e.target.value)}
-                          className="bg-white border-slate-300 focus:border-indigo-400 focus:ring-indigo-400/20"
-                        />
-                      </div>
-                    </div>
-                  )}
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="bg-white border shadow-lg">
+                      <DropdownMenuItem
+                        onClick={() => setSelectedExecutive("")}
+                        className="cursor-pointer"
+                      >
+                        All Executives
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setSelectedExecutive("Admin")}
+                        className="cursor-pointer"
+                      >
+                        Admin
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setSelectedExecutive("Manager")}
+                        className="cursor-pointer"
+                      >
+                        Manager
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setSelectedExecutive("Executive")}
+                        className="cursor-pointer"
+                      >
+                        Executive
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
 
-                {/* Enhanced Table */}
-                <CardContent className="p-0">
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b border-slate-200 bg-gradient-to-r from-slate-50 to-blue-50/30">
-                          <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                            ID
-                          </th>
-                          <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                            Name
-                          </th>
-                          <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                            Type
-                          </th>
-                          <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                            Phone
-                          </th>
-                          <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                            Email
-                          </th>
-                          <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                            Registered Date
-                          </th>
-                          <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                            Created By
-                          </th>
-                          <th className="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                            Action
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-slate-100">
-                        {filteredMediators.length === 0 ? (
-                          <tr>
-                            <td colSpan="8" className="px-6 py-12 text-center">
-                              <div className="flex flex-col items-center gap-3">
-                                <div className="p-3 bg-slate-100 rounded-full">
-                                  <User className="h-8 w-8 text-slate-400" />
-                                </div>
-                                <p className="text-slate-600 font-medium">No mediators found</p>
-                                <p className="text-sm text-slate-500">Try adjusting your search or filters</p>
-                              </div>
-                            </td>
-                          </tr>
-                        ) : (
-                          filteredMediators.map((mediator) => (
-                            <tr
-                              key={mediator._id}
-                              className="hover:bg-gradient-to-r hover:from-indigo-50/50 hover:to-blue-50/30 transition-all duration-150"
-                            >
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <span className="text-sm font-mono text-slate-700 bg-slate-100 px-2 py-1 rounded">
-                                  {mediator.mediator_id}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <span className="text-sm font-medium text-slate-900">{mediator.name}</span>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700 border border-indigo-200">
-                                  {mediator.category}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                                {mediator.phone_primary}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                                {mediator.email}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                                {formatDisplayDate(mediator.created_at)}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                                {mediator.linked_executive || 'N/A'}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-8 w-8 p-0 hover:bg-slate-100 transition-colors"
-                                    >
-                                      <MoreVertical className="h-4 w-4 text-slate-600" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent
-                                    align="end"
-                                    className="bg-white border-slate-200 shadow-xl w-44"
-                                  >
-                                    <DropdownMenuItem
-                                      onClick={() => handleView(mediator)}
-                                      className="hover:bg-indigo-50 cursor-pointer"
-                                    >
-                                      <Eye className="h-4 w-4 mr-2 text-blue-600" />
-                                      <span className="text-slate-700">View</span>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      onClick={() => handleEdit(mediator)}
-                                      className="hover:bg-indigo-50 cursor-pointer"
-                                    >
-                                      <Edit className="h-4 w-4 mr-2 text-indigo-600" />
-                                      <span className="text-slate-700">Edit</span>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      className="cursor-pointer hover:bg-red-50 focus:bg-red-50"
-                                      onClick={() => handleDeleteMediator(mediator)}
-                                      disabled={!canPerformAction(mediator, 'delete').enabled}
-                                    >
-                                      <Trash2 className="h-4 w-4 mr-2 text-red-600" />
-                                      <span className="text-red-600">Delete</span>
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm text-gray-600 whitespace-nowrap">From:</Label>
+                  <Input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    className="w-[150px] border-gray-300"
+                  />
+                </div>
 
-                  {/* Enhanced Pagination */}
-                  <div className="px-6 py-4 border-t border-slate-200 bg-gradient-to-r from-slate-50 to-blue-50/20 flex items-center justify-between">
-                    <p className="text-sm text-slate-600 font-medium">
-                      Showing <span className="text-indigo-600 font-semibold">{filteredMediators.length}</span> results
-                    </p>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" disabled className="text-slate-400 border-slate-300">
-                        Previous
-                      </Button>
-                      <Button variant="outline" size="sm" disabled className="text-slate-400 border-slate-300">
-                        Next
-                      </Button>
-                      <Button variant="outline" size="sm" disabled className="text-slate-400 border-slate-300">
-                        Last
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm text-gray-600 whitespace-nowrap">To:</Label>
+                  <Input
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    className="w-[150px] border-gray-300"
+                  />
+                </div>
+              </div>
+
+              {/* Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b bg-gray-50">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        ID
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Name
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Type
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Phone
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Email
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Registered Date
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Created By
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Action
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {loading ? (
+                      <tr>
+                        <td colSpan="8" className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                          <div className="flex items-center justify-center space-x-2">
+                            <RefreshCw className="h-4 w-4 animate-spin" />
+                            <span>Loading mediators...</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : error ? (
+                      <tr>
+                        <td colSpan="8" className="px-6 py-4 whitespace-nowrap text-sm text-red-500 text-center">
+                          <div className="flex items-center justify-center space-x-2">
+                            <X className="h-4 w-4" />
+                            <span>Error: {error}</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : filteredMediators.length === 0 ? (
+                      <tr>
+                        <td colSpan="8" className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                          No mediators found
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredMediators.map((mediator) => (
+                        <tr key={mediator._id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {mediator.mediator_id || 'N/A'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {mediator.name || 'N/A'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              {mediator.category || 'N/A'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {mediator.phone_primary || 'N/A'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {mediator.email || 'N/A'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {formatDisplayDate(mediator.created_at)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {mediator.linked_executive || 'N/A'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                  <span className="sr-only">Open menu</span>
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleView(mediator)}>
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  <span>View</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleEdit(mediator)}>
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  <span>Edit</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleDeleteMediator(mediator)}
+                                  disabled={!canPerformAction(mediator, 'delete').enabled}
+                                  className="text-red-600"
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  <span>Delete</span>
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              <div className="px-6 py-3 flex items-center justify-between border-t border-gray-200">
+                <div className="text-sm text-gray-700">
+                  Showing <span className="font-medium">1</span> to <span className="font-medium">{Math.min(filteredMediators.length, 10)}</span> of{' '}
+                  <span className="font-medium">{filteredMediators.length}</span> results
+                </div>
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    disabled={true}
+                  >
+                    Previous
+                  </Button>
+                  <span className="px-3 py-1 text-sm text-gray-600 flex items-center">
+                    Page 1 of 1
+                  </span>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    disabled={true}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            </Card>
           </div>
         </div>
       )}

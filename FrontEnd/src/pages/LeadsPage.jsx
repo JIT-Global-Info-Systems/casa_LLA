@@ -60,23 +60,23 @@ export default function LeadsPage() {
  
   useEffect(() => {
     const loadLeads = async () => {
-      const loadingToast = toast.loading('Loading leads...');
+      // const loadingToast = toast.loading('Loading leads...');
       try {
         await fetchLeads();
-        toast.success('Leads loaded', { 
-          id: loadingToast,
-          icon: <Check className="w-5 h-5 text-green-500" />,
-          duration: 2000
-        });
+        // toast.success('Leads loaded', { 
+        //   id: loadingToast,
+        //   icon: <Check className="w-5 h-5 text-green-500" />,
+        //   duration: 2000
+        // });
       } catch (err) {
         console.error('Failed to load leads:', err);
         const errorMessage = err.response?.data?.message || 'Could not load leads. Please try again.';
         
-        toast.error(errorMessage, { 
-          id: loadingToast,
-          icon: <AlertCircle className="w-5 h-5 text-red-500" />,
-          duration: 5000
-        });
+        // toast.error(errorMessage, { 
+        //   id: loadingToast,
+        //   icon: <AlertCircle className="w-5 h-5 text-red-500" />,
+        //   duration: 5000
+        // });
       }
     };
     
@@ -157,10 +157,10 @@ export default function LeadsPage() {
     }
   };
  
-  const handleLeadSubmit = async (result) => {
-    // The actual submission is now handled by the context
-    // This function is called after successful submission
-    console.log('🚀 LeadsPage - handleLeadSubmit called with result:', result);
+  const handleLeadSubmit = async (leadPayload, files = {}) => {
+    const isUpdate = !!selectedLead;
+    // const loadingToast = toast.loading(isUpdate ? 'Updating lead...' : 'Creating lead...');
+    
     
     // Close the form and refresh leads
     setOpen(false);
@@ -177,15 +177,39 @@ export default function LeadsPage() {
     if (!leadToDelete) return;
   
     try {
-      console.log('Performing delete for lead:', leadToDelete._id || leadToDelete.id);
-      await deleteLead(leadToDelete._id || leadToDelete.id);
-      fetchLeads(); // Refresh list
-      setDeleteModalOpen(false);
-      setLeadToDelete(null);
-      toast.success('Lead deleted successfully');
-    } catch (error) {
-      console.error('Delete failed:', error);
-      toast.error('Failed to delete lead');
+      if (isUpdate) {
+        await updateLead(selectedLead._id || selectedLead.id, leadPayload, files);
+      } else {
+        await createLead(leadPayload, files);
+      }
+      
+      // toast.success(
+      //   isUpdate ? 'Lead updated successfully' : 'Lead created successfully',
+      //   { 
+      //     id: loadingToast,
+      //     icon: <Check className="w-5 h-5 text-green-500" />,
+      //     duration: 3000
+      //   }
+      // );
+      
+      if (Object.keys(files).length > 0) {
+        toast.success('Files uploaded successfully', { 
+          icon: '📎',
+          duration: 2000 
+        });
+      }
+      
+      setOpen(false);
+      fetchLeads();
+    } catch (err) {
+      console.error("Failed to submit lead:", err);
+      const errorMessage = err.response?.data?.message || 'Could not save lead. Please try again.';
+      
+      toast.error(errorMessage, { 
+        id: loadingToast,
+        icon: <X className="w-5 h-5 text-red-500" />,
+        duration: 5000
+      });
     }
   };
 
@@ -283,7 +307,8 @@ export default function LeadsPage() {
               data={open ? selectedLead : viewLead}
               viewMode={!open}
               onClose={open ? () => setOpen(false) : () => setIsViewMode(false)}
-              onSubmit={handleLeadSubmit}
+              onSubmit={
+                handleLeadSubmit}
               currentStep={currentStep}
               onStepChange={setCurrentStep}
               hideStepper={true}
@@ -309,11 +334,11 @@ export default function LeadsPage() {
                     const loadingToast = toast.loading('Refreshing leads...');
                     try {
                       await fetchLeads();
-                      toast.success('Leads refreshed', { 
-                        id: loadingToast,
-                        icon: <Check className="w-5 h-5 text-green-500" />,
-                        duration: 2000
-                      });
+                      // toast.success('Leads refreshed', { 
+                      //   id: loadingToast,
+                      //   icon: <Check className="w-5 h-5 text-green-500" />,
+                      //   duration: 2000
+                      // });
                     } catch (err) {
                       console.error('Failed to refresh leads:', err);
                       const errorMessage = err.response?.data?.message || 'Could not refresh leads. Please try again.';
@@ -388,31 +413,18 @@ export default function LeadsPage() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.zone || "—"}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{lead.property}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                          {(() => {
-                            const statusValue = lead.lead_stage || lead.lead_status;
-                            return (
-                              <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
-                                String(statusValue).toLowerCase() === "new" ? "bg-blue-100 text-blue-700" :
-                                String(statusValue).toLowerCase() === "contacted" ? "bg-purple-100 text-purple-700" :
-                                String(statusValue).toLowerCase() === "qualified" ? "bg-green-100 text-green-700" :
-                                String(statusValue).toLowerCase() === "converted" ? "bg-emerald-100 text-emerald-700" :
-                                String(statusValue).toLowerCase() === "lost" ? "bg-red-100 text-red-700" :
-                                String(statusValue).toLowerCase() === "hold" ? "bg-amber-100 text-amber-700" :
-                                String(statusValue).toLowerCase() === "pending" ? "bg-orange-100 text-orange-700" :
-                                String(statusValue).toLowerCase() === "follow-up" ? "bg-indigo-100 text-indigo-700" :
-                                String(statusValue).toLowerCase() === "interested" ? "bg-teal-100 text-teal-700" :
-                                String(statusValue).toLowerCase() === "not-interested" ? "bg-slate-100 text-slate-700" :
-                                String(statusValue).toLowerCase() === "hot-lead" ? "bg-rose-100 text-rose-700" :
-                                String(statusValue).toLowerCase() === "cold-lead" ? "bg-cyan-100 text-cyan-700" :
-                                String(statusValue).toLowerCase() === "warm" ? "bg-orange-100 text-orange-700" :
-                                String(statusValue).toLowerCase() === "hot" ? "bg-red-100 text-red-700" :
-                                String(statusValue).toLowerCase() === "cold" ? "bg-blue-100 text-blue-700" :
-                                String(statusValue).toLowerCase() === "enquired" ? "bg-blue-100 text-blue-700" :
-                                "bg-gray-100 text-gray-700"
-                              }`}>
-                                {statusValue || "—"}</span>
-                            );
-                          })()}
+                          <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${
+                            String(lead.lead_status) == "Enquired" ? "bg-blue-100 text-blue-700" :
+                            String(lead.lead_status) == "Lead Allocated" ? "bg-purple-100 text-purple-700" :
+                            String(lead.lead_status) == "First Called" ? "bg-green-100 text-green-700" :
+                            String(lead.lead_status) == "Site Visit" ? "bg-emerald-100 text-emerald-700" :
+                            String(lead.lead_status) == "lost" ? "bg-red-100 text-red-700" :
+                            String(lead.lead_status) == "hold" ? "bg-amber-100 text-amber-700" :
+                            String(lead.lead_status) == "pending" ? "bg-orange-100 text-orange-700" :
+                           
+                            "bg-gray-100 text-gray-700"
+                          }`}>
+                            {lead.lead_status || "—"}</span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <DropdownMenu>
@@ -454,7 +466,7 @@ export default function LeadsPage() {
                 </table>
               </div>
  
-              {loading && <div className="text-center py-12 text-gray-500"><p>Loading leads...</p></div>}
+              {/* {loading && <div className="text-center py-12 text-gray-500"><p>Loading leads...</p></div>} */}
               {error && <div className="text-center py-12 text-red-500"><p>Error: {error}</p></div>}
               {!loading && !error && filteredLeads.length === 0 && <div className="text-center py-12 text-gray-500"><p>No leads found matching your criteria.</p></div>}
  
