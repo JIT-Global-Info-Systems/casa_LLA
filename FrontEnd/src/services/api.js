@@ -639,7 +639,11 @@ export const dashboardAPI = {
     // Add query parameters if provided
     if (filters.fromDate) params.append('fromDate', filters.fromDate);
     if (filters.toDate) params.append('toDate', filters.toDate);
-    if (filters.location && filters.location !== 'all') params.append('location', filters.location);
+    
+    // Only add location parameter if it's not 'all' and not empty
+    if (filters.location && filters.location !== 'all' && filters.location.trim() !== '') {
+      params.append('location', filters.location);
+    }
     
     const queryString = params.toString() ? `?${params}` : '';
     const response = await apiRequest(`/dashboard${queryString}`);
