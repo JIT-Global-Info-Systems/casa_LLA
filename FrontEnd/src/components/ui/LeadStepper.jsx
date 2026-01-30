@@ -85,7 +85,7 @@
 // }
 
 
-import { Check } from "lucide-react"
+import { Check, Users, Calendar, FileText, ChevronRight } from "lucide-react"
 
 const STAGES = [
   { id: "tele_caller", label: "Tele Caller" },
@@ -135,38 +135,56 @@ export default function LeadStepper({ stageName, currentStep = 1, onStepChange, 
   }
 
   return (
-    <div className={`w-full ${className || ''}`}>
-      <div className="flex mb-0 w-full items-center justify-between">
-        {STAGES.map((s, index) => {
-          const step = index + 1
-          const active = step <= activeStep
-          const isLast = index === STAGES.length - 1
+    <div className={`w-full relative ${className || ''}`}>
+      {/* Topbar-style Header */}
+      <header className="fixed top-16 left-0 md:left-52 right-0 z-50 h-16 border-b border-border bg-white shadow-sm mb-4 backdrop-blur-sm bg-white/95">
+        <div className="flex h-full items-center justify-between gap-4 px-4 sm:px-6">
+          <div className="flex items-center gap-3 flex-1">
+            {/* Stepper Stages in Header */}
+            <div className="flex items-center gap-1 w-full overflow-x-auto">
+              {STAGES.map((s, index) => {
+                const step = index + 1
+                const active = step <= activeStep
+                const isLast = index === STAGES.length - 1
 
-          return (
-            <div key={s.id} className="flex items-center flex-1">
-              <div className="flex flex-col items-center w-full">
-                <button
-                  onClick={() => handleStepClick(step)}
-                  className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors z-10 flex-shrink-0
-                  ${active ? "bg-indigo-600 text-white hover:bg-indigo-700" : "bg-gray-200 text-gray-600 hover:bg-gray-300"}`}
-                >
-                  {active > step ? <Check size={14} /> : step}
-                </button>
-
-                <span className="text-[11px] text-center mt-1 px-1 text-gray-600 cursor-pointer hover:text-indigo-600 line-clamp-2"
-                  onClick={() => handleStepClick(step)}>
-                  {s.label}
-                </span>
-              </div>
-
-              {/* Connecting line */}
-              {!isLast && (
-                <div className="flex-1 h-px bg-gray-400 mx-1 min-w-[8px]" />
-              )}
+                return (
+                  <div key={s.id} className="flex items-center">
+                    <div className="flex items-center gap-1">
+                      <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold transition-colors flex-shrink-0
+                        ${active ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-600"}`}>
+                        {active > step ? <Check size={10} /> : step}
+                      </div>
+                      <span className={`text-xs font-medium whitespace-nowrap px-1 ${
+                        active ? "text-indigo-700" : "text-gray-500"
+                      }`}>
+                        {s.label.split(' ')[0]} {/* Show first word of label */}
+                      </span>
+                    </div>
+                    
+                    {/* Connecting line */}
+                    {!isLast && (
+                      <div className="w-4 h-px bg-gray-300 mx-1 flex-shrink-0" />
+                    )}
+                  </div>
+                )
+              })}
             </div>
-          )
-        })}
-      </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Status indicator */}
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full border border-gray-200">
+              <div className={`w-2 h-2 rounded-full ${isNewLead ? 'bg-yellow-500' : 'bg-green-500'}`}></div>
+              <span className="text-xs font-medium text-gray-700">
+                {isNewLead ? "New Lead" : "Active Lead"}
+              </span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Spacer to account for fixed header */}
+      <div className="h-2"></div>
     </div>
   )
 }

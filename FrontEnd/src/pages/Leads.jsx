@@ -2346,11 +2346,10 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     </CardContent>
   </Card>
               </div>
-
               {/* RIGHT COLUMN – CALL HISTORY */}
               <div className="lg:col-span-4 space-y-6">
                 {/* CALL HISTORY CARD */}
-                <Card className="border-0 shadow-md bg-white sticky top-4">
+                <Card className="border-0 shadow-md bg-white sticky top-20 mt-16">
                   <CardHeader>
                     <CardTitle className="text-lg text-gray-800">Call History</CardTitle>
                     <CardDescription>Quick reference</CardDescription>
