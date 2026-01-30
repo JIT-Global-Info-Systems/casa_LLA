@@ -106,6 +106,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     location: "",
     zone: "",
     area: "",
+    areaValue: "", // Added for area calculation
+    areaUnit: "hectare", // Added for area calculation
     landName: "",
     sourceCategory: "",
     source: "",
@@ -197,6 +199,45 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     callDate: "", // Call date for calls and notes
     callTime: "", // Call time for calls and notes
     callNotes: "", // Call notes for calls
+
+    // Site area fields for yield calculation
+    roadSiteArea: "",
+    osrSiteArea: "",
+    tnebSiteArea: "",
+    localBodySiteArea: "",
+    manualRoadArea: "",
+    osrManualRoadArea: "",
+    tnebManualRoadArea: "",
+    localBodyManualRoadArea: "",
+    osrPercentage: "",
+    tnebPercentage: "",
+    localBodyPercentage: "",
+
+    // Channel, gas line, HT tower line fields
+    channelWidth: "",
+    channelLength: "",
+    channelInBetween: "",
+    channelNearBoundary: "",
+    gasLineWidth: "",
+    gasLineLength: "",
+    gasLineInBetween: "",
+    gasLineNearBoundary: "",
+    htTowerLineWidth: "",
+    htTowerLineLength: "",
+    htTowerLineInBetween: "",
+    htTowerLineNearBoundary: "",
+
+    // River, lake, railway, burial, highway fields
+    riverLength: "",
+    riverNearBoundary: "",
+    lakeLength: "",
+    lakeNearBoundary: "",
+    railwayBoundaryLength: "",
+    railwayBoundaryNearBoundary: "",
+    burialGroundLength: "",
+    burialGroundNearBoundary: "",
+    highwayLength: "",
+    highwayNearBoundary: "",
   })
 
   // Calculate OSR eligibility based on area input
@@ -499,6 +540,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           location: "",
           zone: "",
           area: "",
+          areaValue: "", // Added for area calculation
+          areaUnit: "hectare", // Added for area calculation
           landName: "",
           sourceCategory: "",
           source: "",
@@ -588,6 +631,45 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           callDate: "",
           callTime: "",
           callNotes: "",
+
+          // Site area fields for yield calculation
+          roadSiteArea: "",
+          osrSiteArea: "",
+          tnebSiteArea: "",
+          localBodySiteArea: "",
+          manualRoadArea: "",
+          osrManualRoadArea: "",
+          tnebManualRoadArea: "",
+          localBodyManualRoadArea: "",
+          osrPercentage: "",
+          tnebPercentage: "",
+          localBodyPercentage: "",
+
+          // Channel, gas line, HT tower line fields
+          channelWidth: "",
+          channelLength: "",
+          channelInBetween: "",
+          channelNearBoundary: "",
+          gasLineWidth: "",
+          gasLineLength: "",
+          gasLineInBetween: "",
+          gasLineNearBoundary: "",
+          htTowerLineWidth: "",
+          htTowerLineLength: "",
+          htTowerLineInBetween: "",
+          htTowerLineNearBoundary: "",
+
+          // River, lake, railway, burial, highway fields
+          riverLength: "",
+          riverNearBoundary: "",
+          lakeLength: "",
+          lakeNearBoundary: "",
+          railwayBoundaryLength: "",
+          railwayBoundaryNearBoundary: "",
+          burialGroundLength: "",
+          burialGroundNearBoundary: "",
+          highwayLength: "",
+          highwayNearBoundary: "",
         })
         setOriginalData(null)
         setHasUnsavedChanges(false)
@@ -612,6 +694,10 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       callDate: data.callDate || "",
       callTime: data.callTime || "",
       callNotes: data.callNotes || "",
+
+      // Area calculation fields
+      areaValue: data.areaValue || "",
+      areaUnit: data.areaUnit || "hectare",
 
       // Missing basic fields from API
       propertyType: data.propertyType || "",
@@ -690,6 +776,61 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     setOriginalData(JSON.parse(JSON.stringify(hydratedData)))
   }, [data])
 
+  // Calculate area in cents from areaValue and areaUnit
+  const calculateAreaInCents = useCallback(() => {
+    if (!formData.areaValue || !formData.areaUnit) return 0;
+    
+    const value = parseFloat(formData.areaValue);
+    if (isNaN(value) || value <= 0) return 0;
+
+    switch (formData.areaUnit) {
+      case "cents":
+        return value;
+      case "acres":
+        return value * 100;
+      case "hectare":
+        return value * 247.105;
+      default:
+        return 0;
+    }
+  }, [formData.areaValue, formData.areaUnit]);
+
+  // Auto-populate site area fields when area changes
+  const populateSiteAreas = useCallback(() => {
+    const areaInCents = calculateAreaInCents();
+    
+    if (areaInCents > 0) {
+      console.log('🔄 Auto-mapping area to site fields:', areaInCents, 'cents');
+      
+      // Update all site area fields with the calculated area in cents
+      const siteAreaUpdates = {
+        roadSiteArea: areaInCents.toString(),
+        osrSiteArea: areaInCents.toString(),
+        tnebSiteArea: areaInCents.toString(),
+        localBodySiteArea: areaInCents.toString()
+      };
+      
+      setFormData(prev => ({ ...prev, ...siteAreaUpdates }));
+      
+      // Also update the yield context with the new site areas
+      Object.entries(siteAreaUpdates).forEach(([field, value]) => {
+        const contextField = field.replace('SiteArea', 'siteArea');
+        const contextSection = field.replace('SiteArea', '').toLowerCase();
+        if (contextSection === 'road') {
+          updateNestedYieldData('roadArea', 'siteArea', parseFloat(value) || 0);
+        } else if (contextSection === 'osr') {
+          updateNestedYieldData('osr', 'siteArea', parseFloat(value) || 0);
+        } else if (contextSection === 'tneb') {
+          updateNestedYieldData('tneb', 'siteArea', parseFloat(value) || 0);
+        } else if (contextSection === 'localbody') {
+          updateNestedYieldData('localBody', 'siteArea', parseFloat(value) || 0);
+        }
+      });
+      
+      console.log('✅ Site areas updated:', siteAreaUpdates);
+    }
+  }, [calculateAreaInCents, updateNestedYieldData]);
+
   const handleChange = useCallback((key, value) => {
     setFormData(prev => ({ ...prev, [key]: value }))
     
@@ -701,7 +842,15 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
         return newErrors
       })
     }
-  }, [errors])
+
+    // Auto-populate site areas when area value or unit changes
+    if (key === 'areaValue' || key === 'areaUnit') {
+      // Use setTimeout to ensure the form state is updated before calculating
+      setTimeout(() => {
+        populateSiteAreas();
+      }, 0);
+    }
+  }, [errors, populateSiteAreas])
 
   const handleMultipleChanges = (changes) => {
     const newFormData = { ...formData, ...changes };
@@ -2504,7 +2653,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                         
                         {/* 1️⃣ Site Area */}
                         <div className="space-y-3">
-                          <Label className="text-sm font-medium text-gray-700">1️⃣ Site Area (Mandatory)</Label>
+                          <Label className="text-sm font-medium text-gray-700"> Site Area </Label>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
                               <Label className="text-xs text-gray-600">Value</Label>
@@ -2518,23 +2667,41 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                             </div>
                             <div>
                               <Label className="text-xs text-gray-600">Unit</Label>
-                              <Select value={formData.areaUnit || "cents"} onValueChange={(value) => handleChange("areaUnit", value)}>
+                              <Select value={formData.areaUnit || "hectare"} onValueChange={(value) => handleChange("areaUnit", value)}>
                                 <SelectTrigger className="bg-gray-50/50">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
+                                   <SelectItem value="hectare">Hectare</SelectItem>
                                   <SelectItem value="cents">Cents</SelectItem>
                                   <SelectItem value="acres">Acres</SelectItem>
-                                  <SelectItem value="hectare">Hectare</SelectItem>
+                                 
                                 </SelectContent>
                               </Select>
                             </div>
                           </div>
                         </div>
 
+                        {/* Area Calculation Indicator */}
+                        {formData.areaValue && formData.areaUnit && (
+                          <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+                            <div className="flex items-center justify-between">
+                              <div className="text-sm">
+                                <span className="font-medium text-blue-800">Calculated Area:</span>
+                                <span className="ml-2 text-blue-700">
+                                  {calculateAreaInCents().toFixed(3)} cents
+                                </span>
+                              </div>
+                              <div className="text-xs text-blue-600">
+                                ✓ Auto-mapped to site areas
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
                         {/* 2️⃣ Channel */}
                         <div className="space-y-3">
-                          <Label className="text-sm font-medium text-gray-700">2️⃣ Channel (Deduction 1)</Label>
+                          <Label className="text-sm font-medium text-gray-700"> Channel </Label>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
                               <Label className="text-xs text-gray-600">Width</Label>
@@ -2581,7 +2748,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
                         {/* 3️⃣ Gas Line */}
                         <div className="space-y-3">
-                          <Label className="text-sm font-medium text-gray-700">3️⃣ Gas Line (Deduction 2)</Label>
+                          <Label className="text-sm font-medium text-gray-700"> Gas Line </Label>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
                               <Label className="text-xs text-gray-600">Width</Label>
@@ -2628,7 +2795,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
                         {/* 4️⃣ HT Tower Line */}
                         <div className="space-y-3">
-                          <Label className="text-sm font-medium text-gray-700">4️⃣ HT Tower Line (Deduction 3)</Label>
+                          <Label className="text-sm font-medium text-gray-700"> HT Tower Line </Label>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
                               <Label className="text-xs text-gray-600">Width</Label>
@@ -2675,7 +2842,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
                         {/* 5️⃣ River */}
                         <div className="space-y-3">
-                          <Label className="text-sm font-medium text-gray-700">5️⃣ River (Deduction 4)</Label>
+                          <Label className="text-sm font-medium text-gray-700"> River</Label>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
                               <Label className="text-xs text-gray-600">Length</Label>
@@ -2702,7 +2869,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
                         {/* 6️⃣ Lake */}
                         <div className="space-y-3">
-                          <Label className="text-sm font-medium text-gray-700">6️⃣ Lake (Deduction 5)</Label>
+                          <Label className="text-sm font-medium text-gray-700"> Lake </Label>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
                               <Label className="text-xs text-gray-600">Length</Label>
@@ -2729,7 +2896,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
                         {/* 7️⃣ Railway Boundary */}
                         <div className="space-y-3">
-                          <Label className="text-sm font-medium text-gray-700">7️⃣ Railway Boundary (Deduction 6)</Label>
+                          <Label className="text-sm font-medium text-gray-700"> Railway Boundary </Label>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
                               <Label className="text-xs text-gray-600">Length</Label>
@@ -2756,7 +2923,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
                         {/* 8️⃣ Burial Ground */}
                         <div className="space-y-3">
-                          <Label className="text-sm font-medium text-gray-700">8️⃣ Burial Ground (Deduction 7)</Label>
+                          <Label className="text-sm font-medium text-gray-700"> Burial Ground </Label>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
                               <Label className="text-xs text-gray-600">Length</Label>
@@ -2783,7 +2950,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
                         {/* 9️⃣ State / National Highway */}
                         <div className="space-y-3">
-                          <Label className="text-sm font-medium text-gray-700">9️⃣ State / National Highway (Deduction 8)</Label>
+                          <Label className="text-sm font-medium text-gray-700"> State / National Highway </Label>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
                               <Label className="text-xs text-gray-600">Length</Label>
@@ -2810,7 +2977,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
                         {/* 🔟 Road Area */}
                         <div className="space-y-3">
-                          <Label className="text-sm font-medium text-gray-700">🔟 Road Area (Deduction 9)</Label>
+                          <Label className="text-sm font-medium text-gray-700">Road Area </Label>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
                               <Label className="text-xs text-gray-600">Site Area</Label>
@@ -2838,7 +3005,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                         {/* 1️⃣1️⃣ OSR (Optional - Conditional) */}
                         {isOSREligible() && (
                           <div className="space-y-3">
-                            <Label className="text-sm font-medium text-gray-700">1️⃣1️⃣ OSR (Deduction 10 - Auto-applied for ≥247 cents)</Label>
+                            <Label className="text-sm font-medium text-gray-700"> OSR ( Auto-applied for ≥247 cents)</Label>
                             <div className="grid grid-cols-3 gap-2">
                               <div>
                                 <Label className="text-xs text-gray-600">Site Area</Label>
@@ -2876,7 +3043,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
                         {/* 1️⃣2️⃣ TNEB */}
                         <div className="space-y-3">
-                          <Label className="text-sm font-medium text-gray-700">1️⃣2️⃣ TNEB (Deduction 11)</Label>
+                          <Label className="text-sm font-medium text-gray-700"> TNEB </Label>
                           <div className="grid grid-cols-3 gap-2">
                             <div>
                               <Label className="text-xs text-gray-600">Site Area</Label>
@@ -2913,7 +3080,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
                         {/* 1️⃣3️⃣ Local Body Deduction */}
                         <div className="space-y-3">
-                          <Label className="text-sm font-medium text-gray-700">1️⃣3️⃣ Local Body Deduction (Deduction 12)</Label>
+                          <Label className="text-sm font-medium text-gray-700">Local Body Deduction </Label>
                           <div className="grid grid-cols-3 gap-2">
                             <div>
                               <Label className="text-xs text-gray-600">Site Area</Label>
