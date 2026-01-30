@@ -26,6 +26,7 @@ export const DashboardProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [filters, setFilters] = useState({});
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Fetch dashboard data from API
   const fetchDashboardData = async (dashboardFilters = {}) => {
@@ -46,14 +47,18 @@ export const DashboardProvider = ({ children }) => {
   // Update filters and refetch data
   const updateFilters = (newFilters) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
+    // Mark as initialized after first filter update
+    if (!isInitialized) {
+      setIsInitialized(true);
+    }
   };
 
-  // Auto-fetch data when filters change
+  // Auto-fetch data when filters change (but not on initial mount)
   useEffect(() => {
-    if (Object.keys(filters).length > 0) {
+    if (isInitialized && Object.keys(filters).length > 0) {
       fetchDashboardData(filters);
     }
-  }, [filters]);
+  }, [filters, isInitialized]);
 
   // Refresh dashboard data
   const refreshDashboard = () => {

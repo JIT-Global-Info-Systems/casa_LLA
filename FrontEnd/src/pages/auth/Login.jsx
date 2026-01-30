@@ -17,10 +17,10 @@ function Login() {
   const navigate = useNavigate()
   const location = useLocation()
   const { login, forcePasswordChange, isAuthenticated, loading } = useAuth()
-
+ 
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-
+ 
   // Load remembered email on component mount
   useEffect(() => {
     const rememberMeEnabled = isRememberMeEnabled()
@@ -30,38 +30,35 @@ function Login() {
       setRememberMe(true)
     }
   }, [])
-
+ 
   // Redirect if already authenticated
   useEffect(() => {
     if (!loading && isAuthenticated) {
-      const from = location.state?.from?.pathname || '/pages/dashboard'
-      navigate(from, { replace: true })
+      // Always redirect to dashboard after login, regardless of previous page
+      navigate('/pages/dashboard', { replace: true })
     }
-  }, [isAuthenticated, loading, navigate, location.state])
-
+  }, [isAuthenticated, loading, navigate])
+ 
   const handleLogin = async (e) => {
     e.preventDefault()
     setError('')
     setIsLoading(true)
-
+ 
     try {
       const response = await login({ email, password }, rememberMe)
-      
+     
       // Check if password change is required
       if (response?.user?.firstLogin) {
-        navigate('/first-time-password-change', { 
+        navigate('/first-time-password-change', {
           replace: true,
           state: { isFirstLogin: true }
         })
         return
       }
-      
-      // Get the intended destination from location state, or default to dashboard
-      const from = location.state?.from?.pathname || '/pages/dashboard'
-      
-      // Navigate to intended destination
-      navigate(from, { replace: true })
-      
+     
+      // Always redirect to dashboard after successful login
+      navigate('/pages/dashboard', { replace: true })
+     
     } catch (err) {
       const errorMessage = err.message || 'Could not log in. Please try again.'
       setError(errorMessage)
@@ -71,7 +68,7 @@ function Login() {
       setIsLoading(false)
     }
   }
-
+ 
   return (
     <div
   className="min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat relative pt-20 overflow-hidden"
@@ -80,13 +77,13 @@ function Login() {
   }}
 >
       <div className="absolute inset-0 bg-black opacity-20"></div>
-
+ 
       {/* Animated Clouds */}
       {/* <div className="absolute top-10 w-32 h-16 bg-white rounded-full opacity-70 animate-cloud-slow"></div>
       <div className="absolute top-20 w-40 h-20 bg-white rounded-full opacity-60 animate-cloud-medium"></div>
       <div className="absolute top-32 w-28 h-14 bg-white rounded-full opacity-80 animate-cloud-fast"></div>
       <div className="absolute top-40 w-36 h-18 bg-white rounded-full opacity-50 animate-cloud-slow"></div>
-
+ 
       <style jsx>{`
         @keyframes cloud-slow {
           from { transform: translateX(-200px); }
@@ -110,16 +107,16 @@ function Login() {
           animation: cloud-fast 15s linear infinite;
         }
       `}</style> */}
-
+ 
       {/* Test animaton */}
-
-      <Card 
+ 
+      <Card
   className="w-full max-w-md shadow-2xl border-0 overflow-hidden relative z-10 bg-blue-50" style={{backgroundColor:"#5b92bcc9"}}
 >
   <div className="flex">
     <div className="w-full p-6 lg:p-8">
       <div className="max-w-xs mx-auto">
-        
+       
         {/* Header */}
         <div className="flex items-center justify-center mb-6">
           <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center mr-3">
@@ -129,7 +126,7 @@ function Login() {
           </div>
           <h2 className="text-lg font-bold text-gray-800">Sign In</h2>
         </div>
-
+ 
         {/* Form */}
         <form onSubmit={handleLogin} className="space-y-3">
           <Input
@@ -140,7 +137,7 @@ function Login() {
             onChange={(e) => setEmail(e.target.value)}
             required
           />
-
+ 
           <div className="relative">
             <Input
               label="Password"
@@ -163,7 +160,7 @@ function Login() {
               )}
             </button>
           </div>
-
+ 
           <div className="flex items-center justify-between">
             <label className="flex items-center">
               <input
@@ -178,13 +175,13 @@ function Login() {
               Forgot password?
             </a>
           </div>
-
+ 
           {error && (
             <div className="text-red-500 text-xs mb-2">
               {error}
             </div>
           )}
-
+ 
           <Button
             type="submit"
             className="w-full py-2 text-xs font-semibold bg-blue-600 hover:bg-blue-700"
@@ -197,11 +194,13 @@ function Login() {
     </div>
   </div>
 </Card>
-
+ 
     </div>
-
-
+ 
+ 
   )
 }
-
+ 
 export default Login
+ 
+ 

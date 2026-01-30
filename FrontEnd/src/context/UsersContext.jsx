@@ -23,9 +23,7 @@ export const UsersProvider = ({ children }) => {
       const response = await usersAPI.getAll();
       setUsers(response);
     } catch (err) {
-      console.error('Error fetching users:', err);
       setError(err.message);
-      // Don't throw - let UI handle the error state
     } finally {
       setLoading(false);
     }
@@ -38,7 +36,6 @@ export const UsersProvider = ({ children }) => {
       const response = await usersAPI.getById(id);
       return response;
     } catch (err) {
-      console.error('Error fetching user:', err);
       setError(err.message);
       throw err;
     } finally {
@@ -69,7 +66,6 @@ export const UsersProvider = ({ children }) => {
         return response;
       }
     } catch (err) {
-      console.error('Error creating user:', err);
       setError(err.message);
       throw err;
     } finally {
@@ -120,7 +116,6 @@ export const UsersProvider = ({ children }) => {
         prev.filter(user => user.user_id !== id)
       );
     } catch (err) {
-      console.error('Error deleting user:', err);
       setError(err.message);
       throw err;
     } finally {

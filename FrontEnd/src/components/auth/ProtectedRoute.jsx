@@ -1,20 +1,18 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { hasPermission } from "@/config/rbac";
-import LoadingState from "@/components/ui/LoadingState";
-import PermissionDenied from "@/components/ui/PermissionDenied";
 
 const ProtectedRoute = ({
   children,
   requiredPermission,
-  showPermissionDenied = false
+  fallbackPath = "/unauthorized"
 }) => {
   const { user, isAuthenticated, loading, error } = useAuth();
   const location = useLocation();
 
-  // Show loading state while checking authentication
+  // Return null while checking authentication to prevent flash
   if (loading) {
-    return <LoadingState message="Verifying access..." />;
+    return null;
   }
 
   // If there's an auth error (like expired session), redirect to login

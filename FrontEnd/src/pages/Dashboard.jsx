@@ -31,7 +31,7 @@ import {
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
+ 
 import toast from "react-hot-toast";
 
 import DateFilter from "@/components/ui/datefilter";
@@ -189,15 +189,21 @@ function Dashboard() {
   });
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [isMounted, setIsMounted] = useState(false);
 
-  // Update date range when fromDate or toDate changes
+  // Update date range when fromDate or toDate changes (but not on initial mount)
   useEffect(() => {
-    const filters = {
-      fromDate,
-      toDate,
-      location: selectedLocation.name,
-    };
-    updateFilters(filters);
+    if (isMounted && (fromDate || toDate || selectedLocation.name !== "All Locations")) {
+      const filters = {
+        fromDate,
+        toDate,
+        location: selectedLocation.name,
+      };
+      updateFilters(filters);
+    } else {
+      setIsMounted(true);
+      return;
+    }
   }, [fromDate, toDate, selectedLocation]);
 
   // Fetch locations data
@@ -234,13 +240,8 @@ function Dashboard() {
         ]);
       }
     };
-
+ 
     fetchLocations();
-  }, []);
-
-  // Initial data fetch
-  useEffect(() => {
-    fetchDashboardData();
   }, []);
 
   // Extract data from API response
@@ -500,6 +501,7 @@ function Dashboard() {
 }
  
 export default Dashboard;
+ 
  
  
  

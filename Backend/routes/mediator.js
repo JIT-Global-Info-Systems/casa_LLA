@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const upload = require("../middleware/uploadMiddleware");
-const mediatorController = require("../controllers/mediatorController");
+const mediatorController = require("../controllers/MediatorController");
 
 const { verifyToken } = require("../middleware/authMiddleware");
 
@@ -16,7 +16,7 @@ router.post(
 );
 
 router.put("/update/:mediatorId", verifyToken, mediatorController.updateMediator);
-router.delete("/delete/:mediatorId", verifyToken, mediatorController.deleteMediator);
+router.delete("/delete/:mediatorId", verifyToken, mediatorController.softDeleteMediator);
 router.get("/all", verifyToken, mediatorController.getAllMediators);
 
 module.exports = router;

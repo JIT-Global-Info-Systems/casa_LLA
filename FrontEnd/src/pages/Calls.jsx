@@ -26,8 +26,6 @@ import { toast } from "react-hot-toast"
 export default function Calls() {
     const { calls: apiCalls, loading, error, fetchCalls } = useCalls()
     const [expandedNotes, setExpandedNotes] = useState(new Set())
-    const [currentPage, setCurrentPage] = useState(1)
-    const itemsPerPage = 10
 
     const calls = useMemo(() => apiCalls, [apiCalls])
 
@@ -76,10 +74,10 @@ export default function Calls() {
             try {
                 await fetchCalls()
                 if (apiCalls.length > 0) {
-                    toast.success(`${apiCalls.length} calls loaded`)
+                    toast.success(`Loaded ${apiCalls.length} calls`)
                 }
             } catch (err) {
-                toast.error('Could not load calls. Please try again.')
+                toast.error('Failed to load calls. Please try again.')
                 console.error('Error loading calls:', err)
             }
         }
@@ -106,17 +104,6 @@ export default function Calls() {
         })
     }, [calls, searchTerm, userFilter, fromDate, toDate])
 
-    // Reset to page 1 when filters change
-    useEffect(() => {
-        setCurrentPage(1)
-    }, [searchTerm, userFilter, fromDate, toDate])
-
-    // Calculate pagination
-    const totalPages = Math.ceil(filteredCalls.length / itemsPerPage)
-    const startIndex = (currentPage - 1) * itemsPerPage
-    const endIndex = startIndex + itemsPerPage
-    const paginatedCalls = filteredCalls.slice(startIndex, endIndex)
-
     return (
         <div className="min-h-screen bg-slate-50/50 p-4 md:p-8">
             <div
@@ -125,7 +112,7 @@ export default function Calls() {
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-1xl font-bold text-indigo-600 tracking-tight flex items-center gap-3">
+                        <h1 className="text-1xl font-bold text-gray-900 tracking-tight flex items-center gap-3">
                             <Phone className="h-8 w-8 text-indigo-600" />
                             Call History
                         </h1>
@@ -140,9 +127,9 @@ export default function Calls() {
                                 onClick={async () => {
                                     try {
                                         await fetchCalls()
-                                        toast.success(`${apiCalls.length} calls refreshed`)
+                                        toast.success(`Refreshed ${apiCalls.length} calls`)
                                     } catch (err) {
-                                        toast.error('Could not refresh calls. Please try again.')
+                                        toast.error('Failed to refresh calls')
                                         console.error('Error refreshing calls:', err)
                                     }
                                 }}
@@ -157,7 +144,7 @@ export default function Calls() {
 
                 {/* Filters Card */}
                 <Card className="border-none shadow-sm bg-white p-6">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                         <div className="space-y-2">
                             <Label className="text-xs font-semibold uppercase tracking-wider text-slate-500">Search</Label>
                             <div className="relative">
@@ -171,7 +158,7 @@ export default function Calls() {
                             </div>
                         </div>
 
-                        {/* <div className="space-y-2">
+                        <div className="space-y-2">
                             <Label className="text-xs font-semibold uppercase tracking-wider text-slate-500">User</Label>
                             <Select value={userFilter} onValueChange={setUserFilter}>
                                 <SelectTrigger className="border-slate-200 focus:ring-indigo-500">
@@ -186,7 +173,7 @@ export default function Calls() {
                                     ))}
                                 </SelectContent>
                             </Select>
-                        </div> */}
+                        </div>
 
                         <div className="space-y-2">
                             <Label className="text-xs font-semibold uppercase tracking-wider text-slate-500">From Date</Label>
@@ -257,7 +244,7 @@ export default function Calls() {
                                         </TableCell>
                                     </TableRow>
                                 ) : filteredCalls.length > 0 ? (
-                                    paginatedCalls.map((call) => (
+                                    filteredCalls.map((call) => (
                                         <TableRow
                                             key={call._id}
                                             className="hover:bg-slate-50/80 transition-colors border-slate-100"
@@ -353,29 +340,10 @@ export default function Calls() {
                     {/* Footer */}
                     {!loading && filteredCalls.length > 0 && (
                         <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center text-xs text-slate-500 font-medium">
-                            <span>Showing {startIndex + 1} to {Math.min(endIndex, filteredCalls.length)} of {filteredCalls.length} logs</span>
+                            <span>Showing {filteredCalls.length} of {calls.length} logs</span>
                             <div className="flex gap-1">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={currentPage === 1}
-                                    onClick={() => setCurrentPage(currentPage - 1)}
-                                    className="px-2 py-1 text-xs"
-                                >
-                                    Prev
-                                </Button>
-                                <span className="px-2 py-1 text-xs text-slate-600">
-                                    Page {currentPage} of {totalPages}
-                                </span>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={currentPage === totalPages}
-                                    onClick={() => setCurrentPage(currentPage + 1)}
-                                    className="px-2 py-1 text-xs"
-                                >
-                                    Next
-                                </Button>
+                                <span className="px-2 py-1 bg-white border border-slate-200 rounded text-slate-400 cursor-not-allowed">Prev</span>
+                                <span className="px-2 py-1 bg-white border border-slate-200 rounded text-slate-400 cursor-not-allowed">Next</span>
                             </div>
                         </div>
                     )}

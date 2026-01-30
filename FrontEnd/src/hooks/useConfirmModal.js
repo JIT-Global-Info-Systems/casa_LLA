@@ -1,16 +1,16 @@
 import { useState } from 'react';
-
+ 
 /**
  * Custom hook to manage confirmation modal state
- * 
+ *
  * @returns {Object} Modal state and control functions
- * 
+ *
  * @example
  * const { isOpen, loading, openModal, closeModal, confirmAction } = useConfirmModal();
- * 
+ *
  * // Open modal
  * openModal();
- * 
+ *
  * // Handle confirm with async action
  * const handleConfirm = async () => {
  *   await confirmAction(async () => {
@@ -22,21 +22,21 @@ import { useState } from 'react';
 export const useConfirmModal = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-
+ 
   const openModal = () => {
     setIsOpen(true);
   };
-
+ 
   const closeModal = () => {
     if (!loading) {
       setIsOpen(false);
     }
   };
-
+ 
   /**
    * Execute an async action with loading state
    * Automatically closes modal on success
-   * 
+   *
    * @param {Function} action - Async function to execute
    * @returns {Promise<boolean>} - Returns true if action succeeded, false if failed
    */
@@ -54,7 +54,7 @@ export const useConfirmModal = () => {
       setLoading(false);
     }
   };
-
+ 
   return {
     isOpen,
     loading,
@@ -63,5 +63,7 @@ export const useConfirmModal = () => {
     confirmAction,
   };
 };
-
+ 
 export default useConfirmModal;
+ 
+ 

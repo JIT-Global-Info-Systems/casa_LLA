@@ -1,34 +1,29 @@
-import { Toaster as HotToaster } from 'react-hot-toast';
+'use client'
+
+import { Toaster as HotToaster } from 'react-hot-toast'
 
 export function Toaster() {
   return (
     <HotToaster
       position="top-right"
       toastOptions={{
-        className: '',
+        className: '!bg-background !text-foreground',
         success: {
-          duration: 3000,
-          style: {
-            background: '#f0fdf4',
-            color: '#166534',
-            border: '1px solid #bbf7d0',
-          },
+          className: '!bg-green-50 !text-green-800 border border-green-200',
           iconTheme: {
-            primary: '#16a34a',
-            secondary: '#fff',
+            primary: '#10b981',
+            secondary: 'white',
           },
         },
         error: {
-          duration: 3000,
-          style: {
-            background: '#fef2f2',
-            color: '#991b1b',
-            border: '1px solid #fecaca',
-          },
+          className: '!bg-red-50 !text-red-800 border border-red-200',
           iconTheme: {
-            primary: '#dc2626',
-            secondary: '#fff',
+            primary: '#ef4444',
+            secondary: 'white',
           },
+        },
+        loading: {
+          className: '!bg-blue-50 !text-blue-800 border border-blue-200',
         },
       }}
     />

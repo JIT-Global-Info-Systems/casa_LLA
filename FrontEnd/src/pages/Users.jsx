@@ -26,8 +26,6 @@ function Users() {
   const [toDate, setToDate] = useState("");
   const [mode, setMode] = useState("list"); // 'list' | 'add' | 'edit' | 'view'
   const [selectedUser, setSelectedUser] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -147,19 +145,15 @@ function Users() {
     }
 
     if (fromDate) {
-      filtered = filtered.filter((user) => {
-        const userDate = safeDate(user.created_at);
-        const filterDate = safeDate(fromDate);
-        return userDate && filterDate && userDate >= filterDate;
-      });
+      filtered = filtered.filter(
+        (user) => new Date(user.created_at) >= new Date(fromDate)
+      );
     }
 
     if (toDate) {
-      filtered = filtered.filter((user) => {
-        const userDate = safeDate(user.created_at);
-        const filterDate = safeDate(toDate);
-        return userDate && filterDate && userDate <= filterDate;
-      });
+      filtered = filtered.filter(
+        (user) => new Date(user.created_at) <= new Date(toDate)
+      );
     }
 
     // Sort users by creation date (newest first)
@@ -197,11 +191,11 @@ function Users() {
         password: "",
         role: "",
         phone_number: "",
-        status: "active"
+        
       });
       setFormErrors({});
     } catch (err) {
-      toast.error(err.message || 'Could not add user. Please try again.');
+      // Error handled by context
       console.error(err);
     } finally {
       setIsSubmitting(false);
@@ -231,28 +225,18 @@ function Users() {
       });
       setFormErrors({});
     } catch (err) {
-      toast.error(err.message || 'Could not update user. Please try again.');
       console.error(err);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleDeleteUser = (user) => {
-    // Check if delete is allowed
-    const deleteState = canPerformAction(user, 'delete');
-    
-    if (!deleteState.enabled) {
-      // User is already inactive/deleted - don't show error
-      // UI should have disabled the button with tooltip
-      return;
+  const handleDeleteUser = async (userId) => {
+    try {
+      await deleteUser(userId);
+    } catch (err) {
+      console.error(err);
     }
-
-    // Perform delete with status check
-    handleDelete(user, async () => {
-      await deleteUser(user.user_id);
-      fetchUsers(); // Refresh list
-    }, user.name);
   };
 
   const openEditDialog = (user) => {
@@ -519,7 +503,7 @@ function Users() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {paginatedUsers.map((user) => (
+                    {filteredUsers.map((user) => (
                       <tr
                         key={user.user_id}
                         className="hover:bg-gray-50 transition-colors"
@@ -636,17 +620,19 @@ function Users() {
                                 Edit
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={() => handleDeleteUser(user)}
-                                disabled={!canPerformAction(user, 'delete').enabled}
+                                onClick={() => {
+                                  if (
+                                    window.confirm(
+                                      `Are you sure you want to delete "${user.name}"?`
+                                    )
+                                  ) {
+                                    handleDeleteUser(user.user_id);
+                                  }
+                                }}
                                 className="cursor-pointer text-red-600"
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 Delete
-                                {!canPerformAction(user, 'delete').enabled && (
-                                  <span className="ml-2 text-xs text-gray-500">
-                                    ({canPerformAction(user, 'delete').reason})
-                                  </span>
-                                )}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -657,32 +643,53 @@ function Users() {
                 </table>
               </div>
 
+              {loading && (
+                <div className="text-center py-12 text-gray-500">
+                  <p>Loading users...</p>
+                </div>
+              )}
+
+              {error && (
+                <div className="text-center py-12 text-red-500">
+                  <p>Error: {error}</p>
+                </div>
+              )}
+
+              {!loading && !error && filteredUsers.length === 0 && (
+                <div className="text-center py-12 text-gray-500">
+                  <p>No users found matching your criteria.</p>
+                </div>
+              )}
+
               {/* Footer */}
               <div className="px-6 py-4 border-t flex items-center justify-between">
                 <p className="text-sm text-gray-600">
-                  Showing {startIndex + 1} to {Math.min(endIndex, filteredUsers.length)} of {filteredUsers.length} results
+                  Showing {filteredUsers.length} results
                 </p>
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage(currentPage - 1)}
-                    className="text-gray-700"
+                    disabled
+                    className="text-gray-400"
                   >
                     Previous
                   </Button>
-                  <span className="px-3 py-1 text-sm text-gray-600 flex items-center">
-                    Page {currentPage} of {totalPages}
-                  </span>
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={currentPage === totalPages}
-                    onClick={() => setCurrentPage(currentPage + 1)}
-                    className="text-gray-700"
+                    disabled
+                    className="text-gray-400"
                   >
                     Next
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled
+                    className="text-gray-400"
+                  >
+                    Last
                   </Button>
                 </div>
               </div>
@@ -692,23 +699,159 @@ function Users() {
       )}
 
       {mode === "add" && (
-        <div className="min-h-screen bg-slate-50/50 p-4 md:p-8">
-          <div className="max-w-7xl mx-auto space-y-6">
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-4">
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  onClick={() => setMode("list")} 
-                  className="bg-white shadow-sm hover:bg-gray-100"
-                >
-                  <ChevronLeft className="h-5 w-5 text-gray-600" />
-                </Button>
-                <div>
-                  <h1 className="text-2xl font-bold text-indigo-600 tracking-tight">Add New User</h1>
-                  <p className="text-gray-500 text-sm mt-1">Fill in the details below to create a new user</p>
-                </div>
+        <div className="min-h-screen bg-gray-50 p-6">
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <Button
+              variant="outline"
+              onClick={() => setMode("list")}
+              className="mb-4"
+            >
+              ← Back to Users
+            </Button>
+            <h2 className="text-xl font-semibold mb-1">Add New User</h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
+                  placeholder="Enter user name"
+                />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
+                  placeholder="Enter email address"
+                />
+              </div>
+              {/* <div className="grid gap-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) =>
+                    setFormData({ ...formData, password: e.target.value })
+                  }
+                  placeholder="Enter password"
+                />
+              </div> */}
+              <div className="grid gap-2">
+                <Label htmlFor="phone">Phone</Label>
+                <Input
+                  id="phone"
+                  value={formData.phone_number}
+                  onChange={(e) =>
+                    setFormData({ ...formData, phone_number: e.target.value })
+                  }
+                  placeholder="Enter phone number"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Role</Label>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between capitalize">
+                      {formData.role || "Select role"}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] bg-white border shadow-lg">
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setFormData({ ...formData, role: "tele_caller" })
+                      }
+                      className="cursor-pointer"
+                    >
+                      Telecaller
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setFormData({ ...formData, role: "land_executive" })
+                      }
+                      className="cursor-pointer"
+                    >
+                      LandExecutive
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setFormData({ ...formData, role: "feasibility_team" })
+                      }
+                      className="cursor-pointer"
+                    >
+                      Feasibility
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setFormData({ ...formData, role: "l1_md" })
+                      }
+                      className="cursor-pointer"
+                    >
+                      Management
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setFormData({ ...formData, role: "cmo_cro" })
+                      }
+                      className="cursor-pointer"
+                    >
+                      Market Analysis 
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setFormData({ ...formData, role: "legal" })
+                      }
+                      className="cursor-pointer"
+                    >
+                      Legal
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setFormData({ ...formData, role: "liaison" })
+                      }
+                      className="cursor-pointer"
+                    >
+                      Liaison
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setFormData({ ...formData, role: "finance" })
+                      }
+                      className="cursor-pointer"
+                    >
+                      Finance
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setFormData({ ...formData, role: "management" })
+                      }
+                      className="cursor-pointer"
+                    >
+                      Management
+                    </DropdownMenuItem>
+                  
+
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setFormData({ ...formData, role: "all_team" })
+                      }
+                      className="cursor-pointer"
+                    >
+                      AllTeam
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+             
             </div>
 
             <Card className="border-0 shadow-md bg-white overflow-hidden">
@@ -878,25 +1021,174 @@ function Users() {
       )}
 
       {mode === "edit" && (
-        <div className="min-h-screen bg-slate-50/50 p-4 md:p-8">
-          <div className="max-w-7xl mx-auto space-y-6">
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center gap-4">
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  onClick={() => {
-                    setMode("list");
-                    setSelectedUser(null);
-                  }} 
-                  className="bg-white shadow-sm hover:bg-gray-100"
-                >
-                  <ChevronLeft className="h-5 w-5 text-gray-600" />
-                </Button>
-                <div>
-                  <h1 className="text-2xl font-bold text-indigo-600 tracking-tight">Edit User</h1>
-                  <p className="text-gray-500 text-sm mt-1">Update the user details below</p>
-                </div>
+        <div className="min-h-screen bg-gray-50 p-6">
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setMode("list");
+                setSelectedUser(null);
+              }}
+              className="mb-4"
+            >
+              ← Back to Users
+            </Button>
+            <h2 className="text-xl font-semibold mb-6">Edit User</h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">Name</Label>
+                <Input
+                  id="edit-name"
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
+                  placeholder="Enter user name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-email">Email</Label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
+                  placeholder="Enter email address"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-password">Password</Label>
+                <Input
+                  id="edit-password"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) =>
+                    setFormData({ ...formData, password: e.target.value })
+                  }
+                  placeholder="Enter password"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-phone">Phone</Label>
+                <Input
+                  id="edit-phone"
+                  value={formData.phone_number}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      phone_number: e.target.value,
+                    })
+                  }
+                  placeholder="Enter phone number"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="phone">Status</Label>
+                <Input
+                  id="phone"
+                  value={formData.phone_number}
+                  onChange={(e) =>
+                    setFormData({ ...formData, phone_number: e.target.value })
+                  }
+                  placeholder="Enter phone number"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Role</Label>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between capitalize">
+                      {formData.role || "Select role"}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] bg-white border shadow-lg">
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setFormData({ ...formData, role: "tele_caller" })
+                      }
+                      className="cursor-pointer"
+                    >
+                      Telecaller
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setFormData({ ...formData, role: "land_executive" })
+                      }
+                      className="cursor-pointer"
+                    >
+                      LandExecutive
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setFormData({ ...formData, role: "feasibility_team" })
+                      }
+                      className="cursor-pointer"
+                    >
+                      Feasibility
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setFormData({ ...formData, role: "l1_md" })
+                      }
+                      className="cursor-pointer"
+                    >
+                      Management
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setFormData({ ...formData, role: "cmo_cro" })
+                      }
+                      className="cursor-pointer"
+                    >
+                      Market Analysis 
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setFormData({ ...formData, role: "legal" })
+                      }
+                      className="cursor-pointer"
+                    >
+                      Legal
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setFormData({ ...formData, role: "liaison" })
+                      }
+                      className="cursor-pointer"
+                    >
+                      Liaison
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setFormData({ ...formData, role: "finance" })
+                      }
+                      className="cursor-pointer"
+                    >
+                      Finance
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setFormData({ ...formData, role: "management" })
+                      }
+                      className="cursor-pointer"
+                    >
+                      Management
+                    </DropdownMenuItem>
+                  
+
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setFormData({ ...formData, role: "all_team" })
+                      }
+                      className="cursor-pointer"
+                    >
+                      AllTeam
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
 
@@ -1090,8 +1382,8 @@ function Users() {
                   <ChevronLeft className="h-5 w-5 text-gray-600" />
                 </Button>
                 <div>
-                  <h1 className="text-2xl font-bold text-indigo-600 tracking-tight">View User</h1>
-                  <p className="text-gray-500 text-sm mt-1">View the user details below</p>
+                  <h1 className="text-3xl font-bold text-gray-900 tracking-tight">View User</h1>
+                  <p className="text-gray-500 text-sm mt-1">View the user details below.</p>
                 </div>
               </div>
             </div>
@@ -1102,54 +1394,52 @@ function Users() {
                 <CardTitle className="text-xl text-gray-800">User Information</CardTitle>
                 <CardDescription>Personal and account details.</CardDescription>
               </CardHeader>
-              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2">
                   <Label className="text-gray-700 font-medium">Name</Label>
-                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
                     {selectedUser.name || "-"}
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label className="text-gray-700 font-medium">Email</Label>
-                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
                     {selectedUser.email || "-"}
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label className="text-gray-700 font-medium">Phone Number</Label>
-                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
                     {selectedUser.phone_number || "-"}
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label className="text-gray-700 font-medium">Role</Label>
-                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
                     <span
                       className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${getCategoryColor(
                         selectedUser.role
                       )} capitalize`}
                     >
-                      {selectedUser.role.replace(/_/g, ' ')}
+                      {selectedUser.role}
                     </span>
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label className="text-gray-700 font-medium">Status</Label>
-                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
-                    <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${selectedUser.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
-                      {selectedUser.status || "-"}
-                    </span>
+                  <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
+                    {selectedUser.status || "-"}
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label className="text-gray-700 font-medium">Created Date</Label>
                   <div className="p-2 bg-gray-50 border border-gray-200 rounded-md text-gray-800 min-h-[40px] flex items-center">
-                    {formatDisplayDate(selectedUser.created_at)}
+                    {selectedUser.created_at ? new Date(selectedUser.created_at).toLocaleDateString() : "-"}
                   </div>
                 </div>
               </CardContent>
@@ -1175,19 +1465,6 @@ function Users() {
           </div>
         </div>
       )}
-      
-      {/* Delete Confirmation Modal */}
-      <ConfirmModal
-        isOpen={confirmModal.isOpen}
-        onClose={confirmModal.onClose}
-        onConfirm={confirmModal.onConfirm}
-        title={confirmModal.title}
-        description={confirmModal.description}
-        confirmText={confirmModal.confirmText}
-        cancelText="Cancel"
-        variant={confirmModal.variant}
-        loading={confirmModal.loading}
-      />
     </div>
   );
 }

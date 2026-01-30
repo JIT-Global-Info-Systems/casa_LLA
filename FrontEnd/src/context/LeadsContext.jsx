@@ -26,6 +26,7 @@ export const LeadsProvider = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
+      console.log('Fetching leads from API...');
       const response = await leadsAPI.getAll();
       setLeads(response.data ?? response);
       const leadsData = response.data || response;
@@ -45,7 +46,6 @@ export const LeadsProvider = ({ children }) => {
       const response = await leadsAPI.getApproved();
       setApprovedLeads(response.data ?? response);
     } catch (err) {
-      console.error('Error fetching approved leads:', err);
       setError(err.message);
     } finally {
       setLoading(false);

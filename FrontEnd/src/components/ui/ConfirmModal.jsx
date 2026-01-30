@@ -1,7 +1,7 @@
 import React from 'react';
 import { AlertTriangle, X } from 'lucide-react';
 import { Button } from './button';
-
+ 
 const ConfirmModal = ({
   isOpen,
   onClose,
@@ -16,13 +16,13 @@ const ConfirmModal = ({
   console.log('ConfirmModal rendered with isOpen:', isOpen);
   
   if (!isOpen) return null;
-
+ 
   const handleBackdropClick = (e) => {
     if (e.target === e.currentTarget && !loading) {
       onClose();
     }
   };
-
+ 
   const handleKeyDown = (e) => {
     if (e.key === 'Escape' && !loading) {
       onClose();
@@ -31,20 +31,20 @@ const ConfirmModal = ({
       onConfirm();
     }
   };
-
+ 
   React.useEffect(() => {
     if (isOpen) {
       document.addEventListener('keydown', handleKeyDown);
       // Prevent body scroll when modal is open
       document.body.style.overflow = 'hidden';
-      
+     
       return () => {
         document.removeEventListener('keydown', handleKeyDown);
         document.body.style.overflow = 'unset';
       };
     }
   }, [isOpen, loading]);
-
+ 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
@@ -65,7 +65,7 @@ const ConfirmModal = ({
             <X className="h-5 w-5" />
           </button>
         )}
-
+ 
         {/* Content */}
         <div className="p-6">
           {/* Icon */}
@@ -76,7 +76,7 @@ const ConfirmModal = ({
               variant === 'destructive' ? 'text-red-600' : 'text-blue-600'
             }`} />
           </div>
-
+ 
           {/* Title */}
           <h3
             id="modal-title"
@@ -84,7 +84,7 @@ const ConfirmModal = ({
           >
             {title}
           </h3>
-
+ 
           {/* Description */}
           <p
             id="modal-description"
@@ -92,7 +92,7 @@ const ConfirmModal = ({
           >
             {description}
           </p>
-
+ 
           {/* Actions */}
           <div className="mt-6 flex gap-3">
             <Button
@@ -124,5 +124,7 @@ const ConfirmModal = ({
     </div>
   );
 };
-
+ 
 export default ConfirmModal;
+ 
+ 

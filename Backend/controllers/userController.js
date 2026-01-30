@@ -17,7 +17,7 @@ exports.createUser = async (req, res) => {
     // Basic validation
     if (!name || !email || !role) {
       return res.status(400).json({
-        message: "Please enter name, email, and role"
+        message: "Name, email and role are required"
       });
     }
 
@@ -25,7 +25,7 @@ exports.createUser = async (req, res) => {
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(409).json({
-        message: "This email is already registered"
+        message: "User with this email already exists"
       });
     }
 
@@ -50,7 +50,7 @@ exports.createUser = async (req, res) => {
     });
 
     return res.status(201).json({
-      message: "User created and login details sent via email",
+      message: "User created successfully and credentials emailed",
       data: {
         id: user._id,
         name: user.name,
@@ -61,7 +61,7 @@ exports.createUser = async (req, res) => {
     });
   } catch (error) {
     return res.status(500).json({
-      message: "Could not create user. Please try again.",
+      message: "User creation failed. Email was not sent.",
       error: error.message
     });
   }
@@ -108,7 +108,7 @@ exports.updateUser = async (req, res) => {
   } catch (error) {
     console.error("Update User Error:", error);
     res.status(500).json({
-      message: "Could not update user. Please try again.",
+      message: "Server error",
       error: error.message
     });
   }
@@ -121,7 +121,7 @@ exports.getAllUsers = async (req, res) => {
       .sort({ created_at: -1 });
 
     res.status(200).json({
-      message: "Users loaded successfully",
+      message: "Users fetched successfully",
       count: users.length,
       users: users.map(user => ({
         user_id: user._id,
@@ -137,7 +137,7 @@ exports.getAllUsers = async (req, res) => {
   } catch (error) {
     console.error("Get Users Error:", error);
     res.status(500).json({
-      message: "Could not load users. Please try again.",
+      message: "Server error",
       error: error.message
     });
   }
@@ -176,7 +176,7 @@ exports.getUserById = async (req, res) => {
     // Validate Mongo ID
     if (!mongoose.Types.ObjectId.isValid(user_id)) {
       return res.status(400).json({
-        message: "Invalid user ID"
+        message: "Invalid user id"
       });
     }
 
@@ -192,14 +192,14 @@ exports.getUserById = async (req, res) => {
     }
 
     return res.status(200).json({
-      message: "User loaded successfully",
+      message: "User fetched successfully",
       data: user
     });
 
   } catch (error) {
     console.error("Get User By ID Error:", error);
     return res.status(500).json({
-      message: "Could not load user. Please try again.",
+      message: "Failed to fetch user",
       error: error.message
     });
   }

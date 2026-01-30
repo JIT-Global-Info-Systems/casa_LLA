@@ -5,12 +5,12 @@ exports.createLocation = async (req, res) => {
     const { location } = req.body;
 
     if (!location) {
-      return res.status(400).json({ message: "Please enter a location name" });
+      return res.status(400).json({ message: "Location is required" });
     }
 
     const exists = await Location.findOne({ location });
     if (exists) {
-      return res.status(400).json({ message: "This location already exists" });
+      return res.status(400).json({ message: "Location already exists" });
     }
 
     const newLocation = new Location({
@@ -26,7 +26,7 @@ exports.createLocation = async (req, res) => {
       location: newLocation
     });
   } catch (error) {
-    res.status(500).json({ message: "Could not create location. Please try again.", error: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
@@ -36,7 +36,7 @@ exports.addRegion = async (req, res) => {
     const { region } = req.body;
 
     if (!region) {
-      return res.status(400).json({ message: "Please enter a region name" });
+      return res.status(400).json({ message: "Region is required" });
     }
 
     const location = await Location.findById(location_id);
@@ -49,7 +49,7 @@ exports.addRegion = async (req, res) => {
     );
 
     if (regionExists) {
-      return res.status(400).json({ message: "This region already exists" });
+      return res.status(400).json({ message: "Region already exists" });
     }
 
     location.regions.push({ region, zones: [] });
@@ -73,7 +73,7 @@ exports.addZone = async (req, res) => {
     const { zone } = req.body;
 
     if (!zone) {
-      return res.status(400).json({ message: "Please enter a zone name" });
+      return res.status(400).json({ message: "Zone is required" });
     }
 
     const location = await Location.findById(location_id);
@@ -91,7 +91,7 @@ exports.addZone = async (req, res) => {
     );
 
     if (zoneExists) {
-      return res.status(400).json({ message: "This zone already exists" });
+      return res.status(400).json({ message: "Zone already exists" });
     }
 
     region.zones.push({ zone });
@@ -117,11 +117,11 @@ exports.getAllLocations = async (req, res) => {
       .sort({ location: 1 });
 
     res.status(200).json({
-      message: "Locations loaded successfully",
+      message: "Locations fetched successfully",
       locations
     });
   } catch (error) {
-    res.status(500).json({ message: "Could not load locations. Please try again.", error: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 

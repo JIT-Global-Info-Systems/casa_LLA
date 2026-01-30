@@ -18,9 +18,13 @@ import Unauthorized from "@/pages/Unauthorized";
 import Calls from "@/pages/Calls";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import PasswordChangeProtectedRoute from "@/components/auth/PasswordChangeProtectedRoute";
-import ErrorBoundary from "@/components/ErrorBoundary";
+import { AuthProvider } from "@/context/AuthContext";
 import { PERMISSIONS } from "@/config/rbac";
-
+// const Leads = () => (
+//   <div className="p-6">
+//     <h1 className="text-2xl font-bold">Leads</h1>
+//   </div>
+// );
 const Owners = () => (
   <div className="p-6">
     <h1 className="text-2xl font-bold">Owners</h1>
@@ -36,9 +40,8 @@ const Reports = () => (
 
 function AppRoutes() {
   return (
-    <ErrorBoundary>
-      <BrowserRouter>
-        <Routes>
+    <BrowserRouter>
+      <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Login />} />
           <Route path="/login" element={<Login />} />
@@ -47,16 +50,16 @@ function AppRoutes() {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/first-time-password-change" element={<FirstTimePasswordChange />} />
           <Route path="/unauthorized" element={<Unauthorized />} />
-          
-          {/* Protected Routes - Single wrapper for auth + password change check */}
+          {/* Protected Routes */}
           <Route path="/pages" element={
             <PasswordChangeProtectedRoute>
-              <MainLayout />
+              <ProtectedRoute requiredPermission={PERMISSIONS.PAGE_DASHBOARD}>
+                <MainLayout />
+              </ProtectedRoute>
             </PasswordChangeProtectedRoute>
           }>
             <Route index element={<Dashboard />} />
             <Route path="dashboard" element={<Dashboard />} />
-            
             {/* Lead Management Routes */}
             <Route path="leads" element={
               <ProtectedRoute requiredPermission={PERMISSIONS.PAGE_LEADS}>
@@ -130,7 +133,6 @@ function AppRoutes() {
           </Route>
         </Routes>
       </BrowserRouter>
-    </ErrorBoundary>
   );
 }
 

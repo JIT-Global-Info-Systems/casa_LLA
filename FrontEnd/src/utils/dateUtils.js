@@ -2,7 +2,7 @@
 /**
  * Date utility functions for safe date formatting
  */
-
+ 
 /**
  * Safely format a date string to YYYY-MM-DD format
  * @param {string|Date} dateString - The date to format
@@ -18,7 +18,7 @@ export const formatDate = (dateString) => {
     return "-";
   }
 };
-
+ 
 /**
  * Safely format a date string for display (localized)
  * @param {string|Date} dateString - The date to format
@@ -34,7 +34,7 @@ export const formatDisplayDate = (dateString) => {
     return "-";
   }
 };
-
+ 
 /**
  * Safely create a Date object for filtering/comparison
  * @param {string|Date} dateString - The date to convert
@@ -49,7 +49,7 @@ export const safeDate = (dateString) => {
     return null;
   }
 };
-
+ 
 /**
  * Check if a date string is valid
  * @param {string|Date} dateString - The date to validate
@@ -64,7 +64,7 @@ export const isValidDate = (dateString) => {
     return false;
   }
 };
-
+ 
 /**
  * Format date with fallback for invalid dates
  * @param {string|Date} dateString - The date to format
@@ -81,7 +81,7 @@ export const formatDateWithFallback = (dateString, fallback = "—") => {
     return fallback;
   }
 };
-
+ 
 /**
  * Safely format a date from call objects that might have created_at or createdAt
  * @param {Object} call - Call object with date fields
@@ -91,3 +91,4 @@ export const formatCallDate = (call) => {
   const dateValue = call?.created_at || call?.createdAt;
   return formatDisplayDate(dateValue);
 };
+ 

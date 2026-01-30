@@ -266,7 +266,7 @@ function Profile() {
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-500">Joined Date</p>
-                  <p className="text-sm text-gray-900 mt-1">{formatDisplayDate(profile.created_at) !== "-" ? formatDisplayDate(profile.created_at) : 'Unknown join date'}</p>
+                  <p className="text-sm text-gray-900 mt-1">{profile.created_at ? new Date(profile.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Unknown join date'}</p>
                 </div>
               </div>
             </div>
