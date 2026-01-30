@@ -810,7 +810,7 @@ exports.getAllLeads = async (req, res) => {
 
   try {
 
-    const { location } = req.query;
+    const { location, userId } = req.query;
 
     const query = {};
 
@@ -828,7 +828,29 @@ exports.getAllLeads = async (req, res) => {
 
       .sort({ created_at: -1 });
 
+ if (userId) {
 
+      // Get lead IDs from LeadHistory where user is assignedTo
+
+      const assignedLeadIds = await LeadHistory.find({
+
+        'assignedTo.user_id': userId
+
+      }).distinct('leadId');
+
+      
+
+      // Query for leads created by user OR assigned to user via LeadHistory
+
+      query.$or = [
+
+        { created_by: userId },
+
+        { _id: { $in: assignedLeadIds } }
+
+      ];
+
+    }
 
     return res.status(200).json({
 
@@ -938,7 +960,7 @@ exports.getApprovedLeads = async (req, res) => {
 
   try {
 
-    const { location } = req.query;
+    const { location, userId } = req.query;
 
     const query = {
       lead_status: "Approved",
@@ -954,7 +976,29 @@ exports.getApprovedLeads = async (req, res) => {
 
     }
 
-    
+     if (userId) {
+
+      // Get lead IDs from LeadHistory where user is assignedTo
+
+      const assignedLeadIds = await LeadHistory.find({
+
+        'assignedTo.user_id': userId
+
+      }).distinct('leadId');
+
+      
+
+      // Query for leads created by user OR assigned to user via LeadHistory
+
+      query.$or = [
+
+        { created_by: userId },
+
+        { _id: { $in: assignedLeadIds } }
+
+      ];
+
+    }
     const leads = await Lead.find(query)
     // .sort({ created_at: -1 });
 console.log('leads :>> ', leads);
@@ -992,7 +1036,7 @@ exports.getPurchasedLeads = async (req, res) => {
 
   try {
 
-    const { location } = req.query;
+    const { location, userId } = req.query;
 
     const query = {
       lead_status: "Purchased",
@@ -1008,7 +1052,29 @@ exports.getPurchasedLeads = async (req, res) => {
 
     }
 
-    
+     if (userId) {
+
+      // Get lead IDs from LeadHistory where user is assignedTo
+
+      const assignedLeadIds = await LeadHistory.find({
+
+        'assignedTo.user_id': userId
+
+      }).distinct('leadId');
+
+      
+
+      // Query for leads created by user OR assigned to user via LeadHistory
+
+      query.$or = [
+
+        { created_by: userId },
+
+        { _id: { $in: assignedLeadIds } }
+
+      ];
+
+    }
 
     const leads = await Lead.find(query).sort({ created_at: -1 });
 
