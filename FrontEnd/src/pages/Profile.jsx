@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Edit, Eye, EyeOff, Mail, Phone, Calendar, Shield, CheckCircle2, Camera, Lock } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { usersAPI } from "../services/api";
+import PhoneInput from "@/components/ui/PhoneInput";
 import { formatDisplayDate } from "@/utils/dateUtils";
 
 function Profile() {
@@ -187,12 +188,13 @@ function Profile() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="edit-phone">Phone Number</Label>
-                        <Input
-                          id="edit-phone"
+                        <PhoneInput
+                          label="Phone Number"
                           value={editForm.phone}
-                          onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                          onChange={(value) => setEditForm({ ...editForm, phone: value })}
                           placeholder="Enter your phone number"
+                          required={false}
+                          showValidation={true}
                         />
                       </div>
                       <div className="space-y-2">

@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext'
 import { Eye, EyeOff } from 'lucide-react'
 import loginBg from '@/assets/logincasaw.avif'
 import toast from 'react-hot-toast'
+import { getRememberedEmail, isRememberMeEnabled } from '@/utils/authStorage'
 
 function Login() {
   const [email, setEmail] = useState('')
@@ -22,9 +23,9 @@ function Login() {
 
   // Load remembered email on component mount
   useEffect(() => {
-    const stored = localStorage.getItem('rememberMe')
-    const storedEmail = localStorage.getItem('rememberedEmail')
-    if (stored && storedEmail) {
+    const rememberMeEnabled = isRememberMeEnabled()
+    const storedEmail = getRememberedEmail()
+    if (rememberMeEnabled && storedEmail) {
       setEmail(storedEmail)
       setRememberMe(true)
     }
