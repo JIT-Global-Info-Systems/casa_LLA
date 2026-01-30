@@ -157,74 +157,42 @@ export default function LeadsPage() {
     }
   };
  
-  const handleLeadSubmit = async (leadPayload, files = {}) => {
-    const isUpdate = !!selectedLead;
-    // const loadingToast = toast.loading(isUpdate ? 'Updating lead...' : 'Creating lead...');
+  const handleLeadSubmit = async (result) => {
+    // The actual submission is now handled by the context
+    // This function is called after successful submission
+    console.log('🚀 LeadsPage - handleLeadSubmit called with result:', result);
     
-    
+    // Close the form and refresh leads
+    setOpen(false);
+    fetchLeads();
+  };
+
+  const handleDeleteLead = (lead) => {
+    console.log('Delete clicked for lead:', lead);
+    setLeadToDelete(lead);
+    setDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!leadToDelete) return;
+  
     try {
-      if (isUpdate) {
-        await updateLead(selectedLead._id || selectedLead.id, leadPayload, files);
-      } else {
-        await createLead(leadPayload, files);
-      }
-      
-      // toast.success(
-      //   isUpdate ? 'Lead updated successfully' : 'Lead created successfully',
-      //   { 
-      //     id: loadingToast,
-      //     icon: <Check className="w-5 h-5 text-green-500" />,
-      //     duration: 3000
-      //   }
-      // );
-      
-      if (Object.keys(files).length > 0) {
-        toast.success('Files uploaded successfully', { 
-          icon: '📎',
-          duration: 2000 
-        });
-      }
-      
-      setOpen(false);
-      fetchLeads();
-    } catch (err) {
-      console.error("Failed to submit lead:", err);
-      const errorMessage = err.response?.data?.message || 'Could not save lead. Please try again.';
-      
-      toast.error(errorMessage, { 
-        id: loadingToast,
-        icon: <X className="w-5 h-5 text-red-500" />,
-        duration: 5000
-      });
+      console.log('Performing delete for lead:', leadToDelete._id || leadToDelete.id);
+      await deleteLead(leadToDelete._id || leadToDelete.id);
+      fetchLeads(); // Refresh list
+      setDeleteModalOpen(false);
+      setLeadToDelete(null);
+      toast.success('Lead deleted successfully');
+    } catch (error) {
+      console.error('Delete failed:', error);
+      toast.error('Failed to delete lead');
     }
   };
- 
-  const handleDeleteLead = (lead) => {
-  console.log('Delete clicked for lead:', lead);
-  setLeadToDelete(lead);
-  setDeleteModalOpen(true);
-};
 
-const handleConfirmDelete = async () => {
-  if (!leadToDelete) return;
-  
-  try {
-    console.log('Performing delete for lead:', leadToDelete._id || leadToDelete.id);
-    await deleteLead(leadToDelete._id || leadToDelete.id);
-    fetchLeads(); // Refresh list
+  const handleCancelDelete = () => {
     setDeleteModalOpen(false);
     setLeadToDelete(null);
-    toast.success('Lead deleted successfully');
-  } catch (error) {
-    console.error('Delete failed:', error);
-    toast.error('Failed to delete lead');
-  }
-};
-
-const handleCancelDelete = () => {
-  setDeleteModalOpen(false);
-  setLeadToDelete(null);
-};
+  };
  
   const handleView = async (lead) => {
     setIsFetchingLead(true);
