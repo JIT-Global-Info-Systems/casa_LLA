@@ -52,9 +52,55 @@ export default function ApprovedLeads() {
     setIsViewMode(true);
     // Don't open modal for view mode - this prevents the popup from showing
   };
- 
+
+  const handleEdit = (lead) => {
+    setSelectedLead(lead);
+    setIsEditMode(true);
+    setIsViewMode(false);
+  };
+
+  const handleEditSubmit = async (leadPayload, files) => {
+    const editToast = toast.loading('Updating lead...');
+    try {
+      const formData = new FormData();
+      
+      // Add all lead data
+      Object.keys(leadPayload).forEach(key => {
+        if (key === 'competitorAnalysis' || key === 'checkListPage') {
+          formData.append(key, JSON.stringify(leadPayload[key]));
+        } else {
+          formData.append(key, leadPayload[key]);
+        }
+      });
+
+      // Add files if any
+      Object.keys(files).forEach(key => {
+        formData.append(key, files[key]);
+      });
+
+      await axios.put(
+        `http://13.201.132.94:5000/api/leads/update/${selectedLead._id}`,
+        formData,
+        {
+          headers: {
+            "Authorization": `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "multipart/form-data"
+          }
+        }
+      );
+
+      toast.success('Lead updated successfully!', { id: editToast });
+      setIsEditMode(false);
+      setSelectedLead(null);
+      fetchApprovedLeads(); // Refresh the list
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || 'Failed to update lead. Please try again.';
+      toast.error(errorMessage, { id: editToast });
+    }
+  };
+
   const fetchApprovedLeads = async () => {
-    const loadingToast = toast.loading('Loading approved leads...');
+    // const loadingToast = toast.loading('Loading leads...');
     setLoading(true);
    
     try {
@@ -68,15 +114,10 @@ export default function ApprovedLeads() {
       const leadsData = response.data.data || [];
       setLeads(leadsData);
       setError(null);
-     
-      if (leadsData.length === 0) {
-        toast.success('No approved leads found', { id: loadingToast });
-      } else {
-        toast.success(`Loaded ${leadsData.length} approved leads`, {
-          id: loadingToast,
-          icon: '✅'
-        });
-      }
+
+      // if (leadsData.length === 0) {
+      //   toast.success('No approved leads found', { id: loadingToast });
+      // }
     } catch (err) {
       console.error("Error fetching approved leads:", err);
       const errorMessage = err.response?.data?.message || 'Failed to fetch approved leads. Please try again later.';

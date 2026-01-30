@@ -99,6 +99,7 @@ export const UsersProvider = ({ children }) => {
 
       return updated;
     } catch (err) {
+      // console.error('Error updating user:', err);
       setError(err.message);
       throw err;
     } finally {

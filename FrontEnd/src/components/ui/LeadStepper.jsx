@@ -543,17 +543,8 @@ export default function LeadStepper({ stageName, currentStep = 1, onStepChange, 
 
 
   return (
-
-
-
-    <div className={`overflow-x-auto ${className || ''}`}>
-
-
-
-      <div className="flex mb-2 min-w-[900px] items-center">
-
-
-
+    <div className={`w-full ${className || ''}`}>
+      <div className="flex mb-0 w-full items-center justify-between">
         {STAGES.map((s, index) => {
 
 

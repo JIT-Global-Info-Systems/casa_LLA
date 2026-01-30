@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { locationsAPI, typesAPI, stagesAPI } from '@/services/api';
- 
 const MasterContext = createContext();
  
 export const useMaster = () => {
@@ -127,7 +126,6 @@ export const MasterProvider = ({ children }) => {
       setLoading(prev => ({ ...prev, types: false }));
     }
   }, []);
- 
   // Fetch stages from API
   const fetchStages = useCallback(async () => {
     setLoading(prev => ({ ...prev, stages: true }));
@@ -145,7 +143,7 @@ export const MasterProvider = ({ children }) => {
         updated_at: stage.updated_at,
         updated_by: stage.updated_by
       }));
-     
+      
       setMasters(prev => ({ ...prev, stages: transformedStages }));
     } catch (err) {
       setError(prev => ({ ...prev, stages: err.message }));
@@ -154,12 +152,10 @@ export const MasterProvider = ({ children }) => {
       setLoading(prev => ({ ...prev, stages: false }));
     }
   }, []);
- 
   // Fetch all data
   const fetchAllData = useCallback(async () => {
     await Promise.all([fetchLocations(), fetchTypes(), fetchStages()]);
   }, [fetchLocations, fetchTypes, fetchStages]);
- 
   // API-based CRUD operations for locations
   const addLocation = useCallback(async (data) => {
     try {
@@ -382,7 +378,6 @@ export const MasterProvider = ({ children }) => {
       return { success: false, error: err.message };
     }
   }, [fetchTypes]);
- 
   // API-based CRUD operations for stages
   const addStage = useCallback(async (data) => {
     try {
@@ -398,7 +393,6 @@ export const MasterProvider = ({ children }) => {
       return { success: false, error: err.message };
     }
   }, [fetchStages]);
- 
   const updateStage = useCallback(async (itemId, data) => {
     try {
       const stageData = { stage_name: data.name };
@@ -412,7 +406,6 @@ export const MasterProvider = ({ children }) => {
       return { success: false, error: err.message };
     }
   }, [fetchStages]);
- 
   const deleteStage = useCallback(async (itemId) => {
     try {
       await stagesAPI.delete(itemId);
@@ -425,7 +418,6 @@ export const MasterProvider = ({ children }) => {
       return { success: false, error: err.message };
     }
   }, [fetchStages]);
- 
   const value = {
     masters,
     loading,
