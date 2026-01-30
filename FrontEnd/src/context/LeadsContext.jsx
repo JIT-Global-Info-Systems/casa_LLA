@@ -28,11 +28,10 @@ export const LeadsProvider = ({ children }) => {
       setError(null);
       console.log('Fetching leads from API...');
       const response = await leadsAPI.getAll();
-      console.log('API response:', response);
       setLeads(response.data ?? response);
-      console.log('Leads set:', response.data ?? response);
+      const leadsData = response.data || response;
+      setLeads(Array.isArray(leadsData) ? leadsData : []);
     } catch (err) {
-      console.error('Error fetching leads:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -67,11 +66,19 @@ export const LeadsProvider = ({ children }) => {
   };
 
   const fetchAllLeadStatuses = async () => {
-    await Promise.all([
-      fetchLeads(),
-      fetchApprovedLeads(),
-      fetchPurchasedLeads()
-    ]);
+    try {
+      setLoading(true);
+      setError(null);
+      await Promise.all([
+        fetchLeads(),
+        fetchApprovedLeads(),
+        fetchPurchasedLeads()
+      ]);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getLeadById = async (id) => {
@@ -79,7 +86,21 @@ export const LeadsProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       const response = await leadsAPI.getById(id);
-      return response.data ?? response;
+      let leadData = response.data ?? response;
+      
+      // Extract the latest assignedTo from history array
+      if (leadData.history && Array.isArray(leadData.history) && leadData.history.length > 0) {
+        const sortedHistory = leadData.history.sort((a, b) => 
+          new Date(b.createdAt || b.created_at) - new Date(a.createdAt || a.created_at)
+        );
+        
+        const latestAssignment = sortedHistory[0];
+        if (latestAssignment && latestAssignment.assignedTo) {
+          leadData.assignedTo = latestAssignment.assignedTo;
+        }
+      }
+      
+      return leadData;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -111,23 +132,12 @@ export const LeadsProvider = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
-      
-      console.log('🔄 LeadsContext - updateLead called:', {
-        id,
-        leadDataKeys: Object.keys(leadData),
-        leadDataSize: JSON.stringify(leadData).length,
-        leadData,
-        filesKeys: Object.keys(files)
-      });
+ 
       
       const response = await leadsAPI.update(id, leadData, files);
       const updated = response.data ?? response;
       
-      console.log('✅ LeadsContext - API response received:', {
-        responseStatus: response.status,
-        updatedKeys: Object.keys(updated || {}),
-        updated
-      });
+  
 
       setLeads(prev =>
         prev.map(lead =>
@@ -139,7 +149,6 @@ export const LeadsProvider = ({ children }) => {
 
       return response;
     } catch (err) {
-      // console.error('❌ Error updating lead:', err);
       setError(err.message);
       throw err;
     } finally {
@@ -177,7 +186,6 @@ export const LeadsProvider = ({ children }) => {
         const parsed = JSON.parse(userData)
         return parsed.role || 'tele_caller'
       } catch (e) {
-        console.error("Failed to parse user data for role", e)
       }
     }
     return 'tele_caller'
@@ -194,7 +202,6 @@ export const LeadsProvider = ({ children }) => {
           role: parsed.role || 'tele_caller'
         }
       } catch (e) {
-        console.error("Failed to parse user data", e)
       }
     }
     return {
@@ -452,17 +459,18 @@ export const LeadsProvider = ({ children }) => {
           if (formData[field]) {
             if (field === 'lead_stage') payload.lead_stage = formData[field]
             else if (field === 'leadStatus') payload.lead_status = String(formData[field]).toUpperCase()
+
             else payload[field] = formData[field]
           }
         })
       }
 
-      // Use lead_stage if available (user's selection), otherwise use leadStatus (default)
-      const leadStatusValue = formData.lead_stage || formData.leadStatus;
-      
-      if (leadStatusValue !== undefined && leadStatusValue !== null && leadStatusValue !== '') {
-        payload.lead_status = String(leadStatusValue).toUpperCase()
-      }
+      // ✅ Always send lead_stage
+      payload.lead_stage = formData.lead_stage || "Enquired"
+
+      // ✅ Always send lead_status separately
+      payload.lead_status = formData.leadStatus ? String(formData.leadStatus).toUpperCase() : "WARM"
+
       if (formData.callNotes) {
         payload.note = formData.callNotes
         const currentUser = getCurrentUserInfo()
@@ -538,9 +546,13 @@ export const LeadsProvider = ({ children }) => {
     }
 
     // Handle lead_status from either lead_stage (user's selection) or leadStatus (default)
-    const currentLeadStatusValue = formData.lead_stage || formData.leadStatus;
-    const originalLeadStatusValue = originalData?.lead_stage || originalData?.leadStatus || "";
-    addIfChanged('lead_status', String(currentLeadStatusValue).toUpperCase(), String(originalLeadStatusValue).toUpperCase())
+    addIfChanged("lead_stage", formData.lead_stage, originalData?.lead_stage)
+    
+    addIfChanged(
+      "lead_status",
+      String(formData.leadStatus).toUpperCase(),
+      String(originalData?.lead_status).toUpperCase()
+    )
     addIfChanged('notes', formData.callNotes, originalData?.callNotes)
 
     // Check structured data
@@ -624,15 +636,6 @@ export const LeadsProvider = ({ children }) => {
       } else {
         // Create new lead
         result = await createLead(leadPayload, filesToUpload)
-        
-        // Backend workaround: Update lead_status after creation
-        if (result?.data?._id && leadPayload.lead_status) {
-          try {
-            await leadsAPI.update(result.data._id, { lead_status: leadPayload.lead_status })
-          } catch (updateError) {
-            console.warn('Failed to update lead_status:', updateError)
-          }
-        }
       }
 
       toast.success(originalData ? 'Lead updated successfully!' : 'Lead created successfully!', {

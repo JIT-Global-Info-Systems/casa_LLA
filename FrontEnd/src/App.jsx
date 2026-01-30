@@ -4,6 +4,8 @@ import { MediatorsProvider } from "./context/MediatorsContext.jsx";
 import { UsersProvider } from "./context/UsersContext.jsx"
 import { AuthProvider } from "./context/AuthContext.jsx"
 import { CallsProvider } from "./context/CallsContext.jsx"
+import { MasterProvider } from "./context/Mastercontext.jsx"
+import { DashboardProvider } from "./context/DashboardContext.jsx"
 import { Toaster } from "./components/ui/toaster"
 
 function App() {
@@ -13,8 +15,12 @@ function App() {
         <MediatorsProvider>
           <UsersProvider>
             <CallsProvider>
-              <AppRoutes />
-              <Toaster />
+              <MasterProvider>
+                <DashboardProvider>
+                  <AppRoutes />
+                  <Toaster />
+                </DashboardProvider>
+              </MasterProvider>
             </CallsProvider>
           </UsersProvider>
         </MediatorsProvider>

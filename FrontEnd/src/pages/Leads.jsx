@@ -122,7 +122,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     frontage: "",
     roadWidth: "",
     sspde: "No",
-    leadStatus: "",
+    leadStatus: "warm",
     remark: "",
     lead_stage: "Enquired",
 
@@ -354,7 +354,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
         }
       } catch (error) {
         console.error('Initial data loading error:', error)
-        toast.error('Failed to load initial data. Please refresh the page.')
       }
     };
 
@@ -362,27 +361,11 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
   }, []) // Remove all dependencies to prevent infinite loops
 
   useEffect(() => {
-    // Auto-set currentRole from localStorage when creating new lead (not editing)
     if (!data) {
       const userRole = getCurrentUserRole()
       
-      // Try to load form draft first
-      // const draft = loadFormDraft();
-      // if (draft) {
-      //   setFormData(prev => ({
-      //     ...prev,
-      //     ...draft,
-      //     currentRole: userRole // Always use current user role
-      //   }));
-      //   setHasUnsavedChanges(true);
-      //   // toast.success('Draft loaded', { 
-      //   //   icon: '📝',
-      //   //   duration: 3000 
-      //   // });
-      // } else {
-        // Reset form to initial state when creating new lead
+ 
         setFormData({
-          // Basic Lead Information
           leadType: "mediator",
           contactNumber: "",
           mediatorName: "",
@@ -408,14 +391,13 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           frontage: "",
           roadWidth: "",
           sspde: "No",
-          leadStatus: "",
+          leadStatus: "warm",
           remark: "",
           lead_stage: "Enquired",
 
           // Yield Calculation
           yield: "",
 
-          // Competitor Analysis
           competitorDeveloperName: "",
           competitorProjectName: "",
           competitorProductType: "",
@@ -466,7 +448,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           checkSoilTest: false,
           checkWaterList: false,
 
-          // Special Fields (Checkbox + Upload)
           checkFMBSketch: false,
           fileFMBSketch: null,
           checkPattaChitta: false,
@@ -484,14 +465,12 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
         })
         setOriginalData(null)
         setHasUnsavedChanges(false)
-      // }
     }
   }, [data])
 
   useEffect(() => {
     if (!data) return
 
-    // hydrate from backend schema
     const firstCompetitor = Array.isArray(data.competitorAnalysis) ? data.competitorAnalysis[0] : null
     const firstChecklist = Array.isArray(data.checkListPage) ? data.checkListPage[0] : null
 
@@ -499,7 +478,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       ...data,
       leadType: data.leadType || data.lead_type || "mediator", // Ensure leadType is properly mapped
       leadStatus: data.lead_status || "",
-      lead_stage: data.lead_stage || "",
+      lead_stage: data.lead_stage || "Enquired",
       mediatorId: data.mediatorId || "",
       inquiredBy: data.inquiredBy || "",
       L1_Qualification: data.L1_Qualification || "",
@@ -796,9 +775,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       }
       
       const result = await submitLeadForm(formData, data, files)
-      
-      // Clear form draft on successful submission
-      clearFormDraft()
       
       // Call onSubmit if provided (for backward compatibility)
       if (onSubmit) {
@@ -1234,7 +1210,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
               <div className="space-y-2">
                 <Label>Lead Status</Label>
-                <Select value={formData.lead_stage} onValueChange={(v) => handleChange("lead_stage", v)}>
+                <Select value={formData.leadStatus} onValueChange={(v) => handleChange("leadStatus", v)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
@@ -1452,21 +1428,22 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
               </div>
               <div className="space-y-2">
                 <Label className="text-gray-700 font-medium">Lead Stage <span className="text-red-500">*</span></Label>
-                {!isFieldEditable('leadStatus') ? (
+                {!isFieldEditable('lead_stage') ? (
                   <div className="p-2 bg-white border border-gray-300 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
-                    {formData.leadStatus || "-"}
+                    {formData.lead_stage || "-"}
                   </div>
                 ) : (
-                  <Select value={formData.leadStatus} onValueChange={(v) => handleChange("leadStatus", v)}>
+                  <Select value={formData.lead_stage} onValueChange={(v) => handleChange("lead_stage", v)}>
                     <SelectTrigger className="bg-white border-gray-300" data-editable="true">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-white z-50 shadow-lg">
                       {/* Show only "Purchased" option when in restricted edit mode (Approved Leads page) */}
-                      {editableFields && editableFields.length > 0 && editableFields.includes('leadStatus') ? (
+                      {editableFields && editableFields.length > 0 && editableFields.includes('lead_stage') ? (
                         <SelectItem value="Approved">Purchased</SelectItem>
                       ) : (
                         <>
+                        
                           {/* Show stages from API */}
                           {masters.stages && masters.stages.length > 0 ? (
                             <>
@@ -1477,31 +1454,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                               ))}
                             </>
                           ) : (
-                            <>
-                              {/* Show loading indicator or fallback stages */}
-                              {stagesLoading ? (
-                                <SelectItem value="loading" disabled>
-                                  Loading stages...
-                                </SelectItem>
-                              ) : (
-                                <>
-                                  {/* Fallback stages if API data is not available */}
-                                  <SelectItem value="Enquired">Enquired</SelectItem>
-                                  <SelectItem value="Lead Allocated">Lead Allocated</SelectItem>
-                                  <SelectItem value="First Called">First Called</SelectItem>
-                                  <SelectItem value="Site Visit">Site Visit</SelectItem>
-                                  <SelectItem value="Owner Meeting">Owner Meeting</SelectItem>
-                                  <SelectItem value="Negotiation Started">Negotiation Started</SelectItem>
-                                  <SelectItem value="Negotiation_End">Negotiation End</SelectItem>
-                                  <SelectItem value="Due_Diligence_Started">Due Diligence Started</SelectItem>
-                                  <SelectItem value="Due_Diligence_End">Due Diligence End</SelectItem>
-                                  <SelectItem value="Approved">Approved</SelectItem>
-                                  <SelectItem value="Hold">Hold</SelectItem>
-                                  <SelectItem value="L1_Qualification">L1 Qualification</SelectItem>
-                                  <SelectItem value="director_sv">Director sv</SelectItem>
-                                </>
-                              )}
-                            </>
+                          null
                           )}
                         </>
                       )}
@@ -1511,7 +1464,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
               </div>
 
               {/* Inquired By field - only show when Lead Stage is "Enquired" (Pending) */}
-              {formData.leadStatus === "Enquired" && (
+              {formData.lead_stage === "Enquired" && (
                 <div className="space-y-2">
                   <Label className="text-gray-700 font-medium">Inquired By</Label>
                   {!isFieldEditable('inquiredBy') ? (
@@ -1533,7 +1486,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
               )}
           </div>
           {/* Lead Qualification */}
-          {formData.leadStatus === "L1_Qualification" && (
+          {formData.lead_stage === "L1_Qualification" && (
             <div className="space-y-2">
               <Label className="text-gray-700">L1_Qualification</Label>
               {!isFieldEditable('L1_Qualification') ? (
@@ -1555,7 +1508,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           )}
 
           {/* Director SV Status */}
-          {formData.leadStatus === "director_sv" && (
+          {formData.lead_stage === "director_sv" && (
             <div className="space-y-2">
               <Label className="text-gray-700">Director SV Status</Label>
               {!isFieldEditable('directorSVStatus') ? (

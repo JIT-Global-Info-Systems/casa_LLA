@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
 import { Search, MoreVertical, RefreshCw, Eye, ChevronDown, AlertCircle } from "lucide-react";
 import { toast } from "react-hot-toast";
-import axios from "axios";
+import { formatCallDate } from "@/utils/dateUtils";
+import { useLeads } from "../context/LeadsContext";
 import Modal from "@/components/ui/modal";
 import Leads from "./Leads";
 import LeadStepper from "@/components/ui/LeadStepper";
@@ -27,6 +28,7 @@ const getStatusBadge = (status) => {
 };
  
 export default function ApprovedLeads() {
+  const { approvedLeads, loading, error, fetchApprovedLeads, updateLead } = useLeads();
   const [open, setOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
   const [viewLead, setViewLead] = useState(null);
@@ -35,9 +37,6 @@ export default function ApprovedLeads() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [leads, setLeads] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [currentStep, setCurrentStep] = useState(1);
  
   const leadComments = [
@@ -62,80 +61,24 @@ export default function ApprovedLeads() {
   const handleEditSubmit = async (leadPayload, files) => {
     const editToast = toast.loading('Updating lead...');
     try {
-      const formData = new FormData();
+      await updateLead(selectedLead._id, leadPayload, files);
       
-      // Add all lead data
-      Object.keys(leadPayload).forEach(key => {
-        if (key === 'competitorAnalysis' || key === 'checkListPage') {
-          formData.append(key, JSON.stringify(leadPayload[key]));
-        } else {
-          formData.append(key, leadPayload[key]);
-        }
-      });
-
-      // Add files if any
-      Object.keys(files).forEach(key => {
-        formData.append(key, files[key]);
-      });
-
-      await axios.put(
-        `http://13.201.132.94:5000/api/leads/update/${selectedLead._id}`,
-        formData,
-        {
-          headers: {
-            "Authorization": `Bearer ${localStorage.getItem("token")}`,
-            "Content-Type": "multipart/form-data"
-          }
-        }
-      );
-
       toast.success('Lead updated successfully!', { id: editToast });
       setIsEditMode(false);
       setSelectedLead(null);
       fetchApprovedLeads(); // Refresh the list
     } catch (err) {
-      const errorMessage = err.response?.data?.message || 'Failed to update lead. Please try again.';
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to update lead. Please try again.';
       toast.error(errorMessage, { id: editToast });
     }
   };
 
-  const fetchApprovedLeads = async () => {
-    // const loadingToast = toast.loading('Loading leads...');
-    setLoading(true);
-   
-    try {
-      const response = await axios.get("http://13.201.132.94:5000/api/leads/approved", {
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("token")}`
-        }
-      });
-     
-      const leadsData = response.data.data || [];
-      setLeads(leadsData);
-      setError(null);
 
-      // if (leadsData.length === 0) {
-      //   toast.success('No approved leads found', { id: loadingToast });
-      // }
-    } catch (err) {
-      console.error("Error fetching approved leads:", err);
-      const errorMessage = err.response?.data?.message || 'Failed to fetch approved leads. Please try again later.';
-      setError(errorMessage);
-      toast.error(errorMessage, {
-        id: loadingToast,
-        duration: 5000
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
- 
   useEffect(() => {
     fetchApprovedLeads();
   }, []);
- 
-  const filteredLeads = leads.filter((lead) => {
+
+  const filteredLeads = approvedLeads.filter((lead) => {
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch = searchTerm === "" ||
       (lead.mediatorName && lead.mediatorName.toLowerCase().includes(searchLower)) ||
