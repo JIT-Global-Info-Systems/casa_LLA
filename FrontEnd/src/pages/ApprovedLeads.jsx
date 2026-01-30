@@ -96,7 +96,7 @@ export default function ApprovedLeads() {
   };
 
   const fetchApprovedLeads = async () => {
-    const loadingToast = toast.loading('Loading leads...');
+    // const loadingToast = toast.loading('Loading leads...');
     setLoading(true);
 
     try {
@@ -111,14 +111,9 @@ export default function ApprovedLeads() {
       setLeads(leadsData);
       setError(null);
 
-      if (leadsData.length === 0) {
-        toast.success('No approved leads found', { id: loadingToast });
-      } else {
-        toast.success(`${leadsData.length} leads loaded`, {
-          id: loadingToast,
-          icon: '✅'
-        });
-      }
+      // if (leadsData.length === 0) {
+      //   toast.success('No approved leads found', { id: loadingToast });
+      // }
     } catch (err) {
       console.error("Error fetching approved leads:", err);
       const errorMessage = err.response?.data?.message || 'Could not load leads. Please try again.';

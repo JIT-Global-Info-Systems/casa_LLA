@@ -929,9 +929,7 @@ exports.getApprovedLeads = async (req, res) => {
     const { location } = req.query;
 
     const query = {
-
-      lead_status: "APPROVED",
-
+      lead_status: "Approved",
       status: "active"
 
     };
@@ -945,11 +943,9 @@ exports.getApprovedLeads = async (req, res) => {
     }
 
     
-
-    const leads = await Lead.find(query).sort({ created_at: -1 });
-
-
-
+    const leads = await Lead.find(query)
+    // .sort({ created_at: -1 });
+console.log('leads :>> ', leads);
     return res.status(200).json({
 
       message: "Approved leads loaded successfully",
@@ -987,9 +983,7 @@ exports.getPurchasedLeads = async (req, res) => {
     const { location } = req.query;
 
     const query = {
-
-      lead_status: "PURCHASED",
-
+      lead_status: "Purchased",
       status: "active"
 
     };
