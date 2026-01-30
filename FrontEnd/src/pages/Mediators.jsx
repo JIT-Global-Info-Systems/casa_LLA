@@ -36,6 +36,7 @@ import {
   X,
 } from "lucide-react";
 import { formatDisplayDate } from "@/utils/dateUtils";
+import PhoneInput from "@/components/ui/PhoneInput";
 
 function Mediators() {
   const { mediators, loading, error, fetchMediators, createMediator, updateMediator, deleteMediator } = useMediators();
@@ -308,29 +309,35 @@ function Mediators() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="phonePrimary" className="text-slate-700 font-medium flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-slate-500" />
-                    Phone Primary <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="phonePrimary"
+                  <PhoneInput
+                    label={
+                      <span className="text-slate-700 font-medium flex items-center gap-2">
+                        <Phone className="h-4 w-4 text-slate-500" />
+                        Phone Primary <span className="text-red-500">*</span>
+                      </span>
+                    }
                     value={formData.phonePrimary}
-                    onChange={(e) => handleInputChange("phonePrimary", e.target.value)}
+                    onChange={(value) => handleInputChange("phonePrimary", value)}
                     placeholder="Enter primary phone"
+                    required={true}
+                    showValidation={true}
                     className="bg-white border-slate-200 focus:border-indigo-400 focus:ring-indigo-400/20 transition-all"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="phoneSecondary" className="text-slate-700 font-medium flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-slate-500" />
-                    Phone Secondary
-                  </Label>
-                  <Input
-                    id="phoneSecondary"
+                  <PhoneInput
+                    label={
+                      <span className="text-slate-700 font-medium flex items-center gap-2">
+                        <Phone className="h-4 w-4 text-slate-500" />
+                        Phone Secondary
+                      </span>
+                    }
                     value={formData.phoneSecondary}
-                    onChange={(e) => handleInputChange("phoneSecondary", e.target.value)}
+                    onChange={(value) => handleInputChange("phoneSecondary", value)}
                     placeholder="Enter secondary phone"
+                    required={false}
+                    showValidation={true}
                     className="bg-white border-slate-200 focus:border-indigo-400 focus:ring-indigo-400/20 transition-all"
                   />
                 </div>
