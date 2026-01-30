@@ -8,11 +8,16 @@ const { verifyToken } = require("../middleware/authMiddleware");
 router.post("/create",verifyToken,upload.fields([
     { name: "fmb_sketch", maxCount: 1 },
     { name: "patta_chitta", maxCount: 1 }
-  ]), verifyToken, leadController.createLead);
+  ]), (req, res, next) => {
+    console.log("🚀 /create route hit!");
+    console.log("🚀 Request body:", JSON.stringify(req.body, null, 2));
+    console.log("🚀 Files:", req.files);
+    next();
+  }, leadController.createLead);
 router.put("/update/:leadId",verifyToken, upload.fields([
   { name: "fmb_sketch", maxCount: 1 },
   { name: "patta_chitta", maxCount: 1 }
-]), verifyToken, leadController.updateLead);
+]), leadController.updateLead);
 router.delete("/delete/:leadId", verifyToken, leadController.deleteLead);
 router.get("/pending", verifyToken, leadController.getPendingLeads);
 router.get("/all", verifyToken, leadController.getAllLeads);
@@ -24,3 +29,4 @@ router.get("/:leadId", verifyToken, leadController.getLeadById);
 router.get("/calls/all", verifyToken, leadController.getAllCalls);
 
 module.exports = router;
+

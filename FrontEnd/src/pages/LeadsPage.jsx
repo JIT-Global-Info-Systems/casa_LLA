@@ -433,9 +433,13 @@ export default function LeadsPage() {
                             String(lead.lead_status) == "lost" ? "bg-red-100 text-red-700" :
                             String(lead.lead_status) == "hold" ? "bg-amber-100 text-amber-700" :
                             String(lead.lead_status) == "pending" ? "bg-orange-100 text-orange-700" :
+                            // Handle old API values (warm, cold, hot)
+                            String(lead.lead_status) == "WARM" ? "bg-red-100 text-red-700" :
+                            String(lead.lead_status) == "COLD" ? "bg-blue-100 text-blue-700" :
+                            String(lead.lead_status) == "HOT" ? "bg-orange-100 text-orange-700" :
                             "bg-gray-100 text-gray-700"
                           }`}>
-                            {lead.lead_status || "—"}</span>
+                            {lead.lead_status || lead.lead_stage || "—"}</span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <DropdownMenu>

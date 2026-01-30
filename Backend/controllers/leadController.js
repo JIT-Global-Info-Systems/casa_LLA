@@ -92,13 +92,17 @@ exports.createLead = async (req, res) => {
 
       checkListPage = [],
 
+      lead_status,
+
+      lead_stage,
+
       ...restLeadData
 
     } = leadData;
 
 
 
-    // 📂 file paths
+    // file paths
 
     const fmbSketchPath =
 
@@ -164,6 +168,9 @@ exports.createLead = async (req, res) => {
 
     // Create the lead first
 
+    console.log("DEBUG: About to create lead with lead_status:", lead_status);
+    console.log("DEBUG: About to create lead with lead_stage:", lead_stage);
+
     const lead = await Lead.create({
 
       ...restLeadData,
@@ -172,13 +179,18 @@ exports.createLead = async (req, res) => {
 
       competitorAnalysis: formattedCompetitorAnalysis,
 
-      lead_status: "",
+      lead_status: lead_status ,
+
+      lead_stage: lead_stage,
 
       currentRole: currentRole, // Add currentRole to the lead
 
       created_by: createdBy
 
     });
+
+    console.log("DEBUG: Lead created with lead_status:", lead.lead_status);
+    console.log("DEBUG: Lead created with lead_stage:", lead.lead_stage);
 
 
 
@@ -1181,7 +1193,7 @@ exports.getAllCalls = async (req, res) => {
       count: calls.length,
 
       data: calls
-
+//lead controller
     });
 
   } catch (error) {
@@ -1201,4 +1213,3 @@ exports.getAllCalls = async (req, res) => {
   }
 
 };
-
