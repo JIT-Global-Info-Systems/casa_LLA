@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { leadsAPI, locationsAPI } from '../services/api';
+import { leadsAPI } from '../services/api';
 import toast from 'react-hot-toast';
-
+import { Check } from 'lucide-react';
 const LeadsContext = createContext(null);
 
 export const useLeads = () => {
@@ -28,15 +28,10 @@ export const LeadsProvider = ({ children }) => {
       setError(null);
       const response = await leadsAPI.getAll();
       setLeads(response.data ?? response);
-      console.log('API response:', response);
-      // Handle both response formats: { data: [...] } or direct array
       const leadsData = response.data || response;
       setLeads(Array.isArray(leadsData) ? leadsData : []);
-      console.log('Leads set:', Array.isArray(leadsData) ? leadsData : []);
     } catch (err) {
-      console.error('Error fetching leads:', err);
       setError(err.message);
-      // Don't throw - let UI handle the error state
     } finally {
       setLoading(false);
     }
@@ -64,7 +59,6 @@ export const LeadsProvider = ({ children }) => {
       const response = await leadsAPI.getPurchased();
       setPurchasedLeads(response.data ?? response);
     } catch (err) {
-      console.error('Error fetching purchased leads:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -81,7 +75,6 @@ export const LeadsProvider = ({ children }) => {
         fetchPurchasedLeads()
       ]);
     } catch (err) {
-      console.error('Error fetching all lead statuses:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -97,12 +90,10 @@ export const LeadsProvider = ({ children }) => {
       
       // Extract the latest assignedTo from history array
       if (leadData.history && Array.isArray(leadData.history) && leadData.history.length > 0) {
-        // Sort history by createdAt in descending order to get the latest
         const sortedHistory = leadData.history.sort((a, b) => 
           new Date(b.createdAt || b.created_at) - new Date(a.createdAt || a.created_at)
         );
         
-        // Get the latest assignment
         const latestAssignment = sortedHistory[0];
         if (latestAssignment && latestAssignment.assignedTo) {
           leadData.assignedTo = latestAssignment.assignedTo;
@@ -111,7 +102,6 @@ export const LeadsProvider = ({ children }) => {
       
       return leadData;
     } catch (err) {
-      console.error('Error fetching lead:', err);
       setError(err.message);
       throw err;
     } finally {
@@ -131,7 +121,6 @@ export const LeadsProvider = ({ children }) => {
       });
       return response;
     } catch (err) {
-      console.error('Error creating lead:', err);
       setError(err.message);
       throw err;
     } finally {
@@ -143,23 +132,12 @@ export const LeadsProvider = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
-      
-      console.log('🔄 LeadsContext - updateLead called:', {
-        id,
-        leadDataKeys: Object.keys(leadData),
-        leadDataSize: JSON.stringify(leadData).length,
-        leadData,
-        filesKeys: Object.keys(files)
-      });
+ 
       
       const response = await leadsAPI.update(id, leadData, files);
       const updated = response.data ?? response;
       
-      console.log('✅ LeadsContext - API response received:', {
-        responseStatus: response.status,
-        updatedKeys: Object.keys(updated || {}),
-        updated
-      });
+  
 
       setLeads(prev =>
         prev.map(lead =>
@@ -171,7 +149,6 @@ export const LeadsProvider = ({ children }) => {
 
       return response;
     } catch (err) {
-      // console.error('❌ Error updating lead:', err);
       setError(err.message);
       throw err;
     } finally {
@@ -188,7 +165,6 @@ export const LeadsProvider = ({ children }) => {
         prev.filter(lead => lead._id !== id && lead.id !== id)
       );
     } catch (err) {
-      console.error('Error deleting lead:', err);
       setError(err.message);
       throw err;
     } finally {
@@ -210,7 +186,6 @@ export const LeadsProvider = ({ children }) => {
         const parsed = JSON.parse(userData)
         return parsed.role || 'tele_caller'
       } catch (e) {
-        console.error("Failed to parse user data for role", e)
       }
     }
     return 'tele_caller'
@@ -227,7 +202,6 @@ export const LeadsProvider = ({ children }) => {
           role: parsed.role || 'tele_caller'
         }
       } catch (e) {
-        console.error("Failed to parse user data", e)
       }
     }
     return {
@@ -238,16 +212,41 @@ export const LeadsProvider = ({ children }) => {
   }, []);
 
   const getAssignedUserInfo = useCallback((role) => {
-    if (!role || role === getCurrentUserRole()) {
+    // Debug logging to understand the input
+    console.log('🔍 getAssignedUserInfo input:', { role, type: typeof role, isArray: Array.isArray(role) });
+    
+    // Handle different input types for role parameter
+    let roleValue = role;
+    
+    if (Array.isArray(role)) {
+      // If it's an array, take the first element
+      roleValue = role[0];
+      console.log('🔍 Extracted from array:', roleValue);
+      
+      // If the extracted element is an object with a role property, extract the role string
+      if (roleValue && typeof roleValue === 'object' && roleValue.role) {
+        roleValue = roleValue.role;
+        console.log('🔍 Extracted role string from object:', roleValue);
+      }
+    } else if (role && typeof role === 'object' && role.role) {
+      // If it's a user object, extract the role string
+      roleValue = role.role;
+      console.log('🔍 Extracted from object:', roleValue);
+    }
+    
+    if (!roleValue || roleValue === getCurrentUserRole()) {
       return getCurrentUserInfo()
     }
     
     const currentUserInfo = getCurrentUserInfo();
-    return {
+    const result = {
       user_id: currentUserInfo.user_id,
-      name: `${role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}`,
-      role: role
-    }
+      name: `${roleValue && typeof roleValue === 'string' ? roleValue.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Unknown Role'}`,
+      role: roleValue
+    };
+    
+    console.log('🔍 getAssignedUserInfo result:', result);
+    return result;
   }, [getCurrentUserRole, getCurrentUserInfo]);
 
   // Form validation
@@ -460,17 +459,18 @@ export const LeadsProvider = ({ children }) => {
           if (formData[field]) {
             if (field === 'lead_stage') payload.lead_stage = formData[field]
             else if (field === 'leadStatus') payload.lead_status = String(formData[field]).toUpperCase()
+
             else payload[field] = formData[field]
           }
         })
       }
 
-      // Use lead_stage if available (user's selection), otherwise use leadStatus (default)
-      const leadStatusValue = formData.lead_stage || formData.leadStatus;
-      
-      if (leadStatusValue !== undefined && leadStatusValue !== null && leadStatusValue !== '') {
-        payload.lead_status = String(leadStatusValue).toUpperCase()
-      }
+      // ✅ Always send lead_stage
+      payload.lead_stage = formData.lead_stage || "Enquired"
+
+      // ✅ Always send lead_status separately
+      payload.lead_status = formData.leadStatus ? String(formData.leadStatus).toUpperCase() : "WARM"
+
       if (formData.callNotes) {
         payload.note = formData.callNotes
         const currentUser = getCurrentUserInfo()
@@ -488,12 +488,20 @@ export const LeadsProvider = ({ children }) => {
     const payload = {}
     
     const addIfChanged = (fieldName, currentValue, originalValue) => {
-      const currentStr = JSON.stringify(currentValue)
-      const originalStr = JSON.stringify(originalValue)
+      // Handle undefined/null values by treating them as empty strings for comparison
+      const normalizedCurrent = currentValue === undefined || currentValue === null ? "" : currentValue;
+      const normalizedOriginal = originalValue === undefined || originalValue === null ? "" : originalValue;
+      
+      const currentStr = JSON.stringify(normalizedCurrent)
+      const originalStr = JSON.stringify(normalizedOriginal)
       const hasChanged = currentStr !== originalStr
       
-      if (hasChanged) {
-        payload[fieldName] = currentValue
+      // Only add to payload if the value is not empty or if it actually changed
+      if (hasChanged && normalizedCurrent !== "") {
+        payload[fieldName] = normalizedCurrent
+        console.log(`📝 Adding to payload: ${fieldName} = ${normalizedCurrent}`)
+      } else {
+        console.log(`⏭️ Skipping ${fieldName}: current="${normalizedCurrent}", original="${normalizedOriginal}", changed=${hasChanged}`)
       }
     }
 
@@ -510,10 +518,14 @@ export const LeadsProvider = ({ children }) => {
     const currentUserInfo = getCurrentUserInfo();
     const assignedUserInfo = getAssignedUserInfo(formData.assignedTo || currentRoleValue);
     
-    if (!originalData?.currentRole || originalData.currentRole[0]?.role !== currentUserInfo.role) {
+    // Ensure we're comparing role strings properly
+    const originalCurrentRole = Array.isArray(originalData?.currentRole) ? originalData.currentRole[0]?.role : originalData?.currentRole;
+    const originalAssignedRole = Array.isArray(originalData?.assignedTo) ? originalData.assignedTo[0]?.role : originalData?.assignedTo;
+    
+    if (!originalCurrentRole || originalCurrentRole !== currentUserInfo.role) {
       payload.currentRole = [currentUserInfo];
     }
-    if (!originalData?.assignedTo || originalData.assignedTo[0]?.role !== assignedUserInfo.role) {
+    if (!originalAssignedRole || originalAssignedRole !== assignedUserInfo.role) {
       payload.assignedTo = [assignedUserInfo];
     }
     
@@ -534,9 +546,13 @@ export const LeadsProvider = ({ children }) => {
     }
 
     // Handle lead_status from either lead_stage (user's selection) or leadStatus (default)
-    const currentLeadStatusValue = formData.lead_stage || formData.leadStatus;
-    const originalLeadStatusValue = originalData?.lead_stage || originalData?.leadStatus || "";
-    addIfChanged('lead_status', String(currentLeadStatusValue).toUpperCase(), String(originalLeadStatusValue).toUpperCase())
+    addIfChanged("lead_stage", formData.lead_stage, originalData?.lead_stage)
+    
+    addIfChanged(
+      "lead_status",
+      String(formData.leadStatus).toUpperCase(),
+      String(originalData?.lead_status).toUpperCase()
+    )
     addIfChanged('notes', formData.callNotes, originalData?.callNotes)
 
     // Check structured data
@@ -572,13 +588,8 @@ export const LeadsProvider = ({ children }) => {
       payload.checkListPage = checkListPage
     }
 
-    // Always include currentRole and assignedTo for history tracking
-    if (!payload.currentRole) {
-      payload.currentRole = [currentUserInfo];
-    }
-    if (!payload.assignedTo) {
-      payload.assignedTo = [assignedUserInfo];
-    }
+    // Only include currentRole and assignedTo if they actually changed
+    // Don't force include them for updates to avoid validation issues
 
     // Ensure required fields are included for updates
     if (!payload.contactNumber && originalData?.contactNumber) {
@@ -625,15 +636,6 @@ export const LeadsProvider = ({ children }) => {
       } else {
         // Create new lead
         result = await createLead(leadPayload, filesToUpload)
-        
-        // Backend workaround: Update lead_status after creation
-        if (result?.data?._id && leadPayload.lead_status) {
-          try {
-            await leadsAPI.update(result.data._id, { lead_status: leadPayload.lead_status })
-          } catch (updateError) {
-            console.warn('Failed to update lead_status:', updateError)
-          }
-        }
       }
 
       toast.success(originalData ? 'Lead updated successfully!' : 'Lead created successfully!', {
@@ -700,6 +702,7 @@ export const LeadsProvider = ({ children }) => {
         // Form state
         formLoading,
         formError,
+        setFormError,
         masters,
       }}
     >

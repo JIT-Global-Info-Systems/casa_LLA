@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { locationsAPI, typesAPI, stagesAPI } from '@/services/api';
 
 const MasterContext = createContext();
@@ -398,6 +398,11 @@ export const MasterProvider = ({ children }) => {
       return { success: false, error: err.message };
     }
   }, [fetchStages]);
+
+  // Fetch all data on component mount
+  useEffect(() => {
+    fetchAllData();
+  }, [fetchAllData]);
 
   const updateStage = useCallback(async (itemId, data) => {
     try {

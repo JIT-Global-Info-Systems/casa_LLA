@@ -19,17 +19,8 @@ const yesNo = (v) => (v ? "Yes" : "No")
 export default function Leads({ data = null, onSubmit, onClose, viewMode = false, currentStep, onStepChange, editableFields = null, stepperOnly = false, hideStepper = false, calls = [] }) {
   const { mediators, loading: mediatorsLoading, fetched: mediatorsFetched, fetchMediators } = useMediators()
   const { users, loading: usersLoading, fetchUsers } = useUsers()
-  const {
-    formLoading,
-    formError,
-    masters,
-    getCurrentUserRole,
-    getCurrentUserInfo,
-    getAssignedUserInfo,
-    validateLeadForm,
-    fetchLocations,
-    submitLeadForm
-  } = useLeads()
+  const { masters, loading: stagesLoading, fetchStages } = useMaster()
+  const { formError, formLoading, clearFormError, getCurrentUserRole, setFormError, transformLeadPayload, submitLeadForm } = useLeads()
 
   // Helper function to check if a field is editable
   const isFieldEditable = (fieldName) => {
@@ -131,7 +122,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     frontage: "",
     roadWidth: "",
     sspde: "No",
-    leadStatus: "",
+    leadStatus: "warm",
     remark: "",
     lead_stage: "Enquired",
 
@@ -209,8 +200,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
   // Store original data for change tracking
   const [originalData, setOriginalData] = useState(null)
 
-  const [locationsData, setLocationsData] = useState({ locations: [], regions: [], zones: [] })
-  const [loading, setLoading] = useState({ locations: false, regions: false, zones: false, submit: false })
+  const [loading, setLoading] = useState({ submit: false })
   const [errors, setErrors] = useState({})
 
   // Form persistence functions
@@ -274,38 +264,73 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
   }, [hasUnsavedChanges, isSubmitting]);
 
   const validateForm = (dataToValidate) => {
-    return validateLeadForm(dataToValidate)
+    const nextErrors = {}
+
+    if (!dataToValidate.contactNumber?.trim()) {
+      nextErrors.contactNumber = "Contact number is required"
+    } else if (!/^[+]?[0-9]{10,15}$/.test(dataToValidate.contactNumber.replace(/\s/g, ""))) {
+      nextErrors.contactNumber = "Invalid contact number format"
+    }
+
+    if (!dataToValidate.mediatorName?.trim()) nextErrors.mediatorName = "Mediator/Owner name is required"
+    if (!dataToValidate.location) nextErrors.location = "Location is required"
+    if (!dataToValidate.landName?.trim()) nextErrors.landName = "Land name is required"
+    if (!dataToValidate.sourceCategory) nextErrors.sourceCategory = "Source category is required"
+    if (!dataToValidate.source) nextErrors.source = "Source is required"
+    
+    // Assign To (User) is required when Assigned To (Role) is selected
+    // if (dataToValidate.assignedTo && !dataToValidate.assignToUser?.trim()) {
+    //   nextErrors.assignToUser = "Please select a user when a role is assigned"
+    // }
+
+      // Numeric fields (soft validation)
+      ;["extent", "fsi", "asp", "revenue", "rate", "builderShare"].forEach((k) => {
+        const v = dataToValidate[k]
+        if (v && isNaN(parseFloat(v))) nextErrors[k] = `${k} must be a number`
+      })
+
+    // Files: backend allows only JPG/PNG/JPEG and 2MB
+    const validateFile = (fileKey, file) => {
+      if (!file) return ""
+      const maxSize = 2 * 1024 * 1024
+      const allowed = ["image/jpeg", "image/jpg", "image/png"]
+      if (file.size > maxSize) return "File size must be less than 2MB"
+      if (!allowed.includes(file.type)) return "Invalid file type. Only JPG/PNG images are allowed"
+      return ""
+    }
+
+    if (dataToValidate.checkFMBSketch) {
+      if (!dataToValidate.fileFMBSketch) nextErrors.fileFMBSketch = "FMB Sketch file is required when checkbox is checked"
+      else {
+        const msg = validateFile("fileFMBSketch", dataToValidate.fileFMBSketch)
+        if (msg) nextErrors.fileFMBSketch = msg
+      }
+    }
+
+    if (dataToValidate.checkPattaChitta) {
+      if (!dataToValidate.filePattaChitta) nextErrors.filePattaChitta = "Patta/Chitta file is required when checkbox is checked"
+      else {
+        const msg = validateFile("filePattaChitta", dataToValidate.filePattaChitta)
+        if (msg) nextErrors.filePattaChitta = msg
+      }
+    }
+
+    return nextErrors
   }
 
+  const fetchLocations = useCallback(async () => {
+    // Locations are now handled by the masters context
+    // This function is kept for compatibility but doesn't need to do anything
+    console.log('Locations are handled by masters context');
+  }, [])
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        await fetchLocations()
-
-        // Fetch stages
-        if (!stagesLoading) {
-          try {
-            await fetchStages()
-            console.log('Stages fetched:', masters.stages)
-            
-            // Temporary test - add mock stages if none exist
-            if (!masters.stages || masters.stages.length === 0) {
-              console.log('No stages from API, adding test stages')
-              // This is just for testing - remove once API works
-              const testStages = [
-                { id: 'test1', name: 'Test Stage 1' },
-                { id: 'test2', name: 'Test Stage 2' },
-                { id: 'test3', name: 'Test Stage 3' }
-              ]
-              console.log('Test stages would be:', testStages)
-            }
-          } catch (err) {
-            console.error('Failed to load stages:', err)
-            toast.error('Failed to load stages. Lead stages may be limited.')
-          }
-        }
-
+        // Fetch all masters data (locations, types, stages)
+        await fetchStages()
+        console.log('Stages fetched:', masters.stages)
+        
         // Only fetch mediators if they haven't been fetched yet
         if (!mediatorsFetched && !mediatorsLoading && !mediators.length) {
           try {
@@ -329,35 +354,18 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
         }
       } catch (error) {
         console.error('Initial data loading error:', error)
-        toast.error('Failed to load initial data. Please refresh the page.')
       }
-    }
+    };
 
     loadData()
-  }, []) // Remove function dependencies to prevent infinite loops
+  }, []) // Remove all dependencies to prevent infinite loops
 
   useEffect(() => {
-    // Auto-set currentRole from localStorage when creating new lead (not editing)
     if (!data) {
       const userRole = getCurrentUserRole()
       
-      // Try to load form draft first
-      // const draft = loadFormDraft();
-      // if (draft) {
-      //   setFormData(prev => ({
-      //     ...prev,
-      //     ...draft,
-      //     currentRole: userRole // Always use current user role
-      //   }));
-      //   setHasUnsavedChanges(true);
-      //   // toast.success('Draft loaded', { 
-      //   //   icon: '📝',
-      //   //   duration: 3000 
-      //   // });
-      // } else {
-        // Reset form to initial state when creating new lead
+ 
         setFormData({
-          // Basic Lead Information
           leadType: "mediator",
           contactNumber: "",
           mediatorName: "",
@@ -383,14 +391,13 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           frontage: "",
           roadWidth: "",
           sspde: "No",
-          leadStatus: "Enquired",
+          leadStatus: "warm",
           remark: "",
           lead_stage: "Enquired",
 
           // Yield Calculation
           yield: "",
 
-          // Competitor Analysis
           competitorDeveloperName: "",
           competitorProjectName: "",
           competitorProductType: "",
@@ -441,7 +448,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           checkSoilTest: false,
           checkWaterList: false,
 
-          // Special Fields (Checkbox + Upload)
           checkFMBSketch: false,
           fileFMBSketch: null,
           checkPattaChitta: false,
@@ -459,14 +465,12 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
         })
         setOriginalData(null)
         setHasUnsavedChanges(false)
-      // }
     }
   }, [data])
 
   useEffect(() => {
     if (!data) return
 
-    // hydrate from backend schema
     const firstCompetitor = Array.isArray(data.competitorAnalysis) ? data.competitorAnalysis[0] : null
     const firstChecklist = Array.isArray(data.checkListPage) ? data.checkListPage[0] : null
 
@@ -474,7 +478,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       ...data,
       leadType: data.leadType || data.lead_type || "mediator", // Ensure leadType is properly mapped
       leadStatus: data.lead_status || "",
-      lead_stage: data.lead_stage || "",
+      lead_stage: data.lead_stage || "Enquired",
       mediatorId: data.mediatorId || "",
       inquiredBy: data.inquiredBy || "",
       L1_Qualification: data.L1_Qualification || "",
@@ -660,26 +664,111 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
   const getOptions = useCallback(
     (type) => {
-      if (type === "location") return locationsData.locations.map((l) => ({ value: l.name, label: l.name }))
+      if (type === "location") return masters.locations.map((l) => ({ value: l.name, label: l.name }))
       if (type === "region") {
         if (!formData.location) return []
-        return locationsData.regions.filter((r) => r.location === formData.location).map((r) => ({ value: r.region, label: r.region }))
+        return masters.regions.filter((r) => r.location === formData.location).map((r) => ({ value: r.region, label: r.region }))
       }
       if (type === "zone") {
         if (!formData.location || !formData.zone) return []
-        return locationsData.zones
+        return masters.zones
           .filter((z) => z.location === formData.location && z.region === formData.zone)
           .map((z) => ({ value: z.zone, label: z.zone }))
       }
       return []
     },
-    [locationsData, formData.location, formData.zone],
+    [masters, formData.location, formData.zone],
   )
 
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
-      
+      const leadPayload = transformLeadPayload(formData, data)
+
+      // Debug: Show payload optimization for edits
+      if (data) {
+        const fullPayloadSize = JSON.stringify({
+          leadType: formData.leadType || "mediator",
+          contactNumber: formData.contactNumber || "",
+          mediatorName: formData.mediatorName || "",
+          location: formData.location || "",
+          landName: formData.landName || "",
+          sourceCategory: formData.sourceCategory || "",
+          source: formData.source || "",
+          currentRole: getCurrentUserRole(),
+          assignedTo: formData.assignedTo ,
+          assignToUser: formData.assignToUser,
+          competitorAnalysis: [
+            {
+              developerName: formData.competitorDeveloperName || "",
+              projectName: formData.competitorProjectName || "",
+              productType: formData.competitorProductType || "",
+              location: formData.competitorLocation || "",
+              plotUnitSize: formData.competitorPlotSize || "",
+              landExtent: formData.competitorLandExtent || "",
+              priceRange: formData.competitorPriceRange || "",
+              approxPrice: formData.competitorApproxPrice || "",
+              approxPriceCent: formData.competitorApproxPriceCent || "",
+              totalPlotsUnits: formData.competitorTotalUnits || "",
+              keyAmenities: String(formData.competitorKeyAmenities || "")
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean),
+              uspPositioning: formData.competitorUSP || "",
+            }
+          ],
+          checkListPage: [
+            {
+              landLocation: formData.checkLandLocation || "",
+              landExtent: formData.checkLandExtent || "",
+              landZone: formData.checkLandZone || "",
+              classificationOfLand: formData.checkLandClassification || "",
+              googlePin: formData.checkGooglePin || "",
+              approachRoadWidth: formData.checkApproachRoadWidth || "",
+              ebLine: yesNo(formData.checkEBLine),
+              soilType: formData.checkSoilType || "",
+              quarryCrusher: yesNo(formData.checkQuarryCrusher),
+              sellingPrice: formData.checkSellingPrice || "",
+              guidelineValue: formData.checkGuidelineValue || "",
+              locationSellingPrice: formData.checkLocationSellingPrice || "",
+              marketingPrice: formData.checkMarketingPrice || "",
+              roadWidth: formData.checkRoadWidth || "",
+              govtLandAcquisition: yesNo(formData.checkGovtLandAcquisition),
+              railwayTrackNoc: yesNo(formData.checkRailwayTrackNOC),
+              bankIssues: yesNo(formData.checkBankIssues),
+              dumpyardQuarryCheck: yesNo(formData.checkDumpyardQuarry),
+              waterbodyNearby: yesNo(formData.checkWaterbodyNearby),
+              nearbyHtLine: yesNo(formData.checkNearbyHTLine),
+              templeLand: yesNo(formData.checkTempleLand),
+              futureGovtProjects: yesNo(formData.checkFutureGovtProjects),
+              farmLand: yesNo(formData.checkFarmLand),
+              totalSaleableArea: formData.checkTotalSaleableArea || "",
+              landCleaning: yesNo(formData.checkLandCleaning),
+              subDivision: yesNo(formData.checkSubDivision),
+              soilTest: yesNo(formData.checkSoilTest),
+              waterList: yesNo(formData.checkWaterList),
+              ownerName: formData.checkOwnerName || "",
+              consultantName: formData.checkConsultantName || "",
+              notes: formData.checkNotes || "",
+              projects: formData.checkProjects || "",
+              googleLocation: formData.checkGoogleLocation || "",
+            }
+          ]
+        }).length
+
+        const optimizedPayloadSize = JSON.stringify(leadPayload).length
+        const savings = fullPayloadSize - optimizedPayloadSize
+        const savingsPercent = ((savings / fullPayloadSize) * 100).toFixed(1)
+
+        console.log(`🚀 Payload Optimization:`)
+        console.log(`   Full payload: ${(fullPayloadSize / 1024).toFixed(2)} KB`)
+        console.log(`   Optimized: ${(optimizedPayloadSize / 1024).toFixed(2)} KB`)
+        console.log(`   Saved: ${(savings / 1024).toFixed(2)} KB (${savingsPercent}%)`)
+        console.log(`   Fields sent: ${Object.keys(leadPayload).length}`)
+      }
+
+      console.log('📤 Lead Payload being sent:', JSON.stringify(leadPayload, null, 2))
+
       const files = {
         ...(formData.checkFMBSketch && formData.fileFMBSketch ? { fmb_sketch: formData.fileFMBSketch } : {}),
         ...(formData.checkPattaChitta && formData.filePattaChitta ? { patta_chitta: formData.filePattaChitta } : {}),
@@ -687,18 +776,24 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       
       const result = await submitLeadForm(formData, data, files)
       
-      // Clear form draft on successful submission
-      clearFormDraft()
-      
       // Call onSubmit if provided (for backward compatibility)
       if (onSubmit) {
-        onSubmit(result);
-      }
-      
-      // Close the form if onClose is provided
-      if (onClose) {
-        onClose();
-      }
+       
+        
+        try {
+          await onSubmit(leadPayload, files)
+
+          // clearFormDraft()
+          
+         
+
+          if (Object.keys(files).length > 0) {
+            toast.success('Files uploaded successfully', { duration: 2000 })
+          }
+        } catch (onSubmitError) {
+          throw onSubmitError // Re-throw to be caught by outer catch
+        }
+      } 
     } catch (error) {
       // Set validation errors if they exist
       if (error.validationErrors) {
@@ -838,7 +933,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                   <p className="text-red-800 font-medium">Error</p>
                   <p className="text-red-600 text-sm">{formError}</p>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => setFormError(null)} className="text-red-600 hover:text-red-800 hover:bg-red-100">
+                <Button variant="ghost" size="sm" onClick={clearFormError} className="text-red-600 hover:text-red-800 hover:bg-red-100">
                   ×
                 </Button>
               </div>
@@ -1115,7 +1210,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
               <div className="space-y-2">
                 <Label>Lead Status</Label>
-                <Select value={formData.lead_stage} onValueChange={(v) => handleChange("lead_stage", v)}>
+                <Select value={formData.leadStatus} onValueChange={(v) => handleChange("leadStatus", v)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
@@ -1333,53 +1428,33 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
               </div>
               <div className="space-y-2">
                 <Label className="text-gray-700 font-medium">Lead Stage <span className="text-red-500">*</span></Label>
-                {!isFieldEditable('leadStatus') ? (
+                {!isFieldEditable('lead_stage') ? (
                   <div className="p-2 bg-white border border-gray-300 rounded-md text-gray-800 min-h-[40px] flex items-center capitalize">
-                    {formData.leadStatus || "-"}
+                    {formData.lead_stage || "-"}
                   </div>
                 ) : (
-                  <Select value={formData.leadStatus} onValueChange={(v) => handleChange("leadStatus", v)}>
+                  <Select value={formData.lead_stage} onValueChange={(v) => handleChange("lead_stage", v)}>
                     <SelectTrigger className="bg-white border-gray-300" data-editable="true">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-white z-50 shadow-lg">
                       {/* Show only "Purchased" option when in restricted edit mode (Approved Leads page) */}
-                      {editableFields && editableFields.length > 0 && editableFields.includes('leadStatus') ? (
+                      {editableFields && editableFields.length > 0 && editableFields.includes('lead_stage') ? (
                         <SelectItem value="Approved">Purchased</SelectItem>
                       ) : (
                         <>
+                        
                           {/* Show stages from API */}
-                          {console.log('masters.stages:', masters.stages) || 
-                          (masters.stages && masters.stages.length > 0) ? (
+                          {masters.stages && masters.stages.length > 0 ? (
                             <>
-                              {console.log('Rendering stages from API:', masters.stages)}
                               {masters.stages.map((stage) => (
-                                <SelectItem key={stage.id} value={stage.name}>
+                                <SelectItem key={stage.id || stage.stage_id} value={stage.name}>
                                   {stage.name}
                                 </SelectItem>
                               ))}
                             </>
                           ) : (
-                            <>
-                              {console.log('No stages found, using fallback. masters.stages:', masters.stages)}
-                              {/* Temporarily add test stages to verify rendering works */}
-                              <SelectItem value="Test Stage 1">Test Stage 1</SelectItem>
-                              <SelectItem value="Test Stage 2">Test Stage 2</SelectItem>
-                              <SelectItem value="Test Stage 3">Test Stage 3</SelectItem>
-                              <SelectItem value="Enquired">Enquired</SelectItem>
-                              <SelectItem value="Lead Allocated">Lead Allocated</SelectItem>
-                              <SelectItem value="First Called">First Called</SelectItem>
-                              <SelectItem value="Site Visit">Site Visit</SelectItem>
-                              <SelectItem value="Owner Meeting">Owner Meeting</SelectItem>
-                              <SelectItem value="Negotiation Started">Negotiation Started</SelectItem>
-                              <SelectItem value="Negotiation_End">Negotiation End</SelectItem>
-                              <SelectItem value="Due_Diligence_Started">Due Diligence Started</SelectItem>
-                              <SelectItem value="Due_Diligence_End">Due Diligence End</SelectItem>
-                              <SelectItem value="Approved">Approved</SelectItem>
-                              <SelectItem value="Hold">Hold</SelectItem>
-                              <SelectItem value="L1_Qualification">L1 Qualification</SelectItem>
-                              <SelectItem value="director_sv">Director sv</SelectItem>
-                            </>
+                          null
                           )}
                         </>
                       )}
@@ -1389,7 +1464,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
               </div>
 
               {/* Inquired By field - only show when Lead Stage is "Enquired" (Pending) */}
-              {formData.leadStatus === "Enquired" && (
+              {formData.lead_stage === "Enquired" && (
                 <div className="space-y-2">
                   <Label className="text-gray-700 font-medium">Inquired By</Label>
                   {!isFieldEditable('inquiredBy') ? (
@@ -1411,7 +1486,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
               )}
           </div>
           {/* Lead Qualification */}
-          {formData.leadStatus === "L1_Qualification" && (
+          {formData.lead_stage === "L1_Qualification" && (
             <div className="space-y-2">
               <Label className="text-gray-700">L1_Qualification</Label>
               {!isFieldEditable('L1_Qualification') ? (
@@ -1433,7 +1508,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           )}
 
           {/* Director SV Status */}
-          {formData.leadStatus === "director_sv" && (
+          {formData.lead_stage === "director_sv" && (
             <div className="space-y-2">
               <Label className="text-gray-700">Director SV Status</Label>
               {!isFieldEditable('directorSVStatus') ? (
@@ -1505,8 +1580,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                   className={isSameRole ? "opacity-50 cursor-not-allowed" : ""}
                                 >
                                   {isSameRole 
-                                    ? `${role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} (Can't select - same role)`
-                                    : role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+                                    ? `${role && typeof role === 'string' ? role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Unknown Role'} (Can't select - same role)`
+                                    : role && typeof role === 'string' ? role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Unknown Role'
                                   }
                                 </SelectItem>
                               )
@@ -1543,7 +1618,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                   .filter(user => user.role === formData.assignedTo)
                                   .map((user) => (
                                     <SelectItem key={user._id || user.id} value={user._id || user.id}>
-                                      {user.name} ({user.role.replace(/_/g, ' ')})
+                                      {user.name} ({user.role && typeof user.role === 'string' ? user.role.replace(/_/g, ' ') : 'No role'})
                                     </SelectItem>
                                   ))
                               ) : (
