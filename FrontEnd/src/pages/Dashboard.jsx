@@ -539,7 +539,7 @@ function Dashboard() {
         <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
           <WideMetricCard icon={Users} label="Approved Leads" value={totals.approvedLeads} />
           <WideMetricCard icon={FileCheck2} label="Purchased Leads" value={purchasedLeadsCount} />
-          <WideMetricCard icon={FileCheck2} label="Pending Leads" value={totals.pendingLeads} />
+          <WideMetricCard icon={FileCheck2} label="Waiting for Approve Leads" value={totals.pendingLeads} />
         </section>
  
         {/* NOTES */}

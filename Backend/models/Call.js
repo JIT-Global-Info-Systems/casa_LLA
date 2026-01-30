@@ -33,11 +33,11 @@ const callSchema = new mongoose.Schema({
   },
   callDate: {
     type: Date,
-    required: true
+    required: false
   },
   callTime: {
     type: String,
-    required: true
+    required: false
   },
   created_at: {
     type: Date,

@@ -40,6 +40,7 @@ import toast from 'react-hot-toast';
 export const useEntityAction = (entityType = 'item') => {
   const [entityToAct, setEntityToAct] = useState(null);
   const [currentAction, setCurrentAction] = useState(null);
+  const [pendingAction, setPendingAction] = useState(null); // Replace window global state
   const { isOpen, loading, openModal, closeModal, confirmAction } = useConfirmModal();
  
   /**
@@ -77,53 +78,53 @@ export const useEntityAction = (entityType = 'item') => {
     // Set entity and action for modal
     setEntityToAct(entity);
     setCurrentAction(action);
-   
+    
+    // Store pending action in component state instead of window
+    setPendingAction({ entity, action, apiCall, entityName });
+    
     // Open confirmation modal
     openModal();
- 
-    // Note: The actual execution happens in handleConfirm
-    // We store the apiCall in a ref-like pattern via closure
-    window.__pendingEntityAction = { entity, action, apiCall, entityName };
   };
  
   /**
    * Handle confirmation from modal
    */
   const handleConfirm = async () => {
-    const { entity, action, apiCall, entityName } = window.__pendingEntityAction || {};
-   
-    if (!entity || !action || !apiCall) {
+    if (!pendingAction) {
       console.error('No pending action found');
       return;
     }
- 
+
+    const { entity, action, apiCall, entityName } = pendingAction;
+
+    const timeoutId = setTimeout(() => {
+      toast.error('Action is taking longer than expected. Please check your connection.');
+    }, 10000);
+
     await confirmAction(async () => {
       try {
-        // Execute the API call
         await apiCall();
- 
-        // Show success message
-        const name = entityName || entity.name || entity.title || '';
-        const successMsg = getSuccessMessage(action, entityType, name);
-        toast.success(successMsg);
- 
-        // Clear state
+        clearTimeout(timeoutId);
+
+        const successMessage = getSuccessMessage(action, entityType, entityName);
+        toast.success(successMessage);
+
+        // Clear the pending action properly
+        setPendingAction(null);
         setEntityToAct(null);
         setCurrentAction(null);
-        window.__pendingEntityAction = null;
-      } catch (err) {
-        console.error(`Error performing ${action}:`, err);
-       
-        // Normalize error message
-        const errorMsg = normalizeErrorMessage(err, action, entityType);
-        toast.error(errorMsg);
-       
-        // Re-throw to keep modal open
-        throw err;
+      } catch (error) {
+        clearTimeout(timeoutId);
+
+        const errorMessage = normalizeErrorMessage(error, action, entityType);
+        toast.error(errorMessage);
+
+        throw error; // keeps modal open
       }
     });
   };
- 
+
+
   /**
    * Convenience method for delete action
    */

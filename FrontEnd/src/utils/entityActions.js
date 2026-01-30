@@ -43,7 +43,7 @@ export const canDelete = (entity) => {
  
   // Already inactive or deleted
   if (status === ENTITY_STATUS.INACTIVE) {
-    return { canDelete: false, reason: 'This item is already inactive' };
+    return { canDelete: false, reason: 'This user is already inactive' };
   }
  
   if (status === ENTITY_STATUS.DELETED) {

@@ -278,7 +278,9 @@ const Masters = () => {
     const keyMap = {
       'location': 'locations',
       'region': 'regions', 
-      'zone': 'zones'
+      'zone': 'zones',
+      'type': 'types',
+      'stage':'stages'
     };
     return masters[keyMap[type]] || [];
   }, [masters]);
@@ -311,10 +313,18 @@ const Masters = () => {
       // Use API-based deletion for regions
       deleteRegion(itemId);
     } else if (type === 'zone') {
-      // Use API-based deletion for zones
-      deleteZone(itemId);
+      result = await deleteZone(itemId);
+    } else if (type === 'type') {
+      result = await deleteType(itemId);
+    
+  } else if (type === 'stage') {
+    result = await deleteType(itemId);
+  }
+    
+    if (result?.success) {
+      setDeleteDialog({ open: false, type: '', item: null });
     }
-  }, [deleteLocation, deleteRegion, deleteZone]);
+  }, [deleteLocation, deleteRegion, deleteZone, deleteType]);
 
   const openForm = useCallback((type, editing = null) => {
     setForm({ open: true, type, editing, data: editing || getDefaultData(type) });
@@ -365,6 +375,12 @@ const Masters = () => {
       } else {
         addZone(formattedData);
       }
+    } else if (type === 'stage') {
+      if (editing) {
+        result = await updateStage(editing.id, formattedData);
+      } else {
+        result = await addStage(formattedData);
+      }
     }
   }, [form, addItem, updateItem, formatName, addLocation, updateLocation, addRegion, updateRegion, addZone, updateZone]);
 
@@ -372,7 +388,8 @@ const Masters = () => {
     { id: 'location', label: 'Location', columns: ['S.No', 'Location', 'Status', 'Action'] },
     { id: 'region', label: 'Zone', columns: ['S.No', 'Location', 'Zone', 'Action'] },
     { id: 'zone', label: 'Area', columns: ['S.No', 'Location', 'Zone', 'Area', 'Action'] },
-    { id: 'type', label: 'Type', columns: ['S.No', 'Type', 'Action'] },
+    { id: 'type', label: 'Type', columns: ['S.No', 'Type', 'Status', 'Action'] },
+    { id: 'stage', label: 'Stage', columns: ['S.No', 'Type', 'Status','Action'] },
   ];
 
   const getOptions = useCallback((type, selectedLocation = null) => {
@@ -613,7 +630,6 @@ const Masters = () => {
             <Button variant="outline" onClick={() => setDeleteDialog({ open: false, type: '', item: null })}>Cancel</Button>
             <Button 
               variant="destructive" 
-              className="bg-red-600 hover:bg-red-700 text-white" 
               onClick={() => deleteItem(deleteDialog.type, deleteDialog.item?.id)}
             >
               Delete

@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect } from "react"
 import { callsAPI } from "@/services/api"
+import { useAuth } from "@/context/AuthContext"
 import toast from "react-hot-toast"
 
 const CallsContext = createContext()
@@ -8,8 +9,14 @@ export function CallsProvider({ children }) {
     const [calls, setCalls] = useState([])
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(null)
+    const { isAuthenticated, loading: authLoading } = useAuth()
 
     const fetchCalls = useCallback(async () => {
+        // Only fetch if user is authenticated
+        if (!isAuthenticated) {
+            return
+        }
+
         setLoading(true)
         setError(null)
         try {
@@ -22,7 +29,7 @@ export function CallsProvider({ children }) {
         } finally {
             setLoading(false)
         }
-    }, [])
+    }, [isAuthenticated])
 
     const addCall = async (callData) => {
         try {
@@ -59,10 +66,12 @@ export function CallsProvider({ children }) {
         }
     }
 
-    // Fetch calls on component mount
+    // Fetch calls only when user is authenticated and auth is not loading
     useEffect(() => {
-        fetchCalls()
-    }, [fetchCalls])
+        if (!authLoading && isAuthenticated) {
+            fetchCalls()
+        }
+    }, [fetchCalls, authLoading, isAuthenticated])
 
     return (
         <CallsContext.Provider

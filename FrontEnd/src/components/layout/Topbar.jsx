@@ -279,6 +279,13 @@ function Topbar() {
     return hasAccess(userRole, item.page);
   });
 
+  // Show all items with access info for better UX
+  const allNavItemsWithAccess = navItems.map(item => ({
+    ...item,
+    hasAccess: !item.page || hasAccess(userRole, item.page),
+    disabled: item.page && !hasAccess(userRole, item.page)
+  }));
+
   // Function to get initials from user name
   const getInitials = (name) => {
     if (!name || typeof name !== 'string') {
@@ -321,9 +328,24 @@ function Topbar() {
               </div>
               <nav className=" ms-5 px-3 py-4" aria-label="Primary">
                 <div className="space-y-1">
-                  {filteredNavItems.map((item) => {
+                  {allNavItemsWithAccess.map((item) => {
                     const active = isItemActive(item.path);
                     const Icon = item.icon;
+                    
+                    if (item.disabled) {
+                      return (
+                        <div
+                          key={item.path}
+                          className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-400 cursor-not-allowed"
+                          title={`${item.label} - Access restricted to your role`}
+                        >
+                          <Icon className="h-5 w-5" />
+                          {item.label}
+                          <span className="text-xs">(Restricted)</span>
+                        </div>
+                      );
+                    }
+
 
                     return (
                       <Link
@@ -355,8 +377,28 @@ function Topbar() {
           </div>
 
           <nav className="hidden md:flex items-center gap-1" aria-label="Primary">
-            {filteredNavItems.map((item) => {
+            {allNavItemsWithAccess.map((item) => {
               const active = isItemActive(item.path);
+              const Icon = item.icon;
+              
+              if (item.disabled) {
+                return (
+                  <div
+                    key={item.path}
+                    className="relative group"
+                    title={`${item.label} - Access restricted to your role`}
+                  >
+                    <div className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-400 cursor-not-allowed">
+                      <Icon className="h-4 w-4" />
+                      {item.label}
+                    </div>
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-800 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                      Access restricted to your role
+                    </div>
+                  </div>
+                );
+              }
+              
               return (
                 <Link
                   key={item.path}

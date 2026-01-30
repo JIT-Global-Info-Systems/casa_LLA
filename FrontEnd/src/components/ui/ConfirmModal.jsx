@@ -13,6 +13,8 @@ const ConfirmModal = ({
   variant = 'destructive', // 'destructive' | 'default'
   loading = false,
 }) => {
+  console.log('ConfirmModal rendered with isOpen:', isOpen);
+  
   if (!isOpen) return null;
  
   const handleBackdropClick = (e) => {
@@ -45,7 +47,7 @@ const ConfirmModal = ({
  
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"

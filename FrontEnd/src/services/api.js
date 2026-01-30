@@ -1,10 +1,67 @@
-const API_BASE_URL = 'http://13.201.132.94:5000/api';
-// const API_BASE_URL = 'http://localhost:5000/api';
+// const API_BASE_URL = 'http://13.201.132.94:5000/api';
+const API_BASE_URL = 'http://localhost:5000/api';
 const REQUEST_TIMEOUT = 30000; // 30 seconds
 const MAX_RETRIES = 2;
 
-// Generic API request helper
-const apiRequest = async (endpoint, options = {}) => {
+// Helper to extract user-friendly error messages
+const getErrorMessage = (error, statusCode) => {
+  // Handle network errors
+  if (!statusCode) {
+    return 'Could not connect. Please check your internet connection.';
+  }
+
+  // Handle specific status codes
+  switch (statusCode) {
+    case 401:
+      return 'Your session has expired. Please log in again.';
+    case 403:
+      return 'You do not have permission to perform this action.';
+    case 404:
+      return 'The requested information could not be found.';
+    case 500:
+    case 502:
+    case 503:
+      return 'Could not complete your request. Please try again.';
+    default:
+      return error.message || 'Something went wrong. Please try again.';
+  }
+};
+
+// Helper to handle timeout
+const fetchWithTimeout = (url, options, timeout = REQUEST_TIMEOUT) => {
+  return Promise.race([
+    fetch(url, options),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Request timed out')), timeout)
+    )
+  ]);
+};
+
+// Token validation helper
+const isTokenExpired = (token) => {
+  if (!token) return true;
+  
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const currentTime = Date.now() / 1000;
+    return payload.exp < currentTime;
+  } catch (error) {
+    console.error('Invalid token format:', error);
+    return true;
+  }
+};
+
+// Session cleanup helper
+const clearSession = () => {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user_id');
+  localStorage.removeItem('user');
+  // Dispatch custom event for auth context to listen
+  window.dispatchEvent(new CustomEvent('auth:logout'));
+};
+
+// Generic API request helper with retry logic and proper session handling
+const apiRequest = async (endpoint, options = {}, retryCount = 0) => {
   const url = `${API_BASE_URL}${endpoint}`;
  
   // Get token from localStorage
@@ -13,8 +70,18 @@ const apiRequest = async (endpoint, options = {}) => {
   // Skip authentication for auth endpoints
   const isAuthEndpoint = endpoint.startsWith('/auth/') || endpoint.startsWith('/users/create');
  
-  if (!token && !isAuthEndpoint) {
-    throw new Error('No authentication token found. Please login to make API calls.');
+  // Validate token before making request
+  if (!isAuthEndpoint) {
+    if (!token) {
+      clearSession();
+      throw new Error('Your session has expired. Please log in again.');
+    }
+    
+    if (isTokenExpired(token)) {
+      clearSession();
+      // Don't redirect immediately - let auth context handle it
+      throw new Error('Your session has expired. Please log in again.');
+    }
   }
  
   const headers = {
@@ -35,6 +102,12 @@ const apiRequest = async (endpoint, options = {}) => {
   try {
     const response = await fetch(url, config);
  
+    // Handle 401 - clear auth but don't redirect (let auth context handle it)
+    if (response.status === 401) {
+      clearSession();
+      throw new Error('Your session has expired. Please log in again.');
+    }
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
@@ -42,7 +115,31 @@ const apiRequest = async (endpoint, options = {}) => {
  
     return await response.json();
   } catch (error) {
-    console.error('API Request Error:', error);
+    // Don't retry auth errors
+    if (error.statusCode === 401 || error.message.includes('session has expired')) {
+      throw error;
+    }
+
+    // Retry logic for network errors or 5xx errors
+    const shouldRetry = (
+      retryCount < MAX_RETRIES &&
+      (!error.statusCode || error.statusCode >= 500 || error.message === 'Request timed out')
+    );
+
+    if (shouldRetry) {
+      console.log(`Retrying request (${retryCount + 1}/${MAX_RETRIES}):`, endpoint);
+      // Exponential backoff: 1s, 2s, 4s
+      const delay = Math.pow(2, retryCount) * 1000;
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return apiRequest(endpoint, options, retryCount + 1);
+    }
+
+    // Add network error context
+    if (!error.statusCode) {
+      error.isNetworkError = true;
+      error.canRetry = true;
+    }
+
     throw error;
   }
 };
@@ -169,11 +266,20 @@ export const leadsAPI = {
  
   // Update lead
   update: async (id, leadData, files = {}) => {
+    console.log('🌐 API Service - leadsAPI.update called:', {
+      id,
+      leadDataKeys: Object.keys(leadData),
+      leadDataSize: JSON.stringify(leadData).length,
+      leadData,
+      filesKeys: Object.keys(files),
+      hasFiles: !!(files.fmb_sketch || files.patta_chitta)
+    });
+    
     // If files are provided, use FormData
     if (files.fmb_sketch || files.patta_chitta) {
       const formData = new FormData();
       formData.append('data', JSON.stringify(leadData));
- 
+
       // Add file uploads if present
       if (files.fmb_sketch) {
         formData.append('fmb_sketch', files.fmb_sketch);
@@ -181,17 +287,23 @@ export const leadsAPI = {
       if (files.patta_chitta) {
         formData.append('patta_chitta', files.patta_chitta);
       }
- 
-      return await apiRequest(`/leads/update/${id}`, {
+
+      console.log('📤 Making FormData PUT request to:', `/leads/update/${id}`);
+      const response = await apiRequest(`/leads/update/${id}`, {
         method: 'PUT',
         body: formData,
       });
+      console.log('✅ FormData API response received:', response);
+      return response;
     } else {
       // Regular JSON update
-      return await apiRequest(`/leads/update/${id}`, {
+      console.log('📤 Making JSON PUT request to:', `/leads/update/${id}`);
+      const response = await apiRequest(`/leads/update/${id}`, {
         method: 'PUT',
         body: JSON.stringify(leadData),
       });
+      console.log('✅ JSON API response received:', response);
+      return response;
     }
   },
  
