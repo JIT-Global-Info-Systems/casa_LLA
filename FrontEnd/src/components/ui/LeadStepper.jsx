@@ -170,16 +170,6 @@ export default function LeadStepper({ stageName, currentStep = 1, onStepChange, 
               })}
             </div>
           </div>
-
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {/* Status indicator */}
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full border border-gray-200">
-              <div className={`w-2 h-2 rounded-full ${isNewLead ? 'bg-yellow-500' : 'bg-green-500'}`}></div>
-              <span className="text-xs font-medium text-gray-700">
-                {isNewLead ? "New Lead" : "Active Lead"}
-              </span>
-            </div>
-          </div>
         </div>
       </header>
 
