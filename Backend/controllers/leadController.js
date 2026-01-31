@@ -246,15 +246,24 @@ exports.createLead = async (req, res) => {
     // Build yield input from leadData (support nested objects and form-data JSON strings)
     const parseField = (v) => {
       if (v == null) return undefined;
-      if (typeof v === "string" && (v.trim().startsWith("{") || v.trim().startsWith("["))) {
-        try { return JSON.parse(v); } catch (e) { return v; }
+      if (typeof v === "string") {
+        try {
+          const parsed = JSON.parse(v);
+          // If it's an object or array, return the parsed version
+          if (typeof parsed === 'object' && parsed !== null) {
+            return parsed;
+          }
+        } catch (e) {
+          // Not a JSON string, return original string
+        }
       }
       return v;
     };
+    const parsedSiteArea = parseField(leadData.siteArea);
     const yieldInput = {
-      area: parseField(leadData.area) || {
-        value: leadData.areaValue ?? leadData.area_value ?? leadData.siteArea ?? (leadData.roadArea?.siteArea),
-        unit: leadData.areaUnit ?? leadData.area_unit ?? "cents"
+      area: parseField(leadData.area) || parsedSiteArea || {
+        value: leadData.areaValue ?? leadData.area_value ?? parsedSiteArea?.value ?? (leadData.roadArea?.siteArea),
+        unit: leadData.areaUnit ?? leadData.area_unit ?? parsedSiteArea?.unit ?? "cents"
       },
       channel: parseField(leadData.channel) || {},
       gasLine: parseField(leadData.gasLine) || {},
@@ -287,8 +296,8 @@ exports.createLead = async (req, res) => {
       const yieldRecord = {
         type: 'Comprehensive Yield Calculation',
         // Area information
-        areaValue: leadData.areaValue || leadData.area_value,
-        areaUnit: leadData.areaUnit || leadData.area_unit || 'cents',
+        areaValue: parsedSiteArea?.value || leadData.siteArea?.value || leadData.area?.value || leadData.area_value,
+        areaUnit: parsedSiteArea?.unit || leadData.siteArea?.unit || leadData.areaUnit || leadData.area_unit || 'cents',
         
         // Deduction fields
         channel: leadData.channel || {},
@@ -391,7 +400,7 @@ exports.createLead = async (req, res) => {
       lead_stage: lead_stage,
       currentRole: currentRole,
       created_by: createdBy,
-      yields: yieldsToStore,
+      // yields: yieldsToStore,
       yieldCalculation: yieldCalculationPlain
     };
     const lead = await Lead.create(createPayload);
@@ -490,15 +499,24 @@ exports.updateLead = async (req, res) => {
 
     const parseField = (v) => {
       if (v == null) return undefined;
-      if (typeof v === "string" && (v.trim().startsWith("{") || v.trim().startsWith("["))) {
-        try { return JSON.parse(v); } catch (e) { return v; }
+      if (typeof v === "string") {
+        try {
+          const parsed = JSON.parse(v);
+          // If it's an object or array, return the parsed version
+          if (typeof parsed === 'object' && parsed !== null) {
+            return parsed;
+          }
+        } catch (e) {
+          // Not a JSON string, return original string
+        }
       }
       return v;
     };
+    const parsedSiteArea = parseField(updateData.siteArea);
     const yieldInput = {
-      area: parseField(updateData.area) || {
-        value: updateData.areaValue ?? updateData.area_value ?? updateData.siteArea ?? (updateData.roadArea?.siteArea),
-        unit: updateData.areaUnit ?? updateData.area_unit ?? "cents"
+      area: parseField(updateData.area) || parsedSiteArea || {
+        value: updateData.areaValue ?? updateData.area_value ?? parsedSiteArea?.value ?? (updateData.roadArea?.siteArea),
+        unit: updateData.areaUnit ?? updateData.area_unit ?? parsedSiteArea?.unit ?? "cents"
       },
       channel: parseField(updateData.channel) || {},
       gasLine: parseField(updateData.gasLine) || {},
