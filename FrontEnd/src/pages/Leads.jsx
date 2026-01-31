@@ -2688,7 +2688,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                     <CardDescription>Quick reference</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
-                    {/* CALL HISTORY */}
                     <div>
                       <div className="h-[35vh] overflow-y-auto border border-gray-200 rounded-lg bg-gray-50/50 p-3 mb-2">
                         {calls?.length > 0 ? (
@@ -2706,9 +2705,11 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                 <p className="text-xs text-gray-500 mt-1">
                                   {new Date(call.created_at || call.createdAt).toLocaleTimeString()}
                                 </p>
-                                <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
-                                  {call.role || 'Call'}
-                                </span>
+                                {call.note && (
+                                  <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-700">
+                                    <span className="font-medium">Summary:</span> {call.note}
+                                  </div>
+                                )}
                               </div>
                             ))}
                             </div>
@@ -2784,8 +2785,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                    
 
                     {/* YIELD CALCULATION INPUTS */}
-                    {!viewMode && (
-                      <div className="space-y-6 border-t pt-6">
+                    <div className="space-y-6 border-t pt-6">
                         <Label className="text-sm font-medium text-gray-700">Yield Calculation Fields</Label>
                         
                         {/* 1️⃣ Site Area */}
@@ -2799,13 +2799,14 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                 value={formData.areaValue || ""}
                                 onChange={(e) => handleChange("areaValue", e.target.value)}
                                 placeholder="Area value"
-                                className="bg-gray-50/50 [appearance:textfield] [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none"
+                                disabled={viewMode}
+                                className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50 [appearance:textfield] [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none"}
                               />
                             </div>
                             <div>
                               <Label className="text-xs text-gray-600">Unit</Label>
-                              <Select value={formData.areaUnit || "hectare"} onValueChange={(value) => handleChange("areaUnit", value)}>
-                                <SelectTrigger className="bg-gray-50/50">
+                              <Select value={formData.areaUnit || "hectare"} onValueChange={(value) => handleChange("areaUnit", value)} disabled={viewMode}>
+                                <SelectTrigger className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}>
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -2847,7 +2848,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                 value={formData.channelWidth || ""}
                                 onChange={(e) => handleChange("channelWidth", e.target.value)}
                                 placeholder="Width"
-                                className="bg-gray-50/50"
+                                disabled={viewMode}
+                                className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                             <div>
@@ -2857,7 +2859,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                 value={formData.channelLength || ""}
                                 onChange={(e) => handleChange("channelLength", e.target.value)}
                                 placeholder="Manual length"
-                                className="bg-gray-50/50"
+                                disabled={viewMode}
+                                className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                             <div>
@@ -2867,7 +2870,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                 value={formData.channelInBetween || ""}
                                 onChange={(e) => handleChange("channelInBetween", e.target.value)}
                                 placeholder="In between site"
-                                className="bg-gray-50/50"
+                                disabled={viewMode}
+                                className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                             <div>
@@ -2877,7 +2881,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                 value={formData.channelNearBoundary || ""}
                                 onChange={(e) => handleChange("channelNearBoundary", e.target.value)}
                                 placeholder="Nearby boundary"
-                                className="bg-gray-50/50"
+                                disabled={viewMode}
+                                className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                           </div>
@@ -2894,7 +2899,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                 value={formData.gasLineWidth || ""}
                                 onChange={(e) => handleChange("gasLineWidth", e.target.value)}
                                 placeholder="Width"
-                                className="bg-gray-50/50"
+                                disabled={viewMode}
+                                className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                             <div>
@@ -2904,7 +2910,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                 value={formData.gasLineLength || ""}
                                 onChange={(e) => handleChange("gasLineLength", e.target.value)}
                                 placeholder="Length"
-                                className="bg-gray-50/50"
+                                disabled={viewMode}
+                                className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                             <div>
@@ -2914,7 +2921,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                 value={formData.gasLineInBetween || ""}
                                 onChange={(e) => handleChange("gasLineInBetween", e.target.value)}
                                 placeholder="In between site"
-                                className="bg-gray-50/50"
+                                disabled={viewMode}
+                                className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                             <div>
@@ -2924,7 +2932,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                 value={formData.gasLineNearBoundary || ""}
                                 onChange={(e) => handleChange("gasLineNearBoundary", e.target.value)}
                                 placeholder="Nearby boundary"
-                                className="bg-gray-50/50"
+                                disabled={viewMode}
+                                className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                           </div>
@@ -2941,7 +2950,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                 value={formData.htTowerLineWidth || ""}
                                 onChange={(e) => handleChange("htTowerLineWidth", e.target.value)}
                                 placeholder="Width"
-                                className="bg-gray-50/50"
+                                disabled={viewMode}
+                                className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                             <div>
@@ -2951,7 +2961,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                 value={formData.htTowerLineLength || ""}
                                 onChange={(e) => handleChange("htTowerLineLength", e.target.value)}
                                 placeholder="Manual length"
-                                className="bg-gray-50/50"
+                                disabled={viewMode}
+                                className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                             <div>
@@ -2961,7 +2972,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                 value={formData.htTowerLineInBetween || ""}
                                 onChange={(e) => handleChange("htTowerLineInBetween", e.target.value)}
                                 placeholder="In between site"
-                                className="bg-gray-50/50"
+                                disabled={viewMode}
+                                className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                             <div>
@@ -2971,7 +2983,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                 value={formData.htTowerLineNearBoundary || ""}
                                 onChange={(e) => handleChange("htTowerLineNearBoundary", e.target.value)}
                                 placeholder="Nearby boundary"
-                                className="bg-gray-50/50"
+                                disabled={viewMode}
+                                className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                           </div>
@@ -2988,7 +3001,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                 value={formData.riverLength || ""}
                                 onChange={(e) => handleChange("riverLength", e.target.value)}
                                 placeholder="Length"
-                                className="bg-gray-50/50"
+                                disabled={viewMode}
+                                className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                             <div>
@@ -2998,7 +3012,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                 value={formData.riverNearBoundary || ""}
                                 onChange={(e) => handleChange("riverNearBoundary", e.target.value)}
                                 placeholder="Nearby boundary"
-                                className="bg-gray-50/50"
+                                disabled={viewMode}
+                                className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                           </div>
@@ -3015,7 +3030,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                 value={formData.lakeLength || ""}
                                 onChange={(e) => handleChange("lakeLength", e.target.value)}
                                 placeholder="Length"
-                                className="bg-gray-50/50"
+                                disabled={viewMode}
+                                className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                             <div>
@@ -3025,7 +3041,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                 value={formData.lakeNearBoundary || ""}
                                 onChange={(e) => handleChange("lakeNearBoundary", e.target.value)}
                                 placeholder="Nearby boundary"
-                                className="bg-gray-50/50"
+                                disabled={viewMode}
+                                className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                           </div>
@@ -3042,7 +3059,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                 value={formData.railwayBoundaryLength || ""}
                                 onChange={(e) => handleChange("railwayBoundaryLength", e.target.value)}
                                 placeholder="Length"
-                                className="bg-gray-50/50"
+                                disabled={viewMode}
+                                className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                             <div>
@@ -3052,7 +3070,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                 value={formData.railwayBoundaryNearBoundary || ""}
                                 onChange={(e) => handleChange("railwayBoundaryNearBoundary", e.target.value)}
                                 placeholder="Nearby boundary"
-                                className="bg-gray-50/50"
+                                disabled={viewMode}
+                                className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                           </div>
@@ -3069,7 +3088,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                 value={formData.burialGroundLength || ""}
                                 onChange={(e) => handleChange("burialGroundLength", e.target.value)}
                                 placeholder="Length"
-                                className="bg-gray-50/50"
+                                disabled={viewMode}
+                                className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                             <div>
@@ -3079,7 +3099,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                 value={formData.burialGroundNearBoundary || ""}
                                 onChange={(e) => handleChange("burialGroundNearBoundary", e.target.value)}
                                 placeholder="Nearby boundary"
-                                className="bg-gray-50/50"
+                                disabled={viewMode}
+                                className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                           </div>
@@ -3096,7 +3117,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                 value={formData.highwayLength || ""}
                                 onChange={(e) => handleChange("highwayLength", e.target.value)}
                                 placeholder="Length"
-                                className="bg-gray-50/50"
+                                disabled={viewMode}
+                                className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                             <div>
@@ -3106,7 +3128,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                 value={formData.highwayNearBoundary || ""}
                                 onChange={(e) => handleChange("highwayNearBoundary", e.target.value)}
                                 placeholder="Nearby boundary"
-                                className="bg-gray-50/50"
+                                disabled={viewMode}
+                                className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                           </div>
@@ -3123,7 +3146,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                 value={formData.roadSiteArea || ""}
                                 onChange={(e) => handleChange("roadSiteArea", e.target.value)}
                                 placeholder="Site area"
-                                className="bg-gray-50/50"
+                                disabled={viewMode}
+                                className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                             <div>
@@ -3133,7 +3157,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                 value={formData.manualRoadArea || ""}
                                 onChange={(e) => handleChange("manualRoadArea", e.target.value)}
                                 placeholder="Manual road area"
-                                className="bg-gray-50/50"
+                                disabled={viewMode}
+                                className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                           </div>
@@ -3161,7 +3186,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                   value={formData.osrManualRoadArea || ""}
                                   onChange={(e) => handleChange("osrManualRoadArea", e.target.value)}
                                   placeholder="Manual road area"
-                                  className="bg-gray-50/50"
+                                  disabled={viewMode}
+                                  className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                                 />
                               </div>
                               <div>
@@ -3171,7 +3197,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                   value={formData.osrPercentage || ""}
                                   onChange={(e) => handleChange("osrPercentage", e.target.value)}
                                   placeholder="Percentage"
-                                  className="bg-gray-50/50"
+                                  disabled={viewMode}
+                                  className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                                 />
                               </div>
                             </div>
@@ -3199,7 +3226,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                 value={formData.tnebManualRoadArea || ""}
                                 onChange={(e) => handleChange("tnebManualRoadArea", e.target.value)}
                                 placeholder="Manual road area"
-                                className="bg-gray-50/50"
+                                disabled={viewMode}
+                                className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                             <div>
@@ -3209,7 +3237,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                 value={formData.tnebPercentage || ""}
                                 onChange={(e) => handleChange("tnebPercentage", e.target.value)}
                                 placeholder="Percentage"
-                                className="bg-gray-50/50"
+                                disabled={viewMode}
+                                className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                           </div>
@@ -3236,7 +3265,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                 value={formData.localBodyManualRoadArea || ""}
                                 onChange={(e) => handleChange("localBodyManualRoadArea", e.target.value)}
                                 placeholder="Manual road area"
-                                className="bg-gray-50/50"
+                                disabled={viewMode}
+                                className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                             <div>
@@ -3246,7 +3276,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                 value={formData.localBodyPercentage || ""}
                                 onChange={(e) => handleChange("localBodyPercentage", e.target.value)}
                                 placeholder="Percentage"
-                                className="bg-gray-50/50"
+                                disabled={viewMode}
+                                className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                           </div>
@@ -3290,7 +3321,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                       </div>
                     )}
                       </div>
-                    )}
+                    
                   </CardContent>
                 </Card>
               </div>
