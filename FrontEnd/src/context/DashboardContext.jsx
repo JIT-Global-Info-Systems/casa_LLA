@@ -39,9 +39,7 @@ export const DashboardProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      console.log('🔄 Dashboard API - Fetching data with filters:', dashboardFilters);
       const response = await dashboardAPI.getDashboardData(dashboardFilters);
-      console.log('✅ Dashboard API - Response received:', response);
       setDashboardData(response);
     } catch (err) {
       console.error('❌ Dashboard API - Error:', err);

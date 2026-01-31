@@ -1,7 +1,7 @@
 import { getToken, clearAllAuthData } from '../utils/authStorage';
 
-const API_BASE_URL = 'http://13.201.132.94:5000/api';
-// const API_BASE_URL = 'http://localhost:5000/api';
+// const API_BASE_URL = 'http://13.201.132.94:5000/api';
+const API_BASE_URL = 'http://localhost:5000/api';
 const REQUEST_TIMEOUT = 30000; // 30 seconds
 const MAX_RETRIES = 2;
 
@@ -64,7 +64,6 @@ const clearSession = () => {
 // Generic API request helper with retry logic and proper session handling
 const apiRequest = async (endpoint, options = {}, retryCount = 0) => {
   const url = `${API_BASE_URL}${endpoint}`;
-  console.log(`🚀 API Request - ${options.method || 'GET'} ${url}`);
  
   // Get token from centralized storage (checks both localStorage and sessionStorage)
   const token = getToken();
@@ -102,9 +101,7 @@ const apiRequest = async (endpoint, options = {}, retryCount = 0) => {
   };
 
   try {
-    console.log('📤 API Request - Sending with config:', { url, method: config.method, headers: { ...headers, Authorization: headers.Authorization ? 'Bearer ***' : 'None' } });
     const response = await fetchWithTimeout(url, config);
-    console.log('📥 API Request - Response status:', response.status, response.statusText);
  
     // Handle 401 - clear auth but don't redirect (let auth context handle it)
     if (response.status === 401) {
@@ -123,12 +120,8 @@ const apiRequest = async (endpoint, options = {}, retryCount = 0) => {
       throw error;
     }
  
-    const result = await response.json();
-    console.log('✅ API Request - Success:', result);
-    return result;
+    return await response.json();
   } catch (error) {
-    console.error('❌ API Request - Error:', error);
-    
     // Don't retry auth errors
     if (error.statusCode === 401 || error.message.includes('session has expired')) {
       throw error;
@@ -652,17 +645,11 @@ export const dashboardAPI = {
     }
     
     const queryString = params.toString() ? `?${params}` : '';
-    console.log('🌐 API Service - Making dashboard request to:', `/dashboard${queryString}`);
-    
     const response = await apiRequest(`/dashboard${queryString}`);
-    
-    console.log('🌐 API Service - Dashboard raw response:', response);
     
     // The API returns { data: {...} }
     // We want to return the data object
-    const result = response.data || response;
-    console.log('🌐 API Service - Dashboard processed result:', result);
-    return result;
+    return response.data || response;
   },
 };
 

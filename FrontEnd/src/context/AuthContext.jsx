@@ -5,6 +5,8 @@ import {
   getUserId, 
   getUserData, 
   getUserRole,
+  getUserAccess,
+  setUserAccess as storeUserAccess,
   clearAllAuthData,
   storeAuthSession,
   isRememberMeEnabled,
@@ -42,6 +44,7 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const [isFirstLogin, setIsFirstLogin] = useState(false);
   const [forcePasswordChange, setForcePasswordChange] = useState(false);
+  const [userAccess, setUserAccess] = useState([]);
 
   // Clear session helper
   const clearSession = () => {
@@ -50,6 +53,7 @@ export const AuthProvider = ({ children }) => {
     setError(null);
     setIsFirstLogin(false);
     setForcePasswordChange(false);
+    setUserAccess([]);
   };
 
   useEffect(() => {
@@ -58,6 +62,7 @@ export const AuthProvider = ({ children }) => {
         const token = getToken(); // Check both localStorage and sessionStorage
         const userId = getUserId();
         const userData = getUserData();
+        const userAccessData = getUserAccess(); // Get stored access data
 
         if (!token) {
           setLoading(false);
@@ -71,6 +76,11 @@ export const AuthProvider = ({ children }) => {
           setError('Your session has expired. Please log in again.');
           setLoading(false);
           return;
+        }
+
+        // Set user access from storage if available
+        if (userAccessData) {
+          setUserAccess(userAccessData);
         }
 
         if (userData) {
@@ -188,9 +198,15 @@ export const AuthProvider = ({ children }) => {
           email: credentials.email
         });
 
-        // Set user state
+        // Set user state and access
         if (response.user) {
           setUser({ ...response.user, token: response.token });
+          
+          // Store access data if available
+          if (response.access) {
+            setUserAccess(response.access);
+            storeUserAccess(response.access); // Store in storage
+          }
 
           // Check if it's first login
           if (response.user.firstLogin) {
@@ -235,6 +251,7 @@ export const AuthProvider = ({ children }) => {
     setError(null);
     setIsFirstLogin(false);
     setForcePasswordChange(false);
+    setUserAccess([]);
   };
 
   const markPasswordChanged = () => {
@@ -262,6 +279,7 @@ export const AuthProvider = ({ children }) => {
         forcePasswordChange,
         isAuthenticated: Boolean(user?.token && !isTokenExpired(user.token)),
         userRole: user?.role,
+        userAccess,
         clearError: () => setError(null),
       }}
     >

@@ -1074,6 +1074,23 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     setFormData((prev) => ({ ...prev, [key]: file || null }))
   }
 
+  // Prevent wheel behavior on number inputs
+  useEffect(() => {
+    const handleWheel = (e) => {
+      if (e.target.type === 'number') {
+        e.preventDefault();
+      }
+    };
+
+    // Add event listener to the document
+    document.addEventListener('wheel', handleWheel, { passive: false });
+
+    // Cleanup on unmount
+    return () => {
+      document.removeEventListener('wheel', handleWheel);
+    };
+  }, []);
+
   const handleLocationChange = (value) => {
     setFormData((prev) => ({ ...prev, location: value, zone: "", area: "" }))
   }
@@ -1289,6 +1306,15 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       
       input[type="number"] {
         -moz-appearance: textfield;
+      }
+      
+      /* Prevent scroll wheel behavior on number inputs */
+      input[type="number"] {
+        scroll-behavior: auto;
+      }
+      
+      input[type="number"]:hover {
+        scroll-behavior: auto;
       }
     `}</style>
 
@@ -2773,7 +2799,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                 value={formData.areaValue || ""}
                                 onChange={(e) => handleChange("areaValue", e.target.value)}
                                 placeholder="Area value"
-                                className="bg-gray-50/50"
+                                className="bg-gray-50/50 [appearance:textfield] [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none"
                               />
                             </div>
                             <div>
@@ -2794,7 +2820,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                         </div>
 
                         {/* Area Calculation Indicator */}
-                        {formData.areaValue && formData.areaUnit && (
+                        {/* {formData.areaValue && formData.areaUnit && (
                           <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
                             <div className="flex items-center justify-between">
                               <div className="text-sm">
@@ -2808,7 +2834,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                               </div>
                             </div>
                           </div>
-                        )}
+                        )} */}
 
                         {/* 2️⃣ Channel */}
                         <div className="space-y-3">
@@ -3123,9 +3149,9 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                 <Input
                                   type="number"
                                   value={formData.osrSiteArea || ""}
-                                  onChange={(e) => handleChange("osrSiteArea", e.target.value)}
-                                  placeholder="Site area"
-                                  className="bg-gray-50/50"
+                                  readOnly
+                                  placeholder="Auto-calculated"
+                                  className="bg-gray-100 cursor-not-allowed"
                                 />
                               </div>
                               <div>
@@ -3161,9 +3187,9 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                               <Input
                                 type="number"
                                 value={formData.tnebSiteArea || ""}
-                                onChange={(e) => handleChange("tnebSiteArea", e.target.value)}
-                                placeholder="Site area"
-                                className="bg-gray-50/50"
+                                readOnly
+                                placeholder="Auto-calculated"
+                                className="bg-gray-100 cursor-not-allowed"
                               />
                             </div>
                             <div>
@@ -3198,9 +3224,9 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                               <Input
                                 type="number"
                                 value={formData.localBodySiteArea || ""}
-                                onChange={(e) => handleChange("localBodySiteArea", e.target.value)}
-                                placeholder="Site area"
-                                className="bg-gray-50/50"
+                                readOnly
+                                placeholder="Auto-calculated"
+                                className="bg-gray-100 cursor-not-allowed"
                               />
                             </div>
                             <div>

@@ -210,7 +210,6 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "../../context/AuthContext";
-import { hasAccess } from "@/config/rbac";
 import { locationsAPI } from "@/services/api";
 
 const pageTitles = {
@@ -229,7 +228,7 @@ const pageTitles = {
 
 
 function Topbar() {
-  const { user, userRole, logout } = useAuth();
+  const { user, userRole, logout, userAccess } = useAuth();
   const location = useLocation();
   const navigate = useNavigate()
   const title = pageTitles[location.pathname] || "Dashboard";
@@ -273,17 +272,11 @@ function Topbar() {
     fetchLocations();
   }, []);
 
-  // Filter navigation items based on user role
-  const filteredNavItems = navItems.filter(item => {
-    if (!item.page) return true; // Show items without page requirement
-    return hasAccess(userRole, item.page);
-  });
-
-  // Show all items with access info for better UX
+  // Filter navigation items based on user access from login response
   const allNavItemsWithAccess = navItems.map(item => ({
     ...item,
-    hasAccess: !item.page || hasAccess(userRole, item.page),
-    disabled: item.page && !hasAccess(userRole, item.page)
+    hasAccess: !item.page || userAccess.includes("*") || userAccess.includes(item.page),
+    disabled: item.page && !userAccess.includes("*") && !userAccess.includes(item.page)
   }));
 
   // Function to get initials from user name
@@ -328,42 +321,29 @@ function Topbar() {
               </div>
               <nav className=" ms-5 px-3 py-4" aria-label="Primary">
                 <div className="space-y-1">
-                  {allNavItemsWithAccess.map((item) => {
-                    const active = isItemActive(item.path);
-                    const Icon = item.icon;
-                    
-                    if (item.disabled) {
+                  {allNavItemsWithAccess
+                    .filter((item) => !item.disabled) // Hide disabled items completely
+                    .map((item) => {
+                      const active = isItemActive(item.path);
+                      const Icon = item.icon;
+
                       return (
-                        <div
+                        <Link
                           key={item.path}
-                          className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-400 cursor-not-allowed"
-                          title={`${item.label} - Access restricted to your role`}
+                          to={item.path}
+                          onClick={() => setMobileNavOpen(false)}
+                          className={
+                            "group flex items-center gap-3 rounded-full px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background " +
+                            (active
+                              ? "bg-indigo-500/25 text-white"
+                              : "text-white/90 hover:bg-indigo-500/15 hover:text-white")
+                          }
                         >
-                          <Icon className="h-5 w-5" />
-                          {item.label}
-                          <span className="text-xs">(Restricted)</span>
-                        </div>
+                          <Icon className="h-4 w-4" />
+                          <span className="truncate">{item.label}</span>
+                        </Link>
                       );
-                    }
-
-
-                    return (
-                      <Link
-                        key={item.path}
-                        to={item.path}
-                        onClick={() => setMobileNavOpen(false)}
-                        className={
-                          "group flex items-center gap-3 rounded-full px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background " +
-                          (active
-                            ? "bg-indigo-500/25 text-white"
-                            : "text-white/90 hover:bg-indigo-500/15 hover:text-white")
-                        }
-                      >
-                        <Icon className="h-4 w-4" />
-                        <span className="truncate">{item.label}</span>
-                      </Link>
-                    );
-                  })}
+                    })}
                 </div>
               </nav>
             </SheetContent>
@@ -377,43 +357,27 @@ function Topbar() {
           </div>
 
           <nav className="hidden md:flex items-center gap-1" aria-label="Primary">
-            {allNavItemsWithAccess.map((item) => {
-              const active = isItemActive(item.path);
-              const Icon = item.icon;
-              
-              if (item.disabled) {
+            {allNavItemsWithAccess
+              .filter((item) => !item.disabled) // Hide disabled items completely
+              .map((item) => {
+                const active = isItemActive(item.path);
+                const Icon = item.icon;
+                
                 return (
-                  <div
+                  <Link
                     key={item.path}
-                    className="relative group"
-                    title={`${item.label} - Access restricted to your role`}
+                    to={item.path}
+                    className={
+                      "rounded-full px-3 py-2 text-sm font-medium transition-colors " +
+                      (active
+                        ? "bg-indigo-50 text-indigo-700"
+                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900")
+                    }
                   >
-                    <div className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-400 cursor-not-allowed">
-                      <Icon className="h-4 w-4" />
-                      {item.label}
-                    </div>
-                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-800 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                      Access restricted to your role
-                    </div>
-                  </div>
+                    {item.label}
+                  </Link>
                 );
-              }
-              
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={
-                    "rounded-full px-3 py-2 text-sm font-medium transition-colors " +
-                    (active
-                      ? "bg-indigo-50 text-indigo-700"
-                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900")
-                  }
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
+              })}
           </nav>
         </div>
 

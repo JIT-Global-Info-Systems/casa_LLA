@@ -7,6 +7,7 @@ const TOKEN_KEY = 'token';
 const USER_ID_KEY = 'user_id';
 const USER_KEY = 'user';
 const USER_ROLE_KEY = 'userRole';
+const USER_ACCESS_KEY = 'userAccess';
 const REMEMBER_ME_KEY = 'rememberMe';
 const REMEMBERED_EMAIL_KEY = 'rememberedEmail';
 
@@ -115,6 +116,44 @@ const setUserRole = (role) => {
 };
 
 /**
+ * Get user access from appropriate storage
+ * @returns {array|null}
+ */
+const getUserAccess = () => {
+  const persistentAccess = localStorage.getItem(USER_ACCESS_KEY);
+  if (persistentAccess) {
+    try {
+      return JSON.parse(persistentAccess);
+    } catch (error) {
+      console.error('Failed to parse user access from localStorage:', error);
+      return null;
+    }
+  }
+  
+  const sessionAccess = sessionStorage.getItem(USER_ACCESS_KEY);
+  if (sessionAccess) {
+    try {
+      return JSON.parse(sessionAccess);
+    } catch (error) {
+      console.error('Failed to parse user access from sessionStorage:', error);
+      return null;
+    }
+  }
+  
+  return null;
+};
+
+/**
+ * Store user access in appropriate storage based on current token location
+ * @param {array} userAccess 
+ */
+const setUserAccess = (userAccess) => {
+  const rememberMe = isRememberMeEnabled();
+  const storage = getStorage(rememberMe);
+  storage.setItem(USER_ACCESS_KEY, JSON.stringify(userAccess));
+};
+
+/**
  * Get remembered email (always from localStorage)
  * @returns {string|null}
  */
@@ -146,6 +185,7 @@ const clearAllAuthData = () => {
   localStorage.removeItem(USER_ID_KEY);
   localStorage.removeItem(USER_KEY);
   localStorage.removeItem(USER_ROLE_KEY);
+  localStorage.removeItem(USER_ACCESS_KEY);
   localStorage.removeItem(REMEMBER_ME_KEY);
   localStorage.removeItem(REMEMBERED_EMAIL_KEY);
   
@@ -154,6 +194,7 @@ const clearAllAuthData = () => {
   sessionStorage.removeItem(USER_ID_KEY);
   sessionStorage.removeItem(USER_KEY);
   sessionStorage.removeItem(USER_ROLE_KEY);
+  sessionStorage.removeItem(USER_ACCESS_KEY);
 };
 
 /**
@@ -194,6 +235,8 @@ export {
   setUserData,
   getUserRole,
   setUserRole,
+  getUserAccess,
+  setUserAccess,
   getRememberedEmail,
   setRememberedEmail,
   removeRememberedEmail,

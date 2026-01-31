@@ -62,7 +62,7 @@ exports.login = async (req, res) => {
         role: user.role,
         firstLogin: isFirstLogin
       },
-      access: accessDetails ? accessDetails.access : []
+      access: accessDetails ? accessDetails.page_names : []
     });
   } catch (error) {
     console.error("Login Error:", error);
