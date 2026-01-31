@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { ObjectId } = mongoose.Types;
 
 // const Lead = require("../models/Lead");
 
@@ -266,9 +267,21 @@ exports.updateLead = async (req, res) => {
 
     const { leadId } = req.params;
 
+    console.log("Raw leadId from params:", leadId);
+
+    // Convert leadId to ObjectId
+    const leadObjectId = new ObjectId(leadId);
+    console.log("Converted leadObjectId:", leadObjectId);
+
     const { userId, note, notes, role, currentRole, assignedTo, competitorAnalysis, checkListPage, callDate, callTime, ...updateData } = req.body;
 
-
+    console.log("=== LEAD UPDATE DEBUG ===");
+    console.log("req.body:", JSON.stringify(req.body, null, 2));
+    console.log("updateData:", JSON.stringify(updateData, null, 2));
+    console.log("currentRole:", currentRole);
+    console.log("assignedTo:", assignedTo);
+    console.log("competitorAnalysis:", competitorAnalysis);
+    console.log("checkListPage:", checkListPage);
 
     const update = {
 
@@ -692,17 +705,26 @@ exports.updateLead = async (req, res) => {
 
     const result = await collection.updateOne(
 
-      { _id: leadId },
+      { _id: leadObjectId },
 
       updateOperation
 
     );
 
+    console.log("Update result:", result);
+
 
 
     // Get the updated document
 
-    const updatedLead = await Lead.findById(leadId);
+    const updatedLead = await Lead.findById(leadObjectId);
+
+    console.log("Updated lead fields:", {
+      leadType: updatedLead?.leadType,
+      contactNumber: updatedLead?.contactNumber,
+      mediatorName: updatedLead?.mediatorName,
+      location: updatedLead?.location
+    });
 
 
 
