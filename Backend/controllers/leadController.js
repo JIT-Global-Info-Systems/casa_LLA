@@ -3,81 +3,96 @@ const { ObjectId } = mongoose.Types;
 const Lead = require("../models/Lead").default;
 const LeadHistory = require("../models/LeadHistory");
 const Call = require("../models/Call");
+const { calculateLeadYield } = require("../utils/leadYieldCalculator");
 
 // Helper function to calculate yields
-const calculateYields = (leadData, userId) => {
-  const yields = [];
+// const calculateYields = (leadData, userId) => {
+//   const yields = [];
   
-  // OSR calculation - handle nested object
-  if (leadData.osr && leadData.osr.siteArea && leadData.osr.percentage) {
-    const calculatedRoadArea = (leadData.osr.siteArea * leadData.osr.percentage) / 100;
-    const calculatedYield = leadData.osr.siteArea - calculatedRoadArea;
+//   // OSR calculation - handle nested object
+//   if (leadData.osr && leadData.osr.siteArea && leadData.osr.percentage) {
+//     const calculatedRoadArea = (leadData.osr.siteArea * leadData.osr.percentage) / 100;
+//     const calculatedYield = leadData.osr.siteArea - calculatedRoadArea;
     
-    yields.push({
-      type: 'OSR',
-      siteArea: leadData.osr.siteArea,
-      manualRoadArea: leadData.osr.manualRoadArea || 0,
-      percentage: leadData.osr.percentage,
-      calculatedRoadArea,
-      calculatedYield,
-      calculatedBy: userId,
-      timestamp: new Date()
-    });
-  }
+//     yields.push({
+//       type: 'OSR',
+//       siteArea: leadData.osr.siteArea,
+//       manualRoadArea: leadData.osr.manualRoadArea || 0,
+//       percentage: leadData.osr.percentage,
+//       calculatedRoadArea,
+//       calculatedYield,
+//       calculatedBy: userId,
+//       timestamp: new Date()
+//     });
+//   }
   
-  // TNEB calculation - handle nested object
-  if (leadData.tneb && leadData.tneb.siteArea && leadData.tneb.percentage) {
-    const calculatedRoadArea = (leadData.tneb.siteArea * leadData.tneb.percentage) / 100;
-    const calculatedYield = leadData.tneb.siteArea - calculatedRoadArea;
+//   // TNEB calculation - handle nested object
+//   if (leadData.tneb && leadData.tneb.siteArea && leadData.tneb.percentage) {
+//     const calculatedRoadArea = (leadData.tneb.siteArea * leadData.tneb.percentage) / 100;
+//     const calculatedYield = leadData.tneb.siteArea - calculatedRoadArea;
     
-    yields.push({
-      type: 'TNEB',
-      siteArea: leadData.tneb.siteArea,
-      manualRoadArea: leadData.tneb.manualRoadArea || 0,
-      percentage: leadData.tneb.percentage,
-      calculatedRoadArea,
-      calculatedYield,
-      calculatedBy: userId,
-      timestamp: new Date()
-    });
-  }
+//     yields.push({
+//       type: 'TNEB',
+//       siteArea: leadData.tneb.siteArea,
+//       manualRoadArea: leadData.tneb.manualRoadArea || 0,
+//       percentage: leadData.tneb.percentage,
+//       calculatedRoadArea,
+//       calculatedYield,
+//       calculatedBy: userId,
+//       timestamp: new Date()
+//     });
+//   }
   
-  // Local Body calculation - handle nested object
-  if (leadData.localBody && leadData.localBody.siteArea && leadData.localBody.percentage) {
-    const calculatedRoadArea = (leadData.localBody.siteArea * leadData.localBody.percentage) / 100;
-    const calculatedYield = leadData.localBody.siteArea - calculatedRoadArea;
+//   // Local Body calculation - handle nested object
+//   if (leadData.localBody && leadData.localBody.siteArea && leadData.localBody.percentage) {
+//     const calculatedRoadArea = (leadData.localBody.siteArea * leadData.localBody.percentage) / 100;
+//     const calculatedYield = leadData.localBody.siteArea - calculatedRoadArea;
     
-    yields.push({
-      type: 'Local Body',
-      siteArea: leadData.localBody.siteArea,
-      manualRoadArea: leadData.localBody.manualRoadArea || 0,
-      percentage: leadData.localBody.percentage,
-      calculatedRoadArea,
-      calculatedYield,
-      calculatedBy: userId,
-      timestamp: new Date()
-    });
-  }
+//     yields.push({
+//       type: 'Local Body',
+//       siteArea: leadData.localBody.siteArea,
+//       manualRoadArea: leadData.localBody.manualRoadArea || 0,
+//       percentage: leadData.localBody.percentage,
+//       calculatedRoadArea,
+//       calculatedYield,
+//       calculatedBy: userId,
+//       timestamp: new Date()
+//     });
+//   }
   
-  return yields;
-};
+//   return yields;
+// };
 
 exports.createLead = async (req, res) => {
   console.log("🔥 createLead function called!");
   
   try {
 
-    // 🔹 Parse JSON sent as text
-
+    // 🔹 Parse JSON sent as text (from body or from form-data "data" field)
     console.log("DEBUG: Raw req.body:", JSON.stringify(req.body, null, 2));
 
-    const leadData =
-
+    let leadData =
       typeof req.body.data === "string"
-
-        ? JSON.parse(req.body.data)
-
+        ? JSON.parse(req.body.data || "{}")
         : req.body;
+
+    // When form-data is used, merge other body keys into leadData so currentRole, osr, tneb, yields, contactNumber, etc. are available
+    if (req.body && typeof req.body === "object" && req.body.data !== undefined) {
+      Object.keys(req.body).forEach((key) => {
+        if (key === "data") return;
+        const raw = req.body[key];
+        if (raw === undefined) return;
+        try {
+          leadData[key] =
+            typeof raw === "string" &&
+            (raw.trim().startsWith("{") || raw.trim().startsWith("["))
+              ? JSON.parse(raw)
+              : raw;
+        } catch (e) {
+          leadData[key] = raw;
+        }
+      });
+    }
 
     console.log("DEBUG: Parsed leadData:", JSON.stringify(leadData, null, 2));
 
@@ -150,6 +165,8 @@ exports.createLead = async (req, res) => {
       lead_status,
 
       lead_stage,
+
+      yield_data,
 
       ...restLeadData
 
@@ -226,52 +243,161 @@ exports.createLead = async (req, res) => {
     console.log("DEBUG: About to create lead with lead_status:", lead_status);
     console.log("DEBUG: About to create lead with lead_stage:", lead_stage);
 
-    // Calculate yields if yield data is provided
-    console.log("DEBUG: leadData received:", JSON.stringify(leadData, null, 2));
-    console.log("DEBUG: req.body:", JSON.stringify(req.body, null, 2));
-    
-    // Check for yield data in both leadData and req.body (for form-data)
-    const osrData = leadData.osr || req.body.osr;
-    const tnebData = leadData.tneb || req.body.tneb;
-    const localBodyData = leadData.localBody || req.body.localBody;
-    
-    console.log("DEBUG: osrData:", osrData);
-    console.log("DEBUG: tnebData:", tnebData);
-    console.log("DEBUG: localBodyData:", localBodyData);
-    
-    // Create a combined data object for yield calculation
-    const yieldData = {
-      ...leadData,
-      osr: osrData ? (typeof osrData === 'string' ? JSON.parse(osrData) : osrData) : undefined,
-      tneb: tnebData ? (typeof tnebData === 'string' ? JSON.parse(tnebData) : tnebData) : undefined,
-      localBody: localBodyData ? (typeof localBodyData === 'string' ? JSON.parse(localBodyData) : localBodyData) : undefined
+    // Build yield input from leadData (support nested objects and form-data JSON strings)
+    const parseField = (v) => {
+      if (v == null) return undefined;
+      if (typeof v === "string" && (v.trim().startsWith("{") || v.trim().startsWith("["))) {
+        try { return JSON.parse(v); } catch (e) { return v; }
+      }
+      return v;
     };
+    const yieldInput = {
+      area: parseField(leadData.area) || {
+        value: leadData.areaValue ?? leadData.area_value ?? leadData.siteArea ?? (leadData.roadArea?.siteArea),
+        unit: leadData.areaUnit ?? leadData.area_unit ?? "cents"
+      },
+      channel: parseField(leadData.channel) || {},
+      gasLine: parseField(leadData.gasLine) || {},
+      htTowerLine: parseField(leadData.htTowerLine) || {},
+      river: parseField(leadData.river) || {},
+      lake: parseField(leadData.lake) || {},
+      railwayBoundary: parseField(leadData.railwayBoundary) || {},
+      burialGround: parseField(leadData.burialGround) || {},
+      highway: parseField(leadData.highway) || {},
+      roadArea: parseField(leadData.roadArea) || {},
+      osr: parseField(leadData.osr) || null,
+      tneb: parseField(leadData.tneb) || {},
+      localBody: parseField(leadData.localBody) || {}
+    };
+
+    const yieldCalculationResult = calculateLeadYield(yieldInput);
+    const yieldCalculationToStore = {
+      ...yieldCalculationResult,
+      calculatedAt: new Date(),
+      calculatedBy: createdBy
+    };
+    // Plain object so Mongoose persists Mixed field reliably
+    const yieldCalculationPlain = JSON.parse(JSON.stringify(yieldCalculationToStore));
+
+    // Enhanced yield calculation to store all input fields
+    const calculateEnhancedYields = (leadData, userId) => {
+      const yields = [];
+      
+      // Store all yield calculation input fields as a comprehensive yield record
+      const yieldRecord = {
+        type: 'Comprehensive Yield Calculation',
+        // Area information
+        areaValue: leadData.areaValue || leadData.area_value,
+        areaUnit: leadData.areaUnit || leadData.area_unit || 'cents',
+        
+        // Deduction fields
+        channel: leadData.channel || {},
+        gasLine: leadData.gasLine || {},
+        htTowerLine: leadData.htTowerLine || {},
+        river: leadData.river || {},
+        lake: leadData.lake || {},
+        railwayBoundary: leadData.railwayBoundary || {},
+        burialGround: leadData.burialGround || {},
+        highway: leadData.highway || {},
+        roadArea: leadData.roadArea || {},
+        
+        // Percentage-based deductions
+        osr: leadData.osr || null,
+        tneb: leadData.tneb || {},
+        localBody: leadData.localBody || {},
+        
+        // Store the calculation results
+        yieldCalculation: yieldCalculationResult,
+        
+        calculatedBy: userId,
+        timestamp: new Date()
+      };
+      
+      yields.push(yieldRecord);
+      
+      // Also keep the existing individual OSR, TNEB, Local Body calculations
+      if (leadData.osr && leadData.osr.siteArea && leadData.osr.percentage) {
+        const calculatedRoadArea = (leadData.osr.siteArea * leadData.osr.percentage) / 100;
+        const calculatedYield = leadData.osr.siteArea - calculatedRoadArea;
+        
+        yields.push({
+          type: 'OSR',
+          siteArea: leadData.osr.siteArea,
+          manualRoadArea: leadData.osr.manualRoadArea || 0,
+          percentage: leadData.osr.percentage,
+          calculatedRoadArea,
+          calculatedYield,
+          calculatedBy: userId,
+          timestamp: new Date()
+        });
+      }
+      
+      if (leadData.tneb && leadData.tneb.siteArea && leadData.tneb.percentage) {
+        const calculatedRoadArea = (leadData.tneb.siteArea * leadData.tneb.percentage) / 100;
+        const calculatedYield = leadData.tneb.siteArea - calculatedRoadArea;
+        
+        yields.push({
+          type: 'TNEB',
+          siteArea: leadData.tneb.siteArea,
+          manualRoadArea: leadData.tneb.manualRoadArea || 0,
+          percentage: leadData.tneb.percentage,
+          calculatedRoadArea,
+          calculatedYield,
+          calculatedBy: userId,
+          timestamp: new Date()
+        });
+      }
+      
+      if (leadData.localBody && leadData.localBody.siteArea && leadData.localBody.percentage) {
+        const calculatedRoadArea = (leadData.localBody.siteArea * leadData.localBody.percentage) / 100;
+        const calculatedYield = leadData.localBody.siteArea - calculatedRoadArea;
+        
+        yields.push({
+          type: 'Local Body',
+          siteArea: leadData.localBody.siteArea,
+          manualRoadArea: leadData.localBody.manualRoadArea || 0,
+          percentage: leadData.localBody.percentage,
+          calculatedRoadArea,
+          calculatedYield,
+          calculatedBy: userId,
+          timestamp: new Date()
+        });
+      }
+      
+      return yields;
+    };
+
+    const calculatedYields = calculateEnhancedYields(leadData, createdBy);
     
-    const calculatedYields = calculateYields(yieldData, createdBy);
-    console.log("DEBUG: calculatedYields:", JSON.stringify(calculatedYields, null, 2));
-    console.log("DEBUG: calculatedYields length:", calculatedYields.length);
+    // Use provided yields or calculated ones
+    const yieldsToStore = Array.isArray(leadData.yields) && leadData.yields.length > 0
+      ? leadData.yields.map(y => ({
+          type: y.type || "Unknown",
+          siteArea: y.siteArea,
+          manualRoadArea: y.manualRoadArea,
+          percentage: y.percentage,
+          calculatedRoadArea: y.calculatedRoadArea,
+          calculatedYield: y.calculatedYield,
+          calculatedBy: y.calculatedBy || createdBy,
+          timestamp: y.timestamp ? new Date(y.timestamp) : new Date()
+        }))
+      : calculatedYields;
 
-    const lead = await Lead.create({
-
+    const createPayload = {
       ...restLeadData,
-
       checkListPage: formattedCheckListPage,
-
       competitorAnalysis: formattedCompetitorAnalysis,
-
       lead_status: lead_status,
-
       lead_stage: lead_stage,
-
-      currentRole: currentRole, // Add currentRole to the lead
-
+      currentRole: currentRole,
       created_by: createdBy,
-
-      yields: calculatedYields // Add calculated yields
-
-    });
+      yields: yieldsToStore,
+      yieldCalculation: yieldCalculationPlain
+    };
+    const lead = await Lead.create(createPayload);
 
     console.log("DEBUG: Lead created with yields:", JSON.stringify(lead.yields, null, 2));
+    console.log("DEBUG: Lead created with yieldCalculation:", lead.yieldCalculation ? "present" : "missing");
     console.log("DEBUG: Lead created with lead_status:", lead.lead_status);
     console.log("DEBUG: Lead created with lead_stage:", lead.lead_stage);
 
@@ -303,15 +429,15 @@ exports.createLead = async (req, res) => {
 
 
 
+    const leadObj = lead.toObject();
+    const { yields, ...leadDataWithoutYields } = leadObj;
+    const responseData = {
+      ...leadDataWithoutYields,
+      yieldCalculation: leadObj.yieldCalculation != null ? leadObj.yieldCalculation : yieldCalculationToStore
+    };
     return res.status(201).json({
-
       message: "Lead created successfully",
-
-      data: {
-        ...lead.toObject(),
-        yields: lead.yields || [] // Ensure yields field is always included
-      }
-
+      data: responseData
     });
 
 
@@ -333,7 +459,6 @@ exports.createLead = async (req, res) => {
 // Update lead function with yield calculation
 exports.updateLead = async (req, res) => {
   try {
-    // Check if user is authenticated
     if (!req.user || !req.user.user_id) {
       return res.status(401).json({
         message: "Please sign in to continue"
@@ -341,21 +466,72 @@ exports.updateLead = async (req, res) => {
     }
 
     const { leadId } = req.params;
-    
-    // Parse request body if it's sent as string
-    const updateData = typeof req.body.data === "string" 
-      ? JSON.parse(req.body.data) 
+
+    let updateData = typeof req.body.data === "string"
+      ? JSON.parse(req.body.data || "{}")
       : req.body;
 
-    // Calculate yields if yield-related fields are present
-    const calculatedYields = calculateYields(updateData, req.user.user_id);
+    if (req.body && typeof req.body === "object" && req.body.data !== undefined) {
+      Object.keys(req.body).forEach((key) => {
+        if (key === "data") return;
+        const raw = req.body[key];
+        if (raw === undefined) return;
+        try {
+          updateData[key] =
+            typeof raw === "string" &&
+            (raw.trim().startsWith("{") || raw.trim().startsWith("["))
+              ? JSON.parse(raw)
+              : raw;
+        } catch (e) {
+          updateData[key] = raw;
+        }
+      });
+    }
 
-    // Find and update the lead
+    const parseField = (v) => {
+      if (v == null) return undefined;
+      if (typeof v === "string" && (v.trim().startsWith("{") || v.trim().startsWith("["))) {
+        try { return JSON.parse(v); } catch (e) { return v; }
+      }
+      return v;
+    };
+    const yieldInput = {
+      area: parseField(updateData.area) || {
+        value: updateData.areaValue ?? updateData.area_value ?? updateData.siteArea ?? (updateData.roadArea?.siteArea),
+        unit: updateData.areaUnit ?? updateData.area_unit ?? "cents"
+      },
+      channel: parseField(updateData.channel) || {},
+      gasLine: parseField(updateData.gasLine) || {},
+      htTowerLine: parseField(updateData.htTowerLine) || {},
+      river: parseField(updateData.river) || {},
+      lake: parseField(updateData.lake) || {},
+      railwayBoundary: parseField(updateData.railwayBoundary) || {},
+      burialGround: parseField(updateData.burialGround) || {},
+      highway: parseField(updateData.highway) || {},
+      roadArea: parseField(updateData.roadArea) || {},
+      osr: parseField(updateData.osr) || null,
+      tneb: parseField(updateData.tneb) || {},
+      localBody: parseField(updateData.localBody) || {}
+    };
+    const yieldCalculationResult = calculateLeadYield(yieldInput);
+    const yieldCalculationToStore = {
+      ...yieldCalculationResult,
+      calculatedAt: new Date(),
+      calculatedBy: req.user.user_id
+    };
+    const yieldCalculationPlain = JSON.parse(JSON.stringify(yieldCalculationToStore));
+
+    const calculatedYields = calculateYields(
+      { osr: yieldInput.osr, tneb: yieldInput.tneb, localBody: yieldInput.localBody },
+      req.user.user_id
+    );
+
     const lead = await Lead.findByIdAndUpdate(
       leadId,
-      { 
-        ...updateData, 
+      {
+        ...updateData,
         yields: calculatedYields,
+        yieldCalculation: yieldCalculationPlain,
         updated_by: req.user.user_id,
         updated_at: new Date()
       },
@@ -368,9 +544,14 @@ exports.updateLead = async (req, res) => {
       });
     }
 
+    const leadObj = lead.toObject();
+    const { yields, ...leadDataWithoutYields } = leadObj;
     return res.status(200).json({
       message: "Lead updated successfully",
-      data: lead
+      data: {
+        ...leadDataWithoutYields,
+        yieldCalculation: leadObj.yieldCalculation || null
+      }
     });
 
   } catch (error) {
@@ -776,13 +957,17 @@ exports.getLeadById = async (req, res) => {
 
 
 
+    const leadObj = lead.toObject();
+    const { yields, ...leadDataWithoutYields } = leadObj;
     return res.status(200).json({
 
       success: true,
 
       data: {
 
-        ...lead.toObject(),
+        ...leadDataWithoutYields,
+
+        yieldCalculation: leadObj.yieldCalculation || null,
 
         history: history || [],
 

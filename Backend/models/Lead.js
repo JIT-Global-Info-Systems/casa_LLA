@@ -282,8 +282,40 @@ const leadSchema = new mongoose.Schema({
 
   projects: { type: String },
   googleLocation: { type: String }
-}]
-
+}],
+  // Yield values: array of objects (OSR, TNEB, Local Body calculations) – legacy
+  yields: [{
+    type: { type: String, required: true },
+    siteArea: { type: String },
+    manualRoadArea: { type: String },
+    percentage: { type: String },
+    calculatedRoadArea: { type: String },
+    calculatedYield: { type: String },
+    calculatedBy: { type: String },
+    timestamp: { type: Date, default: Date.now },
+    
+    // Additional fields for comprehensive yield calculation
+    areaValue: { type: String },
+    areaUnit: { type: String },
+    channel: { type: mongoose.Schema.Types.Mixed },
+    gasLine: { type: mongoose.Schema.Types.Mixed },
+    htTowerLine: { type: mongoose.Schema.Types.Mixed },
+    river: { type: mongoose.Schema.Types.Mixed },
+    lake: { type: mongoose.Schema.Types.Mixed },
+    railwayBoundary: { type: mongoose.Schema.Types.Mixed },
+    burialGround: { type: mongoose.Schema.Types.Mixed },
+    highway: { type: mongoose.Schema.Types.Mixed },
+    roadArea: { type: mongoose.Schema.Types.Mixed },
+    osr: { type: mongoose.Schema.Types.Mixed },
+    tneb: { type: mongoose.Schema.Types.Mixed },
+    localBody: { type: mongoose.Schema.Types.Mixed },
+    yieldCalculation: { type: mongoose.Schema.Types.Mixed }
+  }],
+  
+  yieldCalculation: {
+    type: mongoose.Schema.Types.Mixed,
+    default: null
+  }
 });
 
 // Pre-save hook to auto-increment lead_id

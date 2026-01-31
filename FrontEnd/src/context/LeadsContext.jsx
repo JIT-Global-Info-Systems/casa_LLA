@@ -497,6 +497,35 @@ export const LeadsProvider = ({ children }) => {
         payload.callTime = formData.callTime
       }
 
+      // Yield data for backend to calculate and store in leads.yields array
+      const osrSiteArea = parseFloat(formData.osrSiteArea)
+      const osrPercentage = parseFloat(formData.osrPercentage)
+      if (!isNaN(osrSiteArea) && !isNaN(osrPercentage)) {
+        payload.osr = {
+          siteArea: osrSiteArea,
+          manualRoadArea: parseFloat(formData.osrManualRoadArea) || 0,
+          percentage: osrPercentage
+        }
+      }
+      const tnebSiteArea = parseFloat(formData.tnebSiteArea)
+      const tnebPercentage = parseFloat(formData.tnebPercentage)
+      if (!isNaN(tnebSiteArea) && !isNaN(tnebPercentage)) {
+        payload.tneb = {
+          siteArea: tnebSiteArea,
+          manualRoadArea: parseFloat(formData.tnebManualRoadArea) || 0,
+          percentage: tnebPercentage
+        }
+      }
+      const localBodySiteArea = parseFloat(formData.localBodySiteArea)
+      const localBodyPercentage = parseFloat(formData.localBodyPercentage)
+      if (!isNaN(localBodySiteArea) && !isNaN(localBodyPercentage)) {
+        payload.localBody = {
+          siteArea: localBodySiteArea,
+          manualRoadArea: parseFloat(formData.localBodyManualRoadArea) || 0,
+          percentage: localBodyPercentage
+        }
+      }
+
       return payload
     }
 
