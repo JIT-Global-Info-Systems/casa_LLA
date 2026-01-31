@@ -1,4 +1,4 @@
-const Mediator = require("../models/mediator");
+const Mediator = require("../models/Mediator");
 
 exports.createMediator = async (req, res) => {
   try {
