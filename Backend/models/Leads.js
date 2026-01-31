@@ -282,7 +282,18 @@ const leadSchema = new mongoose.Schema({
 
   projects: { type: String },
   googleLocation: { type: String }
-}]
+}],
+  
+  yields: [{
+    type: { type: String, required: true },
+    siteArea: { type: String },
+    manualRoadArea: { type: String },
+    percentage: { type: String },
+    calculatedRoadArea: { type: String },
+    calculatedYield: { type: String },
+    calculatedBy: { type: String },
+    timestamp: { type: Date, default: Date.now }
+  }]
 
 });
 

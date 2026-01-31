@@ -19,6 +19,12 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Log all incoming requests
+app.use((req, res, next) => {
+  console.log(`🔥 ${req.method} ${req.url} - ${new Date().toISOString()}`);
+  next();
+});
+
 app.use("/api/users", userRoutes);
 app.use("/api/leads", leadRoutes);
 app.use("/api/mediators", mediatorRoutes);
@@ -30,6 +36,11 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/stage", stageRoutes);
 app.get("/", (req, res) => {
   res.send("Casagrand Backend Running");
+});
+
+app.get("/test", (req, res) => {
+  console.log("🔥 Test endpoint hit!");
+  res.json({ message: "Test endpoint working!", timestamp: new Date() });
 });
 
 // Global error handler

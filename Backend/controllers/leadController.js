@@ -1,23 +1,75 @@
 const mongoose = require('mongoose');
 const { ObjectId } = mongoose.Types;
-
-// const Lead = require("../models/Lead");
-
 const Lead = require("../models/Lead").default;
-
 const LeadHistory = require("../models/LeadHistory");
-
 const Call = require("../models/Call");
 
-
-
-
+// Helper function to calculate yields
+const calculateYields = (leadData, userId) => {
+  const yields = [];
+  
+  // OSR calculation - handle nested object
+  if (leadData.osr && leadData.osr.siteArea && leadData.osr.percentage) {
+    const calculatedRoadArea = (leadData.osr.siteArea * leadData.osr.percentage) / 100;
+    const calculatedYield = leadData.osr.siteArea - calculatedRoadArea;
+    
+    yields.push({
+      type: 'OSR',
+      siteArea: leadData.osr.siteArea,
+      manualRoadArea: leadData.osr.manualRoadArea || 0,
+      percentage: leadData.osr.percentage,
+      calculatedRoadArea,
+      calculatedYield,
+      calculatedBy: userId,
+      timestamp: new Date()
+    });
+  }
+  
+  // TNEB calculation - handle nested object
+  if (leadData.tneb && leadData.tneb.siteArea && leadData.tneb.percentage) {
+    const calculatedRoadArea = (leadData.tneb.siteArea * leadData.tneb.percentage) / 100;
+    const calculatedYield = leadData.tneb.siteArea - calculatedRoadArea;
+    
+    yields.push({
+      type: 'TNEB',
+      siteArea: leadData.tneb.siteArea,
+      manualRoadArea: leadData.tneb.manualRoadArea || 0,
+      percentage: leadData.tneb.percentage,
+      calculatedRoadArea,
+      calculatedYield,
+      calculatedBy: userId,
+      timestamp: new Date()
+    });
+  }
+  
+  // Local Body calculation - handle nested object
+  if (leadData.localBody && leadData.localBody.siteArea && leadData.localBody.percentage) {
+    const calculatedRoadArea = (leadData.localBody.siteArea * leadData.localBody.percentage) / 100;
+    const calculatedYield = leadData.localBody.siteArea - calculatedRoadArea;
+    
+    yields.push({
+      type: 'Local Body',
+      siteArea: leadData.localBody.siteArea,
+      manualRoadArea: leadData.localBody.manualRoadArea || 0,
+      percentage: leadData.localBody.percentage,
+      calculatedRoadArea,
+      calculatedYield,
+      calculatedBy: userId,
+      timestamp: new Date()
+    });
+  }
+  
+  return yields;
+};
 
 exports.createLead = async (req, res) => {
-
+  console.log("🔥 createLead function called!");
+  
   try {
 
     // 🔹 Parse JSON sent as text
+
+    console.log("DEBUG: Raw req.body:", JSON.stringify(req.body, null, 2));
 
     const leadData =
 
@@ -26,6 +78,8 @@ exports.createLead = async (req, res) => {
         ? JSON.parse(req.body.data)
 
         : req.body;
+
+    console.log("DEBUG: Parsed leadData:", JSON.stringify(leadData, null, 2));
 
 
 
@@ -172,6 +226,31 @@ exports.createLead = async (req, res) => {
     console.log("DEBUG: About to create lead with lead_status:", lead_status);
     console.log("DEBUG: About to create lead with lead_stage:", lead_stage);
 
+    // Calculate yields if yield data is provided
+    console.log("DEBUG: leadData received:", JSON.stringify(leadData, null, 2));
+    console.log("DEBUG: req.body:", JSON.stringify(req.body, null, 2));
+    
+    // Check for yield data in both leadData and req.body (for form-data)
+    const osrData = leadData.osr || req.body.osr;
+    const tnebData = leadData.tneb || req.body.tneb;
+    const localBodyData = leadData.localBody || req.body.localBody;
+    
+    console.log("DEBUG: osrData:", osrData);
+    console.log("DEBUG: tnebData:", tnebData);
+    console.log("DEBUG: localBodyData:", localBodyData);
+    
+    // Create a combined data object for yield calculation
+    const yieldData = {
+      ...leadData,
+      osr: osrData ? (typeof osrData === 'string' ? JSON.parse(osrData) : osrData) : undefined,
+      tneb: tnebData ? (typeof tnebData === 'string' ? JSON.parse(tnebData) : tnebData) : undefined,
+      localBody: localBodyData ? (typeof localBodyData === 'string' ? JSON.parse(localBodyData) : localBodyData) : undefined
+    };
+    
+    const calculatedYields = calculateYields(yieldData, createdBy);
+    console.log("DEBUG: calculatedYields:", JSON.stringify(calculatedYields, null, 2));
+    console.log("DEBUG: calculatedYields length:", calculatedYields.length);
+
     const lead = await Lead.create({
 
       ...restLeadData,
@@ -186,10 +265,13 @@ exports.createLead = async (req, res) => {
 
       currentRole: currentRole, // Add currentRole to the lead
 
-      created_by: createdBy
+      created_by: createdBy,
+
+      yields: calculatedYields // Add calculated yields
 
     });
 
+    console.log("DEBUG: Lead created with yields:", JSON.stringify(lead.yields, null, 2));
     console.log("DEBUG: Lead created with lead_status:", lead.lead_status);
     console.log("DEBUG: Lead created with lead_stage:", lead.lead_stage);
 
@@ -225,7 +307,10 @@ exports.createLead = async (req, res) => {
 
       message: "Lead created successfully",
 
-      data: lead
+      data: {
+        ...lead.toObject(),
+        yields: lead.yields || [] // Ensure yields field is always included
+      }
 
     });
 
@@ -245,527 +330,56 @@ exports.createLead = async (req, res) => {
 
 };
 
-
-
+// Update lead function with yield calculation
 exports.updateLead = async (req, res) => {
-
   try {
-
     // Check if user is authenticated
-
     if (!req.user || !req.user.user_id) {
-
       return res.status(401).json({
-
         message: "Please sign in to continue"
-
       });
-
     }
-
-
 
     const { leadId } = req.params;
-
-    console.log("Raw leadId from params:", leadId);
-
-    // Convert leadId to ObjectId
-    const leadObjectId = new ObjectId(leadId);
-    console.log("Converted leadObjectId:", leadObjectId);
-
-    const { userId, note, notes, role, currentRole, assignedTo, competitorAnalysis, checkListPage, callDate, callTime, ...updateData } = req.body;
-
-    console.log("=== LEAD UPDATE DEBUG ===");
-    console.log("req.body:", JSON.stringify(req.body, null, 2));
-    console.log("updateData:", JSON.stringify(updateData, null, 2));
-    console.log("currentRole:", currentRole);
-    console.log("assignedTo:", assignedTo);
-    console.log("competitorAnalysis:", competitorAnalysis);
-    console.log("checkListPage:", checkListPage);
-
-    const update = {
-
-      ...updateData,
-
-      updated_by: req.user.user_id, // Set updated_by with user ID from JWT token
-
-      updated_at: new Date(), // Set updated_at timestamp
-
-    };
-
-
-
-    // Handle currentRole array if provided
-
-    if (currentRole !== undefined) {
-
-      console.log("Raw currentRole:", currentRole, "Type:", typeof currentRole);
-
-      let parsedCurrentRole = currentRole;
-
-      if (typeof currentRole === 'string') {
-
-        try {
-
-          parsedCurrentRole = JSON.parse(currentRole);
-
-          console.log("Parsed currentRole:", parsedCurrentRole);
-
-        } catch (e) {
-
-          console.error("Error parsing currentRole string:", e);
-
-          return res.status(400).json({ message: "Invalid format for currentRole" });
-
-        }
-
-      }
-
-
-
-      if (Array.isArray(parsedCurrentRole)) {
-
-        update.currentRole = parsedCurrentRole;
-
-      } else if (typeof parsedCurrentRole === 'object' && parsedCurrentRole !== null) {
-
-        // If single object is provided, wrap it in array
-
-        update.currentRole = [parsedCurrentRole];
-
-      }
-
-      console.log("Final update.currentRole:", update.currentRole);
-
-    }
-
-
-
-    // Handle assignedTo array if provided
-
-    if (assignedTo !== undefined) {
-
-      console.log("Raw assignedTo:", assignedTo, "Type:", typeof assignedTo);
-
-      let parsedAssignedTo = assignedTo;
-
-      if (typeof assignedTo === 'string') {
-
-        try {
-
-          parsedAssignedTo = JSON.parse(assignedTo);
-
-          console.log("Parsed assignedTo:", parsedAssignedTo);
-
-        } catch (e) {
-
-          console.error("Error parsing assignedTo string:", e);
-
-          return res.status(400).json({ message: "Invalid format for assignedTo" });
-
-        }
-
-      }
-
-
-
-      if (Array.isArray(parsedAssignedTo)) {
-
-        update.assignedTo = parsedAssignedTo;
-
-      } else if (typeof parsedAssignedTo === 'object' && parsedAssignedTo !== null) {
-
-        // If single object is provided, wrap it in array
-
-        update.assignedTo = [parsedAssignedTo];
-
-      }
-
-      console.log("Final update.assignedTo:", update.assignedTo);
-
-    }
-
-
-
-    // Initialize $push if not already set
-
-    update.$push = update.$push || {};
-
-
-
-    // If competitorAnalysis is provided, format and update it
-
-    if (competitorAnalysis !== undefined) {
-
-      const formattedCompetitorAnalysis = Array.isArray(competitorAnalysis)
-
-        ? competitorAnalysis.map(comp => ({
-
-          developerName: comp.developerName || '',
-
-          projectName: comp.projectName || '',
-
-          productType: comp.productType || '',
-
-          location: comp.location || '',
-
-          plotUnitSize: comp.plotUnitSize || '',
-
-          landExtent: comp.landExtent || '',
-
-          priceRange: comp.priceRange || '',
-
-          approxPrice: comp.approxPrice || '',
-
-          approxPriceCent: comp.approxPriceCent || '',
-
-          totalPlotsUnits: comp.totalPlotsUnits || '',
-
-          keyAmenities: Array.isArray(comp.keyAmenities) ? comp.keyAmenities : [],
-
-          uspPositioning: comp.uspPositioning || '',
-
-          timestamp: new Date()
-
-        }))
-
-        : [];
-
-
-
-      update.competitorAnalysis = formattedCompetitorAnalysis;
-
-    }
-
-
-
-    // If checkListPage is provided, format and update it
-
-    if (checkListPage !== undefined) {
-
-      // Get file paths if files were uploaded
-
-      const fmbSketchPath = req.files?.fmb_sketch?.[0]?.path || '';
-
-      const pattaChittaPath = req.files?.patta_chitta?.[0]?.path || '';
-
-
-
-      const formattedCheckListPage = Array.isArray(checkListPage)
-
-        ? checkListPage.map(item => ({
-
-          ...item,
-
-          ...(fmbSketchPath && { fmbSketchPath }),
-
-          ...(pattaChittaPath && { pattaChittaPath })
-
-        }))
-
-        : [];
-
-
-
-      update.checkListPage = formattedCheckListPage;
-
-    }
-
-
-
-    // If notes is being updated, create a new call record
-
-    if (notes !== undefined) {
-
-      const updateData = typeof req.body.data === "string" ? JSON.parse(req.body.data) : req.body;
-
-      const { callDate, callTime } = updateData;
-
-
-
-      // Create call timestamp from provided date and time, or use current date/time as fallback
-
-      let callTimestamp = new Date();
-
-      if (callDate) {
-
-        // If callTime is provided, combine with callDate, otherwise use callDate alone
-
-        const dateTimeString = callTime ? `${callDate}T${callTime}` : callDate;
-
-        callTimestamp = new Date(dateTimeString);
-
-
-
-        // If invalid date, fallback to current date/time
-
-        if (isNaN(callTimestamp.getTime())) {
-
-          callTimestamp = new Date();
-
-        }
-
-      }
-
-
-
-      await Call.create({
-
-        leadId: leadId,
-
-        userId: userId || 'system',
-
-        name: updateData.name || req.user?.name || 'System',
-
-        role: currentRole || 'system',
-
-        note: notes,
-
-        created_by: req.user?.user_id || 'system',
-
-        created_at: callTimestamp,
-
-        callDate: callDate || null,
-
-        callTime: callTime || null
-
-      });
-
-    }
-
-
-
-    // If a new note is provided, create a new call record
-
-    if (note && userId) {
-
-      const updateData = typeof req.body.data === "string" ? JSON.parse(req.body.data) : req.body;
-
-      const { callDate, callTime } = updateData;
-
-
-
-      // Create call timestamp from provided date and time, or use current date/time as fallback
-
-      let callTimestamp = new Date();
-
-      if (callDate) {
-
-        const dateTimeString = callTime ? `${callDate}T${callTime}` : callDate;
-
-        callTimestamp = new Date(dateTimeString);
-
-        if (isNaN(callTimestamp.getTime())) {
-
-          callTimestamp = new Date();
-
-        }
-
-      }
-
-
-
-      await Call.create({
-
-        leadId: leadId,
-
-        userId,
-
-        name: updateData.name || req.user?.name || 'Unknown User',
-
-        role: currentRole || 'user',
-
-        note: note,
-
-        created_by: req.user?.user_id || 'system',
-
-        created_at: callTimestamp,
-
-        callDate: callDate || null,
-
-        callTime: callTime || null
-
-      });
-
-    }
-
-
-
-    // If no $push operations were set, remove the empty $push
-
-    if (update.$push && Object.keys(update.$push).length === 0) {
-
-      delete update.$push;
-
-    }
-
-
-
-    // Track changes to currentRole and assignedTo in LeadHistory
-
-    if (update.currentRole || update.assignedTo) {
-
-      console.log("Tracking changes for LeadHistory. update.currentRole:", update.currentRole, "update.assignedTo:", update.assignedTo);
-
-      const existingLead = await Lead.findById(leadId);
-
-
-
-      if (existingLead) {
-
-        // Create a new history entry if either field is being updated
-
-        const historyEntry = {
-
-          leadId: existingLead._id,
-
-          currentRole: update.currentRole || existingLead.currentRole || [],
-
-          assignedTo: update.assignedTo || existingLead.assignedTo || [],
-
-          createdBy: req.user.user_id
-
-        };
-
-
-
-        await LeadHistory.create(historyEntry);
-
-      }
-
-    }
-
-
-
-    console.log("Final update object before database update:", JSON.stringify(update, null, 2));
-
-
-
-    // Use direct MongoDB collection update to bypass Mongoose schema issues
-
-    const collection = Lead.collection;
-
-
-
-    const updateOperation = {
-
-      $set: {
-
+    
+    // Parse request body if it's sent as string
+    const updateData = typeof req.body.data === "string" 
+      ? JSON.parse(req.body.data) 
+      : req.body;
+
+    // Calculate yields if yield-related fields are present
+    const calculatedYields = calculateYields(updateData, req.user.user_id);
+
+    // Find and update the lead
+    const lead = await Lead.findByIdAndUpdate(
+      leadId,
+      { 
+        ...updateData, 
+        yields: calculatedYields,
         updated_by: req.user.user_id,
-
-        updated_at: new Date(),
-
-        currentRole: update.currentRole || [],
-
-        assignedTo: update.assignedTo || []
-
-      }
-
-    };
-
-
-
-    // Add other fields from updateData
-
-    Object.keys(updateData).forEach(key => {
-
-      if (key !== 'currentRole' && key !== 'assignedTo') {
-
-        updateOperation.$set[key] = updateData[key];
-
-      }
-
-    });
-
-
-
-    // Handle competitorAnalysis if present
-
-    if (update.competitorAnalysis) {
-
-      updateOperation.$set.competitorAnalysis = update.competitorAnalysis;
-
-    }
-
-
-
-    // Handle checkListPage if present
-
-    if (update.checkListPage) {
-
-      updateOperation.$set.checkListPage = update.checkListPage;
-
-    }
-
-
-
-    console.log("Final update operation:", JSON.stringify(updateOperation, null, 2));
-
-
-
-    const result = await collection.updateOne(
-
-      { _id: leadObjectId },
-
-      updateOperation
-
+        updated_at: new Date()
+      },
+      { new: true, runValidators: true }
     );
 
-    console.log("Update result:", result);
-
-
-
-    // Get the updated document
-
-    const updatedLead = await Lead.findById(leadObjectId);
-
-    console.log("Updated lead fields:", {
-      leadType: updatedLead?.leadType,
-      contactNumber: updatedLead?.contactNumber,
-      mediatorName: updatedLead?.mediatorName,
-      location: updatedLead?.location
-    });
-
-
-
-    if (!updatedLead) {
-
+    if (!lead) {
       return res.status(404).json({
-
         message: "Lead not found"
-
       });
-
     }
 
-
-
     return res.status(200).json({
-
       message: "Lead updated successfully",
-
-      data: updatedLead
-
+      data: lead
     });
 
   } catch (error) {
-
     return res.status(500).json({
-
       message: "Could not update lead. Please try again.",
-
       error: error.message
-
     });
-
   }
-
 };
-
-
-
-
-
 
 
 exports.deleteLead = async (req, res) => {
