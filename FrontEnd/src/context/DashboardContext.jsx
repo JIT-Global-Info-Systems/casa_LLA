@@ -28,15 +28,23 @@ export const DashboardProvider = ({ children }) => {
   const [filters, setFilters] = useState({});
   const [isInitialized, setIsInitialized] = useState(false);
 
+  // Initial data fetch on mount
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
   // Fetch dashboard data from API
   const fetchDashboardData = async (dashboardFilters = {}) => {
     try {
       setLoading(true);
       setError(null);
       
+      console.log('🔄 Dashboard API - Fetching data with filters:', dashboardFilters);
       const response = await dashboardAPI.getDashboardData(dashboardFilters);
+      console.log('✅ Dashboard API - Response received:', response);
       setDashboardData(response);
     } catch (err) {
+      console.error('❌ Dashboard API - Error:', err);
       setError(err.message);
       throw err;
     } finally {
