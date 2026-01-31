@@ -41,6 +41,10 @@ function Users() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(new Set());
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
   // Entity action hook for status-aware delete
   const { handleDelete, canPerformAction, confirmModal } = useEntityAction('user');
 
