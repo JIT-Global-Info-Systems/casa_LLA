@@ -196,19 +196,25 @@ export const LeadsProvider = ({ children }) => {
     if (userData) {
       try {
         const parsed = JSON.parse(userData)
+        console.log('🔍 Parsed user data from localStorage:', parsed)
         return {
-          user_id: parsed._id || parsed.id || '',
-          name: parsed.name || '',
+          user_id: parsed._id || parsed.id || parsed.user_id || 'unknown_user',
+          name: parsed.name || parsed.fullName || 'Unknown User',
           role: parsed.role || 'tele_caller'
         }
       } catch (e) {
+        console.error('❌ Error parsing user data from localStorage:', e)
       }
     }
-    return {
-      user_id: '',
-      name: '',
+    
+    // Fallback values when no user data is found
+    const fallbackUser = {
+      user_id: 'unknown_user',
+      name: 'Unknown User',
       role: 'tele_caller'
     }
+    console.log('🔍 Using fallback user info:', fallbackUser)
+    return fallbackUser
   }, []);
 
   const getAssignedUserInfo = useCallback((role, selectedUserId = null, users = []) => {
@@ -257,14 +263,14 @@ export const LeadsProvider = ({ children }) => {
     // Default: create a user object for the role
     const currentUserInfo = getCurrentUserInfo();
     const result = {
-      user_id: currentUserInfo.user_id,
+      user_id: currentUserInfo.user_id || 'unknown_user',
       name: `${roleValue && typeof roleValue === 'string' ? roleValue.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Unknown Role'}`,
       role: roleValue
     };
     
     console.log('🔍 getAssignedUserInfo result:', result);
     return result;
-  }, [getCurrentUserRole, getCurrentUserInfo]);
+  }, [getCurrentUserRole]);
 
   // Form validation
   const validateLeadForm = useCallback((formData) => {
@@ -447,6 +453,9 @@ export const LeadsProvider = ({ children }) => {
       const currentUserInfo = getCurrentUserInfo();
       const assignedUserInfo = getAssignedUserInfo(formData.assignedTo || currentRoleValue, formData.assignToUser);
       
+      console.log('🔍 currentUserInfo:', currentUserInfo);
+      console.log('🔍 assignedUserInfo:', assignedUserInfo);
+      
       const payload = {
         leadType: formData.leadType || "mediator",
         contactNumber: formData.contactNumber || "",
@@ -456,8 +465,16 @@ export const LeadsProvider = ({ children }) => {
         landName: formData.landName || "",
         sourceCategory: formData.sourceCategory || "",
         source: formData.source || "",
-        currentRole: [currentUserInfo],
-        assignedTo: [assignedUserInfo],
+        currentRole: [{
+          user_id: currentUserInfo.user_id,
+          name: currentUserInfo.name,
+          role: currentUserInfo.role
+        }],
+        assignedTo: [{
+          user_id: assignedUserInfo.user_id,
+          name: assignedUserInfo.name,
+          role: assignedUserInfo.role
+        }],
         competitorAnalysis,
         checkListPage,
       }
@@ -497,33 +514,97 @@ export const LeadsProvider = ({ children }) => {
         payload.callTime = formData.callTime
       }
 
-      // Yield data for backend to calculate and store in leads.yields array
+      // Yield calculation data - send as separate fields for backend processing
+      payload.yieldArea = JSON.stringify({
+        value: parseFloat(formData.areaValue) || 0,
+        unit: formData.areaUnit || "hectare"
+      })
+
+      // Send the basic area field from the dropdown (this is what the backend expects)
+      payload.area = formData.area || ""
+
+      payload.channel = JSON.stringify({
+        width: parseFloat(formData.channelWidth) || 0,
+        length: parseFloat(formData.channelLength) || 0,
+        inBetween: parseFloat(formData.channelInBetween) || 0,
+        nearBoundary: parseFloat(formData.channelNearBoundary) || 0
+      })
+
+      payload.gasLine = JSON.stringify({
+        width: parseFloat(formData.gasLineWidth) || 0,
+        length: parseFloat(formData.gasLineLength) || 0,
+        inBetween: parseFloat(formData.gasLineInBetween) || 0,
+        nearBoundary: parseFloat(formData.gasLineNearBoundary) || 0
+      })
+
+      payload.htTowerLine = JSON.stringify({
+        width: parseFloat(formData.htTowerLineWidth) || 0,
+        length: parseFloat(formData.htTowerLineLength) || 0,
+        inBetween: parseFloat(formData.htTowerLineInBetween) || 0,
+        nearBoundary: parseFloat(formData.htTowerLineNearBoundary) || 0
+      })
+
+      payload.river = JSON.stringify({
+        length: parseFloat(formData.riverLength) || 0,
+        nearBoundary: parseFloat(formData.riverNearBoundary) || 0
+      })
+
+      payload.lake = JSON.stringify({
+        length: parseFloat(formData.lakeLength) || 0,
+        nearBoundary: parseFloat(formData.lakeNearBoundary) || 0
+      })
+
+      payload.railwayBoundary = JSON.stringify({
+        length: parseFloat(formData.railwayBoundaryLength) || 0,
+        nearBoundary: parseFloat(formData.railwayBoundaryNearBoundary) || 0
+      })
+
+      payload.burialGround = JSON.stringify({
+        length: parseFloat(formData.burialGroundLength) || 0,
+        nearBoundary: parseFloat(formData.burialGroundNearBoundary) || 0
+      })
+
+      payload.highway = JSON.stringify({
+        length: parseFloat(formData.highwayLength) || 0,
+        nearBoundary: parseFloat(formData.highwayNearBoundary) || 0
+      })
+
+      payload.roadArea = JSON.stringify({
+        siteArea: parseFloat(formData.roadSiteArea) || 0,
+        manualRoadArea: parseFloat(formData.manualRoadArea) || 0
+      })
+
+      // OSR data
       const osrSiteArea = parseFloat(formData.osrSiteArea)
       const osrPercentage = parseFloat(formData.osrPercentage)
       if (!isNaN(osrSiteArea) && !isNaN(osrPercentage)) {
-        payload.osr = {
+        payload.osr = JSON.stringify({
           siteArea: osrSiteArea,
           manualRoadArea: parseFloat(formData.osrManualRoadArea) || 0,
           percentage: osrPercentage
-        }
+        })
       }
+
+      // TNEB data
       const tnebSiteArea = parseFloat(formData.tnebSiteArea)
       const tnebPercentage = parseFloat(formData.tnebPercentage)
       if (!isNaN(tnebSiteArea) && !isNaN(tnebPercentage)) {
-        payload.tneb = {
+        payload.tneb = JSON.stringify({
           siteArea: tnebSiteArea,
           manualRoadArea: parseFloat(formData.tnebManualRoadArea) || 0,
           percentage: tnebPercentage
-        }
+        })
       }
+
+      // Local Body data
       const localBodySiteArea = parseFloat(formData.localBodySiteArea)
       const localBodyPercentage = parseFloat(formData.localBodyPercentage)
       if (!isNaN(localBodySiteArea) && !isNaN(localBodyPercentage)) {
-        payload.localBody = {
+        payload.localBody = JSON.stringify({
           siteArea: localBodySiteArea,
           manualRoadArea: parseFloat(formData.localBodyManualRoadArea) || 0,
           percentage: localBodyPercentage
-        }
+        })
       }
 
       return payload
@@ -644,7 +725,7 @@ export const LeadsProvider = ({ children }) => {
     }
 
     return payload
-  }, [getCurrentUserRole, getCurrentUserInfo, getAssignedUserInfo]);
+  }, []);
 
   // Submit lead form
   const submitLeadForm = useCallback(async (formData, originalData = null, files = {}) => {

@@ -539,10 +539,95 @@ exports.updateLead = async (req, res) => {
     };
     const yieldCalculationPlain = JSON.parse(JSON.stringify(yieldCalculationToStore));
 
-    const calculatedYields = calculateYields(
-      { osr: yieldInput.osr, tneb: yieldInput.tneb, localBody: yieldInput.localBody },
-      req.user.user_id
-    );
+    // Enhanced yield calculation to store all input fields
+    const calculateEnhancedYields = (leadData, userId) => {
+      const yields = [];
+      
+      // Store all yield calculation input fields as a comprehensive yield record
+      const yieldRecord = {
+        type: 'Comprehensive Yield Calculation',
+        // Area information
+        areaValue: parsedSiteArea?.value || updateData.siteArea?.value || updateData.area?.value || updateData.area_value,
+        areaUnit: parsedSiteArea?.unit || updateData.siteArea?.unit || updateData.areaUnit || updateData.area_unit || 'cents',
+        
+        // Deduction fields
+        channel: updateData.channel || {},
+        gasLine: updateData.gasLine || {},
+        htTowerLine: updateData.htTowerLine || {},
+        river: updateData.river || {},
+        lake: updateData.lake || {},
+        railwayBoundary: updateData.railwayBoundary || {},
+        burialGround: updateData.burialGround || {},
+        highway: updateData.highway || {},
+        roadArea: updateData.roadArea || {},
+        
+        // Percentage-based deductions
+        osr: updateData.osr || null,
+        tneb: updateData.tneb || {},
+        localBody: updateData.localBody || {},
+        
+        // Store the calculation results
+        yieldCalculation: yieldCalculationResult,
+        
+        calculatedBy: userId,
+        timestamp: new Date()
+      };
+      
+      yields.push(yieldRecord);
+      
+      // Also keep the existing individual OSR, TNEB, Local Body calculations
+      if (updateData.osr && updateData.osr.siteArea && updateData.osr.percentage) {
+        const calculatedRoadArea = (updateData.osr.siteArea * updateData.osr.percentage) / 100;
+        const calculatedYield = updateData.osr.siteArea - calculatedRoadArea;
+        
+        yields.push({
+          type: 'OSR',
+          siteArea: updateData.osr.siteArea,
+          manualRoadArea: updateData.osr.manualRoadArea || 0,
+          percentage: updateData.osr.percentage,
+          calculatedRoadArea,
+          calculatedYield,
+          calculatedBy: userId,
+          timestamp: new Date()
+        });
+      }
+      
+      if (updateData.tneb && updateData.tneb.siteArea && updateData.tneb.percentage) {
+        const calculatedRoadArea = (updateData.tneb.siteArea * updateData.tneb.percentage) / 100;
+        const calculatedYield = updateData.tneb.siteArea - calculatedRoadArea;
+        
+        yields.push({
+          type: 'TNEB',
+          siteArea: updateData.tneb.siteArea,
+          manualRoadArea: updateData.tneb.manualRoadArea || 0,
+          percentage: updateData.tneb.percentage,
+          calculatedRoadArea,
+          calculatedYield,
+          calculatedBy: userId,
+          timestamp: new Date()
+        });
+      }
+      
+      if (updateData.localBody && updateData.localBody.siteArea && updateData.localBody.percentage) {
+        const calculatedRoadArea = (updateData.localBody.siteArea * updateData.localBody.percentage) / 100;
+        const calculatedYield = updateData.localBody.siteArea - calculatedRoadArea;
+        
+        yields.push({
+          type: 'Local Body',
+          siteArea: updateData.localBody.siteArea,
+          manualRoadArea: updateData.localBody.manualRoadArea || 0,
+          percentage: updateData.localBody.percentage,
+          calculatedRoadArea,
+          calculatedYield,
+          calculatedBy: userId,
+          timestamp: new Date()
+        });
+      }
+      
+      return yields;
+    };
+
+    const calculatedYields = calculateEnhancedYields(updateData, req.user.user_id);
 
     const lead = await Lead.findByIdAndUpdate(
       leadId,

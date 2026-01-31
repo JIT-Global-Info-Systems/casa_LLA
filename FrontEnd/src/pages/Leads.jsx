@@ -106,8 +106,8 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     location: "",
     zone: "",
     area: "",
-    areaValue: "", // Added for area calculation
-    areaUnit: "hectare", // Added for area calculation
+    // areaValue: "", // Added for area calculation
+    // areaUnit: "hectare", // Added for area calculation
     landName: "",
     sourceCategory: "",
     source: "",
@@ -265,7 +265,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
     // OSR eligible if area is >= 247 cents (with tolerance for rounding)
     return Math.abs(areaInCents - 247) <= 0.5 || areaInCents > 247;
-  }, [formData.areaValue, formData.areaUnit]);
+  }, []);
 
   // Calculate yield with current form data
   const handleCalculateYield = useCallback(() => {
@@ -684,6 +684,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
 
     const hydratedData = {
       ...data,
+      Area: data.area || "",
       leadType: data.leadType || data.lead_type || "mediator", // Ensure leadType is properly mapped
       leadStatus: data.lead_status || "",
       lead_stage: data.lead_stage || "Enquired",
@@ -695,9 +696,9 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       callTime: data.callTime || "",
       callNotes: data.callNotes || "",
 
-      // Area calculation fields
-      areaValue: data.areaValue || "",
-      areaUnit: data.areaUnit || "hectare",
+      // Area calculation fields - prioritize yieldCalculation data
+      areaValue: (data.yieldCalculation?.area?.value ?? data.areaValue)?.toString() ?? "",
+      areaUnit: data.yieldCalculation?.area?.unit ?? data.areaUnit ?? "hectare",
 
       // Missing basic fields from API
       propertyType: data.propertyType || "",
@@ -769,6 +770,52 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       checkFMBSketch: !!(firstChecklist?.fmbSketchPath),
       checkPattaChitta: !!(firstChecklist?.pattaChittaPath),
 
+      // Yield calculation input fields from yieldCalculation.inputs
+      // Note: areaValue and areaUnit are already mapped above
+      
+      // Channel fields
+      channelWidth: (data.yieldCalculation?.inputs?.channel?.width ?? 0).toString(),
+      channelLength: (data.yieldCalculation?.inputs?.channel?.length ?? 0).toString(),
+      channelInBetween: (data.yieldCalculation?.inputs?.channel?.inBetween ?? 0).toString(),
+      channelNearBoundary: (data.yieldCalculation?.inputs?.channel?.nearBoundary ?? 0).toString(),
+      
+      // Gas line fields
+      gasLineWidth: (data.yieldCalculation?.inputs?.gasLine?.width ?? 0).toString(),
+      gasLineLength: (data.yieldCalculation?.inputs?.gasLine?.length ?? 0).toString(),
+      gasLineInBetween: (data.yieldCalculation?.inputs?.gasLine?.inBetween ?? 0).toString(),
+      gasLineNearBoundary: (data.yieldCalculation?.inputs?.gasLine?.nearBoundary ?? 0).toString(),
+      
+      // HT tower line fields
+      htTowerLineWidth: (data.yieldCalculation?.inputs?.htTowerLine?.width ?? 0).toString(),
+      htTowerLineLength: (data.yieldCalculation?.inputs?.htTowerLine?.length ?? 0).toString(),
+      htTowerLineInBetween: (data.yieldCalculation?.inputs?.htTowerLine?.inBetween ?? 0).toString(),
+      htTowerLineNearBoundary: (data.yieldCalculation?.inputs?.htTowerLine?.nearBoundary ?? 0).toString(),
+      
+      // River, lake, railway, burial, highway fields
+      riverLength: (data.yieldCalculation?.inputs?.river?.length ?? 0).toString(),
+      riverNearBoundary: (data.yieldCalculation?.inputs?.river?.nearBoundary ?? 0).toString(),
+      lakeLength: (data.yieldCalculation?.inputs?.lake?.length ?? 0).toString(),
+      lakeNearBoundary: (data.yieldCalculation?.inputs?.lake?.nearBoundary ?? 0).toString(),
+      railwayBoundaryLength: (data.yieldCalculation?.inputs?.railwayBoundary?.length ?? 0).toString(),
+      railwayBoundaryNearBoundary: (data.yieldCalculation?.inputs?.railwayBoundary?.nearBoundary ?? 0).toString(),
+      burialGroundLength: (data.yieldCalculation?.inputs?.burialGround?.length ?? 0).toString(),
+      burialGroundNearBoundary: (data.yieldCalculation?.inputs?.burialGround?.nearBoundary ?? 0).toString(),
+      highwayLength: (data.yieldCalculation?.inputs?.highway?.length ?? 0).toString(),
+      highwayNearBoundary: (data.yieldCalculation?.inputs?.highway?.nearBoundary ?? 0).toString(),
+      
+      // Site area fields for yield calculation
+      roadSiteArea: (data.yieldCalculation?.inputs?.roadArea?.siteArea ?? 0).toString(),
+      manualRoadArea: (data.yieldCalculation?.inputs?.roadArea?.manualRoadArea ?? 0).toString(),
+      osrSiteArea: (data.yieldCalculation?.inputs?.osr?.siteArea ?? 0).toString(),
+      osrManualRoadArea: (data.yieldCalculation?.inputs?.osr?.manualRoadArea ?? 0).toString(),
+      osrPercentage: (data.yieldCalculation?.inputs?.osr?.percentage ?? 0).toString(),
+      tnebSiteArea: (data.yieldCalculation?.inputs?.tneb?.siteArea ?? 0).toString(),
+      tnebManualRoadArea: (data.yieldCalculation?.inputs?.tneb?.manualRoadArea ?? 0).toString(),
+      tnebPercentage: (data.yieldCalculation?.inputs?.tneb?.percentage ?? 0).toString(),
+      localBodySiteArea: (data.yieldCalculation?.inputs?.localBody?.siteArea ?? 0).toString(),
+      localBodyManualRoadArea: (data.yieldCalculation?.inputs?.localBody?.manualRoadArea ?? 0).toString(),
+      localBodyPercentage: (data.yieldCalculation?.inputs?.localBody?.percentage ?? 0).toString(),
+
       // Assignment fields
       assignedTo: (() => {
         if (Array.isArray(data.assignedTo) && data.assignedTo.length > 0) {
@@ -790,16 +837,19 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     
     // Store original data for change tracking (deep clone to avoid reference issues)
     setOriginalData(JSON.parse(JSON.stringify(hydratedData)))
-  }, [data])
+  }, [data?._id]) // Use only the data ID as dependency to prevent infinite loops
 
   // Calculate area in cents from areaValue and areaUnit
   const calculateAreaInCents = useCallback(() => {
-    if (!formData.areaValue || !formData.areaUnit) return 0;
+    const areaValue = formData.areaValue;
+    const areaUnit = formData.areaUnit;
     
-    const value = parseFloat(formData.areaValue);
+    if (!areaValue || !areaUnit) return 0;
+    
+    const value = parseFloat(areaValue);
     if (isNaN(value) || value <= 0) return 0;
 
-    switch (formData.areaUnit) {
+    switch (areaUnit) {
       case "cents":
         return value;
       case "acres":
@@ -809,7 +859,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       default:
         return 0;
     }
-  }, [formData.areaValue, formData.areaUnit]);
+  }, []);
 
   // Auto-populate site area fields when area changes
   const populateSiteAreas = useCallback(() => {
@@ -922,134 +972,134 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     }
   }, [formData.assignedTo, onStepChange])
 
-  // Calculate yield when relevant form data changes
-  useEffect(() => {
-    // Only calculate if we have the necessary data
-    if (formData.area && formData.areaValue) {
-      const yieldData = {
-        area: {
-          value: parseFloat(formData.areaValue) || 0,
-          unit: formData.areaUnit || 'cents'
-        },
-        channel: {
-          width: parseFloat(formData.channelWidth) || 0,
-          length: parseFloat(formData.channelLength) || 0,
-          inBetween: parseFloat(formData.channelInBetween) || 0,
-          nearBoundary: parseFloat(formData.channelNearBoundary) || 0
-        },
-        gasLine: {
-          width: parseFloat(formData.gasLineWidth) || 0,
-          length: parseFloat(formData.gasLineLength) || 0,
-          inBetween: parseFloat(formData.gasLineInBetween) || 0,
-          nearBoundary: parseFloat(formData.gasLineNearBoundary) || 0
-        },
-        htTowerLine: {
-          width: parseFloat(formData.htTowerLineWidth) || 0,
-          length: parseFloat(formData.htTowerLineLength) || 0,
-          inBetween: parseFloat(formData.htTowerLineInBetween) || 0,
-          nearBoundary: parseFloat(formData.htTowerLineNearBoundary) || 0
-        },
-        river: {
-          length: parseFloat(formData.riverLength) || 0,
-          nearBoundary: parseFloat(formData.riverNearBoundary) || 0
-        },
-        lake: {
-          length: parseFloat(formData.lakeLength) || 0,
-          nearBoundary: parseFloat(formData.lakeNearBoundary) || 0
-        },
-        railwayBoundary: {
-          length: parseFloat(formData.railwayBoundaryLength) || 0,
-          nearBoundary: parseFloat(formData.railwayBoundaryNearBoundary) || 0
-        },
-        burialGround: {
-          length: parseFloat(formData.burialGroundLength) || 0,
-          nearBoundary: parseFloat(formData.burialGroundNearBoundary) || 0
-        },
-        highway: {
-          length: parseFloat(formData.highwayLength) || 0,
-          nearBoundary: parseFloat(formData.highwayNearBoundary) || 0
-        },
-        roadArea: {
-          siteArea: parseFloat(formData.roadSiteArea) || 0,
-          manualRoadArea: parseFloat(formData.manualRoadArea) || 0
-        },
-        osr: isOSREligible() ? {
-          siteArea: parseFloat(formData.osrSiteArea) || 0,
-          manualRoadArea: parseFloat(formData.osrManualRoadArea) || 0,
-          percentage: parseFloat(formData.osrPercentage) || 0
-        } : null,
-        tneb: {
-          siteArea: parseFloat(formData.tnebSiteArea) || 0,
-          manualRoadArea: parseFloat(formData.tnebManualRoadArea) || 0,
-          percentage: parseFloat(formData.tnebPercentage) || 0
-        },
-        localBody: {
-          siteArea: parseFloat(formData.localBodySiteArea) || 0,
-          manualRoadArea: parseFloat(formData.localBodyManualRoadArea) || 0,
-          percentage: parseFloat(formData.localBodyPercentage) || 0
-        }
-      };
+  // Calculate yield when relevant form data changes - DISABLED to prevent infinite loops
+  // useEffect(() => {
+  //   // Only calculate if we have the necessary data
+  //   if (formData.area && formData.areaValue) {
+  //     const yieldData = {
+  //       area: {
+  //         value: parseFloat(formData.areaValue) || 0,
+  //         unit: formData.areaUnit || 'cents'
+  //       },
+  //       channel: {
+  //         width: parseFloat(formData.channelWidth) || 0,
+  //         length: parseFloat(formData.channelLength) || 0,
+  //         inBetween: parseFloat(formData.channelInBetween) || 0,
+  //         nearBoundary: parseFloat(formData.channelNearBoundary) || 0
+  //       },
+  //       gasLine: {
+  //         width: parseFloat(formData.gasLineWidth) || 0,
+  //         length: parseFloat(formData.gasLineLength) || 0,
+  //         inBetween: parseFloat(formData.gasLineInBetween) || 0,
+  //         nearBoundary: parseFloat(formData.gasLineNearBoundary) || 0
+  //       },
+  //       htTowerLine: {
+  //         width: parseFloat(formData.htTowerLineWidth) || 0,
+  //         length: parseFloat(formData.htTowerLineLength) || 0,
+  //         inBetween: parseFloat(formData.htTowerLineInBetween) || 0,
+  //         nearBoundary: parseFloat(formData.htTowerLineNearBoundary) || 0
+  //       },
+  //       river: {
+  //         length: parseFloat(formData.riverLength) || 0,
+  //         nearBoundary: parseFloat(formData.riverNearBoundary) || 0
+  //       },
+  //       lake: {
+  //         length: parseFloat(formData.lakeLength) || 0,
+  //         nearBoundary: parseFloat(formData.lakeNearBoundary) || 0
+  //       },
+  //       railwayBoundary: {
+  //         length: parseFloat(formData.railwayBoundaryLength) || 0,
+  //         nearBoundary: parseFloat(formData.railwayBoundaryNearBoundary) || 0
+  //       },
+  //       burialGround: {
+  //         length: parseFloat(formData.burialGroundLength) || 0,
+  //         nearBoundary: parseFloat(formData.burialGroundNearBoundary) || 0
+  //       },
+  //       highway: {
+  //         length: parseFloat(formData.highwayLength) || 0,
+  //         nearBoundary: parseFloat(formData.highwayNearBoundary) || 0
+  //       },
+  //       roadArea: {
+  //         siteArea: parseFloat(formData.roadSiteArea) || 0,
+  //         manualRoadArea: parseFloat(formData.manualRoadArea) || 0
+  //       },
+  //       osr: isOSREligible() ? {
+  //         siteArea: parseFloat(formData.osrSiteArea) || 0,
+  //         manualRoadArea: parseFloat(formData.osrManualRoadArea) || 0,
+  //         percentage: parseFloat(formData.osrPercentage) || 0
+  //       } : null,
+  //       tneb: {
+  //         siteArea: parseFloat(formData.tnebSiteArea) || 0,
+  //         manualRoadArea: parseFloat(formData.tnebManualRoadArea) || 0,
+  //         percentage: parseFloat(formData.tnebPercentage) || 0
+  //       },
+  //       localBody: {
+  //         siteArea: parseFloat(formData.localBodySiteArea) || 0,
+  //         manualRoadArea: parseFloat(formData.localBodyManualRoadArea) || 0,
+  //         percentage: parseFloat(formData.localBodyPercentage) || 0
+  //       }
+  //     };
 
-      // Update the yield context data
-      Object.entries(yieldData).forEach(([key, value]) => {
-        if (value !== null && value !== undefined) {
-          if (typeof value === 'object' && !Array.isArray(value)) {
-            Object.entries(value).forEach(([subKey, subValue]) => {
-              // Update nested data in context
-              updateNestedYieldData(key, subKey, subValue);
-            });
-          } else {
-            // Update simple data in context
-            updateYieldData(key, value);
-          }
-        }
-      });
+  //     // Update the yield context data
+  //     Object.entries(yieldData).forEach(([key, value]) => {
+  //       if (value !== null && value !== undefined) {
+  //         if (typeof value === 'object' && !Array.isArray(value)) {
+  //           Object.entries(value).forEach(([subKey, subValue]) => {
+  //             // Update nested data in context
+  //             updateNestedYieldData(key, subKey, subValue);
+  //           });
+  //         } else {
+  //           // Update simple data in context
+  //           updateYieldData(key, value);
+  //         }
+  //       }
+  //     });
 
-      // Calculate yield percentage
-      calculateYieldPercentage();
-    }
-  }, [
-    formData.area, 
-    formData.areaValue, 
-    formData.areaUnit,
-    formData.channelWidth, 
-    formData.channelLength, 
-    formData.channelInBetween, 
-    formData.channelNearBoundary,
-    formData.gasLineWidth, 
-    formData.gasLineLength, 
-    formData.gasLineInBetween, 
-    formData.gasLineNearBoundary,
-    formData.htTowerLineWidth, 
-    formData.htTowerLineLength, 
-    formData.htTowerLineInBetween, 
-    formData.htTowerLineNearBoundary,
-    formData.riverLength, 
-    formData.riverNearBoundary,
-    formData.lakeLength, 
-    formData.lakeNearBoundary,
-    formData.railwayBoundaryLength, 
-    formData.railwayBoundaryNearBoundary,
-    formData.burialGroundLength, 
-    formData.burialGroundNearBoundary,
-    formData.highwayLength, 
-    formData.highwayNearBoundary,
-    formData.roadSiteArea, 
-    formData.manualRoadArea,
-    formData.osrSiteArea, 
-    formData.osrManualRoadArea, 
-    formData.osrPercentage,
-    formData.tnebSiteArea, 
-    formData.tnebManualRoadArea, 
-    formData.tnebPercentage,
-    formData.localBodySiteArea, 
-    formData.localBodyManualRoadArea, 
-    formData.localBodyPercentage,
-    calculateYieldPercentage,
-    updateYieldData,
-    updateNestedYieldData,
-    isOSREligible
-  ])
+  //     // Calculate yield percentage
+  //     calculateYieldPercentage();
+  //   }
+  // }, [
+  //   formData.area, 
+  //   formData.areaValue, 
+  //   formData.areaUnit,
+  //   formData.channelWidth, 
+  //   formData.channelLength, 
+  //   formData.channelInBetween, 
+  //   formData.channelNearBoundary,
+  //   formData.gasLineWidth, 
+  //   formData.gasLineLength, 
+  //   formData.gasLineInBetween, 
+  //   formData.gasLineNearBoundary,
+  //   formData.htTowerLineWidth, 
+  //   formData.htTowerLineLength, 
+  //   formData.htTowerLineInBetween, 
+  //   formData.htTowerLineNearBoundary,
+  //   formData.riverLength, 
+  //   formData.riverNearBoundary,
+  //   formData.lakeLength, 
+  //   formData.lakeNearBoundary,
+  //   formData.railwayBoundaryLength, 
+  //   formData.railwayBoundaryNearBoundary,
+  //   formData.burialGroundLength, 
+  //   formData.burialGroundNearBoundary,
+  //   formData.highwayLength, 
+  //   formData.highwayNearBoundary,
+  //   formData.roadSiteArea, 
+  //   formData.manualRoadArea,
+  //   formData.osrSiteArea, 
+  //   formData.osrManualRoadArea, 
+  //   formData.osrPercentage,
+  //   formData.tnebSiteArea, 
+  //   formData.tnebManualRoadArea, 
+  //   formData.tnebPercentage,
+  //   formData.localBodySiteArea, 
+  //   formData.localBodyManualRoadArea, 
+  //   formData.localBodyPercentage,
+  //   calculateYieldPercentage,
+  //   updateYieldData,
+  //   updateNestedYieldData,
+  //   isOSREligible
+  // ])
 
   const handleFileChange = (key, file) => {
     if (file) {
