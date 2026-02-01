@@ -209,9 +209,9 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     osrManualRoadArea: "",
     tnebManualRoadArea: "",
     localBodyManualRoadArea: "",
-    osrPercentage: "",
-    tnebPercentage: "",
-    localBodyPercentage: "",
+    osrPercentage: "10",
+    tnebPercentage: "0.5",
+    localBodyPercentage: "0.5",
 
     // Channel, gas line, HT tower line fields
     channelWidth: "",
@@ -641,9 +641,9 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           osrManualRoadArea: "",
           tnebManualRoadArea: "",
           localBodyManualRoadArea: "",
-          osrPercentage: "",
-          tnebPercentage: "",
-          localBodyPercentage: "",
+          osrPercentage: "10",
+          tnebPercentage: "0.5",
+          localBodyPercentage: "0.5",
 
           // Channel, gas line, HT tower line fields
           channelWidth: "",
@@ -808,13 +808,16 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       manualRoadArea: (data.yieldCalculation?.inputs?.roadArea?.manualRoadArea ?? 0).toString(),
       osrSiteArea: (data.yieldCalculation?.inputs?.osr?.siteArea ?? 0).toString(),
       osrManualRoadArea: (data.yieldCalculation?.inputs?.osr?.manualRoadArea ?? 0).toString(),
-      osrPercentage: (data.yieldCalculation?.inputs?.osr?.percentage ?? 0).toString(),
+      osrPercentage: (data.yieldCalculation?.inputs?.osr?.percentage ?? 10).toString(),
       tnebSiteArea: (data.yieldCalculation?.inputs?.tneb?.siteArea ?? 0).toString(),
       tnebManualRoadArea: (data.yieldCalculation?.inputs?.tneb?.manualRoadArea ?? 0).toString(),
-      tnebPercentage: (data.yieldCalculation?.inputs?.tneb?.percentage ?? 0).toString(),
+      tnebPercentage: (data.yieldCalculation?.inputs?.tneb?.percentage ?? 0.5).toString(),
       localBodySiteArea: (data.yieldCalculation?.inputs?.localBody?.siteArea ?? 0).toString(),
       localBodyManualRoadArea: (data.yieldCalculation?.inputs?.localBody?.manualRoadArea ?? 0).toString(),
-      localBodyPercentage: (data.yieldCalculation?.inputs?.localBody?.percentage ?? 0).toString(),
+      localBodyPercentage: (data.yieldCalculation?.inputs?.localBody?.percentage ?? 0.5).toString(),
+
+      // Yield percentage from yieldCalculation
+      yield: data.yieldCalculation?.yieldPercentage ? (data.yieldCalculation.yieldPercentage * 100).toFixed(2) : "",
 
       // Assignment fields
       assignedTo: (() => {
@@ -837,6 +840,11 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
     
     // Store original data for change tracking (deep clone to avoid reference issues)
     setOriginalData(JSON.parse(JSON.stringify(hydratedData)))
+    
+    // Populate site areas after data is hydrated
+    setTimeout(() => {
+      populateSiteAreas();
+    }, 0);
   }, [data?._id]) // Use only the data ID as dependency to prevent infinite loops
 
   // Calculate area in cents from areaValue and areaUnit
@@ -894,7 +902,11 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       });
       
       console.log('✅ Site areas updated:', siteAreaUpdates);
+      
+      // Return the updates for immediate use
+      return siteAreaUpdates;
     }
+    return {};
   }, [calculateAreaInCents, updateNestedYieldData]);
 
   const handleChange = useCallback((key, value) => {
@@ -1162,116 +1174,91 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           .filter((z) => z.location === formData.location && z.region === formData.zone)
           .map((z) => ({ value: z.zone, label: z.zone }))
       }
-      return []
     },
     [masters, formData.location, formData.zone],
   )
 
+  // Function to calculate site areas and return updated form data
+  const calculateSiteAreasForPayload = useCallback(() => {
+    // Get current form values directly to avoid closure issues
+    const currentAreaValue = formData.areaValue;
+    const currentAreaUnit = formData.areaUnit;
+    
+    console.log('🔍 Current area values:', { currentAreaValue, currentAreaUnit });
+    
+    // Calculate area in cents directly
+    let areaInCents = 0;
+    if (currentAreaValue && currentAreaUnit) {
+      const value = parseFloat(currentAreaValue);
+      if (!isNaN(value) && value > 0) {
+        switch (currentAreaUnit) {
+          case "cents":
+            areaInCents = value;
+            break;
+          case "acres":
+            areaInCents = value * 100;
+            break;
+          case "hectare":
+            areaInCents = value * 247.105;
+            break;
+          default:
+            areaInCents = 0;
+        }
+      }
+    }
+    
+    console.log('🔄 Calculated areaInCents:', areaInCents);
+    
+    if (areaInCents > 0) {
+      // Create site area updates
+      const siteAreaUpdates = {
+        roadSiteArea: areaInCents.toString(),
+        osrSiteArea: areaInCents.toString(),
+        tnebSiteArea: areaInCents.toString(),
+        localBodySiteArea: areaInCents.toString()
+      };
+      
+      // Return updated form data with calculated site areas
+      const updatedFormData = { ...formData, ...siteAreaUpdates };
+      
+      console.log('✅ Updated form data for payload:', updatedFormData);
+      console.log('🔍 Site area values in updated data:', {
+        roadSiteArea: updatedFormData.roadSiteArea,
+        osrSiteArea: updatedFormData.osrSiteArea,
+        tnebSiteArea: updatedFormData.tnebSiteArea,
+        localBodySiteArea: updatedFormData.localBodySiteArea
+      });
+      
+      return updatedFormData;
+    }
+    
+    console.log('⚠️ No valid area calculated, returning original formData');
+    return formData;
+  }, [formData]);
+
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
-      const leadPayload = transformLeadPayload(formData, data)
+      
+      // Calculate site areas and get updated form data immediately
+      const updatedFormData = calculateSiteAreasForPayload();
+      
+      const leadPayload = transformLeadPayload(updatedFormData, data);
 
-      // Debug: Show payload optimization for edits
-      if (data) {
-        const fullPayloadSize = JSON.stringify({
-          leadType: formData.leadType || "mediator",
-          contactNumber: formData.contactNumber || "",
-          mediatorName: formData.mediatorName || "",
-          location: formData.location || "",
-          landName: formData.landName || "",
-          sourceCategory: formData.sourceCategory || "",
-          source: formData.source || "",
-          currentRole: getCurrentUserRole(),
-          assignedTo: formData.assignedTo ,
-          competitorAnalysis: [
-            {
-              developerName: formData.competitorDeveloperName || "",
-              projectName: formData.competitorProjectName || "",
-              productType: formData.competitorProductType || "",
-              location: formData.competitorLocation || "",
-              plotUnitSize: formData.competitorPlotSize || "",
-              landExtent: formData.competitorLandExtent || "",
-              priceRange: formData.competitorPriceRange || "",
-              approxPrice: formData.competitorApproxPrice || "",
-              approxPriceCent: formData.competitorApproxPriceCent || "",
-              totalPlotsUnits: formData.competitorTotalUnits || "",
-              keyAmenities: String(formData.competitorKeyAmenities || "")
-                .split(",")
-                .map((s) => s.trim())
-                .filter(Boolean),
-              uspPositioning: formData.competitorUSP || "",
-            }
-          ],
-          checkListPage: [
-            {
-              landLocation: formData.checkLandLocation || "",
-              landExtent: formData.checkLandExtent || "",
-              landZone: formData.checkLandZone || "",
-              classificationOfLand: formData.checkLandClassification || "",
-              googlePin: formData.checkGooglePin || "",
-              approachRoadWidth: formData.checkApproachRoadWidth || "",
-              ebLine: yesNo(formData.checkEBLine),
-              soilType: formData.checkSoilType || "",
-              quarryCrusher: yesNo(formData.checkQuarryCrusher),
-              sellingPrice: formData.checkSellingPrice || "",
-              guidelineValue: formData.checkGuidelineValue || "",
-              locationSellingPrice: formData.checkLocationSellingPrice || "",
-              marketingPrice: formData.checkMarketingPrice || "",
-              roadWidth: formData.checkRoadWidth || "",
-              govtLandAcquisition: yesNo(formData.checkGovtLandAcquisition),
-              railwayTrackNoc: yesNo(formData.checkRailwayTrackNOC),
-              bankIssues: yesNo(formData.checkBankIssues),
-              dumpyardQuarryCheck: yesNo(formData.checkDumpyardQuarry),
-              waterbodyNearby: yesNo(formData.checkWaterbodyNearby),
-              nearbyHtLine: yesNo(formData.checkNearbyHTLine),
-              templeLand: yesNo(formData.checkTempleLand),
-              futureGovtProjects: yesNo(formData.checkFutureGovtProjects),
-              farmLand: yesNo(formData.checkFarmLand),
-              totalSaleableArea: formData.checkTotalSaleableArea || "",
-              landCleaning: yesNo(formData.checkLandCleaning),
-              subDivision: yesNo(formData.checkSubDivision),
-              soilTest: yesNo(formData.checkSoilTest),
-              waterList: yesNo(formData.checkWaterList),
-              ownerName: formData.checkOwnerName || "",
-              consultantName: formData.checkConsultantName || "",
-              notes: formData.checkNotes || "",
-              projects: formData.checkProjects || "",
-              googleLocation: formData.checkGoogleLocation || "",
-            }
-          ]
-        }).length
-
-        const optimizedPayloadSize = JSON.stringify(leadPayload).length
-        const savings = fullPayloadSize - optimizedPayloadSize
-        const savingsPercent = ((savings / fullPayloadSize) * 100).toFixed(1)
-
-        console.log(`🚀 Payload Optimization:`)
-        console.log(`   Full payload: ${(fullPayloadSize / 1024).toFixed(2)} KB`)
-        console.log(`   Optimized: ${(optimizedPayloadSize / 1024).toFixed(2)} KB`)
-        console.log(`   Saved: ${(savings / 1024).toFixed(2)} KB (${savingsPercent}%)`)
-        console.log(`   Fields sent: ${Object.keys(leadPayload).length}`)
-      }
-
-      console.log('📤 Lead Payload being sent:', JSON.stringify(leadPayload, null, 2))
+      console.log('📤 Lead Payload being sent:', JSON.stringify(leadPayload, null, 2));
 
       const files = {
-        ...(formData.checkFMBSketch && formData.fileFMBSketch ? { fmb_sketch: formData.fileFMBSketch } : {}),
+        ...(updatedFormData.checkFMBSketch && updatedFormData.fileFMBSketch ? { fmb_sketch: updatedFormData.fileFMBSketch } : {}),
+        ...(updatedFormData.checkPattaChitta && updatedFormData.filePattaChitta ? { patta_chitta: updatedFormData.filePattaChitta } : {}),
         ...(formData.checkPattaChitta && formData.filePattaChitta ? { patta_chitta: formData.filePattaChitta } : {}),
       }
       
-      const result = await submitLeadForm(formData, data, files)
+      const result = await submitLeadForm(formData, data, files);
       
       // Call onSubmit if provided (for backward compatibility)
       if (onSubmit) {
-       
-        
         try {
-          await onSubmit(leadPayload, files)
-
-          // clearFormDraft()
-          
-         
+          await onSubmit(leadPayload, files);
 
           if (Object.keys(files).length > 0) {
             toast.success('Files uploaded successfully', { duration: 2000 })
@@ -1290,13 +1277,6 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
       setIsSubmitting(false);
     }
   }
-
-  const SectionHeader = ({ title, icon: Icon }) => (
-    <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
-      {Icon && <Icon className="w-5 h-5 text-indigo-600" />}
-      <h3 className="font-semibold text-lg text-gray-800">{title}</h3>
-    </div>
-  )
 
   // CSS for disabling all inputs except Lead Stage when editableFields is restricted
   const getFormWrapperClass = () => {
@@ -1332,6 +1312,13 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
           {value || "-"}
         </div>
       )}
+    </div>
+  )
+
+  const SectionHeader = ({ title, icon: Icon }) => (
+    <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
+      {Icon && <Icon className="w-5 h-5 text-indigo-600" />}
+      <h3 className="font-semibold text-lg text-gray-800">{title}</h3>
     </div>
   )
 
@@ -2822,15 +2809,17 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                     </div>
 
                     {/* YIELD */}
-                    <div>
+                    {data && (
+                      <div>
                       <Label className="text-sm font-medium text-gray-700">Yield (%)</Label>
                       <div className="p-2 bg-gray-50 border rounded-md mt-1">
                         {yieldResult ? 
-                          `${(yieldResult.yieldPercentage * 100).toFixed(2)}%` : 
+                          `${(yieldResult.yieldPercentage).toFixed(2)}%` : 
                           formData.yield || "-"
                         }
                       </div>
                     </div>
+                    )}
 
                    
 
@@ -3189,17 +3178,19 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                         <div className="space-y-3">
                           <Label className="text-sm font-medium text-gray-700">Road Area </Label>
                           <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <Label className="text-xs text-gray-600">Site Area (cents)</Label>
-                              <Input
-                                type="number"
-                                value={formData.roadSiteArea || ""}
-                                onChange={(e) => handleChange("roadSiteArea", e.target.value)}
-                                placeholder="Site area in cents"
-                                disabled={viewMode}
-                                className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
-                              />
-                            </div>
+                            {data && (
+                              <div>
+                                <Label className="text-xs text-gray-600">Site Area (cents)</Label>
+                                <Input
+                                  type="number"
+                                  value={formData.roadSiteArea || ""}
+                                  onChange={(e) => handleChange("roadSiteArea", e.target.value)}
+                                  placeholder="Site area in cents"
+                                  disabled={viewMode}
+                                  className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
+                                />
+                              </div>
+                            )}
                             <div>
                               <Label className="text-xs text-gray-600">Manual Road Area (cents)</Label>
                               <Input
@@ -3214,11 +3205,11 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                           </div>
                         </div>
 
-                        {/* 1️⃣1️⃣ OSR (Optional - Conditional) */}
-                        {isOSREligible() && (
-                          <div className="space-y-3">
-                            <Label className="text-sm font-medium text-gray-700"> OSR ( Auto-applied for ≥247 cents)</Label>
-                            <div className="grid grid-cols-3 gap-2">
+                        {/* 1️⃣1️⃣ OSR */}
+                        <div className="space-y-3">
+                          <Label className="text-sm font-medium text-gray-700"> OSR</Label>
+                          <div className="grid grid-cols-3 gap-2">
+                            {data && (
                               <div>
                                 <Label className="text-xs text-gray-600">Site Area(cents)</Label>
                                 <Input
@@ -3226,49 +3217,50 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                   value={formData.osrSiteArea || ""}
                                   readOnly
                                   placeholder="Auto-calculated"
-                                  className="bg-gray-100 cursor-not-allowed"
+                                  className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-100 cursor-not-allowed"}
                                 />
                               </div>
-                              <div>
-                                <Label className="text-xs text-gray-600">Manual Road Area</Label>
-                                <Input
-                                  type="number"
-                                  value={formData.osrManualRoadArea || ""}
-                                  onChange={(e) => handleChange("osrManualRoadArea", e.target.value)}
-                                  placeholder="Manual road area"
-                                  disabled={viewMode}
-                                  className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
-                                />
-                              </div>
-                              <div>
-                                <Label className="text-xs text-gray-600">Percentage(%)</Label>
-                                <Input
-                                  type="number"
-                                  value={formData.osrPercentage || ""}
-                                  onChange={(e) => handleChange("osrPercentage", e.target.value)}
-                                  placeholder="Percentage"
-                                  disabled={viewMode}
-                                  className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
-                                />
-                              </div>
+                            )}
+                            <div>
+                              <Label className="text-xs text-gray-600">Manual Road Area</Label>
+                              <Input
+                                type="number"
+                                value={formData.osrManualRoadArea || ""}
+                                onChange={(e) => handleChange("osrManualRoadArea", e.target.value)}
+                                placeholder="Manual road area"
+                                disabled={viewMode}
+                                className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-gray-600">Percentage(%)</Label>
+                              <Input
+                                type="number"
+                                value={formData.osrPercentage || "10"}
+                                readOnly
+                                placeholder="10"
+                                className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-100 cursor-not-allowed"}
+                              />
                             </div>
                           </div>
-                        )}
+                        </div>
 
                         {/* 1️⃣2️⃣ TNEB */}
                         <div className="space-y-3">
                           <Label className="text-sm font-medium text-gray-700"> TNEB </Label>
                           <div className="grid grid-cols-3 gap-2">
-                            <div>
-                              <Label className="text-xs text-gray-600">Site Area(cents)</Label>
-                              <Input
-                                type="number"
-                                value={formData.tnebSiteArea || ""}
-                                readOnly
-                                placeholder="Auto-calculated"
-                                className="bg-gray-100 cursor-not-allowed"
-                              />
-                            </div>
+                            {data && (
+                              <div>
+                                <Label className="text-xs text-gray-600">Site Area(cents)</Label>
+                                <Input
+                                  type="number"
+                                  value={formData.tnebSiteArea || ""}
+                                  readOnly
+                                  placeholder="Auto-calculated"
+                                  className="bg-gray-100 cursor-not-allowed"
+                                />
+                              </div>
+                            )}
                             <div>
                               <Label className="text-xs text-gray-600">Manual Road Area</Label>
                               <Input
@@ -3284,11 +3276,10 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                               <Label className="text-xs text-gray-600">Percentage(%)</Label>
                               <Input
                                 type="number"
-                                value={formData.tnebPercentage || ""}
-                                onChange={(e) => handleChange("tnebPercentage", e.target.value)}
-                                placeholder="Percentage"
-                                disabled={viewMode}
-                                className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
+                                value={formData.tnebPercentage || "0.5"}
+                                readOnly
+                                placeholder="0.5"
+                                className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-100 cursor-not-allowed"}
                               />
                             </div>
                           </div>
@@ -3298,16 +3289,18 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                         <div className="space-y-3">
                           <Label className="text-sm font-medium text-gray-700">Local Body Deduction </Label>
                           <div className="grid grid-cols-3 gap-2">
-                            <div>
-                              <Label className="text-xs text-gray-600">Site Area</Label>
-                              <Input
-                                type="number"
-                                value={formData.localBodySiteArea || ""}
-                                readOnly
-                                placeholder="Auto-calculated"
-                                className="bg-gray-100 cursor-not-allowed"
-                              />
-                            </div>
+                            {data && (
+                              <div>
+                                <Label className="text-xs text-gray-600">Site Area</Label>
+                                <Input
+                                  type="number"
+                                  value={formData.localBodySiteArea || ""}
+                                  readOnly
+                                  placeholder="Auto-calculated"
+                                  className="bg-gray-100 cursor-not-allowed"
+                                />
+                              </div>
+                            )}
                             <div>
                               <Label className="text-xs text-gray-600">Manual Road Area</Label>
                               <Input
@@ -3323,11 +3316,10 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                               <Label className="text-xs text-gray-600">Percentage</Label>
                               <Input
                                 type="number"
-                                value={formData.localBodyPercentage || ""}
-                                onChange={(e) => handleChange("localBodyPercentage", e.target.value)}
-                                placeholder="Percentage"
-                                disabled={viewMode}
-                                className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
+                                value={formData.localBodyPercentage || "0.5"}
+                                readOnly
+                                placeholder="0.5"
+                                className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-100 cursor-not-allowed"}
                               />
                             </div>
                           </div>
@@ -3355,10 +3347,10 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                               </div>
                             </div>
                           </div>
-                        )}
+                        )} 
 
                          {/* CALCULATE YIELD BUTTON */}
-                    {!viewMode && (
+                    {/* {!viewMode && (
                       <div>
                         <Button 
                           onClick={handleCalculateYield}
@@ -3369,7 +3361,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                           Calculate Yield
                         </Button>
                       </div>
-                    )}
+                    )} */}
                       </div>
                     
                   </CardContent>

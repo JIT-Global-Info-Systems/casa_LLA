@@ -125,37 +125,34 @@ function deduction9ManualRoadArea(data) {
 
 
 /**
- * Deduction 10: OSR - (siteArea - manualRoadArea) * (percentage/100) [cents]. Only when OSR eligible.
+ * Deduction 10: OSR - (areaCents - manualRoadArea) * (percentage/100) [cents]. Only when OSR eligible.
  */
 function deduction10OSR(data, areaCents) {
   if (!isOSREligible(areaCents)) return 0;
   const o = data.osr || {};
-  const site = toNum(o.siteArea);
   const manual = toNum(o.manualRoadArea);
   const pct = toNum(o.percentage);
-  return Math.max(0, (site - manual) * (pct / 100));
+  return Math.max(0, (areaCents - manual) * (pct / 100));
 }
 
 /**
- * Deduction 11: TNEB - (siteArea - manualRoadArea) * (percentage/100) [cents]
+ * Deduction 11: TNEB - (areaCents - manualRoadArea) * (percentage/100) [cents]
  */
-function deduction11TNEB(data) {
+function deduction11TNEB(data, areaCents) {
   const t = data.tneb || {};
-  const site = toNum(t.siteArea);
   const manual = toNum(t.manualRoadArea);
   const pct = toNum(t.percentage);
-  return Math.max(0, (site - manual) * (pct / 100));
+  return Math.max(0, (areaCents - manual) * (pct / 100));
 }
 
 /**
- * Deduction 12: Local Body - (siteArea - manualRoadArea) * (percentage/100) [cents]
+ * Deduction 12: Local Body - (areaCents - manualRoadArea) * (percentage/100) [cents]
  */
-function deduction12LocalBody(data) {
+function deduction12LocalBody(data, areaCents) {
   const l = data.localBody || {};
-  const site = toNum(l.siteArea);
   const manual = toNum(l.manualRoadArea);
   const pct = toNum(l.percentage);
-  return Math.max(0, (site - manual) * (pct / 100));
+  return Math.max(0, (areaCents - manual) * (pct / 100));
 }
 
 /**
@@ -188,8 +185,8 @@ function calculateLeadYield(data) {
   const d8 = deduction8Highway(data);
   const d9 = deduction9ManualRoadArea(data);
   const d10 = deduction10OSR(data, areaCents);
-  const d11 = deduction11TNEB(data);
-  const d12 = deduction12LocalBody(data);
+  const d11 = deduction11TNEB(data, areaCents);
+  const d12 = deduction12LocalBody(data, areaCents);
 
   const d1_c = sqMeterToCents(d1);
   const d2_c = sqMeterToCents(d2);
@@ -219,10 +216,22 @@ function calculateLeadYield(data) {
       railwayBoundary: data.railwayBoundary || {},
       burialGround: data.burialGround || {},
       highway: data.highway || {},
-      roadArea: data.roadArea || {},
-      osr: data.osr || null,
-      tneb: data.tneb || {},
-      localBody: data.localBody || {},
+      roadArea: data.roadArea ? {
+        ...data.roadArea,
+        siteArea: Number(areaCents.toFixed(4))
+      } : {},
+      osr: data.osr ? {
+        ...data.osr,
+        siteArea: Number(areaCents.toFixed(4))
+      } : null,
+      tneb: data.tneb ? {
+        ...data.tneb,
+        siteArea: Number(areaCents.toFixed(4))
+      } : {},
+      localBody: data.localBody ? {
+        ...data.localBody,
+        siteArea: Number(areaCents.toFixed(4))
+      } : {},
     },
     deductions: {
       deduction1_channel_sqm: Number(d1.toFixed(4)),

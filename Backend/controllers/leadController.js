@@ -325,13 +325,14 @@ exports.createLead = async (req, res) => {
       yields.push(yieldRecord);
       
       // Also keep the existing individual OSR, TNEB, Local Body calculations
-      if (leadData.osr && leadData.osr.siteArea && leadData.osr.percentage) {
-        const calculatedRoadArea = (leadData.osr.siteArea * leadData.osr.percentage) / 100;
-        const calculatedYield = leadData.osr.siteArea - calculatedRoadArea;
+      if (leadData.osr && leadData.osr.percentage) {
+        const calculatedAreaCents = yieldCalculationResult.area.areaInCents;
+        const calculatedRoadArea = (calculatedAreaCents * leadData.osr.percentage) / 100;
+        const calculatedYield = calculatedAreaCents - calculatedRoadArea;
         
         yields.push({
           type: 'OSR',
-          siteArea: leadData.osr.siteArea,
+          siteArea: calculatedAreaCents,
           manualRoadArea: leadData.osr.manualRoadArea || 0,
           percentage: leadData.osr.percentage,
           calculatedRoadArea,
@@ -341,13 +342,14 @@ exports.createLead = async (req, res) => {
         });
       }
       
-      if (leadData.tneb && leadData.tneb.siteArea && leadData.tneb.percentage) {
-        const calculatedRoadArea = (leadData.tneb.siteArea * leadData.tneb.percentage) / 100;
-        const calculatedYield = leadData.tneb.siteArea - calculatedRoadArea;
+      if (leadData.tneb && leadData.tneb.percentage) {
+        const calculatedAreaCents = yieldCalculationResult.area.areaInCents;
+        const calculatedRoadArea = (calculatedAreaCents * leadData.tneb.percentage) / 100;
+        const calculatedYield = calculatedAreaCents - calculatedRoadArea;
         
         yields.push({
           type: 'TNEB',
-          siteArea: leadData.tneb.siteArea,
+          siteArea: calculatedAreaCents,
           manualRoadArea: leadData.tneb.manualRoadArea || 0,
           percentage: leadData.tneb.percentage,
           calculatedRoadArea,
@@ -357,13 +359,14 @@ exports.createLead = async (req, res) => {
         });
       }
       
-      if (leadData.localBody && leadData.localBody.siteArea && leadData.localBody.percentage) {
-        const calculatedRoadArea = (leadData.localBody.siteArea * leadData.localBody.percentage) / 100;
-        const calculatedYield = leadData.localBody.siteArea - calculatedRoadArea;
+      if (leadData.localBody && leadData.localBody.percentage) {
+        const calculatedAreaCents = yieldCalculationResult.area.areaInCents;
+        const calculatedRoadArea = (calculatedAreaCents * leadData.localBody.percentage) / 100;
+        const calculatedYield = calculatedAreaCents - calculatedRoadArea;
         
         yields.push({
           type: 'Local Body',
-          siteArea: leadData.localBody.siteArea,
+          siteArea: calculatedAreaCents,
           manualRoadArea: leadData.localBody.manualRoadArea || 0,
           percentage: leadData.localBody.percentage,
           calculatedRoadArea,
@@ -439,9 +442,8 @@ exports.createLead = async (req, res) => {
 
 
     const leadObj = lead.toObject();
-    const { yields, ...leadDataWithoutYields } = leadObj;
     const responseData = {
-      ...leadDataWithoutYields,
+      ...leadObj,
       yieldCalculation: leadObj.yieldCalculation != null ? leadObj.yieldCalculation : yieldCalculationToStore
     };
     return res.status(201).json({
@@ -467,6 +469,7 @@ exports.createLead = async (req, res) => {
 
 // Update lead function with yield calculation
 exports.updateLead = async (req, res) => {
+  console.log("🔥 updateLead function called!");
   try {
     if (!req.user || !req.user.user_id) {
       return res.status(401).json({
@@ -475,10 +478,13 @@ exports.updateLead = async (req, res) => {
     }
 
     const { leadId } = req.params;
+    console.log("🔥 Update lead ID:", leadId);
 
     let updateData = typeof req.body.data === "string"
       ? JSON.parse(req.body.data || "{}")
       : req.body;
+
+    console.log("🔥 Raw req.body in update:", JSON.stringify(req.body, null, 2));
 
     if (req.body && typeof req.body === "object" && req.body.data !== undefined) {
       Object.keys(req.body).forEach((key) => {
@@ -512,7 +518,12 @@ exports.updateLead = async (req, res) => {
       }
       return v;
     };
+    
+    console.log("DEBUG: Update lead - Raw updateData:", JSON.stringify(updateData, null, 2));
+    
     const parsedSiteArea = parseField(updateData.siteArea);
+    console.log("DEBUG: Update lead - Parsed siteArea:", parsedSiteArea);
+    
     const yieldInput = {
       area: parseField(updateData.area) || parsedSiteArea || {
         value: updateData.areaValue ?? updateData.area_value ?? parsedSiteArea?.value ?? (updateData.roadArea?.siteArea),
@@ -531,7 +542,10 @@ exports.updateLead = async (req, res) => {
       tneb: parseField(updateData.tneb) || {},
       localBody: parseField(updateData.localBody) || {}
     };
+    
+    console.log("DEBUG: Update lead - Yield input:", JSON.stringify(yieldInput, null, 2));
     const yieldCalculationResult = calculateLeadYield(yieldInput);
+    console.log("DEBUG: Update lead - Yield calculation result:", JSON.stringify(yieldCalculationResult, null, 2));
     const yieldCalculationToStore = {
       ...yieldCalculationResult,
       calculatedAt: new Date(),
@@ -576,13 +590,14 @@ exports.updateLead = async (req, res) => {
       yields.push(yieldRecord);
       
       // Also keep the existing individual OSR, TNEB, Local Body calculations
-      if (updateData.osr && updateData.osr.siteArea && updateData.osr.percentage) {
-        const calculatedRoadArea = (updateData.osr.siteArea * updateData.osr.percentage) / 100;
-        const calculatedYield = updateData.osr.siteArea - calculatedRoadArea;
+      if (updateData.osr && updateData.osr.percentage) {
+        const calculatedAreaCents = yieldCalculationResult.area.areaInCents;
+        const calculatedRoadArea = (calculatedAreaCents * updateData.osr.percentage) / 100;
+        const calculatedYield = calculatedAreaCents - calculatedRoadArea;
         
         yields.push({
           type: 'OSR',
-          siteArea: updateData.osr.siteArea,
+          siteArea: calculatedAreaCents,
           manualRoadArea: updateData.osr.manualRoadArea || 0,
           percentage: updateData.osr.percentage,
           calculatedRoadArea,
@@ -592,13 +607,14 @@ exports.updateLead = async (req, res) => {
         });
       }
       
-      if (updateData.tneb && updateData.tneb.siteArea && updateData.tneb.percentage) {
-        const calculatedRoadArea = (updateData.tneb.siteArea * updateData.tneb.percentage) / 100;
-        const calculatedYield = updateData.tneb.siteArea - calculatedRoadArea;
+      if (updateData.tneb && updateData.tneb.percentage) {
+        const calculatedAreaCents = yieldCalculationResult.area.areaInCents;
+        const calculatedRoadArea = (calculatedAreaCents * updateData.tneb.percentage) / 100;
+        const calculatedYield = calculatedAreaCents - calculatedRoadArea;
         
         yields.push({
           type: 'TNEB',
-          siteArea: updateData.tneb.siteArea,
+          siteArea: calculatedAreaCents,
           manualRoadArea: updateData.tneb.manualRoadArea || 0,
           percentage: updateData.tneb.percentage,
           calculatedRoadArea,
@@ -608,13 +624,14 @@ exports.updateLead = async (req, res) => {
         });
       }
       
-      if (updateData.localBody && updateData.localBody.siteArea && updateData.localBody.percentage) {
-        const calculatedRoadArea = (updateData.localBody.siteArea * updateData.localBody.percentage) / 100;
-        const calculatedYield = updateData.localBody.siteArea - calculatedRoadArea;
+      if (updateData.localBody && updateData.localBody.percentage) {
+        const calculatedAreaCents = yieldCalculationResult.area.areaInCents;
+        const calculatedRoadArea = (calculatedAreaCents * updateData.localBody.percentage) / 100;
+        const calculatedYield = calculatedAreaCents - calculatedRoadArea;
         
         yields.push({
           type: 'Local Body',
-          siteArea: updateData.localBody.siteArea,
+          siteArea: calculatedAreaCents,
           manualRoadArea: updateData.localBody.manualRoadArea || 0,
           percentage: updateData.localBody.percentage,
           calculatedRoadArea,
@@ -633,7 +650,7 @@ exports.updateLead = async (req, res) => {
       leadId,
       {
         ...updateData,
-        yields: calculatedYields,
+        // yields: calculatedYields,
         yieldCalculation: yieldCalculationPlain,
         updated_by: req.user.user_id,
         updated_at: new Date()
@@ -648,11 +665,10 @@ exports.updateLead = async (req, res) => {
     }
 
     const leadObj = lead.toObject();
-    const { yields, ...leadDataWithoutYields } = leadObj;
     return res.status(200).json({
       message: "Lead updated successfully",
       data: {
-        ...leadDataWithoutYields,
+        ...leadObj,
         yieldCalculation: leadObj.yieldCalculation || null
       }
     });

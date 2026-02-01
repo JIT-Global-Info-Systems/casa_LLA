@@ -1,7 +1,7 @@
 import { getToken, clearAllAuthData } from '../utils/authStorage';
 
-const API_BASE_URL = 'http://13.201.132.94:5000/api';
-// const API_BASE_URL = 'http://localhost:5000/api';
+// const API_BASE_URL = 'http://13.201.132.94:5000/api';
+const API_BASE_URL = 'http://localhost:5000/api';
 const REQUEST_TIMEOUT = 30000; // 30 seconds
 const MAX_RETRIES = 2;
 

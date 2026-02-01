@@ -514,14 +514,34 @@ export const LeadsProvider = ({ children }) => {
         payload.callTime = formData.callTime
       }
 
-      // Yield calculation data - send as separate fields for backend processing
+      // Yield calculation data - send area with proper structure
+      const calculateAreaInCents = () => {
+        const areaValue = formData.areaValue;
+        const areaUnit = formData.areaUnit;
+        
+        if (!areaValue || !areaUnit) return 0;
+        
+        const value = parseFloat(areaValue);
+        if (isNaN(value) || value <= 0) return 0;
+
+        switch (areaUnit) {
+          case "cents":
+            return value;
+          case "acres":
+            return value * 100;
+          case "hectare":
+            return value * 247.105;
+          default:
+            return 0;
+        }
+      };
+      
+      const areaInCents = calculateAreaInCents();
       payload.area = JSON.stringify({
         value: parseFloat(formData.areaValue) || 0,
-        unit: formData.areaUnit || "hectare"
+        unit: formData.areaUnit || "hectare",
+        areaInCents: areaInCents
       })
-
-      // Send the basic area field from the dropdown (this is what the backend expects)
-      payload.area = formData.area || ""
 
       payload.channel = JSON.stringify({
         width: parseFloat(formData.channelWidth) || 0,
@@ -576,38 +596,59 @@ export const LeadsProvider = ({ children }) => {
         manualRoadArea: parseFloat(formData.manualRoadArea) || 0
       })
 
-      // OSR data
-      const osrSiteArea = parseFloat(formData.osrSiteArea)
-      const osrPercentage = parseFloat(formData.osrPercentage)
-      if (!isNaN(osrSiteArea) && !isNaN(osrPercentage)) {
-        payload.osr = JSON.stringify({
-          siteArea: osrSiteArea,
-          manualRoadArea: parseFloat(formData.osrManualRoadArea) || 0,
-          percentage: osrPercentage
-        })
-      }
+      console.log('🔍 transformLeadPayload - roadArea values:', {
+        roadSiteArea_from_form: formData.roadSiteArea,
+        parsed_roadSiteArea: parseFloat(formData.roadSiteArea),
+        final_roadSiteArea: parseFloat(formData.roadSiteArea) || 0
+      });
 
-      // TNEB data
-      const tnebSiteArea = parseFloat(formData.tnebSiteArea)
-      const tnebPercentage = parseFloat(formData.tnebPercentage)
-      if (!isNaN(tnebSiteArea) && !isNaN(tnebPercentage)) {
-        payload.tneb = JSON.stringify({
-          siteArea: tnebSiteArea,
-          manualRoadArea: parseFloat(formData.tnebManualRoadArea) || 0,
-          percentage: tnebPercentage
-        })
-      }
+      // OSR data - always send to match expected structure
+      const osrSiteArea = parseFloat(formData.osrSiteArea) || 0;
+      const osrPercentage = parseFloat(formData.osrPercentage) || 0;
+      
+      console.log('🔍 transformLeadPayload - OSR values:', {
+        osrSiteArea_from_form: formData.osrSiteArea,
+        parsed_osrSiteArea: parseFloat(formData.osrSiteArea),
+        final_osrSiteArea: osrSiteArea
+      });
+      
+      payload.osr = JSON.stringify({
+        siteArea: osrSiteArea,
+        manualRoadArea: parseFloat(formData.osrManualRoadArea) || 0,
+        percentage: osrPercentage
+      })
 
-      // Local Body data
-      const localBodySiteArea = parseFloat(formData.localBodySiteArea)
-      const localBodyPercentage = parseFloat(formData.localBodyPercentage)
-      if (!isNaN(localBodySiteArea) && !isNaN(localBodyPercentage)) {
-        payload.localBody = JSON.stringify({
-          siteArea: localBodySiteArea,
-          manualRoadArea: parseFloat(formData.localBodyManualRoadArea) || 0,
-          percentage: localBodyPercentage
-        })
-      }
+      // TNEB data - always send to match expected structure
+      const tnebSiteArea = parseFloat(formData.tnebSiteArea) || 0;
+      const tnebPercentage = parseFloat(formData.tnebPercentage) || 0;
+      
+      console.log('🔍 transformLeadPayload - TNEB values:', {
+        tnebSiteArea_from_form: formData.tnebSiteArea,
+        parsed_tnebSiteArea: parseFloat(formData.tnebSiteArea),
+        final_tnebSiteArea: tnebSiteArea
+      });
+      
+      payload.tneb = JSON.stringify({
+        siteArea: tnebSiteArea,
+        manualRoadArea: parseFloat(formData.tnebManualRoadArea) || 0,
+        percentage: tnebPercentage
+      })
+
+      // Local Body data - always send to match expected structure
+      const localBodySiteArea = parseFloat(formData.localBodySiteArea) || 0;
+      const localBodyPercentage = parseFloat(formData.localBodyPercentage) || 0;
+      
+      console.log('🔍 transformLeadPayload - Local Body values:', {
+        localBodySiteArea_from_form: formData.localBodySiteArea,
+        parsed_localBodySiteArea: parseFloat(formData.localBodySiteArea),
+        final_localBodySiteArea: localBodySiteArea
+      });
+      
+      payload.localBody = JSON.stringify({
+        siteArea: localBodySiteArea,
+        manualRoadArea: parseFloat(formData.localBodyManualRoadArea) || 0,
+        percentage: localBodyPercentage
+      })
 
       return payload
     }
