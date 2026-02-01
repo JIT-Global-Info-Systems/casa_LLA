@@ -2892,45 +2892,45 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                           <Label className="text-sm font-medium text-gray-700"> Channel </Label>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
-                              <Label className="text-xs text-gray-600">Width</Label>
+                              <Label className="text-xs text-gray-600">Width (meters)</Label>
                               <Input
                                 type="number"
                                 value={formData.channelWidth || ""}
                                 onChange={(e) => handleChange("channelWidth", e.target.value)}
-                                placeholder="Width"
+                                placeholder="Width in meters"
                                 disabled={viewMode}
                                 className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                             <div>
-                              <Label className="text-xs text-gray-600">Manual Length</Label>
+                              <Label className="text-xs text-gray-600">Manual Length (meters)</Label>
                               <Input
                                 type="number"
                                 value={formData.channelLength || ""}
                                 onChange={(e) => handleChange("channelLength", e.target.value)}
-                                placeholder="Manual length"
+                                placeholder="Manual length in meters"
                                 disabled={viewMode}
                                 className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                             <div>
-                              <Label className="text-xs text-gray-600">In Between Site</Label>
+                              <Label className="text-xs text-gray-600">In Between Site (meters)</Label>
                               <Input
                                 type="number"
                                 value={formData.channelInBetween || ""}
                                 onChange={(e) => handleChange("channelInBetween", e.target.value)}
-                                placeholder="In between site"
+                                placeholder="In between site in meters"
                                 disabled={viewMode}
                                 className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                             <div>
-                              <Label className="text-xs text-gray-600">Nearby Site Boundary</Label>
+                              <Label className="text-xs text-gray-600">Nearby Site Boundary (meters)</Label>
                               <Input
                                 type="number"
                                 value={formData.channelNearBoundary || ""}
                                 onChange={(e) => handleChange("channelNearBoundary", e.target.value)}
-                                placeholder="Nearby boundary"
+                                placeholder="Nearby boundary in meters"
                                 disabled={viewMode}
                                 className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
@@ -2943,45 +2943,45 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                           <Label className="text-sm font-medium text-gray-700"> Gas Line </Label>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
-                              <Label className="text-xs text-gray-600">Width</Label>
+                              <Label className="text-xs text-gray-600">Width (meters)</Label>
                               <Input
                                 type="number"
                                 value={formData.gasLineWidth || ""}
                                 onChange={(e) => handleChange("gasLineWidth", e.target.value)}
-                                placeholder="Width"
+                                placeholder="Width in meters"
                                 disabled={viewMode}
                                 className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                             <div>
-                              <Label className="text-xs text-gray-600">Length</Label>
+                              <Label className="text-xs text-gray-600">Length (meters)</Label>
                               <Input
                                 type="number"
                                 value={formData.gasLineLength || ""}
                                 onChange={(e) => handleChange("gasLineLength", e.target.value)}
-                                placeholder="Length"
+                                placeholder="Length in meters"
                                 disabled={viewMode}
                                 className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                             <div>
-                              <Label className="text-xs text-gray-600">In Between Site</Label>
+                              <Label className="text-xs text-gray-600">In Between Site (meters)</Label>
                               <Input
                                 type="number"
                                 value={formData.gasLineInBetween || ""}
                                 onChange={(e) => handleChange("gasLineInBetween", e.target.value)}
-                                placeholder="In between site"
+                                placeholder="In between site in meters"
                                 disabled={viewMode}
                                 className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                             <div>
-                              <Label className="text-xs text-gray-600">Nearby Site Boundary</Label>
+                              <Label className="text-xs text-gray-600">Nearby Site Boundary (meters)</Label>
                               <Input
                                 type="number"
                                 value={formData.gasLineNearBoundary || ""}
                                 onChange={(e) => handleChange("gasLineNearBoundary", e.target.value)}
-                                placeholder="Nearby boundary"
+                                placeholder="Nearby boundary in meters"
                                 disabled={viewMode}
                                 className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
@@ -2994,45 +2994,45 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                           <Label className="text-sm font-medium text-gray-700"> HT Tower Line </Label>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
-                              <Label className="text-xs text-gray-600">Width</Label>
+                              <Label className="text-xs text-gray-600">Width (meters)</Label>
                               <Input
                                 type="number"
                                 value={formData.htTowerLineWidth || ""}
                                 onChange={(e) => handleChange("htTowerLineWidth", e.target.value)}
-                                placeholder="Width"
+                                placeholder="Width in meters"
                                 disabled={viewMode}
                                 className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                             <div>
-                              <Label className="text-xs text-gray-600">Manual Length</Label>
+                              <Label className="text-xs text-gray-600">Manual Length (meters)</Label>
                               <Input
                                 type="number"
                                 value={formData.htTowerLineLength || ""}
                                 onChange={(e) => handleChange("htTowerLineLength", e.target.value)}
-                                placeholder="Manual length"
+                                placeholder="Manual length in meters"
                                 disabled={viewMode}
                                 className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                             <div>
-                              <Label className="text-xs text-gray-600">In Between Site</Label>
+                              <Label className="text-xs text-gray-600">In Between Site (meters)</Label>
                               <Input
                                 type="number"
                                 value={formData.htTowerLineInBetween || ""}
                                 onChange={(e) => handleChange("htTowerLineInBetween", e.target.value)}
-                                placeholder="In between site"
+                                placeholder="In between site in meters"
                                 disabled={viewMode}
                                 className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                             <div>
-                              <Label className="text-xs text-gray-600">Nearby Site Boundary</Label>
+                              <Label className="text-xs text-gray-600">Nearby Site Boundary (meters)</Label>
                               <Input
                                 type="number"
                                 value={formData.htTowerLineNearBoundary || ""}
                                 onChange={(e) => handleChange("htTowerLineNearBoundary", e.target.value)}
-                                placeholder="Nearby boundary"
+                                placeholder="Nearby boundary in meters"
                                 disabled={viewMode}
                                 className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
@@ -3045,23 +3045,23 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                           <Label className="text-sm font-medium text-gray-700"> River</Label>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
-                              <Label className="text-xs text-gray-600">Length</Label>
+                              <Label className="text-xs text-gray-600">Length (meters)</Label>
                               <Input
                                 type="number"
                                 value={formData.riverLength || ""}
                                 onChange={(e) => handleChange("riverLength", e.target.value)}
-                                placeholder="Length"
+                                placeholder="Length in meters"
                                 disabled={viewMode}
                                 className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                             <div>
-                              <Label className="text-xs text-gray-600">Nearby Site Boundary</Label>
+                              <Label className="text-xs text-gray-600">Nearby Site Boundary (meters)</Label>
                               <Input
                                 type="number"
                                 value={formData.riverNearBoundary || ""}
                                 onChange={(e) => handleChange("riverNearBoundary", e.target.value)}
-                                placeholder="Nearby boundary"
+                                placeholder="Nearby boundary in meters"
                                 disabled={viewMode}
                                 className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
@@ -3074,23 +3074,23 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                           <Label className="text-sm font-medium text-gray-700"> Lake </Label>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
-                              <Label className="text-xs text-gray-600">Length</Label>
+                              <Label className="text-xs text-gray-600">Length (meters)</Label>
                               <Input
                                 type="number"
                                 value={formData.lakeLength || ""}
                                 onChange={(e) => handleChange("lakeLength", e.target.value)}
-                                placeholder="Length"
+                                placeholder="Length in meters"
                                 disabled={viewMode}
                                 className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                             <div>
-                              <Label className="text-xs text-gray-600">Nearby Site Boundary</Label>
+                              <Label className="text-xs text-gray-600">Nearby Site Boundary (meters)</Label>
                               <Input
                                 type="number"
                                 value={formData.lakeNearBoundary || ""}
                                 onChange={(e) => handleChange("lakeNearBoundary", e.target.value)}
-                                placeholder="Nearby boundary"
+                                placeholder="Nearby boundary in meters"
                                 disabled={viewMode}
                                 className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
@@ -3103,23 +3103,23 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                           <Label className="text-sm font-medium text-gray-700"> Railway Boundary </Label>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
-                              <Label className="text-xs text-gray-600">Length</Label>
+                              <Label className="text-xs text-gray-600">Length (meters)</Label>
                               <Input
                                 type="number"
                                 value={formData.railwayBoundaryLength || ""}
                                 onChange={(e) => handleChange("railwayBoundaryLength", e.target.value)}
-                                placeholder="Length"
+                                placeholder="Length in meters"
                                 disabled={viewMode}
                                 className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                             <div>
-                              <Label className="text-xs text-gray-600">Nearby Site Boundary</Label>
+                              <Label className="text-xs text-gray-600">Nearby Site Boundary (meters)</Label>
                               <Input
                                 type="number"
                                 value={formData.railwayBoundaryNearBoundary || ""}
                                 onChange={(e) => handleChange("railwayBoundaryNearBoundary", e.target.value)}
-                                placeholder="Nearby boundary"
+                                placeholder="Nearby boundary in meters"
                                 disabled={viewMode}
                                 className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
@@ -3132,23 +3132,23 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                           <Label className="text-sm font-medium text-gray-700"> Burial Ground </Label>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
-                              <Label className="text-xs text-gray-600">Length</Label>
+                              <Label className="text-xs text-gray-600">Length (meters)</Label>
                               <Input
                                 type="number"
                                 value={formData.burialGroundLength || ""}
                                 onChange={(e) => handleChange("burialGroundLength", e.target.value)}
-                                placeholder="Length"
+                                placeholder="Length in meters"
                                 disabled={viewMode}
                                 className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                             <div>
-                              <Label className="text-xs text-gray-600">Nearby Site Boundary</Label>
+                              <Label className="text-xs text-gray-600">Nearby Site Boundary (meters)</Label>
                               <Input
                                 type="number"
                                 value={formData.burialGroundNearBoundary || ""}
                                 onChange={(e) => handleChange("burialGroundNearBoundary", e.target.value)}
-                                placeholder="Nearby boundary"
+                                placeholder="Nearby boundary in meters"
                                 disabled={viewMode}
                                 className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
@@ -3161,23 +3161,23 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                           <Label className="text-sm font-medium text-gray-700"> State / National Highway </Label>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
-                              <Label className="text-xs text-gray-600">Length</Label>
+                              <Label className="text-xs text-gray-600">Length (meters)</Label>
                               <Input
                                 type="number"
                                 value={formData.highwayLength || ""}
                                 onChange={(e) => handleChange("highwayLength", e.target.value)}
-                                placeholder="Length"
+                                placeholder="Length in meters"
                                 disabled={viewMode}
                                 className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                             <div>
-                              <Label className="text-xs text-gray-600">Nearby Site Boundary</Label>
+                              <Label className="text-xs text-gray-600">Nearby Site Boundary (meters)</Label>
                               <Input
                                 type="number"
                                 value={formData.highwayNearBoundary || ""}
                                 onChange={(e) => handleChange("highwayNearBoundary", e.target.value)}
-                                placeholder="Nearby boundary"
+                                placeholder="Nearby boundary in meters"
                                 disabled={viewMode}
                                 className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
@@ -3190,23 +3190,23 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                           <Label className="text-sm font-medium text-gray-700">Road Area </Label>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
-                              <Label className="text-xs text-gray-600">Site Area</Label>
+                              <Label className="text-xs text-gray-600">Site Area (cents)</Label>
                               <Input
                                 type="number"
                                 value={formData.roadSiteArea || ""}
                                 onChange={(e) => handleChange("roadSiteArea", e.target.value)}
-                                placeholder="Site area"
+                                placeholder="Site area in cents"
                                 disabled={viewMode}
                                 className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
                             </div>
                             <div>
-                              <Label className="text-xs text-gray-600">Manual Road Area</Label>
+                              <Label className="text-xs text-gray-600">Manual Road Area (cents)</Label>
                               <Input
                                 type="number"
                                 value={formData.manualRoadArea || ""}
                                 onChange={(e) => handleChange("manualRoadArea", e.target.value)}
-                                placeholder="Manual road area"
+                                placeholder="Manual road area in cents"
                                 disabled={viewMode}
                                 className={viewMode ? "bg-gray-100 cursor-not-allowed" : "bg-gray-50/50"}
                               />
@@ -3220,7 +3220,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                             <Label className="text-sm font-medium text-gray-700"> OSR ( Auto-applied for ≥247 cents)</Label>
                             <div className="grid grid-cols-3 gap-2">
                               <div>
-                                <Label className="text-xs text-gray-600">Site Area</Label>
+                                <Label className="text-xs text-gray-600">Site Area(cents)</Label>
                                 <Input
                                   type="number"
                                   value={formData.osrSiteArea || ""}
@@ -3241,7 +3241,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                                 />
                               </div>
                               <div>
-                                <Label className="text-xs text-gray-600">Percentage</Label>
+                                <Label className="text-xs text-gray-600">Percentage(%)</Label>
                                 <Input
                                   type="number"
                                   value={formData.osrPercentage || ""}
@@ -3260,7 +3260,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                           <Label className="text-sm font-medium text-gray-700"> TNEB </Label>
                           <div className="grid grid-cols-3 gap-2">
                             <div>
-                              <Label className="text-xs text-gray-600">Site Area</Label>
+                              <Label className="text-xs text-gray-600">Site Area(cents)</Label>
                               <Input
                                 type="number"
                                 value={formData.tnebSiteArea || ""}
@@ -3281,7 +3281,7 @@ export default function Leads({ data = null, onSubmit, onClose, viewMode = false
                               />
                             </div>
                             <div>
-                              <Label className="text-xs text-gray-600">Percentage</Label>
+                              <Label className="text-xs text-gray-600">Percentage(%)</Label>
                               <Input
                                 type="number"
                                 value={formData.tnebPercentage || ""}
