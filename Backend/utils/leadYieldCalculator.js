@@ -36,7 +36,7 @@ function areaToCents(area) {
  * Check if OSR deduction applies: area ≈ 9995.74 sq.m or 2.47 acres or 1 hectare
  */
 function isOSREligible(areaCents) {
-  return areaCents >= OSR_ELIGIBLE_CENTS_MIN && areaCents <= OSR_ELIGIBLE_CENTS_MAX;
+  return areaCents > 247.11;
 }
 
 /**
@@ -118,12 +118,11 @@ function deduction8Highway(data) {
 /**
  * Deduction 9: Road Area - (siteArea - manualRoadArea) [cents]
  */
-function deduction9RoadArea(data) {
+function deduction9ManualRoadArea(data) {
   const r = data.roadArea || {};
-  const site = toNum(r.siteArea);
-  const manual = toNum(r.manualRoadArea);
-  return Math.max(0, site - manual);
+  return Math.max(0, toNum(r.manualRoadArea));
 }
+
 
 /**
  * Deduction 10: OSR - (siteArea - manualRoadArea) * (percentage/100) [cents]. Only when OSR eligible.
@@ -167,6 +166,12 @@ function sqMeterToCents(sqm) {
 }
 
 /**
+ * Road Manual Area (direct deduction) [cents]
+ */
+
+
+
+/**
  * Full yield calculation: all required fields, 12 deductions, Y, yield (cents), yield percentage.
  * @param {object} data - payload with area, channel, gasLine, htTowerLine, river, lake, railwayBoundary, burialGround, highway, roadArea, osr?, tneb, localBody
  * @returns {object} { areaInCents, deductions, totalDeductionCents (Y), yieldCents, yieldPercentage, inputs }
@@ -181,7 +186,7 @@ function calculateLeadYield(data) {
   const d6 = deduction6RailwayBoundary(data);
   const d7 = deduction7BurialGround(data);
   const d8 = deduction8Highway(data);
-  const d9 = deduction9RoadArea(data);
+  const d9 = deduction9ManualRoadArea(data);
   const d10 = deduction10OSR(data, areaCents);
   const d11 = deduction11TNEB(data);
   const d12 = deduction12LocalBody(data);
@@ -236,7 +241,7 @@ function calculateLeadYield(data) {
       deduction7_burialGround_cents: Number(d7_c.toFixed(4)),
       deduction8_highway_sqm: Number(d8.toFixed(4)),
       deduction8_highway_cents: Number(d8_c.toFixed(4)),
-      deduction9_roadArea_cents: Number(d9.toFixed(4)),
+     deduction9_manualRoadArea_cents: Number(d9.toFixed(4)),
       deduction10_osr_cents: Number(d10.toFixed(4)),
       deduction11_tneb_cents: Number(d11.toFixed(4)),
       deduction12_localBody_cents: Number(d12.toFixed(4)),

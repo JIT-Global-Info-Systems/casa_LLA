@@ -515,7 +515,7 @@ export const LeadsProvider = ({ children }) => {
       }
 
       // Yield calculation data - send as separate fields for backend processing
-      payload.yieldArea = JSON.stringify({
+      payload.area = JSON.stringify({
         value: parseFloat(formData.areaValue) || 0,
         unit: formData.areaUnit || "hectare"
       })
@@ -525,48 +525,50 @@ export const LeadsProvider = ({ children }) => {
 
       payload.channel = JSON.stringify({
         width: parseFloat(formData.channelWidth) || 0,
-        length: parseFloat(formData.channelLength) || 0,
-        inBetween: parseFloat(formData.channelInBetween) || 0,
-        nearBoundary: parseFloat(formData.channelNearBoundary) || 0
+        mannualLength: parseFloat(formData.channelLength) || 0,
+        inBetweenSite: parseFloat(formData.channelInBetween) || 0,
+        nearBySiteBoundary: parseFloat(formData.channelNearBoundary) || 0
       })
 
       payload.gasLine = JSON.stringify({
-        width: parseFloat(formData.gasLineWidth) || 0,
-        length: parseFloat(formData.gasLineLength) || 0,
-        inBetween: parseFloat(formData.gasLineInBetween) || 0,
-        nearBoundary: parseFloat(formData.gasLineNearBoundary) || 0
-      })
+  width: parseFloat(formData.gasLineWidth) || 0,
+  length: parseFloat(formData.gasLineLength) || 0,
+  inBetweenSite: parseFloat(formData.gasLineInBetween) || 0,
+  nearBySiteBoundary: parseFloat(formData.gasLineNearBoundary) || 0
+})
+
 
       payload.htTowerLine = JSON.stringify({
-        width: parseFloat(formData.htTowerLineWidth) || 0,
-        length: parseFloat(formData.htTowerLineLength) || 0,
-        inBetween: parseFloat(formData.htTowerLineInBetween) || 0,
-        nearBoundary: parseFloat(formData.htTowerLineNearBoundary) || 0
-      })
+  width: parseFloat(formData.htTowerLineWidth) || 0,
+  manualLength: parseFloat(formData.htTowerLineLength) || 0,
+  inBetweenSite: parseFloat(formData.htTowerLineInBetween) || 0,
+  nearBySiteBoundary: parseFloat(formData.htTowerLineNearBoundary) || 0
+})
+
 
       payload.river = JSON.stringify({
         length: parseFloat(formData.riverLength) || 0,
-        nearBoundary: parseFloat(formData.riverNearBoundary) || 0
+  nearBySiteBoundary: parseFloat(formData.riverNearBoundary) || 0
       })
 
       payload.lake = JSON.stringify({
-        length: parseFloat(formData.lakeLength) || 0,
-        nearBoundary: parseFloat(formData.lakeNearBoundary) || 0
+        length: parseFloat(formData.riverLength) || 0,
+  nearBySiteBoundary: parseFloat(formData.riverNearBoundary) || 0
       })
 
       payload.railwayBoundary = JSON.stringify({
-        length: parseFloat(formData.railwayBoundaryLength) || 0,
-        nearBoundary: parseFloat(formData.railwayBoundaryNearBoundary) || 0
+         length: parseFloat(formData.riverLength) || 0,
+  nearBySiteBoundary: parseFloat(formData.riverNearBoundary) || 0
       })
 
       payload.burialGround = JSON.stringify({
-        length: parseFloat(formData.burialGroundLength) || 0,
-        nearBoundary: parseFloat(formData.burialGroundNearBoundary) || 0
+        length: parseFloat(formData.riverLength) || 0,
+  nearBySiteBoundary: parseFloat(formData.riverNearBoundary) || 0
       })
 
       payload.highway = JSON.stringify({
-        length: parseFloat(formData.highwayLength) || 0,
-        nearBoundary: parseFloat(formData.highwayNearBoundary) || 0
+        length: parseFloat(formData.riverLength) || 0,
+  nearBySiteBoundary: parseFloat(formData.riverNearBoundary) || 0
       })
 
       payload.roadArea = JSON.stringify({
@@ -711,6 +713,131 @@ export const LeadsProvider = ({ children }) => {
     
     if (checklistChanged) {
       payload.checkListPage = checkListPage
+    }
+
+    // Check yield calculation fields for changes
+    const yieldCalculationFields = [
+      'areaValue', 'areaUnit', 'channelWidth', 'channelLength', 'channelInBetween', 'channelNearBoundary',
+      'gasLineWidth', 'gasLineLength', 'gasLineInBetween', 'gasLineNearBoundary',
+      'htTowerLineWidth', 'htTowerLineLength', 'htTowerLineInBetween', 'htTowerLineNearBoundary',
+      'riverLength', 'riverNearBoundary', 'lakeLength', 'lakeNearBoundary',
+      'railwayBoundaryLength', 'railwayBoundaryNearBoundary', 'burialGroundLength', 'burialGroundNearBoundary',
+      'highwayLength', 'highwayNearBoundary', 'roadSiteArea', 'manualRoadArea',
+      'osrSiteArea', 'osrManualRoadArea', 'osrPercentage', 'tnebSiteArea', 'tnebManualRoadArea', 
+      'tnebPercentage', 'localBodySiteArea', 'localBodyManualRoadArea', 'localBodyPercentage'
+    ]
+
+    let yieldCalculationChanged = false
+    const yieldCalculationData = {}
+
+    // Check each yield calculation field for changes
+    yieldCalculationFields.forEach(field => {
+      const currentValue = formData[field] || ""
+      const originalValue = originalData?.yieldCalculation?.inputs?.[getFieldMapping(field)] || ""
+      
+      if (currentValue !== originalValue.toString()) {
+        yieldCalculationChanged = true
+        console.log(`📝 Yield field changed: ${field}, current="${currentValue}", original="${originalValue}"`)
+      }
+    })
+
+    // Helper function to map form field names to yieldCalculation input structure
+    function getFieldMapping(formField) {
+      const mapping = {
+        'channelWidth': 'channel.width', 'channelLength': 'channel.length', 'channelInBetween': 'channel.inBetween', 'channelNearBoundary': 'channel.nearBoundary',
+        'gasLineWidth': 'gasLine.width', 'gasLineLength': 'gasLine.length', 'gasLineInBetween': 'gasLine.inBetween', 'gasLineNearBoundary': 'gasLine.nearBoundary',
+        'htTowerLineWidth': 'htTowerLine.width', 'htTowerLineLength': 'htTowerLine.length', 'htTowerLineInBetween': 'htTowerLine.inBetween', 'htTowerLineNearBoundary': 'htTowerLine.nearBoundary',
+        'riverLength': 'river.length', 'riverNearBoundary': 'river.nearBoundary',
+        'lakeLength': 'lake.length', 'lakeNearBoundary': 'lake.nearBoundary',
+        'railwayBoundaryLength': 'railwayBoundary.length', 'railwayBoundaryNearBoundary': 'railwayBoundary.nearBoundary',
+        'burialGroundLength': 'burialGround.length', 'burialGroundNearBoundary': 'burialGround.nearBoundary',
+        'highwayLength': 'highway.length', 'highwayNearBoundary': 'highway.nearBoundary',
+        'roadSiteArea': 'roadArea.siteArea', 'manualRoadArea': 'roadArea.manualRoadArea',
+        'osrSiteArea': 'osr.siteArea', 'osrManualRoadArea': 'osr.manualRoadArea', 'osrPercentage': 'osr.percentage',
+        'tnebSiteArea': 'tneb.siteArea', 'tnebManualRoadArea': 'tneb.manualRoadArea', 'tnebPercentage': 'tneb.percentage',
+        'localBodySiteArea': 'localBody.siteArea', 'localBodyManualRoadArea': 'localBody.manualRoadArea', 'localBodyPercentage': 'localBody.percentage'
+      }
+      return mapping[formField] || formField
+    }
+
+    // If any yield calculation fields changed, send all yield calculation data
+    if (yieldCalculationChanged) {
+      console.log('🔄 Yield calculation fields changed, sending updated data')
+      
+      // Send yield calculation data as separate fields for backend processing
+      payload.yieldArea = JSON.stringify({
+        value: parseFloat(formData.areaValue) || 0,
+        unit: formData.areaUnit || "hectare"
+      })
+
+      payload.channel = JSON.stringify({
+        width: parseFloat(formData.channelWidth) || 0,
+        length: parseFloat(formData.channelLength) || 0,
+        inBetween: parseFloat(formData.channelInBetween) || 0,
+        nearBoundary: parseFloat(formData.channelNearBoundary) || 0
+      })
+
+      payload.gasLine = JSON.stringify({
+        width: parseFloat(formData.gasLineWidth) || 0,
+        length: parseFloat(formData.gasLineLength) || 0,
+        inBetween: parseFloat(formData.gasLineInBetween) || 0,
+        nearBoundary: parseFloat(formData.gasLineNearBoundary) || 0
+      })
+
+      payload.htTowerLine = JSON.stringify({
+        width: parseFloat(formData.htTowerLineWidth) || 0,
+        length: parseFloat(formData.htTowerLineLength) || 0,
+        inBetween: parseFloat(formData.htTowerLineInBetween) || 0,
+        nearBoundary: parseFloat(formData.htTowerLineNearBoundary) || 0
+      })
+
+      payload.river = JSON.stringify({
+        length: parseFloat(formData.riverLength) || 0,
+        nearBoundary: parseFloat(formData.riverNearBoundary) || 0
+      })
+
+      payload.lake = JSON.stringify({
+        length: parseFloat(formData.lakeLength) || 0,
+        nearBoundary: parseFloat(formData.lakeNearBoundary) || 0
+      })
+
+      payload.railwayBoundary = JSON.stringify({
+        length: parseFloat(formData.railwayBoundaryLength) || 0,
+        nearBoundary: parseFloat(formData.railwayBoundaryNearBoundary) || 0
+      })
+
+      payload.burialGround = JSON.stringify({
+        length: parseFloat(formData.burialGroundLength) || 0,
+        nearBoundary: parseFloat(formData.burialGroundNearBoundary) || 0
+      })
+
+      payload.highway = JSON.stringify({
+        length: parseFloat(formData.highwayLength) || 0,
+        nearBoundary: parseFloat(formData.highwayNearBoundary) || 0
+      })
+
+      payload.roadArea = JSON.stringify({
+        siteArea: parseFloat(formData.roadSiteArea) || 0,
+        manualRoadArea: parseFloat(formData.manualRoadArea) || 0
+      })
+
+      payload.osr = JSON.stringify({
+        siteArea: parseFloat(formData.osrSiteArea) || 0,
+        manualRoadArea: parseFloat(formData.osrManualRoadArea) || 0,
+        percentage: parseFloat(formData.osrPercentage) || 0
+      })
+
+      payload.tneb = JSON.stringify({
+        siteArea: parseFloat(formData.tnebSiteArea) || 0,
+        manualRoadArea: parseFloat(formData.tnebManualRoadArea) || 0,
+        percentage: parseFloat(formData.tnebPercentage) || 0
+      })
+
+      payload.localBody = JSON.stringify({
+        siteArea: parseFloat(formData.localBodySiteArea) || 0,
+        manualRoadArea: parseFloat(formData.localBodyManualRoadArea) || 0,
+        percentage: parseFloat(formData.localBodyPercentage) || 0
+      })
     }
 
     // Only include currentRole and assignedTo if they actually changed
